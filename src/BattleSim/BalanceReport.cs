@@ -19,9 +19,9 @@ public sealed record BalanceOptions
     public int PoolRepeats { get; init; } = 4;
     /// <summary>Soldier win rate at or above this is flagged as too strong (and 1 - this as too weak).</summary>
     public double StrongThreshold { get; init; } = 0.55;
-    /// <summary>Target band for the advantaged side in an equal-numbers counter duel.</summary>
-    public double CounterWinMin { get; init; } = 0.70;
-    public double CounterWinMax { get; init; } = 0.80;
+    /// <summary>Target band for how many disadvantaged units it takes to beat DuelSize advantaged ones.</summary>
+    public int CounterBreakEvenMin { get; init; } = 13;
+    public int CounterBreakEvenMax { get; init; } = 15;
     /// <summary>Back-row test: this unit holds the front, the tested unit stands behind it.</summary>
     public string BackRowFrontUnit { get; init; } = "kalkanli";
     public int BackRowCount { get; init; } = 5;
@@ -83,7 +83,7 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
         var header = new[] { "" }.Concat(Units.Select(u => u.Name)).ToArray();
         var winTable = new Table(header);
         var breakEven = new Table(header);
-        var rates = new double[Units.Count, Units.Count];
+        var breakEvens = new int?[Units.Count, Units.Count];
 
         foreach (var row in Units)
         {
@@ -91,9 +91,11 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
             var needed = new List<string> { row.Name };
             foreach (var col in Units)
             {
-                double rate = rates[row.Index, col.Index] = DuelWinRate(row, n, col, n, salt: row.Index * 31 + col.Index);
+                double rate = DuelWinRate(row, n, col, n, salt: row.Index * 31 + col.Index);
                 wins.Add(row == col ? "—" : Pct(rate));
-                needed.Add(row == col ? "—" : BreakEven(row, col));
+                if (row == col) { needed.Add("—"); continue; }
+                var be = breakEvens[row.Index, col.Index] = BreakEven(row, col);
+                needed.Add(be?.ToString() ?? $">{BreakEvenLimit}");
             }
             winTable.Add(wins.ToArray());
             breakEven.Add(needed.ToArray());
@@ -104,42 +106,50 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
         breakEven.Print();
         Console.WriteLine($"   ({n}'dan küçük = sütun birliği daha güçlü; {n}'dan büyük = satır birliği daha güçlü.)");
         Console.WriteLine();
-        PrintCounterCheck(rates);
+        PrintCounterCheck(breakEvens);
     }
 
-    /// <summary>Checks every advantaged pairing from the counter matrix against the target band.</summary>
-    private void PrintCounterCheck(double[,] rates)
+    /// <summary>
+    /// For every advantaged pairing in the counter matrix: how many of the disadvantaged unit it takes
+    /// to beat <see cref="BalanceOptions.DuelSize"/> of the advantaged one, checked against the target band.
+    /// </summary>
+    private void PrintCounterCheck(int?[,] breakEvens)
     {
-        string band = $"%{options.CounterWinMin * 100:0}–%{options.CounterWinMax * 100:0}";
-        Console.WriteLine($"   Karşılık kontrolü: avantajlı taraf eşit sayıda {band} kazanmalı");
-        var t = new Table("Avantajlı", "Karşısındaki", "Çarpan", "Kazanma", "Durum") { LeftAlignedFrom = 1 };
+        int n = options.DuelSize;
+        string band = $"{options.CounterBreakEvenMin}–{options.CounterBreakEvenMax}";
+        Console.WriteLine($"   Karşılık kontrolü: {n} avantajlı birliği yenmek için gereken dezavantajlı birlik (hedef {band})");
+        var t = new Table("Avantajlı", "Karşısındaki", "Çarpan", "Başabaş", "Durum") { LeftAlignedFrom = 1 };
         foreach (var a in Units)
             foreach (var d in Units)
             {
                 // "Advantaged" = deals more to them than they deal back.
                 double mine = rules.Counters.Get(a, d), theirs = rules.Counters.Get(d, a);
                 if (a == d || mine <= theirs) continue;
-                double rate = rates[a.Index, d.Index];
-                bool ok = rate >= options.CounterWinMin - 1e-9 && rate <= options.CounterWinMax + 1e-9;
-                t.Add(a.Name, d.Name, $"×{mine:0.##} / ×{theirs:0.##}", Pct(rate), ok ? "hedefte" : "HEDEF DIŞI");
+                int? be = breakEvens[a.Index, d.Index];
+                bool ok = be >= options.CounterBreakEvenMin && be <= options.CounterBreakEvenMax;
+                string text = be?.ToString() ?? $">{BreakEvenLimit}";
+                t.Add(a.Name, d.Name, $"×{mine:0.##} / ×{theirs:0.##}", $"{n} : {text}", ok ? "hedefte" : "HEDEF DIŞI");
                 if (!ok)
-                    _findings.Add($"Karşılık: {a.Name} → {d.Name} eşit sayıda {Pct(rate)} kazanıyor (hedef {band}).");
+                    _findings.Add($"Karşılık: {a.Name} → {d.Name} başabaş {n} : {text} (hedef {band}).");
             }
         t.Print();
         Console.WriteLine();
     }
 
-    private string BreakEven(UnitType defender, UnitType attacker)
+    private int BreakEvenLimit => options.DuelSize * 4;
+
+    /// <summary>Smallest number of <paramref name="attacker"/> that beats DuelSize <paramref name="defender"/> at least half the time; null if above the search limit.</summary>
+    private int? BreakEven(UnitType defender, UnitType attacker)
     {
-        int n = options.DuelSize, lo = 1, hi = n * 4;
+        int n = options.DuelSize, lo = 1, hi = BreakEvenLimit;
         int salt = 1000 + defender.Index * 31 + attacker.Index;
-        if (1 - DuelWinRate(defender, n, attacker, hi, salt) < 0.5) return $">{hi}";
+        if (1 - DuelWinRate(defender, n, attacker, hi, salt) < 0.5) return null;
         while (lo < hi)
         {
             int mid = (lo + hi) / 2;
             if (1 - DuelWinRate(defender, n, attacker, mid, salt) >= 0.5) hi = mid; else lo = mid + 1;
         }
-        return lo.ToString();
+        return lo;
     }
 
     /// <summary>Win rate of <paramref name="a"/>×countA against <paramref name="b"/>×countB, draws count half.</summary>
@@ -160,6 +170,8 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
         public int Initial, Survivors;
         public double Damage;
         public double ShareSum; public int ArmyCount;
+        // Armies with at least one melee unit in the front row ("screened").
+        public double ScreenedSoldierScore, ScreenedSoldierCount, ScreenedArmyScore; public int ScreenedArmyCount;
         // For Pearson correlation of (share A − share B) with A's result.
         public double SumX, SumY, SumXX, SumYY, SumXY; public int N;
 
@@ -199,8 +211,8 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
             {
                 var s = stats[u.Index];
                 double shareA = (double)a.CountOf(u) / a.TotalCount, shareB = (double)b.CountOf(u) / b.TotalCount;
-                Accumulate(s, a.CountOf(u), shareA, scoreA);
-                Accumulate(s, b.CountOf(u), shareB, 1 - scoreA);
+                Accumulate(s, a.CountOf(u), shareA, scoreA, HasMeleeFront(a));
+                Accumulate(s, b.CountOf(u), shareB, 1 - scoreA, HasMeleeFront(b));
                 foreach (var side in new[] { result.SideA, result.SideB })
                 {
                     var ts = side.ByType.FirstOrDefault(x => x.Type == u);
@@ -227,6 +239,13 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
                 Verdict(s.SoldierWinRate));
         }
         t.Print();
+        foreach (var u in Units.Where(u => u.Range == AttackRange.Ranged))
+        {
+            var s = stats[u.Index];
+            if (s.ScreenedArmyCount == 0) continue;
+            Console.WriteLine($"   {u.Name}, önünde en az 1 yakın dövüşçü olan ordularda: asker başı {Pct(s.ScreenedSoldierScore / s.ScreenedSoldierCount)}, " +
+                $"ordu kazanma {Pct(s.ScreenedArmyScore / s.ScreenedArmyCount)} ({s.ScreenedArmyCount} ordu)");
+        }
         Console.WriteLine($"   Beraberlik: {draws} · ortalama savaş süresi: {totalSeconds / matches.Length:0.0} sn");
         Console.WriteLine("   Asker başı kazanma: rastgele seçilen bir askerin ordusunun kazanma oranı. Dengede ≈%50.");
         Console.WriteLine("   Baskın ordu: o birliğin en az %50 olduğu ordular (parantezde ordu sayısı).");
@@ -235,8 +254,18 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
         return stats;
     }
 
-    private static void Accumulate(TypeStats s, int count, double share, double score)
+    private static bool HasMeleeFront(ArmySetup army) =>
+        army.Counts.Any(kv => kv.Value > 0 && kv.Key.Range == AttackRange.Melee && army.RowOf(kv.Key) == Row.Front);
+
+    private static void Accumulate(TypeStats s, int count, double share, double score, bool screened)
     {
+        if (screened && count > 0)
+        {
+            s.ScreenedSoldierScore += count * score;
+            s.ScreenedSoldierCount += count;
+            s.ScreenedArmyScore += score;
+            s.ScreenedArmyCount++;
+        }
         s.SoldierScore += count * score;
         s.SoldierCount += count;
         s.ShareSum += share;
