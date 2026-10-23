@@ -1,4 +1,4 @@
-// Keepfall denge ayarları (v0.2 — denge turu 1) — kaynak: docs/kale_oyunu_sayilar.xlsx
+// Keepfall denge ayarları (v0.3 — denge turu 2) — kaynak: docs/kale_oyunu_sayilar.xlsx
 // Bu dosya yorum satırlarına izin verir. Sayıları değiştir, BattleSim'i tekrar çalıştır.
 {
   "economy": {
@@ -36,7 +36,7 @@
       "id": "kilicli", "name": "Kılıçlı", "phase": 1,
       "cost": { "iron": 3, "wood": 2, "food": 0, "people": 1 },
       "buildSeconds": 30,
-      "hp": 100, "damage": 10, "attackInterval": 1.0,
+      "hp": 100, "damage": 8.5, "attackInterval": 1.0,
       "range": "melee", "row": "front"
     },
     {
