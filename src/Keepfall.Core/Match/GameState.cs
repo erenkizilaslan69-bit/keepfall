@@ -29,72 +29,98 @@ public sealed record EconomySummary(
     IReadOnlyList<EconomySample> Samples);
 
 /// <summary>
-/// A match: the clock, the phase and the castles (one for now). <see cref="Tick"/> is a plain function
-/// of elapsed time, so tests can drive it directly; the server just calls it once per tick.
+/// A match: one shared preparation clock and one castle per player. <see cref="Tick"/> is a plain
+/// function of elapsed time, so tests can drive it directly; the server just calls it once per tick.
+/// Commands always name the player, so a command can only ever touch that player's own castle.
 /// </summary>
 public sealed class GameState
 {
     public const double SampleIntervalSeconds = 30;
 
-    private readonly List<EconomySample> _samples = [];
-    private readonly int _startPopulation;
+    private readonly Dictionary<string, PlayerEconomy> _players;
     private double _nextSample;
 
-    public GameState(GameRules rules, double? prepSeconds = null)
+    public GameState(GameRules rules, IEnumerable<string> playerKeys, double? prepSeconds = null)
     {
         Rules = rules;
         PrepSeconds = prepSeconds ?? rules.Match.ShortModePrepSeconds;
-        Castle = new Castle(rules);
-        _startPopulation = Castle.Population;
-        TakeSample();
+        _players = playerKeys.Distinct().ToDictionary(k => k, _ => new PlayerEconomy(new Castle(rules)));
+        if (_players.Count == 0) throw new ArgumentException("A match needs at least one player.", nameof(playerKeys));
+        TakeSamples();
     }
 
     public GameRules Rules { get; }
-    public Castle Castle { get; }
     public MatchPhase Phase { get; private set; } = MatchPhase.Preparation;
     public double PrepSeconds { get; }
     public double ElapsedSeconds { get; private set; }
     public double RemainingSeconds => Math.Max(0, PrepSeconds - ElapsedSeconds);
-    public EconomySummary? Summary { get; private set; }
-    public IReadOnlyList<EconomySample> Samples => _samples;
+    public IReadOnlyCollection<string> PlayerKeys => _players.Keys;
+
+    public Castle? CastleOf(string playerKey) => _players.GetValueOrDefault(playerKey)?.Castle;
+
+    /// <summary>The player's own end-of-preparation summary; null until the phase has ended.</summary>
+    public EconomySummary? SummaryOf(string playerKey) => _players.GetValueOrDefault(playerKey)?.Summary;
+
+    public IReadOnlyList<EconomySample> SamplesOf(string playerKey) =>
+        _players.GetValueOrDefault(playerKey)?.Samples ?? [];
 
     public void Tick(double dt)
     {
         if (Phase != MatchPhase.Preparation) return;
         dt = Math.Min(dt, RemainingSeconds);
-        Castle.Tick(dt);
+        foreach (var p in _players.Values) p.Castle.Tick(dt);
         ElapsedSeconds += dt;
-        if (ElapsedSeconds + 1e-9 >= _nextSample) TakeSample();
+        if (ElapsedSeconds + 1e-9 >= _nextSample) TakeSamples();
         if (RemainingSeconds <= 1e-9)
         {
             Phase = MatchPhase.Ended;
-            if (_samples[^1].Seconds < ElapsedSeconds - 1e-9) TakeSample();
-            Summary = BuildSummary();
+            foreach (var p in _players.Values)
+            {
+                if (p.Samples[^1].Seconds < ElapsedSeconds - 1e-9) p.Sample(ElapsedSeconds);
+                p.Summary = p.BuildSummary(ElapsedSeconds);
+            }
         }
     }
 
-    public CommandResult Execute(GameCommand command) =>
-        Phase == MatchPhase.Preparation ? Castle.Execute(command) : CommandResult.Fail("Hazırlık süresi bitti.");
-
-    private void TakeSample()
+    /// <summary>Applies a command to <paramref name="playerKey"/>'s castle and nobody else's.</summary>
+    public CommandResult Execute(string playerKey, GameCommand command)
     {
-        _samples.Add(new EconomySample(ElapsedSeconds, Castle.Population, Castle.SoldierCount, Castle.Food, Castle.Wood, Castle.Iron));
+        if (Phase != MatchPhase.Preparation) return CommandResult.Fail("Hazırlık süresi bitti.");
+        if (!_players.TryGetValue(playerKey, out var player)) return CommandResult.Fail("Bu maçta böyle bir oyuncu yok.");
+        return player.Castle.Execute(command);
+    }
+
+    private void TakeSamples()
+    {
+        foreach (var p in _players.Values) p.Sample(ElapsedSeconds);
         _nextSample = ElapsedSeconds + SampleIntervalSeconds;
     }
 
-    private EconomySummary BuildSummary()
+    private sealed class PlayerEconomy(Castle castle)
     {
-        var c = Castle;
-        return new EconomySummary(
-            ElapsedSeconds, _startPopulation, c.Population, c.Stats.PeakPopulation, c.Stats.PeopleBorn,
-            c.Workers.ToDictionary(kv => kv.Key, kv => kv.Value),
-            c.Soldiers.ToDictionary(kv => kv.Key.Id, kv => kv.Value),
-            c.Weapons.ToDictionary(kv => kv.Key.Id, kv => kv.Value),
-            c.Stats.WeaponsMade,
-            c.Stats.ProducedFood, c.Stats.ProducedWood, c.Stats.ProducedIron,
-            c.Food, c.Wood, c.Iron,
-            c.Stats.StarvingSeconds, c.Stats.IdleWorkerSeconds,
-            Jobs.Buildings.ToDictionary(b => b, b => c.Building(b).Level),
-            _samples.ToList());
+        private readonly int _startPopulation = castle.Population;
+
+        public Castle Castle { get; } = castle;
+        public List<EconomySample> Samples { get; } = [];
+        public EconomySummary? Summary { get; set; }
+
+        public void Sample(double seconds) =>
+            Samples.Add(new EconomySample(seconds, Castle.Population, Castle.SoldierCount, Castle.Food, Castle.Wood, Castle.Iron));
+
+        public EconomySummary BuildSummary(double elapsed)
+        {
+            var c = Castle;
+            return new EconomySummary(
+                elapsed, _startPopulation, c.Population, c.Stats.PeakPopulation, c.Stats.PeopleBorn,
+                c.Workers.ToDictionary(kv => kv.Key, kv => kv.Value),
+                c.Soldiers.ToDictionary(kv => kv.Key.Id, kv => kv.Value),
+                c.Weapons.ToDictionary(kv => kv.Key.Id, kv => kv.Value),
+                c.Stats.WeaponsMade,
+                c.Stats.ProducedFood, c.Stats.ProducedWood, c.Stats.ProducedIron,
+                c.Food, c.Wood, c.Iron,
+                c.Stats.StarvingSeconds, c.Stats.IdleWorkerSeconds,
+                Jobs.Buildings.ToDictionary(b => b, b => c.Building(b).Level),
+                Samples.ToList());
+        }
     }
 }

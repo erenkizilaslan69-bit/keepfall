@@ -249,15 +249,16 @@ public class EconomyTests
     [Fact]
     public void Preparation_ends_with_a_summary_and_rejects_commands()
     {
-        var game = new GameState(Rules, prepSeconds: 90);
-        game.Execute(new SetGrowth(false));
+        var game = new GameState(Rules, ["o1"], prepSeconds: 90);
+        game.Execute("o1", new SetGrowth(false));
         for (int i = 0; i < 100; i++) game.Tick(1);
 
         Assert.Equal(MatchPhase.Ended, game.Phase);
         Assert.Equal(90, game.ElapsedSeconds);
-        Assert.NotNull(game.Summary);
-        Assert.Equal(90, game.Summary!.DurationSeconds);
-        Assert.Equal(new[] { 0.0, 30, 60, 90 }, game.Summary.Samples.Select(s => s.Seconds));
-        Assert.False(game.Execute(new MoveWorkers(Job.Idle, Job.Farmer, 1)).Ok);
+        var summary = game.SummaryOf("o1");
+        Assert.NotNull(summary);
+        Assert.Equal(90, summary!.DurationSeconds);
+        Assert.Equal(new[] { 0.0, 30, 60, 90 }, summary.Samples.Select(s => s.Seconds));
+        Assert.False(game.Execute("o1", new MoveWorkers(Job.Idle, Job.Farmer, 1)).Ok);
     }
 }
