@@ -1,0 +1,216 @@
+import Phaser from 'phaser';
+import type { BuildingType, Job, JobView } from '../types';
+import { UNIT_SCALE, unitOriginY } from './assets';
+import { GATE, IDLE_AREA, JOB_LOOK, SITES, type Point } from './layout';
+
+// Animated pawns. The server only sends how many people each job has; this keeps the same number
+// of pawns per job and invents the walking around it. Nothing here affects the economy.
+
+const SPEED = 75; // px per second
+const JOBS: Job[] = ['farmer', 'lumberjack', 'miner', 'blacksmith', 'idle'];
+
+/** Leave the castle sideways so nobody walks behind the castle sprite. */
+const ROAD: Record<BuildingType, Point> = {
+  farm: { x: 296, y: 452 },
+  mine: { x: 312, y: 488 },
+  lumberCamp: { x: 728, y: 452 },
+  forge: { x: 712, y: 488 },
+};
+
+type State = 'walking' | 'working' | 'dropping' | 'waiting' | 'leaving';
+
+interface Pawn {
+  sprite: Phaser.GameObjects.Sprite;
+  job: Job;
+  slot: number;
+  state: State;
+  path: Point[];
+  /** What happens when the path is done. */
+  arrive: () => void;
+  timer: number;
+  carrying: boolean;
+}
+
+export class Workers {
+  private pawns: Pawn[] = [];
+  private placed = false;
+  private idleLabel: Phaser.GameObjects.Text;
+
+  constructor(private readonly scene: Phaser.Scene) {
+    this.idleLabel = scene.add.text(GATE.x, IDLE_AREA.bottom + 6, '', {
+      fontFamily: 'system-ui, sans-serif', fontSize: '16px', fontStyle: 'bold',
+      color: '#ffd84a', stroke: '#1d1b18', strokeThickness: 4,
+    }).setOrigin(0.5, 0).setDepth(10_000);
+  }
+
+  /** Match the number of pawns per job to the server's counts. */
+  sync(jobs: JobView[]): void {
+    const target = new Map(jobs.map((j) => [j.job, j.count]));
+    const surplus: Pawn[] = [];
+    for (const job of JOBS) {
+      const mine = this.pawns.filter((p) => p.job === job && p.state !== 'leaving');
+      // Release the most recently assigned first; their slots are the furthest from the door.
+      mine.sort((a, b) => b.slot - a.slot);
+      for (let i = 0; i < mine.length - (target.get(job) ?? 0); i++) surplus.push(mine[i]);
+    }
+    for (const job of JOBS) {
+      let missing = (target.get(job) ?? 0) - this.pawns.filter((p) => p.job === job && p.state !== 'leaving' && !surplus.includes(p)).length;
+      for (; missing > 0; missing--) {
+        const pawn = surplus.pop() ?? this.spawn();
+        this.assign(pawn, job, !this.placed);
+      }
+    }
+    // Whoever is left became a soldier (or is otherwise gone): walk into the castle and vanish.
+    for (const pawn of surplus) this.leave(pawn);
+    this.placed = true;
+
+    const idle = target.get('idle') ?? 0;
+    this.idleLabel.setText(idle > 0 ? `${idle} kişi boşta!` : '');
+  }
+
+  update(dt: number): void {
+    for (const pawn of this.pawns) {
+      if (pawn.path.length > 0) this.walk(pawn, dt);
+      else if (pawn.state === 'working' || pawn.state === 'dropping') {
+        pawn.timer -= dt;
+        if (pawn.timer <= 0) this.nextStep(pawn);
+      }
+    }
+  }
+
+  // ---- lifecycle ---------------------------------------------------------------------------
+
+  private spawn(): Pawn {
+    const sprite = this.scene.add.sprite(GATE.x, GATE.y, 'pawn-idle')
+      .setScale(UNIT_SCALE).setOrigin(0.5, unitOriginY('pawn')).setDepth(GATE.y);
+    const pawn: Pawn = { sprite, job: 'idle', slot: -1, state: 'waiting', path: [], arrive: () => {}, timer: 0, carrying: false };
+    this.pawns.push(pawn);
+    return pawn;
+  }
+
+  private assign(pawn: Pawn, job: Job, instant: boolean): void {
+    const from = this.siteOf(pawn);
+    pawn.job = job;
+    pawn.slot = this.freeSlot(job, pawn);
+    pawn.carrying = false;
+    const spot = this.spotOf(job, pawn.slot);
+    const to = JOB_LOOK[job].building;
+
+    if (instant) {
+      pawn.sprite.setPosition(spot.x, spot.y).setDepth(spot.y);
+      this.arriveAtSpot(pawn);
+      // Spread the first carry trips so not everyone leaves at once.
+      pawn.timer = Phaser.Math.FloatBetween(0.5, 7);
+      return;
+    }
+    const path: Point[] = [];
+    if (from) path.push(ROAD[from]);
+    if (to && to !== from) path.push(ROAD[to]);
+    path.push(spot);
+    this.go(pawn, path, JOB_LOOK[job].run, () => this.arriveAtSpot(pawn));
+  }
+
+  private leave(pawn: Pawn): void {
+    const from = this.siteOf(pawn);
+    pawn.state = 'leaving';
+    pawn.slot = -1;
+    this.go(pawn, [...(from ? [ROAD[from]] : []), GATE], JOB_LOOK[pawn.job].run, () => {
+      pawn.state = 'leaving';
+      this.scene.tweens.add({
+        targets: pawn.sprite, alpha: 0, duration: 300,
+        onComplete: () => {
+          pawn.sprite.destroy();
+          this.pawns = this.pawns.filter((p) => p !== pawn);
+        },
+      });
+    });
+    pawn.state = 'leaving';
+  }
+
+  // ---- behaviour ---------------------------------------------------------------------------
+
+  private arriveAtSpot(pawn: Pawn): void {
+    const look = JOB_LOOK[pawn.job];
+    const site = look.building ? SITES[look.building] : null;
+    const spot = this.spotOf(pawn.job, pawn.slot);
+    if (!site || !look.work) {
+      pawn.state = 'waiting';
+      pawn.sprite.setFlipX(Math.random() < 0.5).play({ key: look.idle, startFrame: Phaser.Math.Between(0, 5) });
+      return;
+    }
+    pawn.state = 'working';
+    pawn.timer = Phaser.Math.FloatBetween(4, 7);
+    pawn.sprite.setFlipX(site.faceLeft(spot)).play({ key: look.work, startFrame: Phaser.Math.Between(0, 2) });
+  }
+
+  /** After a work stint: carriers take the load home; blacksmiths keep hammering. */
+  private nextStep(pawn: Pawn): void {
+    const look = JOB_LOOK[pawn.job];
+    if (pawn.state === 'dropping') {
+      pawn.carrying = false;
+      this.go(pawn, [ROAD[look.building!], this.spotOf(pawn.job, pawn.slot)], look.run, () => this.arriveAtSpot(pawn));
+      return;
+    }
+    if (!look.carry) { pawn.timer = Phaser.Math.FloatBetween(4, 7); return; }
+    pawn.carrying = true;
+    const drop = { x: GATE.x + Phaser.Math.Between(-30, 30), y: GATE.y + Phaser.Math.Between(-4, 6) };
+    this.go(pawn, [ROAD[look.building!], drop], look.carry, () => {
+      pawn.state = 'dropping';
+      pawn.timer = 0.6;
+      pawn.sprite.play(look.idle);
+    });
+  }
+
+  private go(pawn: Pawn, path: Point[], anim: string, arrive: () => void): void {
+    if (pawn.state !== 'leaving') pawn.state = 'walking';
+    pawn.path = path.map((p) => ({ ...p }));
+    pawn.arrive = arrive;
+    if (pawn.sprite.anims.currentAnim?.key !== anim) pawn.sprite.play(anim);
+  }
+
+  private walk(pawn: Pawn, dt: number): void {
+    const s = pawn.sprite, next = pawn.path[0];
+    const dx = next.x - s.x, dy = next.y - s.y;
+    const dist = Math.hypot(dx, dy), step = SPEED * dt;
+    if (dist <= step) {
+      s.setPosition(next.x, next.y);
+      pawn.path.shift();
+      if (pawn.path.length === 0) pawn.arrive();
+    } else {
+      s.setPosition(s.x + (dx / dist) * step, s.y + (dy / dist) * step);
+      if (Math.abs(dx) > 1) s.setFlipX(dx < 0);
+    }
+    s.setDepth(s.y);
+  }
+
+  // ---- places ------------------------------------------------------------------------------
+
+  /** The building the pawn is at (or heading to), or null when it is around the gate. */
+  private siteOf(pawn: Pawn): BuildingType | null {
+    if (pawn.slot < 0 || pawn.state === 'dropping' || (pawn.carrying && pawn.path.length === 0)) return null;
+    return JOB_LOOK[pawn.job].building ?? null;
+  }
+
+  private freeSlot(job: Job, except: Pawn): number {
+    const used = new Set(this.pawns.filter((p) => p !== except && p.job === job && p.state !== 'leaving').map((p) => p.slot));
+    let slot = 0;
+    while (used.has(slot)) slot++;
+    return slot;
+  }
+
+  private spotOf(job: Job, slot: number): Point {
+    const building = JOB_LOOK[job].building;
+    if (building) {
+      const spots = SITES[building].workSpots;
+      const base = spots[slot % spots.length];
+      // More people than spots (shouldn't happen with capacity ≤ 8): nudge them aside.
+      return slot < spots.length ? base : { x: base.x + 14, y: base.y + 10 };
+    }
+    // Idle people queue up in rows in front of the gate.
+    const perRow = 7, gap = (IDLE_AREA.right - IDLE_AREA.left) / (perRow - 1);
+    return {
+      x: IDLE_AREA.left + (slot % perRow) * gap + (Math.floor(slot / perRow) % 2) * (gap / 2),
+      y: IDLE_AREA.top + Math.floor(slot / perRow) * 30,
+    };
+  }
+}

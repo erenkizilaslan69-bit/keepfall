@@ -58,8 +58,9 @@ export const SITES: Record<BuildingType, Site> = {
     center: { x: 840, y: 240 },
     area: { w: 280, h: 300 },
     workSpots: [
-      { x: 828, y: 176 }, { x: 888, y: 226 }, { x: 818, y: 276 }, { x: 884, y: 318 },
-      { x: 892, y: 132 }, { x: 860, y: 364 }, { x: 930, y: 372 }, { x: 790, y: 330 },
+      // Just left of and in front of a trunk, so the pawn draws over its tree.
+      { x: 840, y: 188 }, { x: 900, y: 238 }, { x: 830, y: 288 }, { x: 896, y: 332 },
+      { x: 904, y: 144 }, { x: 865, y: 381 }, { x: 922, y: 384 }, { x: 820, y: 128 },
     ],
     faceLeft: () => false,
     parts: (level) => {

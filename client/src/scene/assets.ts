@@ -9,7 +9,7 @@ const url = (path: string) => encodeURI(ROOT + path);
 export const PLAYER_COLOR = 'Blue';
 
 /** Every unit is drawn at this scale so they stay in proportion (the Lancer's frame is just bigger, not its body). */
-export const UNIT_SCALE = 0.36;
+export const UNIT_SCALE = 0.55;
 /** Shield bearers stand a little larger so they read differently from swordsmen at a glance. */
 export const SHIELD_SCALE = UNIT_SCALE * 1.18;
 

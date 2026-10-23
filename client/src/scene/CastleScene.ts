@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { BuildingType, BuildingView, CastleView } from '../types';
 import { createAnimations, preloadAssets } from './assets';
 import { CASTLE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH, type Part } from './layout';
+import { Workers } from './Workers';
 
 export const SCENE_WIDTH = WORLD_WIDTH;
 export const SCENE_HEIGHT = WORLD_HEIGHT;
@@ -35,6 +36,7 @@ export class CastleScene extends Phaser.Scene {
   private ready = false;
   private loadFailed = false;
   private buildings = new Map<BuildingType, BuildingSlot>();
+  private workers!: Workers;
 
   constructor() {
     super('castle');
@@ -56,6 +58,7 @@ export class CastleScene extends Phaser.Scene {
     this.drawGround();
     this.add.image(CASTLE.x, CASTLE.y, 'castle').setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(CASTLE.y);
     for (const type of Object.keys(SITES) as BuildingType[]) this.createSite(type);
+    this.workers = new Workers(this);
     this.ready = true;
     if (this.state) this.apply(this.state);
   }
@@ -65,8 +68,13 @@ export class CastleScene extends Phaser.Scene {
     if (this.ready) this.apply(state);
   }
 
+  update(_time: number, delta: number): void {
+    if (this.ready) this.workers.update(Math.min(delta, 100) / 1000);
+  }
+
   private apply(s: CastleView): void {
     for (const b of s.buildings) this.updateBuilding(b, s);
+    this.workers.sync(s.jobs);
   }
 
   // ---- ground ------------------------------------------------------------------------------
