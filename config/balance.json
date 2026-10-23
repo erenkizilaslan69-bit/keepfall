@@ -1,4 +1,4 @@
-// Keepfall denge ayarları (v0.4 — denge turu 3) — kaynak: docs/kale_oyunu_sayilar.xlsx
+// Keepfall denge ayarları (v1 — denge v1) — kaynak: docs/kale_oyunu_sayilar.xlsx
 // Bu dosya yorum satırlarına izin verir. Sayıları değiştir, BattleSim'i tekrar çalıştır.
 {
   "economy": {
@@ -15,7 +15,7 @@
     // (herkesin aynı anda vurmasını engeller). false: herkes ilk vuruşu hemen yapar.
     "randomizeFirstAttack": true,
     // Savaş başında yakın dövüşçülerin hedefe ulaşma süresi (sn). Bu sürede sadece okçular vurur.
-    "approachTime": 3,
+    "approachTime": 2.5,
 
     // Karşılık matrisindeki "+", "-", "=" sembollerinin değeri.
     "advantageMultiplier": 1.5,
