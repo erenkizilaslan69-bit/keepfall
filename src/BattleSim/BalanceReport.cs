@@ -25,6 +25,8 @@ public sealed record BalanceOptions
     /// <summary>Back-row test: this unit holds the front, the tested unit stands behind it.</summary>
     public string BackRowFrontUnit { get; init; } = "kalkanli";
     public int BackRowCount { get; init; } = 5;
+    /// <summary>Back-row test variant: how many of the opponent's X are swapped for archers.</summary>
+    public int BackRowEnemyArchers { get; init; } = 2;
     /// <summary>A target priority beating another above this rate is flagged.</summary>
     public double TargetDominanceThreshold { get; init; } = 0.65;
 }
@@ -347,43 +349,63 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
             Console.WriteLine();
             return;
         }
-        var backs = Units.Where(u => u != front).ToList();
-        Heading($"5. Arka sıra testi: önde {n} {front.Name}, arkada {n} X — satırın kazanma oranı ({options.DuelRuns} tekrar)");
+        var xs = Units.Where(u => u != front).ToList();
+        var archer = Units.FirstOrDefault(u => u.Range == AttackRange.Ranged);
 
-        ArmySetup Build(UnitType back, string name) =>
-            new ArmySetup(name).Add(front, n).Add(back, n).PlaceIn(back, Row.Back);
+        // X stands in its default row: melee next to the shields in front, ranged behind them.
+        ArmySetup Build(UnitType x, string name) => new ArmySetup(name).Add(front, n).Add(x, n);
 
-        var header = new[] { "Arkada" }.Concat(backs.Select(b => b.Name)).Concat(["Ort. kazanma", "Arka hasarı", "Arka hayatta"]).ToArray();
+        Heading($"5. Sıra testi: {n} {front.Name} + {n} X (yakın X önde, okçu arkada) — satırın kazanma oranı ({options.DuelRuns} tekrar)");
+        PrintBackRowTable(xs, xs.Select(y => (y.Name, Build(y, "B"))).ToList(), Build, salt: 6_000_000);
+
+        int k = options.BackRowEnemyArchers;
+        if (archer is null || k <= 0 || k >= n) return;
+        // Variant: every opponent swaps k of its X for archers that aim at our archers (back row included).
+        var opponents = xs.Where(y => y != archer).Select(y =>
+        {
+            var b = new ArmySetup("B") { Targeting = TargetPriority.Prefer(archer) }.Add(front, n).Add(y, n - k).Add(archer, k);
+            return ($"{n - k} {y.Name}+{k} {archer.Name}", b);
+        }).ToList();
+        Console.WriteLine($"   Varyant: rakipte {k} okçu var (rakip: {n} {front.Name} + {n - k} Y + {k} {archer.Name}, rakip okçuları önce {archer.Name} vurur)");
+        PrintBackRowTable(xs, opponents, Build, salt: 6_500_000);
+    }
+
+    private void PrintBackRowTable(List<UnitType> xs, List<(string Label, ArmySetup Army)> opponents,
+        Func<UnitType, string, ArmySetup> build, int salt)
+    {
+        int n = options.BackRowCount;
+        var header = new[] { "X" }.Concat(opponents.Select(o => o.Label)).Concat(["Ort. kazanma", "X hasarı", "X hayatta"]).ToArray();
         var t = new Table(header);
-        foreach (var x in backs)
+        foreach (var x in xs)
         {
             var cells = new List<string> { x.Name };
-            double winSum = 0, backDamage = 0, backSurvivors = 0;
+            double winSum = 0, damage = 0, survivors = 0;
             int games = 0;
-            foreach (var y in backs)
+            for (int j = 0; j < opponents.Count; j++)
             {
-                var a = Build(x, "A");
-                var b = Build(y, "B");
-                var results = RunParallel(options.DuelRuns, 6_000_000 + x.Index * 31 + y.Index, rng => _simulator.Simulate(a, b, rng));
+                var a = build(x, "A");
+                var b = opponents[j].Army;
+                var results = RunParallel(options.DuelRuns, salt + x.Index * 31 + j, rng => _simulator.Simulate(a, b, rng));
                 double rate = results.Average(Score);
-                cells.Add(Pct(rate));
-                if (x != y) { winSum += rate; games++; }
+                // The mirror match (same army on both sides) says nothing about X's value.
+                bool mirror = b.Counts.Count == a.Counts.Count && b.Counts.All(kv => a.CountOf(kv.Key) == kv.Value);
+                cells.Add(mirror ? $"({Pct(rate)})" : Pct(rate));
+                if (!mirror) { winSum += rate; games++; }
                 foreach (var r in results)
                 {
-                    var bs = r.SideA.ByType.First(s => s.Type == x);
-                    backDamage += bs.DamageDealt;
-                    backSurvivors += bs.Survivors;
+                    var xs2 = r.SideA.ByType.First(s => s.Type == x);
+                    damage += xs2.DamageDealt;
+                    survivors += xs2.Survivors;
                 }
             }
-            int battles = backs.Count * options.DuelRuns;
+            int battles = opponents.Count * options.DuelRuns;
             cells.Add(games == 0 ? "—" : Pct(winSum / games));
-            cells.Add(F(backDamage / battles, "0"));
-            cells.Add($"{backSurvivors / battles:0.0}/{n}");
+            cells.Add(F(damage / battles, "0"));
+            cells.Add($"{survivors / battles:0.0}/{n}");
             t.Add(cells.ToArray());
         }
         t.Print();
-        Console.WriteLine("   Ort. kazanma: kendi aynası hariç. Arka hasarı/hayatta: arka sıradaki X'in savaş başına ortalaması.");
-        Console.WriteLine("   Yakın dövüşçü arkadayken yedektir: ön sıra düşene kadar vurmaz.");
+        Console.WriteLine("   Ort. kazanma: ayna maç (parantezli) hariç. X hasarı/hayatta: X birliklerinin savaş başına ortalaması.");
         Console.WriteLine();
     }
 

@@ -20,12 +20,17 @@ public sealed class ArmyGenerator(GameRules rules)
 
     /// <summary>
     /// A random army. <paramref name="size"/> is the headcount in People mode, or the budget expressed
-    /// as "size × average unit value" in Resources mode.
+    /// as "size × average unit value" in Resources mode. Archer target priority is random too
+    /// (front row or one preferred type), so back-row shooting shows up in the statistics.
     /// </summary>
     public ArmySetup Random(Random rng, int size, BudgetMode mode, string name)
     {
         var weights = RandomWeights(rng);
-        var army = new ArmySetup(name);
+        int pick = rng.Next(rules.Units.Count + 1);
+        var army = new ArmySetup(name)
+        {
+            Targeting = pick == rules.Units.Count ? TargetPriority.Front : TargetPriority.Prefer(rules.Units[pick]),
+        };
         if (mode == BudgetMode.People)
         {
             for (int i = 0; i < size; i++) army.Add(Sample(rng, weights, _ => true)!, 1);
