@@ -1,4 +1,4 @@
-namespace Keepfall.GameCore.Units;
+namespace Keepfall.Core.Units;
 
 public enum AttackRange { Melee, Ranged }
 

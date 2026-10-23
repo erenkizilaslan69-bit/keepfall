@@ -7,9 +7,9 @@
 | Yol | Ne |
 | --- | --- |
 | `config/balance.json` | Tüm denge sayıları (birlikler, karşılık matrisi, savaş ayarları). Kaynak: `docs/kale_oyunu_sayilar.xlsx`. |
-| `src/GameCore` | Oyun mantığı kütüphanesi. Sunucu da bunu kullanacak. |
-| `src/GameCore/Config` | `balance.json` okuma ve doğrulama → `GameRules`. |
-| `src/GameCore/Combat` | `ArmySetup` (kompozisyon, diziliş, hedef) ve `BattleSimulator`. |
+| `src/Keepfall.Core` | Oyun mantığı kütüphanesi. Sunucu da bunu kullanacak. |
+| `src/Keepfall.Core/Config` | `balance.json` okuma ve doğrulama → `GameRules`. |
+| `src/Keepfall.Core/Combat` | `ArmySetup` (kompozisyon, diziliş, hedef) ve `BattleSimulator`. |
 | `src/BattleSim` | Konsol aracı: tek savaş ve denge raporu. |
 
 ## Çalıştırma

@@ -1,6 +1,7 @@
-using Keepfall.GameCore.Units;
+using Keepfall.Core.Economy;
+using Keepfall.Core.Units;
 
-namespace Keepfall.GameCore;
+namespace Keepfall.Core;
 
 public sealed record CombatSettings(
     double TickSeconds,
@@ -13,18 +14,23 @@ public sealed record ProductionRates(double FoodPerMinute, double WoodPerMinute,
 /// <summary>Everything the simulation needs, resolved from the balance config.</summary>
 public sealed class GameRules
 {
-    public GameRules(IReadOnlyList<UnitType> units, CounterMatrix counters, CombatSettings combat, ProductionRates production)
+    public GameRules(IReadOnlyList<UnitType> units, CounterMatrix counters, CombatSettings combat, ProductionRates production,
+        MatchRules match, EconomyRules economy)
     {
         Units = units;
         Counters = counters;
         Combat = combat;
         Production = production;
+        Match = match;
+        Economy = economy;
     }
 
     public IReadOnlyList<UnitType> Units { get; }
     public CounterMatrix Counters { get; }
     public CombatSettings Combat { get; }
     public ProductionRates Production { get; }
+    public MatchRules Match { get; }
+    public EconomyRules Economy { get; }
 
     public UnitType? FindUnit(string idOrName) =>
         Units.FirstOrDefault(u => string.Equals(u.Id, idOrName, StringComparison.OrdinalIgnoreCase)

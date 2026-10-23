@@ -1,23 +1,51 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Keepfall.GameCore.Units;
+using Keepfall.Core.Economy;
+using Keepfall.Core.Units;
 
-namespace Keepfall.GameCore.Config;
+namespace Keepfall.Core.Config;
 
 // Raw JSON shape of config/balance.json. Use BalanceConfigLoader to turn it into GameRules.
 
 public sealed class BalanceConfig
 {
+    public MatchConfig Match { get; set; } = new();
     public EconomyConfig Economy { get; set; } = new();
+    public List<BuildingLevelConfig> BuildingLevels { get; set; } = [];
     public CombatConfig Combat { get; set; } = new();
     public List<UnitConfig> Units { get; set; } = [];
     public Dictionary<string, Dictionary<string, JsonElement>> Counters { get; set; } = [];
 }
 
+public sealed class MatchConfig
+{
+    public double PrepRatio { get; set; } = 0.33;
+    public double ShortModeMinutes { get; set; } = 15;
+    public double LongModeMinutes { get; set; } = 30;
+    public double ServerTickSeconds { get; set; } = 1;
+    public int StartingPopulation { get; set; } = 10;
+    public ProductionConfig StartingResources { get; set; } = new();
+}
+
 public sealed class EconomyConfig
 {
     public ProductionConfig ProductionPerMinute { get; set; } = new();
+    public double WorkerFoodPerMinute { get; set; }
+    public double SoldierFoodPerMinute { get; set; }
+    public double StarvationMultiplier { get; set; } = 0.5;
+    public double NewPersonBaseCost { get; set; }
+    public double NewPersonCostGrowth { get; set; }
+    public int NewPersonBasePopulation { get; set; } = 10;
+}
+
+public sealed class BuildingLevelConfig
+{
+    public int Capacity { get; set; }
+    public double Multiplier { get; set; } = 1;
+    public double UpgradeWood { get; set; }
+    public double UpgradeIron { get; set; }
+    public double UpgradeSeconds { get; set; }
 }
 
 public sealed class ProductionConfig
@@ -72,6 +100,17 @@ public static class BalanceConfigLoader
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
     };
 
+    /// <summary>Looks for config/balance.json in <paramref name="startDirectory"/> and its parents.</summary>
+    public static string? FindDefaultPath(string startDirectory)
+    {
+        for (var dir = new DirectoryInfo(startDirectory); dir is not null; dir = dir.Parent)
+        {
+            var candidate = Path.Combine(dir.FullName, "config", "balance.json");
+            if (File.Exists(candidate)) return candidate;
+        }
+        return null;
+    }
+
     public static GameRules LoadFromFile(string path)
     {
         if (!File.Exists(path))
@@ -107,6 +146,28 @@ public static class BalanceConfigLoader
         if (c.TickSeconds <= 0) errors.Add("combat.tickSeconds sıfırdan büyük olmalı.");
         if (c.MaxBattleSeconds <= 0) errors.Add("combat.maxBattleSeconds sıfırdan büyük olmalı.");
         if (c.ApproachTime < 0) errors.Add("combat.approachTime negatif olamaz.");
+
+        var mc = config.Match;
+        if (mc.PrepRatio <= 0 || mc.PrepRatio >= 1) errors.Add("match.prepRatio 0 ile 1 arasında olmalı.");
+        if (mc.ShortModeMinutes <= 0 || mc.LongModeMinutes <= 0) errors.Add("match: mod süreleri sıfırdan büyük olmalı.");
+        if (mc.ServerTickSeconds <= 0) errors.Add("match.serverTickSeconds sıfırdan büyük olmalı.");
+        if (mc.StartingPopulation < 0) errors.Add("match.startingPopulation negatif olamaz.");
+        var sr = mc.StartingResources;
+        if (sr.Food < 0 || sr.Wood < 0 || sr.Iron < 0) errors.Add("match.startingResources negatif olamaz.");
+
+        var e = config.Economy;
+        if (e.WorkerFoodPerMinute < 0 || e.SoldierFoodPerMinute < 0) errors.Add("economy: yemek tüketimi negatif olamaz.");
+        if (e.StarvationMultiplier < 0 || e.StarvationMultiplier > 1) errors.Add("economy.starvationMultiplier 0 ile 1 arasında olmalı.");
+        if (e.NewPersonBaseCost <= 0) errors.Add("economy.newPersonBaseCost sıfırdan büyük olmalı.");
+        if (e.NewPersonCostGrowth < 0) errors.Add("economy.newPersonCostGrowth negatif olamaz.");
+
+        if (config.BuildingLevels.Count == 0) errors.Add("buildingLevels: en az bir seviye tanımlanmalı.");
+        for (int i = 0; i < config.BuildingLevels.Count; i++)
+        {
+            var l = config.BuildingLevels[i];
+            if (l.Capacity < 0 || l.Multiplier < 0 || l.UpgradeWood < 0 || l.UpgradeIron < 0 || l.UpgradeSeconds < 0)
+                errors.Add($"buildingLevels[{i}] (seviye {i + 1}): değerler negatif olamaz.");
+        }
 
         var units = new List<UnitType>();
         var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -169,8 +230,19 @@ public static class BalanceConfigLoader
             units,
             new CounterMatrix(matrix),
             new CombatSettings(c.TickSeconds, c.MaxBattleSeconds, c.RandomizeFirstAttack, c.ApproachTime),
-            new ProductionRates(p.Food, p.Wood, p.Iron));
+            new ProductionRates(p.Food, p.Wood, p.Iron),
+            new MatchRules(
+                PrepSeconds(mc.ShortModeMinutes, mc.PrepRatio), PrepSeconds(mc.LongModeMinutes, mc.PrepRatio),
+                mc.ServerTickSeconds, mc.StartingPopulation, sr.Food, sr.Wood, sr.Iron),
+            new EconomyRules(
+                e.WorkerFoodPerMinute, e.SoldierFoodPerMinute, e.StarvationMultiplier,
+                e.NewPersonBaseCost, e.NewPersonCostGrowth, e.NewPersonBasePopulation,
+                config.BuildingLevels.Select((l, i) => new BuildingLevel(
+                    i + 1, l.Capacity, l.Multiplier, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList()));
     }
+
+    // Same rounding as the spreadsheet: whole minutes of the mode, times the prep share.
+    private static double PrepSeconds(double modeMinutes, double ratio) => Math.Round(modeMinutes * ratio) * 60;
 
     private static double? ParseMultiplier(JsonElement value, CombatConfig c)
     {

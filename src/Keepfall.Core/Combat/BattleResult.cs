@@ -1,6 +1,6 @@
-using Keepfall.GameCore.Units;
+using Keepfall.Core.Units;
 
-namespace Keepfall.GameCore.Combat;
+namespace Keepfall.Core.Combat;
 
 public enum BattleOutcome { SideAWins, SideBWins, Draw }
 

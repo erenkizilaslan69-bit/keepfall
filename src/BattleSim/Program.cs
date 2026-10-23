@@ -1,9 +1,9 @@
 ﻿using System.Globalization;
 using System.Text;
 using Keepfall.BattleSim;
-using Keepfall.GameCore;
-using Keepfall.GameCore.Combat;
-using Keepfall.GameCore.Config;
+using Keepfall.Core;
+using Keepfall.Core.Combat;
+using Keepfall.Core.Config;
 
 Console.OutputEncoding = Encoding.UTF8;
 
@@ -150,11 +150,7 @@ static (string command, List<string> positional, Dictionary<string, string> flag
 
 static string? FindConfig()
 {
-    for (var dir = new DirectoryInfo(Environment.CurrentDirectory); dir is not null; dir = dir.Parent)
-    {
-        var candidate = Path.Combine(dir.FullName, "config", "balance.json");
-        if (File.Exists(candidate)) return candidate;
-    }
+    if (BalanceConfigLoader.FindDefaultPath(Environment.CurrentDirectory) is { } found) return found;
     var nextToExe = Path.Combine(AppContext.BaseDirectory, "balance.json");
     return File.Exists(nextToExe) ? nextToExe : null;
 }

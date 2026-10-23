@@ -1,10 +1,41 @@
 // Keepfall denge ayarları (v1 — denge v1) — kaynak: docs/kale_oyunu_sayilar.xlsx
 // Bu dosya yorum satırlarına izin verir. Sayıları değiştir, BattleSim'i tekrar çalıştır.
 {
-  "economy": {
-    // Kişi başı dakikada üretim. Birlik maliyetini "odun karşılığına" çevirmek için kullanılır.
-    "productionPerMinute": { "food": 6, "wood": 5, "iron": 4 }
+  // Excel "Maç" sekmesi.
+  "match": {
+    // Maç süresinin hazırlığa ayrılan payı. Hazırlık = round(mod dakikası × oran) dakika (15 dk → 5 dk).
+    "prepRatio": 0.33,
+    "shortModeMinutes": 15,
+    "longModeMinutes": 30,
+    // Sunucu bu aralıkla tick atar (sn); üretim ve tüketim her tick'te hesaplanır.
+    "serverTickSeconds": 1,
+    "startingPopulation": 10,
+    "startingResources": { "food": 30, "wood": 20, "iron": 10 }
   },
+
+  // Excel "Ekonomi" sekmesi.
+  "economy": {
+    // Kişi başı dakikada üretim (çiftçi → yemek, oduncu → odun, madenci → demir).
+    // Birlik maliyetini "odun karşılığına" çevirmek için de kullanılır.
+    "productionPerMinute": { "food": 6, "wood": 5, "iron": 4 },
+    "workerFoodPerMinute": 1,
+    "soldierFoodPerMinute": 1.5,
+    // Yemek 0'a düşerse tüm üretim bu çarpanla çalışır.
+    "starvationMultiplier": 0.5,
+    // Yeni kişi maliyeti = newPersonBaseCost × (1 + newPersonCostGrowth) ^ (nüfus − newPersonBasePopulation), yuvarlanır.
+    "newPersonBaseCost": 15,
+    "newPersonCostGrowth": 0.12,
+    "newPersonBasePopulation": 10
+  },
+
+  // Excel "Binalar" sekmesi: tarla, oduncu kampı, maden ve demirhane aynı tabloyu kullanır.
+  // Sıra = seviye (ilki seviye 1). upgrade* = o seviyeye çıkmanın maliyeti ve süresi (sn).
+  // Demirhanede multiplier = silah üretim hızı.
+  "buildingLevels": [
+    { "capacity": 4, "multiplier": 1.0, "upgradeWood": 0,  "upgradeIron": 0,  "upgradeSeconds": 0 },
+    { "capacity": 6, "multiplier": 1.5, "upgradeWood": 30, "upgradeIron": 10, "upgradeSeconds": 60 },
+    { "capacity": 8, "multiplier": 2.0, "upgradeWood": 60, "upgradeIron": 30, "upgradeSeconds": 90 }
+  ],
 
   "combat": {
     // Simülasyon adımı (sn). Küçüldükçe daha hassas, daha yavaş.

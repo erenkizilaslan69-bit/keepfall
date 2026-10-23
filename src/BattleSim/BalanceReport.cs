@@ -1,7 +1,7 @@
 using System.Diagnostics;
-using Keepfall.GameCore;
-using Keepfall.GameCore.Combat;
-using Keepfall.GameCore.Units;
+using Keepfall.Core;
+using Keepfall.Core.Combat;
+using Keepfall.Core.Units;
 
 namespace Keepfall.BattleSim;
 

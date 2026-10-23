@@ -1,4 +1,4 @@
-namespace Keepfall.GameCore.Units;
+namespace Keepfall.Core.Units;
 
 /// <summary>Damage multiplier of an attacker type against a defender type.</summary>
 public sealed class CounterMatrix

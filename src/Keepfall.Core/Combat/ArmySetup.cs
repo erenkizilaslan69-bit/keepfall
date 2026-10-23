@@ -1,6 +1,6 @@
-using Keepfall.GameCore.Units;
+using Keepfall.Core.Units;
 
-namespace Keepfall.GameCore.Combat;
+namespace Keepfall.Core.Combat;
 
 /// <summary>
 /// How an army's ranged units choose targets. Melee units always hit the frontmost enemies,

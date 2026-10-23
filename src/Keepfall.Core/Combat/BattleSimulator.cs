@@ -1,7 +1,7 @@
 using System.Globalization;
-using Keepfall.GameCore.Units;
+using Keepfall.Core.Units;
 
-namespace Keepfall.GameCore.Combat;
+namespace Keepfall.Core.Combat;
 
 /// <summary>
 /// Resolves a field battle between two armies with fixed time steps.

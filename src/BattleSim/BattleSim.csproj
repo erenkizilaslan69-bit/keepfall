@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\GameCore\GameCore.csproj" />
+    <ProjectReference Include="..\Keepfall.Core\Keepfall.Core.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
