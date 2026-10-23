@@ -10,7 +10,8 @@ new Phaser.Game({
   parent: 'stage',
   width: SCENE_WIDTH,
   height: SCENE_HEIGHT,
-  backgroundColor: '#2f4526',
+  backgroundColor: '#47aba9',
+  pixelArt: true,
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_HORIZONTALLY },
   scene,
 });
@@ -31,6 +32,9 @@ const net = new GameConnection(
   (status) => hud?.setStatus(statusText[status]),
 );
 hud = new Hud(document.getElementById('panel')!, net);
+scene.onBuildingClick = (type) => hud!.focusBuilding(type);
+// Dev only: lets the console preview other building levels / counts without playing up to them.
+if (import.meta.env.DEV) (window as unknown as { keepfallScene: CastleScene }).keepfallScene = scene;
 
 net.start().catch((e) => {
   console.error(e);

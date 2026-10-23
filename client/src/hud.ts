@@ -1,5 +1,5 @@
 import type { GameConnection } from './net';
-import type { CastleView, CommandResult, Job, SummaryView } from './types';
+import type { BuildingType, CastleView, CommandResult, Job, SummaryView } from './types';
 
 // Plain-HTML panel. The structure is built once from the first state and then updated in place,
 // so dropdowns and hover states survive the once-per-second refresh.
@@ -30,6 +30,16 @@ export class Hud {
     this.state = state;
     if (!this.built) this.build(state);
     this.refresh(state);
+  }
+
+  /** Scroll the panel to a building's row and flash it (from a click in the scene). */
+  focusBuilding(type: BuildingType): void {
+    if (!this.built) return;
+    const row = this.q(`[data-building="${type}"]`);
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    row.classList.remove('flash');
+    void row.offsetWidth; // restart the animation
+    row.classList.add('flash');
   }
 
   setStatus(text: string): void {
@@ -218,7 +228,7 @@ export class Hud {
     let result: CommandResult;
     switch (d.action) {
       case 'move': result = await this.net.moveWorkers(d.from as Job, d.to as Job, n); break;
-      case 'upgrade': result = await this.net.upgradeBuilding(d.building as never); break;
+      case 'upgrade': result = await this.net.upgradeBuilding(d.building as BuildingType); break;
       case 'queue': result = await this.net.queueWeapon(d.unit!, n); break;
       case 'cancel': result = await this.net.cancelWeapon(n); break;
       case 'arm': {

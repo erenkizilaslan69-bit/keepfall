@@ -26,7 +26,7 @@ main {
   align-items: flex-start;
 }
 
-#stage { flex: 1 1 640px; max-width: 760px; }
+#stage { flex: 1 1 640px; max-width: 960px; aspect-ratio: 4 / 3; }
 #stage canvas { border-radius: 6px; display: block; }
 
 #panel {
@@ -77,6 +77,10 @@ section { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 4px;
 .job.attention { background: rgba(255, 216, 74, 0.14); outline: 1px solid var(--attention); }
 .job.attention .count { color: var(--attention); font-weight: 700; font-size: 18px; animation: pulse 1.2s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: 0.45; } }
+
+/* A building clicked in the scene. */
+.building.flash { animation: flash 1.4s ease-out; }
+@keyframes flash { 0%, 30% { background: rgba(217, 164, 65, 0.45); } 100% { background: transparent; } }
 
 button {
   background: #3a352c;

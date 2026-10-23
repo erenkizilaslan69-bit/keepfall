@@ -1,136 +1,138 @@
 import Phaser from 'phaser';
-import type { BuildingType, BuildingView, CastleView, Job } from '../types';
+import type { BuildingType, BuildingView, CastleView } from '../types';
+import { createAnimations, preloadAssets } from './assets';
+import { CASTLE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH, type Part } from './layout';
 
-// Placeholder art: the castle and its buildings are plain shapes. A building grows and changes
-// material with its level (1 wood, 2 stone base, 3 stone with a flag); dots are the people working there.
+export const SCENE_WIDTH = WORLD_WIDTH;
+export const SCENE_HEIGHT = WORLD_HEIGHT;
 
-export const SCENE_WIDTH = 640;
-export const SCENE_HEIGHT = 520;
+// Tilemap_color1: the flat grass island is the 3×3 block in the top-left of the sheet (9 tiles per row).
+const GRASS = { tl: 0, t: 1, tr: 2, l: 9, c: 10, r: 11, bl: 18, b: 19, br: 20 };
 
-const SPOTS: Record<BuildingType, { x: number; y: number; color: number }> = {
-  farm: { x: 150, y: 130, color: 0xc8b04a },
-  lumberCamp: { x: 490, y: 130, color: 0x6b8f3a },
-  mine: { x: 150, y: 400, color: 0x8a8f99 },
-  forge: { x: 490, y: 400, color: 0xb5562f },
+const LABEL_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
+  fontFamily: 'system-ui, sans-serif',
+  fontSize: '15px',
+  color: '#fff8e6',
+  stroke: '#1d1b18',
+  strokeThickness: 4,
+  align: 'center',
 };
 
-const UNIT_COLORS: Record<string, number> = { okcu: 0x3fa34d, kilicli: 0x4a78c2, mizrakci: 0xc2a24a, kalkanli: 0x9a5fc2 };
-const WOOD = 0x8b5a2b;
-const STONE = 0x9e9e9e;
-const DARK = 0x2b2b2b;
+interface BuildingSlot {
+  level: number;
+  sprites: Phaser.GameObjects.Sprite[];
+  label: Phaser.GameObjects.Text;
+  bar: Phaser.GameObjects.Graphics;
+  dust: Phaser.GameObjects.Sprite;
+}
 
+/** Castle view: everything here is cosmetic, driven by the latest state from the server. */
 export class CastleScene extends Phaser.Scene {
-  private g!: Phaser.GameObjects.Graphics;
-  private labels = new Map<string, Phaser.GameObjects.Text>();
+  /** Set by main.ts: called when the player clicks a building. */
+  onBuildingClick: (type: BuildingType) => void = () => {};
+
   private state: CastleView | null = null;
-  private pulse = 0;
+  private ready = false;
+  private loadFailed = false;
+  private buildings = new Map<BuildingType, BuildingSlot>();
 
   constructor() {
     super('castle');
   }
 
+  preload(): void {
+    this.load.on('loaderror', () => { this.loadFailed = true; });
+    preloadAssets(this);
+  }
+
   create(): void {
-    this.g = this.add.graphics();
-    for (const [type, spot] of Object.entries(SPOTS)) {
-      this.labels.set(type, this.add.text(spot.x, spot.y + 62, '', { fontFamily: 'system-ui, sans-serif', fontSize: '14px', color: '#e8e2d0', align: 'center' }).setOrigin(0.5, 0));
+    if (this.loadFailed) {
+      this.add.text(WORLD_WIDTH / 2, WORLD_HEIGHT / 2,
+        'Görseller bulunamadı.\nTiny Swords Free Pack\'i client/public/assets/tiny-swords/ içine aç (README).',
+        { ...LABEL_STYLE, fontSize: '22px' }).setOrigin(0.5);
+      return;
     }
-    this.labels.set('castle', this.add.text(320, 330, '', { fontFamily: 'system-ui, sans-serif', fontSize: '14px', color: '#e8e2d0', align: 'center' }).setOrigin(0.5, 0));
-    this.labels.set('idle', this.add.text(320, 352, '', { fontFamily: 'system-ui, sans-serif', fontSize: '15px', color: '#ffd84a', fontStyle: 'bold' }).setOrigin(0.5, 0));
-    if (this.state) this.draw();
+    createAnimations(this);
+    this.drawGround();
+    this.add.image(CASTLE.x, CASTLE.y, 'castle').setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(CASTLE.y);
+    for (const type of Object.keys(SITES) as BuildingType[]) this.createSite(type);
+    this.ready = true;
+    if (this.state) this.apply(this.state);
   }
 
   setState(state: CastleView): void {
     this.state = state;
-    if (this.g) this.draw();
+    if (this.ready) this.apply(state);
   }
 
-  update(_time: number, delta: number): void {
-    // Only the idle-people highlight animates; redraw for it while anyone is idle.
-    if (!this.state || this.workers('idle') === 0) return;
-    this.pulse = (this.pulse + delta / 600) % (Math.PI * 2);
-    this.draw();
+  private apply(s: CastleView): void {
+    for (const b of s.buildings) this.updateBuilding(b, s);
   }
 
-  private workers(job: Job): number {
-    return this.state?.jobs.find((j) => j.job === job)?.count ?? 0;
+  // ---- ground ------------------------------------------------------------------------------
+
+  private drawGround(): void {
+    this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'water').setOrigin(0).setDepth(-20);
+    const cols = WORLD_WIDTH / TILE, rows = WORLD_HEIGHT / TILE;
+    // A one-tile water border around a single grass island.
+    const data = Array.from({ length: rows }, (_, y) => Array.from({ length: cols }, (_, x) => {
+      if (x === 0 || y === 0 || x === cols - 1 || y === rows - 1) return -1;
+      const top = y === 1, bottom = y === rows - 2, left = x === 1, right = x === cols - 2;
+      if (top) return left ? GRASS.tl : right ? GRASS.tr : GRASS.t;
+      if (bottom) return left ? GRASS.bl : right ? GRASS.br : GRASS.b;
+      return left ? GRASS.l : right ? GRASS.r : GRASS.c;
+    }));
+    const map = this.make.tilemap({ data, tileWidth: TILE, tileHeight: TILE });
+    const tiles = map.addTilesetImage('tiles', 'tiles', TILE, TILE, 0, 0)!;
+    map.createLayer(0, tiles, 0, 0)!.setDepth(-10);
   }
 
-  private draw(): void {
-    const s = this.state!;
-    const g = this.g;
-    g.clear();
+  // ---- buildings ---------------------------------------------------------------------------
 
-    // Ground and paths to each building.
-    g.fillStyle(0x3d5a2f).fillRect(0, 0, SCENE_WIDTH, SCENE_HEIGHT);
-    g.lineStyle(10, 0x6b5a3a, 1);
-    for (const spot of Object.values(SPOTS)) g.lineBetween(320, 260, spot.x, spot.y);
-
-    this.drawCastle(s);
-    for (const b of s.buildings) this.drawBuilding(b);
+  private createSite(type: BuildingType): void {
+    const site = SITES[type];
+    const { x, y } = site.center;
+    const zone = this.add.zone(x, y, site.area.w, site.area.h).setInteractive({ useHandCursor: true });
+    zone.on('pointerdown', () => this.onBuildingClick(type));
+    const label = this.add.text(x, y + site.area.h / 2 - 10, '', LABEL_STYLE).setOrigin(0.5, 1).setDepth(10_000);
+    const bar = this.add.graphics().setDepth(10_001);
+    const dust = this.add.sprite(x, y, 'dust').setScale(2).setDepth(9_000).setVisible(false);
+    this.buildings.set(type, { level: 0, sprites: [], label, bar, dust });
   }
 
-  private drawCastle(s: CastleView): void {
-    const g = this.g;
-    const cx = 320, cy = 250;
-    g.fillStyle(STONE).fillRect(cx - 70, cy - 50, 140, 100);
-    for (const tx of [cx - 70, cx + 50]) {
-      g.fillRect(tx - 6, cy - 80, 32, 130);
-      for (let i = 0; i < 3; i++) g.fillRect(tx - 6 + i * 12, cy - 92, 8, 12);
-    }
-    g.fillStyle(DARK).fillRect(cx - 16, cy + 10, 32, 40);
-    g.lineStyle(2, DARK).strokeRect(cx - 70, cy - 50, 140, 100);
-
-    // Soldiers stand in a row in front of the gate, coloured by unit type.
-    let i = 0;
-    for (const u of s.units) {
-      g.fillStyle(UNIT_COLORS[u.id] ?? 0xffffff);
-      for (let k = 0; k < u.soldiers; k++, i++) {
-        const col = i % 16, row = Math.floor(i / 16);
-        g.fillCircle(cx - 75 + col * 10, cy + 62 + row * 10, 4);
-      }
+  private updateBuilding(b: BuildingView, s: CastleView): void {
+    const slot = this.buildings.get(b.type)!;
+    const site = SITES[b.type];
+    if (slot.level !== b.level) {
+      for (const sprite of slot.sprites) sprite.destroy();
+      slot.sprites = site.parts(b.level).map((p) => this.placePart(p));
+      slot.level = b.level;
     }
 
-    const idle = this.workers('idle');
-    if (idle > 0) {
-      const a = 0.55 + 0.45 * Math.sin(this.pulse);
-      g.fillStyle(0xffd84a, a);
-      for (let k = 0; k < idle; k++) g.fillCircle(cx - 60 + (k % 14) * 9, cy - 110 - Math.floor(k / 14) * 9, 3.5);
+    const workers = s.jobs.find((j) => j.job === b.worker)?.count ?? 0;
+    slot.label.setText(`${b.name} · Sv ${b.level}   ${workers}/${b.capacity}`);
+
+    slot.bar.clear();
+    const upgrading = b.upgradeRemaining !== null;
+    slot.dust.setVisible(upgrading);
+    if (upgrading) {
+      if (!slot.dust.anims.isPlaying) slot.dust.play('dust');
+      const w = 140, x = site.center.x - w / 2, y = site.center.y - site.area.h / 2 + 4;
+      const p = 1 - b.upgradeRemaining! / b.upgradeTotal;
+      slot.bar.fillStyle(0x1d1b18, 0.85).fillRoundedRect(x - 2, y - 2, w + 4, 12, 4);
+      slot.bar.fillStyle(0xffd84a).fillRoundedRect(x, y, w * p, 8, 3);
     }
-    this.labels.get('castle')!.setText(`Kale · nüfus ${s.population}`).setY(cy + 62 + Math.ceil(i / 16) * 10 + 6);
-    this.labels.get('idle')!.setText(idle > 0 ? `${idle} kişi boşta!` : '').setY(cy - 140 - Math.floor((idle - 1) / 14) * 9);
   }
 
-  private drawBuilding(b: BuildingView): void {
-    const g = this.g;
-    const spot = SPOTS[b.type];
-    const size = 46 + (b.level - 1) * 14;
-    const x = spot.x - size / 2, y = spot.y - size / 2;
-
-    if (b.level >= 2) {
-      g.fillStyle(STONE).fillRect(x - 6, y + size - 10, size + 12, 14); // stone foundation
-    }
-    g.fillStyle(b.level >= 3 ? STONE : WOOD).fillRect(x, y, size, size);
-    g.fillStyle(spot.color).fillRect(x + 6, y + 6, size - 12, size * 0.35); // colour band = what it makes
-    g.fillStyle(b.level >= 3 ? 0x7a3b2e : 0x5a3a1e).fillTriangle(x - 4, y, x + size + 4, y, spot.x, y - size * 0.45);
-    if (b.level >= 3) {
-      g.lineStyle(2, DARK).lineBetween(spot.x, y - size * 0.45, spot.x, y - size * 0.45 - 26);
-      g.fillStyle(0xd23c3c).fillTriangle(spot.x, y - size * 0.45 - 26, spot.x + 18, y - size * 0.45 - 20, spot.x, y - size * 0.45 - 14);
-    }
-    g.lineStyle(2, DARK).strokeRect(x, y, size, size);
-
-    // Worker slots: filled dot = working, hollow = free capacity.
-    const count = this.workers(b.worker);
-    for (let k = 0; k < b.capacity; k++) {
-      const dx = spot.x - (b.capacity - 1) * 6 + k * 12, dy = y + size + 12;
-      if (k < count) g.fillStyle(0xf2e6c9).fillCircle(dx, dy, 4);
-      else g.lineStyle(1.5, 0xf2e6c9, 0.7).strokeCircle(dx, dy, 4);
-    }
-
-    if (b.upgradeRemaining !== null) {
-      const p = 1 - b.upgradeRemaining / b.upgradeTotal;
-      g.fillStyle(DARK).fillRect(x, y - size * 0.45 - 16, size, 6);
-      g.fillStyle(0xffd84a).fillRect(x, y - size * 0.45 - 16, size * p, 6);
-    }
-    this.labels.get(b.type)!.setText(`${b.name} · Sv ${b.level}\n${count}/${b.capacity}`).setY(y + size + 22);
+  private placePart(p: Part): Phaser.GameObjects.Sprite {
+    const flat = /^(sheep|stone|rock|wood-pile|bush|stump)/.test(p.key);
+    const sprite = this.add.sprite(p.x, p.y, p.key)
+      .setOrigin(0.5, flat ? 0.7 : 0.9)
+      .setScale(p.scale ?? 1)
+      .setFlipX(!!p.flip)
+      .setDepth(p.y);
+    if (p.grey) sprite.preFX?.addColorMatrix().grayscale(0.9).brightness(1.05, true);
+    if (p.anim) sprite.play({ key: p.key, startFrame: Phaser.Math.Between(0, 3) });
+    return sprite;
   }
 }
