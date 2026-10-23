@@ -11,6 +11,35 @@
 | `src/Keepfall.Core/Config` | `balance.json` okuma ve doğrulama → `GameRules`. |
 | `src/Keepfall.Core/Combat` | `ArmySetup` (kompozisyon, diziliş, hedef) ve `BattleSimulator`. |
 | `src/BattleSim` | Konsol aracı: tek savaş ve denge raporu. |
+| `src/Keepfall.Core/Economy`, `Match` | Kale ekonomisi (meslekler, binalar, demirhane, açlık, büyüme), maç durumu ve komutlar. |
+| `src/Keepfall.Server` | ASP.NET Core + SignalR. Tick döngüsü sunucuda; istemci sadece komut yollar. |
+| `client/` | Vite + TypeScript + Phaser istemcisi. |
+| `tests/Keepfall.Core.Tests` | Ekonomi birim testleri. |
+
+## Tek kale prototipi (tarayıcıda)
+
+İki terminalde:
+
+```bash
+dotnet run --project src/Keepfall.Server
+```
+
+```bash
+npm --prefix client install
+```
+
+```bash
+npm --prefix client run dev
+```
+
+Sonra http://localhost:5173 adresini aç. Geliştirme ortamında ×5 / ×20 hız butonları çıkar.
+`npm --prefix client run build` sonrası sunucu `client/dist`'i kendisi de sunar (http://localhost:5080).
+
+Testler:
+
+```bash
+dotnet test
+```
 
 ## Çalıştırma
 

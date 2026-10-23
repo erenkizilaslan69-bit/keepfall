@@ -24,3 +24,7 @@ coverage*/
 # OS
 Thumbs.db
 .DS_Store
+
+# Client
+node_modules/
+client/dist/

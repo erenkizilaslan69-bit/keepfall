@@ -1,0 +1,120 @@
+:root {
+  --bg: #1d1b18;
+  --panel: #27241f;
+  --line: #3a362f;
+  --text: #ece6d6;
+  --muted: #9a927f;
+  --accent: #d9a441;
+  --danger: #c2453a;
+  --attention: #ffd84a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+main {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  align-items: flex-start;
+}
+
+#stage { flex: 1 1 640px; max-width: 760px; }
+#stage canvas { border-radius: 6px; display: block; }
+
+#panel {
+  flex: 0 1 520px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px 14px;
+  position: relative;
+}
+
+@media (max-width: 1000px) {
+  main { flex-direction: column; }
+  #stage, #panel { width: 100%; max-width: none; flex-basis: auto; }
+}
+
+header { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.timer { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 14px 0 6px; }
+section { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 4px; }
+
+.resources { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding-top: 10px; }
+.resources b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.res-name { display: block; color: var(--muted); font-size: 12px; }
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+.row .detail, .row .count { color: var(--muted); font-variant-numeric: tabular-nums; }
+.row .count { min-width: 48px; text-align: right; color: var(--text); }
+.unit { grid-template-columns: 1fr auto; }
+.unit .arm { grid-column: 1 / -1; justify-self: end; }
+
+/* Idle people eat but produce nothing — make the row impossible to miss. */
+.job.attention { background: rgba(255, 216, 74, 0.14); outline: 1px solid var(--attention); }
+.job.attention .count { color: var(--attention); font-weight: 700; font-size: 18px; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.45; } }
+
+button {
+  background: #3a352c;
+  color: var(--text);
+  border: 1px solid #4d473b;
+  border-radius: 4px;
+  padding: 3px 9px;
+  font: inherit;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: 0.4; cursor: default; }
+button.active { background: var(--accent); color: #1d1b18; border-color: var(--accent); }
+button.primary { background: var(--accent); color: #1d1b18; font-weight: 600; padding: 6px 16px; }
+select { background: #3a352c; color: var(--text); border: 1px solid #4d473b; border-radius: 4px; padding: 2px 4px; font: inherit; }
+.buttons { display: flex; gap: 4px; }
+.speed { display: flex; gap: 4px; }
+
+.bar { grid-column: 1 / -1; height: 5px; background: #15130f; border-radius: 3px; overflow: hidden; }
+.bar > div { height: 100%; background: var(--attention); }
+.queue { display: flex; flex-direction: column; gap: 6px; padding: 6px; }
+.order { display: grid; grid-template-columns: 120px 1fr auto; align-items: center; gap: 8px; }
+.order .bar { grid-column: auto; }
+
+.banner { padding: 6px 10px; border-radius: 4px; margin-top: 8px; }
+.banner.danger { background: var(--danger); color: white; font-weight: 600; }
+.hidden { display: none !important; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+  background: var(--danger); color: white; padding: 8px 14px; border-radius: 4px;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s;
+}
+.toast.show { opacity: 1; transform: translateX(-50%); }
+
+.modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.modal-box { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px 22px; max-width: 560px; width: 100%; max-height: 90vh; overflow: auto; }
+.modal-box h2 { font-size: 18px; text-transform: none; letter-spacing: 0; color: var(--text); margin-top: 0; }
+.grid { display: grid; grid-template-columns: 110px 1fr; gap: 4px 12px; margin-bottom: 12px; }
+.grid > div:nth-child(odd) { color: var(--muted); }
+.chart { width: 100%; height: auto; background: #15130f; border-radius: 4px; margin-bottom: 12px; }
+.chart path { fill: none; stroke-width: 2; }
+.chart .pop { stroke: #7fb3ff; }
+.chart .food { stroke: #e0b34a; }
+.chart .axis { stroke: var(--line); }
+.chart text { font-size: 11px; fill: var(--muted); }
+.chart .pop-label { fill: #7fb3ff; }
+.chart .food-label { fill: #e0b34a; }

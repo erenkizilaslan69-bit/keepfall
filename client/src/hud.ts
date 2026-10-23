@@ -1,0 +1,280 @@
+import type { GameConnection } from './net';
+import type { CastleView, CommandResult, Job, SummaryView } from './types';
+
+// Plain-HTML panel. The structure is built once from the first state and then updated in place,
+// so dropdowns and hover states survive the once-per-second refresh.
+
+const fmt = (n: number) => Math.floor(n + 1e-6).toString();
+const rate = (n: number) => (n >= 0 ? '+' : '') + n.toFixed(1);
+const clock = (s: number) => {
+  const t = Math.ceil(s);
+  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+};
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+export class Hud {
+  private built = false;
+  private state: CastleView | null = null;
+  private toastTimer = 0;
+  private status = '';
+  private queueKey = '';
+
+  constructor(
+    private readonly root: HTMLElement,
+    private readonly net: GameConnection,
+  ) {
+    root.addEventListener('click', (e) => this.onClick(e));
+  }
+
+  update(state: CastleView): void {
+    this.state = state;
+    if (!this.built) this.build(state);
+    this.refresh(state);
+  }
+
+  setStatus(text: string): void {
+    this.status = text;
+    if (this.built) this.q('#status').textContent = text;
+  }
+
+  // ---- structure ---------------------------------------------------------------------------
+
+  private build(s: CastleView): void {
+    const jobs = s.jobs.map((j) => `
+      <div class="row job" data-job="${j.job}">
+        <span class="label">${esc(j.name)}</span>
+        <span class="count" data-f="count"></span>
+        <span class="buttons">
+          ${j.job === 'idle' ? '' : `
+          <button data-action="move" data-from="${j.job}" data-to="idle" data-n="1" title="Boşa al">−</button>
+          <button data-action="move" data-from="idle" data-to="${j.job}" data-n="1" title="Boştan ata">+</button>`}
+        </span>
+      </div>`).join('');
+
+    const buildings = s.buildings.map((b) => `
+      <div class="row building" data-building="${b.type}">
+        <span class="label">${esc(b.name)} <b data-f="level"></b></span>
+        <span class="detail" data-f="detail"></span>
+        <span class="buttons"><button data-action="upgrade" data-building="${b.type}" data-f="upgrade"></button></span>
+        <div class="bar" data-f="bar"><div></div></div>
+      </div>`).join('');
+
+    const sources = s.jobs.map((j) => `<option value="${j.job}">${esc(j.name)}</option>`).join('');
+    const units = s.units.map((u) => `
+      <div class="row unit" data-unit="${u.id}">
+        <span class="label">${esc(u.name)}</span>
+        <span class="detail" data-f="detail"></span>
+        <span class="buttons">
+          <button data-action="queue" data-unit="${u.id}" data-n="1" title="${u.wood} odun, ${u.iron} demir, ${u.buildSeconds} sn">+1 silah</button>
+          <button data-action="queue" data-unit="${u.id}" data-n="5">+5</button>
+        </span>
+        <span class="buttons arm">
+          <select data-f="source" title="Askeri hangi meslekten al">${sources}</select>
+          <button data-action="arm" data-unit="${u.id}">Asker yap</button>
+          <button data-action="disarm" data-unit="${u.id}" title="Silahı bırak, boşa dön">Bırak</button>
+        </span>
+      </div>`).join('');
+
+    this.root.innerHTML = `
+      <header>
+        <div><span class="timer" id="timer"></span> <span class="muted">hazırlık</span></div>
+        <div id="speed" class="speed">${s.speedControl
+          ? [1, 5, 20].map((x) => `<button data-action="speed" data-n="${x}">×${x}</button>`).join('')
+          : ''}</div>
+        <div class="muted" id="status">${esc(this.status)}</div>
+      </header>
+      <div id="starving" class="banner danger">Açlık! Yemek bitti, tüm üretim yarıya indi.</div>
+      <section class="resources">
+        <div><span class="res-name">Yemek</span> <b id="food"></b> <span class="muted" id="food-rate"></span></div>
+        <div><span class="res-name">Odun</span> <b id="wood"></b> <span class="muted" id="wood-rate"></span></div>
+        <div><span class="res-name">Demir</span> <b id="iron"></b> <span class="muted" id="iron-rate"></span></div>
+      </section>
+      <section>
+        <div class="row">
+          <span class="label">Nüfus <b id="population"></b></span>
+          <span class="detail" id="growth-detail"></span>
+          <span class="buttons"><button data-action="growth" id="growth"></button></span>
+        </div>
+      </section>
+      <section><h2>Meslekler</h2>${jobs}</section>
+      <section><h2>Binalar</h2>${buildings}</section>
+      <section><h2>Demirhane <span class="muted" id="forge-speed"></span></h2>
+        ${units}
+        <div id="queue" class="queue"></div>
+      </section>
+      <div id="toast" class="toast"></div>
+      <div id="summary" class="modal hidden"></div>`;
+    this.built = true;
+  }
+
+  // ---- values ------------------------------------------------------------------------------
+
+  private refresh(s: CastleView): void {
+    this.q('#timer').textContent = clock(s.remainingSeconds);
+    for (const btn of this.root.querySelectorAll<HTMLButtonElement>('[data-action="speed"]'))
+      btn.classList.toggle('active', Number(btn.dataset.n) === s.speed);
+
+    this.q('#starving').classList.toggle('hidden', !s.starving);
+    this.q('#food').textContent = fmt(s.resources.food);
+    this.q('#food-rate').textContent = `${rate(s.rates.foodIn - s.rates.foodOut)}/dk (+${s.rates.foodIn.toFixed(1)} −${s.rates.foodOut.toFixed(1)})`;
+    this.q('#wood').textContent = fmt(s.resources.wood);
+    this.q('#wood-rate').textContent = `${rate(s.rates.wood)}/dk`;
+    this.q('#iron').textContent = fmt(s.resources.iron);
+    this.q('#iron-rate').textContent = `${rate(s.rates.iron)}/dk`;
+
+    this.q('#population').textContent = `${s.population}` + (s.soldiers ? ` (${s.soldiers} asker)` : '');
+    this.q('#growth-detail').textContent = `yeni kişi: ${s.nextPersonCost} yemek`;
+    this.q('#growth').textContent = s.growthEnabled ? 'Büyüme: açık' : 'Büyüme: kapalı';
+    this.q('#growth').classList.toggle('active', s.growthEnabled);
+
+    for (const j of s.jobs) {
+      const row = this.q(`[data-job="${j.job}"]`);
+      row.querySelector('[data-f="count"]')!.textContent = j.capacity === null ? `${j.count}` : `${j.count} / ${j.capacity}`;
+      // Idle people are wasted food: make them hard to miss.
+      if (j.job === 'idle') row.classList.toggle('attention', j.count > 0);
+    }
+
+    for (const b of s.buildings) {
+      const row = this.q(`[data-building="${b.type}"]`);
+      row.querySelector('[data-f="level"]')!.textContent = `Sv ${b.level}`;
+      row.querySelector('[data-f="detail"]')!.textContent = `kapasite ${b.capacity}, ×${b.multiplier}`;
+      const button = row.querySelector<HTMLButtonElement>('[data-f="upgrade"]')!;
+      const bar = row.querySelector<HTMLElement>('[data-f="bar"]')!;
+      if (b.upgradeRemaining !== null) {
+        button.textContent = `Yükseliyor… ${Math.ceil(b.upgradeRemaining)} sn`;
+        button.disabled = true;
+        bar.classList.remove('hidden');
+        (bar.firstElementChild as HTMLElement).style.width = `${100 * (1 - b.upgradeRemaining / b.upgradeTotal)}%`;
+      } else {
+        bar.classList.add('hidden');
+        const n = b.nextUpgrade;
+        button.textContent = n ? `Yükselt: ${n.wood} odun, ${n.iron} demir, ${n.seconds} sn` : 'En üst seviye';
+        button.disabled = !n || s.resources.wood + 1e-6 < n.wood || s.resources.iron + 1e-6 < n.iron;
+      }
+    }
+
+    this.q('#forge-speed').textContent = s.rates.forgeSpeed > 0 ? `hız ×${s.rates.forgeSpeed.toFixed(2)}` : '(demirci yok, sıra duruyor)';
+    for (const u of s.units) {
+      const row = this.q(`[data-unit="${u.id}"]`);
+      row.querySelector('[data-f="detail"]')!.textContent = `depoda ${u.weapons} silah · ${u.soldiers} asker`;
+      for (const btn of row.querySelectorAll<HTMLButtonElement>('[data-action="queue"]')) {
+        const n = Number(btn.dataset.n);
+        btn.disabled = s.resources.wood + 1e-6 < u.wood * n || s.resources.iron + 1e-6 < u.iron * n;
+      }
+      row.querySelector<HTMLButtonElement>('[data-action="arm"]')!.disabled = u.weapons === 0;
+      row.querySelector<HTMLButtonElement>('[data-action="disarm"]')!.disabled = u.soldiers === 0;
+    }
+
+    // Rebuild the queue only when its lines change, so a click on "İptal" is never lost to a refresh.
+    const queueKey = s.queue.map((o) => `${o.unitId}:${o.remaining}`).join(',');
+    if (queueKey !== this.queueKey) {
+      this.queueKey = queueKey;
+      this.q('#queue').innerHTML = s.queue.length === 0 ? '<span class="muted">Üretim sırası boş.</span>' : s.queue.map((o, i) => `
+        <div class="order">
+          <span>${o.remaining} × ${esc(o.name)}</span>
+          <div class="bar"><div></div></div>
+          <button data-action="cancel" data-n="${i}" title="Kalanları iptal et, kaynakları geri al">İptal</button>
+        </div>`).join('');
+    }
+    this.root.querySelectorAll<HTMLElement>('#queue .order .bar > div').forEach((bar, i) => {
+      bar.style.width = `${(100 * s.queue[i].progress) / s.queue[i].buildSeconds}%`;
+    });
+
+    const modal = this.q('#summary');
+    if (s.summary) {
+      if (modal.classList.contains('hidden')) {
+        modal.innerHTML = summaryHtml(s.summary);
+        modal.classList.remove('hidden');
+      }
+    } else {
+      modal.classList.add('hidden');
+    }
+  }
+
+  // ---- input -------------------------------------------------------------------------------
+
+  private async onClick(e: Event): Promise<void> {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-action]');
+    if (!btn || btn.disabled || !this.state) return;
+    const d = btn.dataset;
+    const n = Number(d.n ?? 1);
+    let result: CommandResult;
+    switch (d.action) {
+      case 'move': result = await this.net.moveWorkers(d.from as Job, d.to as Job, n); break;
+      case 'upgrade': result = await this.net.upgradeBuilding(d.building as never); break;
+      case 'queue': result = await this.net.queueWeapon(d.unit!, n); break;
+      case 'cancel': result = await this.net.cancelWeapon(n); break;
+      case 'arm': {
+        const source = btn.closest('.unit')!.querySelector<HTMLSelectElement>('[data-f="source"]')!.value as Job;
+        result = await this.net.armWorkers(d.unit!, 1, source);
+        break;
+      }
+      case 'disarm': result = await this.net.disarmSoldiers(d.unit!, 1); break;
+      case 'growth': result = await this.net.setGrowth(!this.state.growthEnabled); break;
+      case 'speed': result = await this.net.setSpeed(n); break;
+      case 'restart': result = await this.net.restart(); break;
+      default: return;
+    }
+    if (!result.ok) this.toast(result.error ?? 'Olmadı.');
+  }
+
+  private toast(message: string): void {
+    const el = this.q('#toast');
+    el.textContent = message;
+    el.classList.add('show');
+    clearTimeout(this.toastTimer);
+    this.toastTimer = window.setTimeout(() => el.classList.remove('show'), 2500);
+  }
+
+  private q(selector: string): HTMLElement {
+    return this.root.querySelector<HTMLElement>(selector)!;
+  }
+}
+
+function summaryHtml(s: SummaryView): string {
+  const minutes = s.durationSeconds / 60;
+  const workers = s.workers.map((w) => `${esc(w.name)} ${w.count}`).join(' · ');
+  const army = s.units.filter((u) => u.soldiers + u.weapons > 0)
+    .map((u) => `${esc(u.name)}: ${u.soldiers} asker, ${u.weapons} silah depoda`).join('<br>') || 'Asker yok.';
+  const buildings = s.buildings.map((b) => `${esc(b.name)} Sv ${b.level}`).join(' · ');
+  return `
+    <div class="modal-box">
+      <h2>Hazırlık bitti — ekonomi özeti</h2>
+      <div class="grid">
+        <div>Nüfus</div><div><b>${s.startPopulation} → ${s.finalPopulation}</b> (en yüksek ${s.peakPopulation}, ${s.peopleBorn} doğum)</div>
+        <div>Üretilen</div><div>${fmt(s.produced.food)} yemek · ${fmt(s.produced.wood)} odun · ${fmt(s.produced.iron)} demir</div>
+        <div>Elde kalan</div><div>${fmt(s.final.food)} yemek · ${fmt(s.final.wood)} odun · ${fmt(s.final.iron)} demir</div>
+        <div>Silah</div><div>${s.weaponsMade} üretildi</div>
+        <div>Ordu</div><div>${army}</div>
+        <div>Meslekler</div><div>${workers}</div>
+        <div>Binalar</div><div>${buildings}</div>
+        <div>Açlık</div><div>${Math.round(s.starvingSeconds)} sn</div>
+        <div>Boşta</div><div>${(s.idleWorkerSeconds / 60).toFixed(1)} işçi-dakika (ortalama ${(s.idleWorkerSeconds / 60 / Math.max(minutes, 1e-9)).toFixed(1)} kişi boşta)</div>
+      </div>
+      ${chart(s)}
+      <button data-action="restart" class="primary">Yeniden başla</button>
+    </div>`;
+}
+
+/** Population and food over time as a small inline SVG (two lines, own scales). */
+function chart(s: SummaryView): string {
+  const pts = s.samples;
+  if (pts.length < 2) return '';
+  const w = 420, h = 140, pad = 24;
+  const maxT = pts[pts.length - 1].seconds || 1;
+  const maxPop = Math.max(...pts.map((p) => p.population), 1);
+  const maxFood = Math.max(...pts.map((p) => p.food), 1);
+  const x = (t: number) => pad + ((w - 2 * pad) * t) / maxT;
+  const y = (v: number, max: number) => h - pad - ((h - 2 * pad) * v) / max;
+  const line = (f: (p: (typeof pts)[number]) => number, max: number) =>
+    pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.seconds).toFixed(1)},${y(f(p), max).toFixed(1)}`).join(' ');
+  return `
+    <svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Nüfus ve yemek grafiği">
+      <line x1="${pad}" y1="${h - pad}" x2="${w - pad}" y2="${h - pad}" class="axis"/>
+      <path d="${line((p) => p.population, maxPop)}" class="pop"/>
+      <path d="${line((p) => p.food, maxFood)}" class="food"/>
+      <text x="${pad}" y="14" class="pop-label">nüfus (en çok ${maxPop})</text>
+      <text x="${w - pad}" y="14" text-anchor="end" class="food-label">yemek (en çok ${fmt(maxFood)})</text>
+      <text x="${w - pad}" y="${h - 6}" text-anchor="end" class="axis-label">${clock(maxT)}</text>
+    </svg>`;
+}
