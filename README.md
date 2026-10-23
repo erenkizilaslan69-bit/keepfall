@@ -40,7 +40,12 @@ npm --prefix client run dev
 2. Zip'i `client/public/assets/tiny-swords/` içine aç. Sonuç: `client/public/assets/tiny-swords/Tiny Swords (Free Pack)/Units/...`
 3. `client/public/assets/` git tarafından yok sayılır.
 
-Sonra http://localhost:5173 adresini aç. Geliştirme ortamında ×5 / ×20 hız butonları çıkar.
+Sonra http://localhost:5173 adresini aç: "Oda kur" ile oda kurulur, linki (`/oda/ABCD`) diğer oyunculara gönder.
+Herkes "Hazırım" deyince oda sahibi maçı başlatır.
+
+Aynı tarayıcıda birden fazla oyuncu olarak denemek için her sekme ayrı oyuncudur. Geliştirme modunda
+`?oyuncu=N` sabit bir test kimliği seçer, örneğin `http://localhost:5173/oda/ABCD?oyuncu=2`.
+Geliştirme ortamında oda sahibine ×5 / ×20 hız butonları çıkar ve tek kişiyle de maç başlatılabilir.
 `npm --prefix client run build` sonrası sunucu `client/dist`'i kendisi de sunar (http://localhost:5080).
 
 Testler:
