@@ -1,0 +1,118 @@
+Bütçe: eşit kişi sayısı · tohum: 12345
+
+1. Birlikler (ayar dosyasından)
+───────────────────────────────
+   Birlik    Can  Hasar  Aralık   DPS  Sıra  Menzil  Kaynak*  Can×DPS
+   --------  ---  -----  ------  ----  ----  ------  -------  -------
+   Okçu       70     11    1,2s  9,17  arka    uzak     5,25      642
+   Kılıçlı   100    8,5    1,0s  8,50    ön   yakın     5,75      850
+   Mızrakçı   90     11    1,2s  9,17    ön   yakın     4,25      825
+   Kalkanlı  150      7    1,3s  5,38    ön   yakın     5,50      808
+  * Kaynak = odun karşılığı (demir ve yemek, üretim hızına göre oduna çevrilir).
+
+2. Düello: 10 satır birliği vs 10 sütun birliği — satırın kazanma oranı
+───────────────────────────────────────────────────────────────────────
+               Okçu  Kılıçlı  Mızrakçı  Kalkanlı
+   --------  ------  -------  --------  --------
+   Okçu           —   %100,0    %100,0      %0,0
+   Kılıçlı     %0,0        —    %100,0     %84,5
+   Mızrakçı    %1,5     %0,0         —    %100,0
+   Kalkanlı  %100,0    %10,5      %0,0         —
+
+   10 satır birliğini yenmek (≥%50) için gereken sütun birliği sayısı:
+             Okçu  Kılıçlı  Mızrakçı  Kalkanlı
+   --------  ----  -------  --------  --------
+   Okçu         —       15        12         8
+   Kılıçlı      7        —        15        11
+   Mızrakçı    10        7         —        15
+   Kalkanlı    14       10         7         —
+   (10'dan küçük = sütun birliği daha güçlü; 10'dan büyük = satır birliği daha güçlü.)
+
+   Karşılık kontrolü: 10 avantajlı birliği yenmek için gereken dezavantajlı birlik (hedef 13–15)
+   Avantajlı  Karşısındaki  Çarpan        Başabaş  Durum
+   ---------  ------------  ------------  -------  -------
+   Okçu       Kılıçlı       ×1,5 / ×0,75  10 : 15  hedefte
+   Kılıçlı    Mızrakçı      ×1,5 / ×0,75  10 : 15  hedefte
+   Mızrakçı   Kalkanlı      ×1,5 / ×0,75  10 : 15  hedefte
+   Kalkanlı   Okçu          ×1 / ×0,6     10 : 14  hedefte
+
+3. Rastgele turnuva: 5000 maç, ordu büyüklüğü 10–30
+───────────────────────────────────────────────────
+   Birlik    Ort. pay  Asker başı kazanma  Baskın ordu kazanma  Korelasyon  Hayatta kalma  Hasar/asker  Hasar/kaynak        Karar
+   --------  --------  ------------------  -------------------  ----------  -------------  -----------  ------------  -----------
+   Okçu         %25,2               %56,4         %58,2 (1781)       +0,17          %45,7          133          25,3  FAZLA GÜÇLÜ
+   Kılıçlı      %25,3               %49,5         %47,9 (1853)       -0,01          %21,5           85          14,7      dengeli
+   Mızrakçı     %24,6               %42,5         %34,1 (1743)       -0,19          %15,4           86          20,1        ZAYIF
+   Kalkanlı     %24,9               %51,4         %48,1 (1766)       +0,04          %21,3           67          12,2      dengeli
+   Okçu, önünde en az 1 yakın dövüşçü olan ordularda: asker başı %56,7, ordu kazanma %53,7 (6797 ordu)
+   Beraberlik: 0 · ortalama savaş süresi: 20,1 sn
+   Asker başı kazanma: rastgele seçilen bir askerin ordusunun kazanma oranı. Dengede ≈%50.
+   Baskın ordu: o birliğin en az %50 olduğu ordular (parantezde ordu sayısı).
+   Korelasyon: o birlikten rakipten fazla almanın sonuca etkisi (+ = iyi, − = kötü).
+
+4. Kompozisyon ligi: 60 ordu (20 birlik), herkes herkesle 4 kez
+───────────────────────────────────────────────────────────────
+   Sıra  Kazanma  Ordu          Kompozisyon
+   ----  -------  ------------  ------------------------------------------
+   1       %86,4  Rastgele #2   5 Okçu, 6 Kılıçlı, 4 Mızrakçı, 5 Kalkanlı
+   2       %78,0  Rastgele #46  10 Okçu, 2 Kılıçlı, 6 Mızrakçı, 2 Kalkanlı
+   3       %76,3  Rastgele #36  3 Okçu, 7 Kılıçlı, 3 Mızrakçı, 7 Kalkanlı
+   4       %75,8  Rastgele #5   11 Okçu, 4 Kılıçlı, 1 Mızrakçı, 4 Kalkanlı
+   5       %73,7  Rastgele #39  5 Okçu, 10 Kılıçlı, 3 Mızrakçı, 2 Kalkanlı
+   6       %70,8  Eşit karışım  5 Okçu, 5 Kılıçlı, 5 Mızrakçı, 5 Kalkanlı
+   7       %70,8  Rastgele #21  6 Okçu, 7 Kılıçlı, 3 Mızrakçı, 4 Kalkanlı
+   8       %70,3  Rastgele #10  7 Okçu, 7 Kılıçlı, 4 Mızrakçı, 2 Kalkanlı
+   …
+   56      %29,2  Rastgele #18  20 Kalkanlı
+   57      %28,8  Rastgele #26  20 Mızrakçı
+   58      %28,8  Rastgele #37  20 Mızrakçı
+   59      %28,4  Rastgele #30  11 Okçu, 6 Kılıçlı, 3 Mızrakçı
+   60      %26,7  Rastgele #55  4 Okçu, 14 Mızrakçı, 2 Kalkanlı
+   Sabit ordular:
+     Sadece Okçu       %58,9  (20. sırada)
+     Sadece Kılıçlı    %50,0  (29. sırada)
+     Sadece Mızrakçı   %30,5  (53. sırada)
+     Sadece Kalkanlı   %32,6  (50. sırada)
+     Eşit karışım      %70,8  (6. sırada)
+
+5. Sıra testi: 5 Kalkanlı + 5 X (yakın X önde, okçu arkada) — satırın kazanma oranı (200 tekrar)
+────────────────────────────────────────────────────────────────────────────────────────────────
+   X            Okçu  Kılıçlı  Mızrakçı  Ort. kazanma  X hasarı  X hayatta
+   --------  -------  -------  --------  ------------  --------  ---------
+   Okçu      (%50,0)    %87,5      %3,0         %45,3       807      1,9/5
+   Kılıçlı     %14,3  (%46,5)     %69,0         %41,6       620      1,0/5
+   Mızrakçı    %97,5    %26,8   (%55,0)         %62,1       714      1,3/5
+   Ort. kazanma: ayna maç (parantezli) hariç. X hasarı/hayatta: X birliklerinin savaş başına ortalaması.
+
+   Varyant: rakipte 2 okçu var (rakip: 5 Kalkanlı + 3 Y + 2 Okçu, rakip okçuları önce Okçu vurur)
+   X         3 Kılıçlı+2 Okçu  3 Mızrakçı+2 Okçu  Ort. kazanma  X hasarı  X hayatta
+   --------  ----------------  -----------------  ------------  --------  ---------
+   Okçu                 %10,0               %0,0          %5,0       455      0,0/5
+   Kılıçlı              %35,0              %47,3         %41,1       589      0,8/5
+   Mızrakçı             %68,3              %79,0         %73,6       729      1,5/5
+   Ort. kazanma: ayna maç (parantezli) hariç. X hasarı/hayatta: X birliklerinin savaş başına ortalaması.
+
+6. Okçu hedefi: her ayar birbirine karşı, rastgele ordular (500 ordu çifti × 2 taraf) — satırın kazanma oranı
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                  ön sıra  önce Okçu  önce Kılıçlı  önce Mızrakçı  önce Kalkanlı  Ortalama
+   -------------  -------  ---------  ------------  -------------  -------------  --------
+   ön sıra              —      %43,0         %41,3          %44,3          %60,8     %47,3
+   önce Okçu        %57,1          —         %49,6          %55,2         %67,3!     %57,3
+   önce Kılıçlı     %58,8      %50,4             —          %53,5         %71,6!     %58,6
+   önce Mızrakçı    %55,8      %44,8         %46,5              —         %66,1!     %53,3
+   önce Kalkanlı    %39,3      %32,7         %28,5          %33,9              —     %33,6
+   ! = satırdaki ayar sütundakini %65'in üstünde yeniyor.
+   ! 'önce Okçu' şunları yeniyor: önce Kalkanlı %67,3
+   ! 'önce Kılıçlı' şunları yeniyor: önce Kalkanlı %71,6
+   ! 'önce Mızrakçı' şunları yeniyor: önce Kalkanlı %66,1
+
+Özet
+────
+  Güç sırası (asker başı kazanma): Okçu %56,4 > Kalkanlı %51,4 > Kılıçlı %49,5 > Mızrakçı %42,5
+  ! Okçu fazla güçlü görünüyor.
+  ! Mızrakçı zayıf görünüyor.
+  ! Hedef: 'önce Okçu' baskın (önce Kalkanlı %67,3).
+  ! Hedef: 'önce Kılıçlı' baskın (önce Kalkanlı %71,6).
+  ! Hedef: 'önce Mızrakçı' baskın (önce Kalkanlı %66,1).
+
+Süre: 0,9 sn

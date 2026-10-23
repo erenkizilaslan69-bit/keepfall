@@ -1,4 +1,4 @@
-// Keepfall denge ayarları (v0.3 — denge turu 2) — kaynak: docs/kale_oyunu_sayilar.xlsx
+// Keepfall denge ayarları (v0.4 — denge turu 3) — kaynak: docs/kale_oyunu_sayilar.xlsx
 // Bu dosya yorum satırlarına izin verir. Sayıları değiştir, BattleSim'i tekrar çalıştır.
 {
   "economy": {
@@ -61,9 +61,9 @@
   // "+" = avantaj, "-" = dezavantaj, "=" = nötr, ya da doğrudan bir sayı (ör. 1.2).
   // Yazılmayan eşleşmeler nötr sayılır.
   "counters": {
-    "okcu":     { "okcu": "=", "kilicli": "+", "mizrakci": "=", "kalkanli": "-" },
+    "okcu":     { "okcu": "=", "kilicli": "+", "mizrakci": "=", "kalkanli": 0.6 },
     "kilicli":  { "okcu": "-", "kilicli": "=", "mizrakci": "+", "kalkanli": "=" },
     "mizrakci": { "okcu": "=", "kilicli": "-", "mizrakci": "=", "kalkanli": "+" },
-    "kalkanli": { "okcu": "+", "kilicli": "=", "mizrakci": "-", "kalkanli": "=" }
+    "kalkanli": { "okcu": "=", "kilicli": "=", "mizrakci": "-", "kalkanli": "=" }
   }
 }
