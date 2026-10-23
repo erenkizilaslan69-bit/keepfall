@@ -16,7 +16,7 @@ const string Usage = """
 
     Ortak:   --config <yol>   (varsayılan: yukarı klasörlerde config/balance.json)
     Ordu:    "okcu:6,kilicli:8,kalkanli:4"   ·   sıra değiştir: "kilicli:4@arka" (yedek)
-    Hedef:   rastgele | zayif | karsi | <birlik id>  (ör. --hedef-a okcu)
+    Hedef:   okçuların hedefi: on (varsayılan) | <birlik id>  (ör. --hedef-a okcu). Yakın dövüşçüler hep en öndekine vurur.
 
     Örnekler:
       BattleSim denge --mac 10000

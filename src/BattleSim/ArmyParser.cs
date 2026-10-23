@@ -7,7 +7,7 @@ namespace Keepfall.BattleSim;
 
 /// <summary>
 /// Parses armies like "okcu:5,kilicli:8@arka" (type:count, optional @on / @arka formation override)
-/// and target priorities like "rastgele", "zayif", "karsi" or a unit id.
+/// and archer target priorities: "on" (front row, the default) or a unit id.
 /// </summary>
 public static class ArmyParser
 {
@@ -45,20 +45,12 @@ public static class ArmyParser
 
     public static TargetPriority ParseTargeting(GameRules rules, string text) => text.ToLowerInvariant() switch
     {
-        "rastgele" or "random" => TargetPriority.Random,
-        "zayif" or "zayıf" or "weakest" => TargetPriority.Weakest,
-        "karsi" or "karşı" or "counter" => TargetPriority.Counter,
+        "on" or "ön" or "front" => TargetPriority.Front,
         _ => rules.FindUnit(text) is { } type
             ? TargetPriority.Prefer(type)
-            : throw new FormatException($"Geçersiz hedef \"{text}\" (rastgele | zayif | karsi | birlik id)."),
+            : throw new FormatException($"Geçersiz hedef \"{text}\" (on | birlik id)."),
     };
 
-    public static string Describe(TargetPriority p) => p.Kind switch
-    {
-        TargetPriorityKind.Random => "rastgele",
-        TargetPriorityKind.Weakest => "en zayıf",
-        TargetPriorityKind.Counter => "karşılık (avantajlı olduğu)",
-        TargetPriorityKind.PreferType => $"önce {p.PreferredType!.Name}",
-        _ => p.Kind.ToString(),
-    };
+    public static string Describe(TargetPriority p) =>
+        p.PreferredType is { } type ? $"önce {type.Name}" : "ön sıra";
 }

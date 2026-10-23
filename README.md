@@ -36,7 +36,7 @@ Sayıları değiştirmek için derlemeye gerek yok.
 
 ## Savaş kuralları (şimdilik)
 
-- Uzak birlikler (okçu) her iki sırayı da vurabilir. Yakın birlikler, düşmanın ön sırası düşene kadar arka sıraya ulaşamaz.
+- Yakın birlikler, düşmanın ön sırası düşene kadar arka sıraya ulaşamaz. Okçular, öncelikli tür seçildiyse arka sıradaki o türü de vurabilir.
 - Uzak birlikler (okçu) her sıradan vurur. Yakın birlikler sadece ön sıradan vurur; arkaya konan yakın birlik yedektir, ön sıra düşünce öne geçer.
 - Hasar = birliğin hasarı × karşılık çarpanı. Bir adımdaki tüm vuruşlar aynı anda işlenir.
-- Hedef seçimi ordu başına: `rastgele`, `zayif` (en az canlı), `karsi` (en avantajlı olduğu), ya da bir birlik türü.
+- Yakın dövüşçüler her zaman en öndekine vurur. Okçular varsayılan olarak da ön sıraya vurur; ordu başına öncelikli bir birlik türü seçilebilir (`--hedef-a okcu`), okçular o türü arka sırada olsa da hedefler.

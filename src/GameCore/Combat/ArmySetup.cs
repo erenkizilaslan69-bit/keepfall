@@ -2,25 +2,17 @@ using Keepfall.GameCore.Units;
 
 namespace Keepfall.GameCore.Combat;
 
-public enum TargetPriorityKind
+/// <summary>
+/// How an army's ranged units choose targets. Melee units always hit the frontmost enemies,
+/// whatever this says.
+/// </summary>
+public sealed record TargetPriority(UnitType? PreferredType = null)
 {
-    /// <summary>Any eligible enemy, chosen at random.</summary>
-    Random,
-    /// <summary>The eligible enemy with the lowest current HP (focus fire).</summary>
-    Weakest,
-    /// <summary>The eligible enemy this unit deals the highest counter multiplier against.</summary>
-    Counter,
-    /// <summary>A specific unit type if one is eligible; otherwise random.</summary>
-    PreferType,
-}
+    /// <summary>Shoot the enemy front row (the back row once the front is gone).</summary>
+    public static readonly TargetPriority Front = new();
 
-public sealed record TargetPriority(TargetPriorityKind Kind, UnitType? PreferredType = null)
-{
-    public static readonly TargetPriority Random = new(TargetPriorityKind.Random);
-    public static readonly TargetPriority Weakest = new(TargetPriorityKind.Weakest);
-    public static readonly TargetPriority Counter = new(TargetPriorityKind.Counter);
-
-    public static TargetPriority Prefer(UnitType type) => new(TargetPriorityKind.PreferType, type);
+    /// <summary>Shoot this unit type wherever it stands, back row included; the front row once none is left.</summary>
+    public static TargetPriority Prefer(UnitType type) => new(type);
 }
 
 /// <summary>
@@ -35,7 +27,7 @@ public sealed class ArmySetup
     public ArmySetup(string name = "Ordu") => Name = name;
 
     public string Name { get; set; }
-    public TargetPriority Targeting { get; set; } = TargetPriority.Random;
+    public TargetPriority Targeting { get; set; } = TargetPriority.Front;
 
     public IReadOnlyDictionary<UnitType, int> Counts => _counts;
     public int TotalCount => _counts.Values.Sum();

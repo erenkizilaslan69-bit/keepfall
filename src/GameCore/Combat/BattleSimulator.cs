@@ -7,8 +7,9 @@ namespace Keepfall.GameCore.Combat;
 /// Resolves a field battle between two armies with fixed time steps.
 ///
 /// Rules:
-/// - Ranged units can hit any enemy, in either row. Melee units can only hit the enemy front row
-///   while it has living units; the back row is open to them once it falls.
+/// - Melee units always hit the frontmost enemies: the front row while it has living units, then the back row.
+/// - Ranged units do the same by default. If the army picked a preferred unit type, they shoot that
+///   type wherever it stands (back row included) while any of it is alive.
 /// - Ranged units attack from either row. Melee units attack only from the front row; melee units
 ///   placed in the back are reserves and step forward when their own front row is gone.
 /// - Damage = attacker damage × counter multiplier. All hits in a tick land simultaneously,
@@ -48,7 +49,9 @@ public sealed class BattleSimulator
             for (int s = 0; s < 2; s++)
             {
                 var enemies = sides[1 - s];
-                bool enemyFrontStanding = HasAliveInRow(enemies, Row.Front);
+                var aim = new Aim(
+                    HasAliveInRow(enemies, Row.Front) ? Row.Front : Row.Back,
+                    setups[s].Targeting.PreferredType is { } p && HasAliveOfType(enemies, p) ? p : null);
                 foreach (var soldier in sides[s])
                 {
                     if (!soldier.Alive) continue;
@@ -62,8 +65,8 @@ public sealed class BattleSimulator
                     }
 
                     var target = soldier.Target;
-                    if (target is null || !target.Alive || !CanReach(soldier, target, enemyFrontStanding))
-                        target = soldier.Target = ChooseTarget(soldier, enemies, enemyFrontStanding, setups[s].Targeting, candidates, rng);
+                    if (target is null || !IsValidTarget(soldier, target, aim))
+                        target = soldier.Target = ChooseTarget(soldier, enemies, aim, candidates, rng);
                     if (target is null) { soldier.Cooldown = 0; continue; }
 
                     double damage = soldier.Type.Damage * _rules.Counters.Get(soldier.Type, target.Type);
@@ -136,39 +139,31 @@ public sealed class BattleSimulator
         if (moved > 0) log?.Add(Fmt(now, $"{name}: {moved} yedek birlik ön sıraya geçti."));
     }
 
-    private static bool CanReach(Soldier attacker, Soldier target, bool enemyFrontStanding) =>
-        attacker.Type.Range == AttackRange.Ranged || target.Row == Row.Front || !enemyFrontStanding;
+    /// <summary>What one side may hit this tick: the frontmost enemy row, and the preferred type if any is alive.</summary>
+    private readonly record struct Aim(Row FrontmostRow, UnitType? PreferredAlive);
 
-    private Soldier? ChooseTarget(Soldier attacker, List<Soldier> enemies, bool enemyFrontStanding, TargetPriority priority,
-        List<Soldier> candidates, Random rng)
+    private static bool IsValidTarget(Soldier attacker, Soldier target, Aim aim)
+    {
+        if (!target.Alive) return false;
+        if (attacker.Type.Range == AttackRange.Ranged && aim.PreferredAlive is { } preferred)
+            return target.Type == preferred;
+        return target.Row == aim.FrontmostRow;
+    }
+
+    /// <summary>A random valid target; several soldiers usually qualify, e.g. the whole front row.</summary>
+    private static Soldier? ChooseTarget(Soldier attacker, List<Soldier> enemies, Aim aim, List<Soldier> candidates, Random rng)
     {
         candidates.Clear();
         foreach (var e in enemies)
-            if (e.Alive && CanReach(attacker, e, enemyFrontStanding)) candidates.Add(e);
-        if (candidates.Count == 0) return null;
-
-        switch (priority.Kind)
-        {
-            case TargetPriorityKind.Weakest:
-                KeepBest(candidates, e => -e.Hp);
-                break;
-            case TargetPriorityKind.Counter:
-                KeepBest(candidates, e => _rules.Counters.Get(attacker.Type, e.Type));
-                break;
-            case TargetPriorityKind.PreferType:
-                if (candidates.Exists(e => e.Type == priority.PreferredType))
-                    candidates.RemoveAll(e => e.Type != priority.PreferredType);
-                break;
-        }
-        return candidates[rng.Next(candidates.Count)];
+            if (IsValidTarget(attacker, e, aim)) candidates.Add(e);
+        return candidates.Count == 0 ? null : candidates[rng.Next(candidates.Count)];
     }
 
-    /// <summary>Keeps only the candidates with the highest score (ties are broken randomly by the caller).</summary>
-    private static void KeepBest(List<Soldier> candidates, Func<Soldier, double> score)
+    private static bool HasAliveOfType(List<Soldier> army, UnitType type)
     {
-        double best = double.NegativeInfinity;
-        foreach (var c in candidates) best = Math.Max(best, score(c));
-        candidates.RemoveAll(c => score(c) < best - 1e-9);
+        foreach (var s in army)
+            if (s.Alive && s.Type == type) return true;
+        return false;
     }
 
     private static bool HasAliveInRow(List<Soldier> army, Row row)

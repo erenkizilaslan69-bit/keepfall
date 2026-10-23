@@ -391,10 +391,10 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
 
     private void PrintTargeting()
     {
-        var priorities = new List<TargetPriority> { TargetPriority.Weakest, TargetPriority.Counter };
+        var priorities = new List<TargetPriority> { TargetPriority.Front };
         priorities.AddRange(Units.Select(TargetPriority.Prefer));
         int n = Math.Max(500, options.Matches / 10);
-        Heading($"6. Hedef seçimi: her ayar birbirine karşı, rastgele ordular ({n} ordu çifti × 2 taraf) — satırın kazanma oranı");
+        Heading($"6. Okçu hedefi: her ayar birbirine karşı, rastgele ordular ({n} ordu çifti × 2 taraf) — satırın kazanma oranı");
 
         var rates = new double[priorities.Count, priorities.Count];
         for (int i = 0; i < priorities.Count; i++)
