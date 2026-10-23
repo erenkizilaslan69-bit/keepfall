@@ -1,9 +1,12 @@
 using Keepfall.Core.Economy;
+using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
 
 namespace Keepfall.Server.Contracts;
 
-// What the client receives. Only the player's own castle; built under the session lock.
+// What the client receives, built under the room lock.
+// CastleView/SummaryView only ever go to the castle's owner. RoomView goes to the whole room and
+// carries nothing but public facts about players (seat, name, colour, ready, connected, host).
 
 public sealed record ResourcesView(double Food, double Wood, double Iron);
 
@@ -30,7 +33,7 @@ public sealed record SummaryView(
     IReadOnlyList<BuildingView> Buildings, IReadOnlyList<EconomySample> Samples);
 
 public sealed record CastleView(
-    MatchPhase Phase, double ElapsedSeconds, double RemainingSeconds, double PrepSeconds,
+    MatchPhase Phase, PlayerColor Color, double ElapsedSeconds, double RemainingSeconds, double PrepSeconds,
     int Speed, bool SpeedControl,
     ResourcesView Resources, RatesView Rates,
     int Population, int Soldiers, double NextPersonCost, double FoodReserve, bool GrowthEnabled, bool Starving,
@@ -40,20 +43,37 @@ public sealed record CastleView(
 
 public sealed record CommandResultView(bool Ok, string? Error);
 
+/// <summary>Public facts about a player. Never the token.</summary>
+public sealed record PlayerView(int Seat, string Name, PlayerColor Color, bool Ready, bool Connected, bool IsHost);
+
+public sealed record RoomView(
+    string Code, RoomPhase Phase, IReadOnlyList<PlayerView> Players, int MinPlayers, int MaxPlayers,
+    bool CanStart, double? RemainingSeconds);
+
+/// <summary>Answer to CreateRoom/JoinRoom: the caller's own secret token and seat.</summary>
+public sealed record JoinView(bool Ok, string? Error, string? Code, string? Token, int Seat, RoomView? Room);
+
 public static class ViewMapper
 {
-    public static CastleView ToView(GameState game, int speed, bool speedControl)
+    public static RoomView ToView(Room room) => new(
+        room.Code, room.Phase,
+        room.Players.Select(p => new PlayerView(p.Seat, p.Name, p.Color, p.Ready, p.Connected, p.Seat == room.HostSeat)).ToList(),
+        room.Options.MinPlayers, room.Options.MaxPlayers, room.CanStart, room.Game?.RemainingSeconds);
+
+    /// <summary>The castle of <paramref name="player"/>; null while the room has no match.</summary>
+    public static CastleView? CastleOf(Room room, RoomPlayer player)
     {
-        var c = game.Castle;
+        if (room.Game is not { } game || game.CastleOf(player.CastleKey) is not { } c) return null;
+        bool speedControl = room.Options.AllowSpeedControl && player.Seat == room.HostSeat;
         return new CastleView(
-            game.Phase, game.ElapsedSeconds, game.RemainingSeconds, game.PrepSeconds, speed, speedControl,
+            game.Phase, player.Color, game.ElapsedSeconds, game.RemainingSeconds, game.PrepSeconds, room.Speed, speedControl,
             new ResourcesView(c.Food, c.Wood, c.Iron),
             new RatesView(c.ProductionPerMinute(Resource.Food), c.FoodConsumptionPerMinute,
                 c.ProductionPerMinute(Resource.Wood), c.ProductionPerMinute(Resource.Iron), c.ForgeSpeed),
             c.Population, c.SoldierCount, c.NextPersonCost, c.GrowthReserve, c.GrowthEnabled, c.Starving,
             JobsOf(c), BuildingsOf(c), UnitsOf(c),
             c.Queue.Select(o => new OrderView(o.Type.Id, o.Type.Name, o.Remaining, o.Progress, o.Type.BuildSeconds)).ToList(),
-            game.Summary is { } s ? ToView(s, c) : null);
+            game.SummaryOf(player.CastleKey) is { } s ? ToView(s, c) : null);
     }
 
     private static List<JobView> JobsOf(Castle c) =>

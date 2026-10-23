@@ -1,4 +1,4 @@
-using Keepfall.Core.Match;
+using Keepfall.Core.Lobby;
 using Keepfall.Server.Contracts;
 using Keepfall.Server.Hubs;
 using Microsoft.AspNetCore.SignalR;
@@ -7,18 +7,19 @@ using Microsoft.Extensions.Options;
 namespace Keepfall.Server.Games;
 
 /// <summary>
-/// Ticks every game once per server tick (match.serverTickSeconds) and sends each player their state.
-/// At speed ×N a game is ticked N times per real tick. Abandoned games are dropped here too.
+/// Once per server tick (match.serverTickSeconds): advances every room's shared clock, sends each
+/// player their own castle, frees expired lobby seats and drops abandoned rooms.
 /// </summary>
 public sealed class TickLoop(
-    GameRegistry registry,
+    RoomRegistry registry,
     IHubContext<GameHub> hub,
     IOptions<KeepfallOptions> options,
+    Keepfall.Core.GameRules rules,
     ILogger<TickLoop> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        double tickSeconds = registry.Rules.Match.ServerTickSeconds;
+        double tickSeconds = rules.Match.ServerTickSeconds;
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(tickSeconds));
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
@@ -26,41 +27,55 @@ public sealed class TickLoop(
             {
                 try
                 {
-                    await TickSession(session, tickSeconds);
+                    await TickRoom(session, tickSeconds);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
-                    logger.LogError(ex, "Tick failed for {PlayerId}", session.PlayerId);
+                    logger.LogError(ex, "Tick failed for room {Code}", session.Room.Code);
                 }
             }
         }
     }
 
-    private async Task TickSession(GameSession session, double tickSeconds)
+    private async Task TickRoom(RoomSession session, double tickSeconds)
     {
-        CastleView view;
-        SummaryView? justEnded = null;
+        var now = DateTime.UtcNow;
+        bool roomChanged, ended = false, preparing;
         lock (session.Lock)
         {
-            if (session.Connections == 0 &&
-                DateTime.UtcNow - session.LastSeenUtc > TimeSpan.FromMinutes(options.Value.AbandonedGameMinutes))
+            var room = session.Room;
+            if (room.IsAbandoned(now, TimeSpan.FromMinutes(options.Value.AbandonedRoomMinutes)))
             {
-                registry.Remove(session.PlayerId);
+                registry.Remove(room.Code);
                 return;
             }
-            if (session.State.Phase != MatchPhase.Preparation) return;
-
-            for (int i = 0; i < session.Speed; i++) session.State.Tick(tickSeconds);
-            view = ViewMapper.ToView(session.State, session.Speed, options.Value.AllowSpeedControl);
-            if (view.Summary is not null && !session.SummarySent)
-            {
-                session.SummarySent = true;
-                justEnded = view.Summary;
-            }
+            roomChanged = room.ExpireLobbySeats(now);
+            preparing = room.Phase == RoomPhase.Preparation;
+            if (preparing) ended = room.Tick(tickSeconds);
         }
 
-        if (session.Connections == 0) return;
-        await hub.Clients.Group(session.PlayerId).SendAsync("State", view);
-        if (justEnded is not null) await hub.Clients.Group(session.PlayerId).SendAsync("PhaseEnded", justEnded);
+        if (preparing) await GameHub.PushCastles(hub.Clients, session);
+        // During preparation the room view carries the shared clock, so it goes out every tick.
+        if (roomChanged || preparing)
+        {
+            RoomView view;
+            lock (session.Lock) view = ViewMapper.ToView(session.Room);
+            await hub.Clients.Group(GameHub.RoomGroup(session.Room.Code)).SendAsync("RoomState", view);
+        }
+        if (ended) await SendSummaries(session);
+    }
+
+    /// <summary>Each player gets only their own summary.</summary>
+    private async Task SendSummaries(RoomSession session)
+    {
+        List<(int Seat, SummaryView Summary)> summaries;
+        lock (session.Lock)
+            summaries = session.Room.Players
+                .Select(p => (p.Seat, ViewMapper.CastleOf(session.Room, p)?.Summary))
+                .Where(x => x.Summary is not null)
+                .Select(x => (x.Seat, x.Summary!))
+                .ToList();
+        foreach (var (seat, summary) in summaries)
+            await hub.Clients.Group(GameHub.PlayerGroup(session.Room.Code, seat)).SendAsync("MatchEnded", summary);
     }
 }

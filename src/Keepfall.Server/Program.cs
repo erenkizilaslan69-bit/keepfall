@@ -17,7 +17,7 @@ string balancePath = !string.IsNullOrWhiteSpace(options.BalancePath)
 var rules = BalanceConfigLoader.LoadFromFile(balancePath);
 
 builder.Services.AddSingleton(rules);
-builder.Services.AddSingleton<GameRegistry>();
+builder.Services.AddSingleton<RoomRegistry>();
 builder.Services.AddHostedService<TickLoop>();
 builder.Services.AddSignalR().AddJsonProtocol(o =>
     o.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
@@ -36,5 +36,12 @@ if (Directory.Exists(clientDist))
 
 app.MapHub<GameHub>("/hub");
 app.MapGet("/health", () => "ok");
+
+// Client-side routes such as /oda/ABCD load the single-page app.
+if (Directory.Exists(clientDist))
+    app.MapFallbackToFile("index.html", new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(clientDist),
+    });
 
 app.Run();
