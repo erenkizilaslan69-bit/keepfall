@@ -59,6 +59,15 @@ public sealed class ArmySetup
 
     public Row RowOf(UnitType type) => _rowOverrides.TryGetValue(type, out var r) ? r : type.DefaultRow;
 
+    /// <summary>Same composition and formation, with a new name and target priority.</summary>
+    public ArmySetup Clone(string name, TargetPriority targeting)
+    {
+        var copy = new ArmySetup(name) { Targeting = targeting };
+        foreach (var (type, count) in _counts) copy._counts[type] = count;
+        foreach (var (type, row) in _rowOverrides) copy._rowOverrides[type] = row;
+        return copy;
+    }
+
     public override string ToString() =>
         string.Join(", ", _counts.Where(kv => kv.Value > 0).OrderBy(kv => kv.Key.Index).Select(kv => $"{kv.Value} {kv.Key.Name}"));
 }

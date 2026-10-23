@@ -19,6 +19,14 @@ public sealed record BalanceOptions
     public int PoolRepeats { get; init; } = 4;
     /// <summary>Soldier win rate at or above this is flagged as too strong (and 1 - this as too weak).</summary>
     public double StrongThreshold { get; init; } = 0.55;
+    /// <summary>Target band for the advantaged side in an equal-numbers counter duel.</summary>
+    public double CounterWinMin { get; init; } = 0.70;
+    public double CounterWinMax { get; init; } = 0.80;
+    /// <summary>Back-row test: this unit holds the front, the tested unit stands behind it.</summary>
+    public string BackRowFrontUnit { get; init; } = "kalkanli";
+    public int BackRowCount { get; init; } = 5;
+    /// <summary>A target priority beating another above this rate is flagged.</summary>
+    public double TargetDominanceThreshold { get; init; } = 0.65;
 }
 
 /// <summary>Runs thousands of battles and prints which units over- or under-perform.</summary>
@@ -27,6 +35,9 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
     private readonly BattleSimulator _simulator = new(rules);
     private readonly ArmyGenerator _generator = new(rules);
     private IReadOnlyList<UnitType> Units => rules.Units;
+
+    // Out-of-target results collected by the sections, printed in the summary.
+    private readonly List<string> _findings = [];
 
     public void Run()
     {
@@ -39,6 +50,7 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
         PrintDuels();
         var stats = PrintTournament();
         PrintPool();
+        PrintBackRow();
         PrintTargeting();
         PrintSummary(stats);
 
@@ -71,6 +83,7 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
         var header = new[] { "" }.Concat(Units.Select(u => u.Name)).ToArray();
         var winTable = new Table(header);
         var breakEven = new Table(header);
+        var rates = new double[Units.Count, Units.Count];
 
         foreach (var row in Units)
         {
@@ -78,7 +91,7 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
             var needed = new List<string> { row.Name };
             foreach (var col in Units)
             {
-                double rate = DuelWinRate(row, n, col, n, salt: row.Index * 31 + col.Index);
+                double rate = rates[row.Index, col.Index] = DuelWinRate(row, n, col, n, salt: row.Index * 31 + col.Index);
                 wins.Add(row == col ? "—" : Pct(rate));
                 needed.Add(row == col ? "—" : BreakEven(row, col));
             }
@@ -90,6 +103,29 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
         Console.WriteLine($"   {n} satır birliğini yenmek (≥%50) için gereken sütun birliği sayısı:");
         breakEven.Print();
         Console.WriteLine($"   ({n}'dan küçük = sütun birliği daha güçlü; {n}'dan büyük = satır birliği daha güçlü.)");
+        Console.WriteLine();
+        PrintCounterCheck(rates);
+    }
+
+    /// <summary>Checks every advantaged pairing from the counter matrix against the target band.</summary>
+    private void PrintCounterCheck(double[,] rates)
+    {
+        string band = $"%{options.CounterWinMin * 100:0}–%{options.CounterWinMax * 100:0}";
+        Console.WriteLine($"   Karşılık kontrolü: avantajlı taraf eşit sayıda {band} kazanmalı");
+        var t = new Table("Avantajlı", "Karşısındaki", "Çarpan", "Kazanma", "Durum") { LeftAlignedFrom = 1 };
+        foreach (var a in Units)
+            foreach (var d in Units)
+            {
+                // "Advantaged" = deals more to them than they deal back.
+                double mine = rules.Counters.Get(a, d), theirs = rules.Counters.Get(d, a);
+                if (a == d || mine <= theirs) continue;
+                double rate = rates[a.Index, d.Index];
+                bool ok = rate >= options.CounterWinMin - 1e-9 && rate <= options.CounterWinMax + 1e-9;
+                t.Add(a.Name, d.Name, $"×{mine:0.##} / ×{theirs:0.##}", Pct(rate), ok ? "hedefte" : "HEDEF DIŞI");
+                if (!ok)
+                    _findings.Add($"Karşılık: {a.Name} → {d.Name} eşit sayıda {Pct(rate)} kazanıyor (hedef {band}).");
+            }
+        t.Print();
         Console.WriteLine();
     }
 
@@ -269,27 +305,111 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
         Console.WriteLine();
     }
 
-    // ---- 5. Target priority ------------------------------------------------------------------
+    // ---- 5. Back row -------------------------------------------------------------------------
+
+    private void PrintBackRow()
+    {
+        var front = rules.FindUnit(options.BackRowFrontUnit);
+        int n = options.BackRowCount;
+        if (front is null)
+        {
+            Heading("5. Arka sıra testi");
+            Console.WriteLine($"   Atlandı: \"{options.BackRowFrontUnit}\" birliği ayar dosyasında yok.");
+            Console.WriteLine();
+            return;
+        }
+        var backs = Units.Where(u => u != front).ToList();
+        Heading($"5. Arka sıra testi: önde {n} {front.Name}, arkada {n} X — satırın kazanma oranı ({options.DuelRuns} tekrar)");
+
+        ArmySetup Build(UnitType back, string name) =>
+            new ArmySetup(name).Add(front, n).Add(back, n).PlaceIn(back, Row.Back);
+
+        var header = new[] { "Arkada" }.Concat(backs.Select(b => b.Name)).Concat(["Ort. kazanma", "Arka hasarı", "Arka hayatta"]).ToArray();
+        var t = new Table(header);
+        foreach (var x in backs)
+        {
+            var cells = new List<string> { x.Name };
+            double winSum = 0, backDamage = 0, backSurvivors = 0;
+            int games = 0;
+            foreach (var y in backs)
+            {
+                var a = Build(x, "A");
+                var b = Build(y, "B");
+                var results = RunParallel(options.DuelRuns, 6_000_000 + x.Index * 31 + y.Index, rng => _simulator.Simulate(a, b, rng));
+                double rate = results.Average(Score);
+                cells.Add(Pct(rate));
+                if (x != y) { winSum += rate; games++; }
+                foreach (var r in results)
+                {
+                    var bs = r.SideA.ByType.First(s => s.Type == x);
+                    backDamage += bs.DamageDealt;
+                    backSurvivors += bs.Survivors;
+                }
+            }
+            int battles = backs.Count * options.DuelRuns;
+            cells.Add(games == 0 ? "—" : Pct(winSum / games));
+            cells.Add(F(backDamage / battles, "0"));
+            cells.Add($"{backSurvivors / battles:0.0}/{n}");
+            t.Add(cells.ToArray());
+        }
+        t.Print();
+        Console.WriteLine("   Ort. kazanma: kendi aynası hariç. Arka hasarı/hayatta: arka sıradaki X'in savaş başına ortalaması.");
+        Console.WriteLine("   Yakın dövüşçü arkadayken yedektir: ön sıra düşene kadar vurmaz.");
+        Console.WriteLine();
+    }
+
+    // ---- 6. Target priority ------------------------------------------------------------------
 
     private void PrintTargeting()
     {
-        int n = Math.Max(500, options.Matches / 5);
-        Heading($"5. Hedef seçimi: aynı rastgele ordular, A'nın hedef ayarı vs B 'rastgele' ({n} maç)");
-        var priorities = new[] { TargetPriority.Random, TargetPriority.Weakest, TargetPriority.Counter };
-        var t = new Table("A'nın hedefi", "A kazanma");
-        foreach (var p in priorities)
-        {
-            var scores = RunParallel(n, 5_000_000, rng =>
+        var priorities = new List<TargetPriority> { TargetPriority.Weakest, TargetPriority.Counter };
+        priorities.AddRange(Units.Select(TargetPriority.Prefer));
+        int n = Math.Max(500, options.Matches / 10);
+        Heading($"6. Hedef seçimi: her ayar birbirine karşı, rastgele ordular ({n} ordu çifti × 2 taraf) — satırın kazanma oranı");
+
+        var rates = new double[priorities.Count, priorities.Count];
+        for (int i = 0; i < priorities.Count; i++)
+            for (int j = i + 1; j < priorities.Count; j++)
             {
-                int size = rng.Next(options.MinSize, options.MaxSize + 1);
-                var a = _generator.Random(rng, size, options.Budget, "A");
-                var b = _generator.Random(rng, size, options.Budget, "B");
-                a.Targeting = p;
-                return Score(_simulator.Simulate(a, b, rng));
-            });
-            t.Add(ArmyParser.Describe(p), Pct(scores.Average()));
+                var (p, q) = (priorities[i], priorities[j]);
+                // Each army pair is played twice with sides swapped, so only the targeting differs.
+                var scores = RunParallel(n, 7_000_000 + i * 31 + j, rng =>
+                {
+                    int size = rng.Next(options.MinSize, options.MaxSize + 1);
+                    var x = _generator.Random(rng, size, options.Budget, "X");
+                    var y = _generator.Random(rng, size, options.Budget, "Y");
+                    double first = Score(_simulator.Simulate(x.Clone("A", p), y.Clone("B", q), rng));
+                    double second = Score(_simulator.Simulate(y.Clone("A", p), x.Clone("B", q), rng));
+                    return (first + second) / 2;
+                });
+                rates[i, j] = scores.Average();
+                rates[j, i] = 1 - rates[i, j];
+            }
+
+        var names = priorities.Select(ArmyParser.Describe).ToList();
+        var t = new Table(new[] { "" }.Concat(names).Concat(["Ortalama"]).ToArray());
+        for (int i = 0; i < priorities.Count; i++)
+        {
+            var cells = new List<string> { names[i] };
+            for (int j = 0; j < priorities.Count; j++)
+            {
+                if (i == j) { cells.Add("—"); continue; }
+                cells.Add(Pct(rates[i, j]) + (rates[i, j] > options.TargetDominanceThreshold ? "!" : ""));
+            }
+            cells.Add(Pct(Enumerable.Range(0, priorities.Count).Where(j => j != i).Average(j => rates[i, j])));
+            t.Add(cells.ToArray());
         }
         t.Print();
+        Console.WriteLine($"   ! = satırdaki ayar sütundakini %{options.TargetDominanceThreshold * 100:0}'in üstünde yeniyor.");
+
+        for (int i = 0; i < priorities.Count; i++)
+        {
+            var beaten = Enumerable.Range(0, priorities.Count).Where(j => j != i && rates[i, j] > options.TargetDominanceThreshold).ToList();
+            if (beaten.Count == 0) continue;
+            string list = string.Join(", ", beaten.Select(j => $"{names[j]} {Pct(rates[i, j])}"));
+            Console.WriteLine($"   ! '{names[i]}' şunları yeniyor: {list}");
+            _findings.Add($"Hedef: '{names[i]}' baskın ({list}).");
+        }
         Console.WriteLine();
     }
 
@@ -309,6 +429,8 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
             Console.WriteLine($"  ! {u.Name} fazla güçlü görünüyor.");
         foreach (var u in weak)
             Console.WriteLine($"  ! {u.Name} zayıf görünüyor.");
+        foreach (var f in _findings)
+            Console.WriteLine($"  ! {f}");
         Console.WriteLine();
     }
 
