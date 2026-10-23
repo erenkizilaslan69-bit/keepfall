@@ -32,6 +32,14 @@ npm --prefix client install
 npm --prefix client run dev
 ```
 
+### Görseller (Tiny Swords)
+
+İstemci [Pixel Frog](https://pixelfrog-assets.itch.io/tiny-swords)'ın **Tiny Swords Free Pack**'ini kullanır. Lisansı yeniden dağıtıma izin vermediği için repoda yok:
+
+1. https://pixelfrog-assets.itch.io/tiny-swords adresinden **"Tiny Swords (Free Pack).zip"** dosyasını indir.
+2. Zip'i `client/public/assets/tiny-swords/` içine aç. Sonuç: `client/public/assets/tiny-swords/Tiny Swords (Free Pack)/Units/...`
+3. `client/public/assets/` git tarafından yok sayılır.
+
 Sonra http://localhost:5173 adresini aç. Geliştirme ortamında ×5 / ×20 hız butonları çıkar.
 `npm --prefix client run build` sonrası sunucu `client/dist`'i kendisi de sunar (http://localhost:5080).
 

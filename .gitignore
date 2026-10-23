@@ -28,3 +28,6 @@ Thumbs.db
 # Client
 node_modules/
 client/dist/
+
+# Third-party art (license forbids redistribution; see README)
+client/public/assets/
