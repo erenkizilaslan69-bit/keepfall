@@ -15,6 +15,8 @@ public sealed record RoomOptions
     public int MaxNameLength { get; init; } = 16;
     /// <summary>A player who drops out of the lobby keeps their seat this long.</summary>
     public TimeSpan LobbyGrace { get; init; } = TimeSpan.FromMinutes(2);
+    /// <summary>A host who drops (e.g. refreshes the page) stays host this long before it passes on.</summary>
+    public TimeSpan HostGrace { get; init; } = TimeSpan.FromSeconds(30);
     /// <summary>Dev-only ×N game speed, settable by the host.</summary>
     public bool AllowSpeedControl { get; init; }
     public double? PrepSeconds { get; init; }
@@ -99,7 +101,7 @@ public sealed class Room
         {
             existing.Connections++;
             existing.DisconnectedAtUtc = null;
-            if (HostSeat == 0 || Host is not { Connected: true }) HostSeat = existing.Seat;
+            if (Host is null) HostSeat = existing.Seat;
             return new JoinResult(existing, true, null);
         }
 
@@ -110,7 +112,8 @@ public sealed class Room
         var player = new RoomPlayer(seat, Tokens.NewPlayerToken(), CleanName(name, seat)) { Connections = 1 };
         _players.Add(player);
         _players.Sort((a, b) => a.Seat.CompareTo(b.Seat));
-        if (Host is not { Connected: true }) HostSeat = seat;
+        // A host who only refreshed keeps the room; Maintain hands it on after the grace period.
+        if (Host is null) HostSeat = seat;
         return new JoinResult(player, false, null);
     }
 
@@ -119,18 +122,26 @@ public sealed class Room
     {
         if (Find(token) is not { } player) return;
         player.Connections = Math.Max(0, player.Connections - 1);
-        if (player.Connected) return;
-        player.DisconnectedAtUtc = nowUtc;
-        if (player.Seat == HostSeat) PassHost();
+        if (!player.Connected) player.DisconnectedAtUtc = nowUtc;
     }
 
-    /// <summary>In the lobby, seats of players gone longer than the grace period are freed.</summary>
-    public bool ExpireLobbySeats(DateTime nowUtc)
+    /// <summary>
+    /// Periodic housekeeping; returns true if anything visible changed. In the lobby, seats of players
+    /// gone longer than <see cref="RoomOptions.LobbyGrace"/> are freed. A host gone longer than
+    /// <see cref="RoomOptions.HostGrace"/> hands the room to the next connected player.
+    /// </summary>
+    public bool Maintain(DateTime nowUtc)
     {
-        if (Phase != RoomPhase.Lobby) return false;
-        int removed = _players.RemoveAll(p => !p.Connected && nowUtc - p.DisconnectedAtUtc > Options.LobbyGrace);
-        if (removed > 0 && Host is null) PassHost();
-        return removed > 0;
+        bool changed = false;
+        if (Phase == RoomPhase.Lobby)
+            changed = _players.RemoveAll(p => !p.Connected && nowUtc - p.DisconnectedAtUtc > Options.LobbyGrace) > 0;
+        if (Host is null || (!Host.Connected && nowUtc - Host.DisconnectedAtUtc > Options.HostGrace))
+        {
+            int before = HostSeat;
+            PassHost();
+            changed |= HostSeat != before;
+        }
+        return changed;
     }
 
     /// <summary>Nobody has been connected for <paramref name="after"/>.</summary>
@@ -215,6 +226,7 @@ public sealed class Room
         return action(player);
     }
 
+    /// <summary>To the first connected player; if nobody is connected, the host stays.</summary>
     private void PassHost()
     {
         var next = _players.FirstOrDefault(p => p.Connected && p.Seat != HostSeat)

@@ -49,7 +49,7 @@ public sealed class TickLoop(
                 registry.Remove(room.Code);
                 return;
             }
-            roomChanged = room.ExpireLobbySeats(now);
+            roomChanged = room.Maintain(now);
             preparing = room.Phase == RoomPhase.Preparation;
             if (preparing) ended = room.Tick(tickSeconds);
         }

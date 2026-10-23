@@ -76,7 +76,7 @@ public class RoomTests
         Assert.False(room.Join("Fazla", null, false, T0).Ok); // full
 
         room.Disconnect(b.Token, T0);
-        Assert.True(room.ExpireLobbySeats(T0 + TimeSpan.FromMinutes(3)));
+        Assert.True(room.Maintain(T0 + TimeSpan.FromMinutes(3)));
         var e = Join(room, "Ece");
         Assert.Equal(2, e.Seat);
         Assert.Equal(PlayerColor.Red, e.Color);
@@ -89,7 +89,7 @@ public class RoomTests
         Join(room);
         var b = Join(room);
         room.Disconnect(b.Token, T0);
-        Assert.False(room.ExpireLobbySeats(T0 + TimeSpan.FromMinutes(1)));
+        Assert.False(room.Maintain(T0 + TimeSpan.FromMinutes(1)));
         Assert.Contains(b, room.Players);
     }
 
@@ -104,12 +104,22 @@ public class RoomTests
     }
 
     [Fact]
-    public void Host_passes_to_the_next_connected_player_when_the_host_drops()
+    public void Host_passes_on_only_after_the_host_has_been_gone_a_while()
     {
         var room = NewRoom();
         var a = Join(room); var b = Join(room);
         Assert.Equal(a.Seat, room.HostSeat);
+
+        // A refresh: gone for a moment, back with the same token, still host.
         room.Disconnect(a.Token, T0);
+        room.Maintain(T0 + TimeSpan.FromSeconds(5));
+        Assert.Equal(a.Seat, room.HostSeat);
+        room.Join(null, a.Token, false, T0 + TimeSpan.FromSeconds(6));
+        Assert.Equal(a.Seat, room.HostSeat);
+
+        // Really gone: after the grace period the next connected player becomes host.
+        room.Disconnect(a.Token, T0);
+        Assert.True(room.Maintain(T0 + TimeSpan.FromSeconds(31)));
         Assert.Equal(b.Seat, room.HostSeat);
     }
 
