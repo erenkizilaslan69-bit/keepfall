@@ -1,0 +1,26 @@
+# .NET build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userprefs
+
+# IDEs
+.vs/
+.vscode/
+.idea/
+*.swp
+
+# Test results / coverage
+TestResults/
+coverage*/
+*.coverage
+
+# Office temp/lock files
+~$*
+
+# OS
+Thumbs.db
+.DS_Store

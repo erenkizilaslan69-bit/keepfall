@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BattleSim/BattleSim.csproj" />
+    <Project Path="src/GameCore/GameCore.csproj" />
+  </Folder>
+</Solution>

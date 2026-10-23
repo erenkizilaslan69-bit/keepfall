@@ -1,0 +1,67 @@
+// Keepfall denge ayarları (v0.1) — kaynak: docs/kale_oyunu_sayilar.xlsx
+// Bu dosya yorum satırlarına izin verir. Sayıları değiştir, BattleSim'i tekrar çalıştır.
+{
+  "economy": {
+    // Kişi başı dakikada üretim. Birlik maliyetini "odun karşılığına" çevirmek için kullanılır.
+    "productionPerMinute": { "food": 6, "wood": 5, "iron": 4 }
+  },
+
+  "combat": {
+    // Simülasyon adımı (sn). Küçüldükçe daha hassas, daha yavaş.
+    "tickSeconds": 0.1,
+    // Bu süreyi geçen savaş berabere sayılır.
+    "maxBattleSeconds": 600,
+    // true: her birliğin ilk vuruşu 0..saldırı aralığı arasında rastgele bir anda gelir
+    // (herkesin aynı anda vurmasını engeller). false: herkes ilk vuruşu hemen yapar.
+    "randomizeFirstAttack": true,
+
+    // Karşılık matrisindeki "+", "-", "=" sembollerinin değeri.
+    "advantageMultiplier": 1.5,
+    "disadvantageMultiplier": 0.75,
+    "neutralMultiplier": 1.0
+  },
+
+  // range: "melee" (yakın) | "ranged" (uzak)
+  // row:   "front" (ön) | "back" (arka). Arka sıra, kendi ön sırası düşene kadar hasar almaz.
+  //        Arka sıradaki yakın dövüşçüler yedektir: ön sıra düşünce öne çıkar.
+  "units": [
+    {
+      "id": "okcu", "name": "Okçu", "phase": 1,
+      "cost": { "iron": 1, "wood": 4, "food": 0, "people": 1 },
+      "buildSeconds": 25,
+      "hp": 60, "damage": 10, "attackInterval": 1.2,
+      "range": "ranged", "row": "back"
+    },
+    {
+      "id": "kilicli", "name": "Kılıçlı", "phase": 1,
+      "cost": { "iron": 3, "wood": 2, "food": 0, "people": 1 },
+      "buildSeconds": 30,
+      "hp": 100, "damage": 12, "attackInterval": 1.0,
+      "range": "melee", "row": "front"
+    },
+    {
+      "id": "mizrakci", "name": "Mızrakçı", "phase": 1,
+      "cost": { "iron": 1, "wood": 3, "food": 0, "people": 1 },
+      "buildSeconds": 20,
+      "hp": 90, "damage": 11, "attackInterval": 1.2,
+      "range": "melee", "row": "front"
+    },
+    {
+      "id": "kalkanli", "name": "Kalkanlı", "phase": 1,
+      "cost": { "iron": 2, "wood": 3, "food": 0, "people": 1 },
+      "buildSeconds": 35,
+      "hp": 150, "damage": 7, "attackInterval": 1.3,
+      "range": "melee", "row": "front"
+    }
+  ],
+
+  // Saldıran (satır) -> savunan (sütun) hasar çarpanı.
+  // "+" = avantaj, "-" = dezavantaj, "=" = nötr, ya da doğrudan bir sayı (ör. 1.2).
+  // Yazılmayan eşleşmeler nötr sayılır.
+  "counters": {
+    "okcu":     { "okcu": "=", "kilicli": "+", "mizrakci": "=", "kalkanli": "-" },
+    "kilicli":  { "okcu": "-", "kilicli": "=", "mizrakci": "+", "kalkanli": "=" },
+    "mizrakci": { "okcu": "=", "kilicli": "-", "mizrakci": "=", "kalkanli": "+" },
+    "kalkanli": { "okcu": "+", "kilicli": "=", "mizrakci": "-", "kalkanli": "=" }
+  }
+}
