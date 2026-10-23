@@ -7,7 +7,8 @@ namespace Keepfall.GameCore.Combat;
 /// Resolves a field battle between two armies with fixed time steps.
 ///
 /// Rules:
-/// - Only the front row can be hit while it has living units; the back row is safe until then.
+/// - Ranged units can hit any enemy, in either row. Melee units can only hit the enemy front row
+///   while it has living units; the back row is open to them once it falls.
 /// - Ranged units attack from either row. Melee units attack only from the front row; melee units
 ///   placed in the back are reserves and step forward when their own front row is gone.
 /// - Damage = attacker damage × counter multiplier. All hits in a tick land simultaneously,
@@ -60,10 +61,9 @@ public sealed class BattleSimulator
                         continue;
                     }
 
-                    Row reachable = enemyFrontStanding ? Row.Front : Row.Back;
                     var target = soldier.Target;
-                    if (target is null || !target.Alive || target.Row != reachable)
-                        target = soldier.Target = ChooseTarget(soldier, enemies, reachable, setups[s].Targeting, candidates, rng);
+                    if (target is null || !target.Alive || !CanReach(soldier, target, enemyFrontStanding))
+                        target = soldier.Target = ChooseTarget(soldier, enemies, enemyFrontStanding, setups[s].Targeting, candidates, rng);
                     if (target is null) { soldier.Cooldown = 0; continue; }
 
                     double damage = soldier.Type.Damage * _rules.Counters.Get(soldier.Type, target.Type);
@@ -136,12 +136,15 @@ public sealed class BattleSimulator
         if (moved > 0) log?.Add(Fmt(now, $"{name}: {moved} yedek birlik ön sıraya geçti."));
     }
 
-    private Soldier? ChooseTarget(Soldier attacker, List<Soldier> enemies, Row row, TargetPriority priority,
+    private static bool CanReach(Soldier attacker, Soldier target, bool enemyFrontStanding) =>
+        attacker.Type.Range == AttackRange.Ranged || target.Row == Row.Front || !enemyFrontStanding;
+
+    private Soldier? ChooseTarget(Soldier attacker, List<Soldier> enemies, bool enemyFrontStanding, TargetPriority priority,
         List<Soldier> candidates, Random rng)
     {
         candidates.Clear();
         foreach (var e in enemies)
-            if (e.Alive && e.Row == row) candidates.Add(e);
+            if (e.Alive && CanReach(attacker, e, enemyFrontStanding)) candidates.Add(e);
         if (candidates.Count == 0) return null;
 
         switch (priority.Kind)
