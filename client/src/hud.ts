@@ -1,16 +1,9 @@
+import { clock, esc, fmt, rate } from './format';
 import type { GameConnection } from './net';
-import type { BuildingType, BuildingView, CastleView, CommandResult, Job, SummaryView } from './types';
+import type { BuildingType, BuildingView, CastleView, CommandResult, Job } from './types';
 
-// Plain-HTML panel. The structure is built once from the first state and then updated in place,
-// so dropdowns and hover states survive the once-per-second refresh.
-
-const fmt = (n: number) => Math.floor(n + 1e-6).toString();
-const rate = (n: number) => (n >= 0 ? '+' : '') + n.toFixed(1);
-const clock = (s: number) => {
-  const t = Math.ceil(s);
-  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
-};
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+// Plain-HTML panel for the player's own castle. The structure is built once from the first state
+// and then updated in place, so dropdowns and hover states survive the once-per-second refresh.
 
 export class Hud {
   private built = false;
@@ -119,8 +112,7 @@ export class Hud {
         ${units}
         <div id="queue" class="queue"></div>
       </section>
-      <div id="toast" class="toast"></div>
-      <div id="summary" class="modal hidden"></div>`;
+      <div id="toast" class="toast"></div>`;
     this.built = true;
   }
 
@@ -209,15 +201,6 @@ export class Hud {
       bar.style.width = `${(100 * s.queue[i].progress) / s.queue[i].buildSeconds}%`;
     });
 
-    const modal = this.q('#summary');
-    if (s.summary) {
-      if (modal.classList.contains('hidden')) {
-        modal.innerHTML = summaryHtml(s.summary);
-        modal.classList.remove('hidden');
-      }
-    } else {
-      modal.classList.add('hidden');
-    }
   }
 
   // ---- input -------------------------------------------------------------------------------
@@ -241,13 +224,12 @@ export class Hud {
       case 'disarm': result = await this.net.disarmSoldiers(d.unit!, 1); break;
       case 'growth': result = await this.net.setGrowth(!this.state.growthEnabled); break;
       case 'speed': result = await this.net.setSpeed(n); break;
-      case 'restart': result = await this.net.restart(); break;
       default: return;
     }
     if (!result.ok) this.toast(result.error ?? 'Olmadı.');
   }
 
-  private toast(message: string): void {
+  toast(message: string): void {
     const el = this.q('#toast');
     el.textContent = message;
     el.classList.add('show');
@@ -271,52 +253,4 @@ function upgradeGainText(b: BuildingView): string {
   }
   if (gain <= 0) return `Yükselt → +0 ${PRODUCT_NAMES[b.product]}/dk (işçi yok)`;
   return `Yükselt → +${Number(gain.toFixed(1))} ${PRODUCT_NAMES[b.product]}/dk`;
-}
-
-function summaryHtml(s: SummaryView): string {
-  const minutes = s.durationSeconds / 60;
-  const workers = s.workers.map((w) => `${esc(w.name)} ${w.count}`).join(' · ');
-  const army = s.units.filter((u) => u.soldiers + u.weapons > 0)
-    .map((u) => `${esc(u.name)}: ${u.soldiers} asker, ${u.weapons} silah depoda`).join('<br>') || 'Asker yok.';
-  const buildings = s.buildings.map((b) => `${esc(b.name)} Sv ${b.level}`).join(' · ');
-  return `
-    <div class="modal-box">
-      <h2>Hazırlık bitti — ekonomi özeti</h2>
-      <div class="grid">
-        <div>Nüfus</div><div><b>${s.startPopulation} → ${s.finalPopulation}</b> (en yüksek ${s.peakPopulation}, ${s.peopleBorn} doğum)</div>
-        <div>Üretilen</div><div>${fmt(s.produced.food)} yemek · ${fmt(s.produced.wood)} odun · ${fmt(s.produced.iron)} demir</div>
-        <div>Elde kalan</div><div>${fmt(s.final.food)} yemek · ${fmt(s.final.wood)} odun · ${fmt(s.final.iron)} demir</div>
-        <div>Silah</div><div>${s.weaponsMade} üretildi</div>
-        <div>Ordu</div><div>${army}</div>
-        <div>Meslekler</div><div>${workers}</div>
-        <div>Binalar</div><div>${buildings}</div>
-        <div>Açlık</div><div>${Math.round(s.starvingSeconds)} sn</div>
-        <div>Boşta</div><div>${(s.idleWorkerSeconds / 60).toFixed(1)} işçi-dakika (ortalama ${(s.idleWorkerSeconds / 60 / Math.max(minutes, 1e-9)).toFixed(1)} kişi boşta)</div>
-      </div>
-      ${chart(s)}
-      <button data-action="restart" class="primary">Yeniden başla</button>
-    </div>`;
-}
-
-/** Population and food over time as a small inline SVG (two lines, own scales). */
-function chart(s: SummaryView): string {
-  const pts = s.samples;
-  if (pts.length < 2) return '';
-  const w = 420, h = 140, pad = 24;
-  const maxT = pts[pts.length - 1].seconds || 1;
-  const maxPop = Math.max(...pts.map((p) => p.population), 1);
-  const maxFood = Math.max(...pts.map((p) => p.food), 1);
-  const x = (t: number) => pad + ((w - 2 * pad) * t) / maxT;
-  const y = (v: number, max: number) => h - pad - ((h - 2 * pad) * v) / max;
-  const line = (f: (p: (typeof pts)[number]) => number, max: number) =>
-    pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.seconds).toFixed(1)},${y(f(p), max).toFixed(1)}`).join(' ');
-  return `
-    <svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Nüfus ve yemek grafiği">
-      <line x1="${pad}" y1="${h - pad}" x2="${w - pad}" y2="${h - pad}" class="axis"/>
-      <path d="${line((p) => p.population, maxPop)}" class="pop"/>
-      <path d="${line((p) => p.food, maxFood)}" class="food"/>
-      <text x="${pad}" y="14" class="pop-label">nüfus (en çok ${maxPop})</text>
-      <text x="${w - pad}" y="14" text-anchor="end" class="food-label">yemek (en çok ${fmt(maxFood)})</text>
-      <text x="${w - pad}" y="${h - 6}" text-anchor="end" class="axis-label">${clock(maxT)}</text>
-    </svg>`;
 }

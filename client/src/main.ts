@@ -1,20 +1,16 @@
 import Phaser from 'phaser';
 import './style.css';
 import { Hud } from './hud';
+import { loadName, saveName } from './identity';
 import { GameConnection, type ConnectionStatus } from './net';
 import { CastleScene, SCENE_HEIGHT, SCENE_WIDTH } from './scene/CastleScene';
+import { EndScreen, HomeScreen, LobbyScreen, rosterHtml } from './screens';
+import type { CastleView, RoomView, SummaryView } from './types';
 
-const scene = new CastleScene();
-new Phaser.Game({
-  type: Phaser.AUTO,
-  parent: 'stage',
-  width: SCENE_WIDTH,
-  height: SCENE_HEIGHT,
-  backgroundColor: '#47aba9',
-  pixelArt: true,
-  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_HORIZONTALLY },
-  scene,
-});
+// Routes: "/" is the home screen, "/oda/ABCD" is a room. Inside a room the screen follows the
+// room's phase: lobby → game (preparation) → end screen.
+
+const app = document.getElementById('app')!;
 
 const statusText: Record<ConnectionStatus, string> = {
   connecting: 'bağlanıyor…',
@@ -23,21 +19,156 @@ const statusText: Record<ConnectionStatus, string> = {
   disconnected: 'bağlantı yok — sunucu çalışıyor mu?',
 };
 
-let hud: Hud | null = null;
-const net = new GameConnection(
-  (state) => {
-    hud!.update(state);
-    scene.setState(state);
-  },
-  (status) => hud?.setStatus(statusText[status]),
-);
-hud = new Hud(document.getElementById('panel')!, net);
-scene.onBuildingClick = (type) => hud!.focusBuilding(type);
-// Dev only: lets the console preview other building levels / counts without playing up to them.
-if (import.meta.env.DEV) (window as unknown as { keepfallScene: CastleScene }).keepfallScene = scene;
+type Screen = 'none' | 'home' | 'lobby' | 'game' | 'end';
+let screen: Screen = 'none';
+let lastCastle: CastleView | null = null;
+let summary: SummaryView | null = null;
+let status = '';
 
-net.start().catch((e) => {
-  console.error(e);
-  document.getElementById('panel')!.innerHTML =
-    '<p class="banner danger">Sunucuya bağlanılamadı. <code>dotnet run --project src/Keepfall.Server</code> çalışıyor mu?</p>';
+let lobby: LobbyScreen | null = null;
+let end: EndScreen | null = null;
+let hud: Hud | null = null;
+let game: Phaser.Game | null = null;
+let scene: CastleScene | null = null;
+
+const net = new GameConnection({
+  room: onRoom,
+  castle: onCastle,
+  matchEnded: (s) => { summary = s; end?.setSummary(s); },
+  status: (s) => {
+    status = statusText[s];
+    hud?.setStatus(status);
+    if (s === 'disconnected' && screen !== 'home') showBanner('Sunucuyla bağlantı yok. Sayfayı yenileyince kaldığın yere dönersin.');
+  },
 });
+
+// ---- room events ---------------------------------------------------------------------------
+
+function onRoom(r: RoomView): void {
+  const wanted: Screen = r.phase === 'lobby' ? 'lobby' : r.phase === 'preparation' ? 'game' : 'end';
+  if (wanted !== screen) {
+    if (wanted === 'lobby') showLobby(r);
+    else if (wanted === 'game') showGame();
+    else showEnd(r);
+  }
+  if (screen === 'lobby') lobby!.update(r);
+  else if (screen === 'game') document.getElementById('roster')!.innerHTML = rosterHtml(r, net.seat);
+  else if (screen === 'end') end!.update(r);
+}
+
+function onCastle(c: CastleView): void {
+  lastCastle = c;
+  if (c.summary) { summary = c.summary; end?.setSummary(c.summary); }
+  if (screen === 'game') {
+    hud!.update(c);
+    scene!.setState(c);
+  }
+}
+
+// ---- screens -------------------------------------------------------------------------------
+
+function clear(): void {
+  game?.destroy(true);
+  game = null; scene = null; hud = null; lobby = null; end = null;
+  app.innerHTML = '';
+}
+
+function showHome(defaults: { code?: string; error?: string } = {}): void {
+  clear();
+  screen = 'home';
+  new HomeScreen(app, { name: loadName(), code: defaults.code ?? '', error: defaults.error }, {
+    create: async (name) => {
+      saveName(name);
+      const r = await net.createRoom(name);
+      if (!r.ok) return r.error;
+      history.pushState(null, '', `/oda/${r.code}${location.search}`);
+      return null;
+    },
+    join: async (name, code) => {
+      const c = code.trim().toUpperCase();
+      if (!/^[A-Z]{4}$/.test(c)) return 'Oda kodu 4 harf olmalı.';
+      saveName(name);
+      const r = await net.joinRoom(c, name);
+      if (!r.ok) return r.error;
+      history.pushState(null, '', `/oda/${r.code}${location.search}`);
+      return null;
+    },
+  });
+}
+
+function showLobby(r: RoomView): void {
+  clear();
+  screen = 'lobby';
+  lastCastle = null;
+  summary = null;
+  lobby = new LobbyScreen(app, net, net.seat, r, saveName);
+}
+
+function showGame(): void {
+  clear();
+  screen = 'game';
+  app.innerHTML = `
+    <main class="game">
+      <div id="stage"></div>
+      <aside id="panel"><div id="roster"></div><div id="hud"><p class="muted">Kale hazırlanıyor…</p></div></aside>
+    </main>`;
+  hud = new Hud(document.getElementById('hud')!, net);
+  hud.setStatus(status);
+  scene = new CastleScene();
+  scene.onBuildingClick = (type) => hud?.focusBuilding(type);
+  // Dev only: lets the console preview other building levels / counts without playing up to them.
+  if (import.meta.env.DEV) (window as unknown as { keepfallScene: CastleScene }).keepfallScene = scene;
+  game = new Phaser.Game({
+    type: Phaser.AUTO,
+    parent: 'stage',
+    width: SCENE_WIDTH,
+    height: SCENE_HEIGHT,
+    backgroundColor: '#47aba9',
+    pixelArt: true,
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_HORIZONTALLY },
+    scene,
+  });
+  if (lastCastle) onCastle(lastCastle);
+}
+
+function showEnd(r: RoomView): void {
+  clear();
+  screen = 'end';
+  end = new EndScreen(app, net, net.seat);
+  if (summary) end.setSummary(summary);
+  end.update(r);
+}
+
+function showBanner(text: string): void {
+  let el = document.getElementById('banner');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'banner';
+    el.className = 'banner danger top';
+    document.body.prepend(el);
+  }
+  el.textContent = text;
+}
+
+// ---- start ---------------------------------------------------------------------------------
+
+window.addEventListener('popstate', () => location.reload());
+
+async function main(): Promise<void> {
+  try {
+    await net.start();
+  } catch (e) {
+    console.error(e);
+    app.innerHTML = '<div class="screen"><p class="banner danger">Sunucuya bağlanılamadı. <code>dotnet run --project src/Keepfall.Server</code> çalışıyor mu?</p></div>';
+    return;
+  }
+  const code = /^\/oda\/([A-Za-z]{4})\/?$/.exec(location.pathname)?.[1]?.toUpperCase();
+  if (!code) { showHome(); return; }
+  const r = await net.joinRoom(code, loadName());
+  if (!r.ok) {
+    history.replaceState(null, '', `/${location.search}`);
+    showHome({ code, error: r.error ?? 'Odaya katılınamadı.' });
+  }
+}
+
+void main();

@@ -1,57 +1,75 @@
 import * as signalR from '@microsoft/signalr';
-import type { BuildingType, CastleView, CommandResult, Job } from './types';
-
-const PLAYER_KEY = 'keepfall.playerId';
-
-/** A stable id per browser so a page refresh rejoins the same game. Falls back to a fresh id if storage is blocked. */
-function playerId(): string {
-  try {
-    let id = localStorage.getItem(PLAYER_KEY);
-    if (!id) {
-      id = crypto.randomUUID();
-      localStorage.setItem(PLAYER_KEY, id);
-    }
-    return id;
-  } catch {
-    return crypto.randomUUID();
-  }
-}
+import { loadIdentity, saveIdentity } from './identity';
+import type { BuildingType, CastleView, CommandResult, Job, JoinView, RoomView, SummaryView } from './types';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
+
+export interface ConnectionEvents {
+  room: (room: RoomView) => void;
+  castle: (castle: CastleView) => void;
+  matchEnded: (summary: SummaryView) => void;
+  status: (status: ConnectionStatus) => void;
+}
 
 /** Thin wrapper over the hub: the client only sends commands, the server decides. */
 export class GameConnection {
   private readonly hub: signalR.HubConnection;
-  private readonly id = playerId();
+  private code: string | null = null;
+  private name = '';
+  /** This tab's seat in the room (1–4), 0 before joining. */
+  seat = 0;
 
-  constructor(
-    private readonly onState: (state: CastleView) => void,
-    private readonly onStatus: (status: ConnectionStatus) => void,
-  ) {
+  constructor(private readonly on: ConnectionEvents) {
     this.hub = new signalR.HubConnectionBuilder()
       .withUrl('/hub')
       .withAutomaticReconnect()
       .configureLogging(signalR.LogLevel.Warning)
       .build();
-    this.hub.on('State', (state: CastleView) => this.onState(state));
-    this.hub.onreconnecting(() => this.onStatus('reconnecting'));
-    // A reconnect is a new connection on the server, so it has to join again.
-    this.hub.onreconnected(() => void this.join());
-    this.hub.onclose(() => this.onStatus('disconnected'));
+    this.hub.on('RoomState', (room: RoomView) => this.on.room(room));
+    this.hub.on('CastleState', (castle: CastleView) => this.on.castle(castle));
+    this.hub.on('MatchEnded', (summary: SummaryView) => this.on.matchEnded(summary));
+    this.hub.onreconnecting(() => this.on.status('reconnecting'));
+    // A reconnect is a new connection on the server: rejoin the same seat with our token.
+    this.hub.onreconnected(() => { if (this.code) void this.joinRoom(this.code, this.name); });
+    this.hub.onclose(() => this.on.status('disconnected'));
   }
 
   async start(): Promise<void> {
-    this.onStatus('connecting');
+    this.on.status('connecting');
     await this.hub.start();
-    await this.join();
+    this.on.status('connected');
   }
 
-  private async join(): Promise<void> {
-    const state = await this.hub.invoke<CastleView>('Join', this.id);
-    this.onStatus('connected');
-    this.onState(state);
+  async createRoom(name: string): Promise<JoinView> {
+    const result = await this.hub.invoke<JoinView>('CreateRoom', name);
+    return this.joined(result, name);
   }
 
+  async joinRoom(code: string, name: string): Promise<JoinView> {
+    const id = loadIdentity(code.toUpperCase());
+    const result = await this.hub.invoke<JoinView>('JoinRoom', code, name, id.token, id.remembered);
+    return this.joined(result, name);
+  }
+
+  private joined(result: JoinView, name: string): JoinView {
+    if (result.ok) {
+      this.code = result.code;
+      this.name = name;
+      this.seat = result.seat;
+      saveIdentity(result.code!, result.token!);
+      this.on.status('connected');
+      if (result.room) this.on.room(result.room);
+    }
+    return result;
+  }
+
+  // Lobby
+  setName = (name: string) => { this.name = name; return this.call('SetName', name); };
+  setReady = (ready: boolean) => this.call('SetReady', ready);
+  startMatch = () => this.call('StartMatch');
+  backToLobby = () => this.call('BackToLobby');
+
+  // Own castle
   moveWorkers = (from: Job, to: Job, count: number) => this.call('MoveWorkers', from, to, count);
   queueWeapon = (unitId: string, count: number) => this.call('QueueWeapon', unitId, count);
   cancelWeapon = (index: number) => this.call('CancelWeapon', index);
@@ -60,7 +78,6 @@ export class GameConnection {
   upgradeBuilding = (building: BuildingType) => this.call('UpgradeBuilding', building);
   setGrowth = (enabled: boolean) => this.call('SetGrowth', enabled);
   setSpeed = (speed: number) => this.call('SetSpeed', speed);
-  restart = () => this.call('Restart');
 
   private async call(method: string, ...args: unknown[]): Promise<CommandResult> {
     try {

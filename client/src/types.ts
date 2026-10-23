@@ -48,8 +48,27 @@ export interface SummaryView {
   samples: EconomySample[];
 }
 
+export type PlayerColor = 'blue' | 'red' | 'yellow' | 'purple';
+export type RoomPhase = 'lobby' | 'preparation' | 'ended';
+
+/** Public facts about a player; the server never sends anyone else's token or castle. */
+export interface PlayerView { seat: number; name: string; color: PlayerColor; ready: boolean; connected: boolean; isHost: boolean }
+
+export interface RoomView {
+  code: string;
+  phase: RoomPhase;
+  players: PlayerView[];
+  minPlayers: number;
+  maxPlayers: number;
+  canStart: boolean;
+  remainingSeconds: number | null;
+}
+
+export interface JoinView { ok: boolean; error: string | null; code: string | null; token: string | null; seat: number; room: RoomView | null }
+
 export interface CastleView {
   phase: MatchPhase;
+  color: PlayerColor;
   elapsedSeconds: number;
   remainingSeconds: number;
   prepSeconds: number;
