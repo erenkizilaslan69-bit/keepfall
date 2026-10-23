@@ -61,6 +61,7 @@ function onCastle(c: CastleView): void {
   if (c.summary) { summary = c.summary; end?.setSummary(c.summary); }
   if (screen === 'game') {
     hud!.update(c);
+    if (!scene) startScene(c.color);
     scene!.setState(c);
   }
 }
@@ -114,7 +115,12 @@ function showGame(): void {
     </main>`;
   hud = new Hud(document.getElementById('hud')!, net);
   hud.setStatus(status);
-  scene = new CastleScene();
+  if (lastCastle) onCastle(lastCastle);
+}
+
+/** The scene is drawn in the player's colour, so it starts with the first castle state. */
+function startScene(color: CastleView['color']): void {
+  scene = new CastleScene(color);
   scene.onBuildingClick = (type) => hud?.focusBuilding(type);
   // Dev only: lets the console preview other building levels / counts without playing up to them.
   if (import.meta.env.DEV) (window as unknown as { keepfallScene: CastleScene }).keepfallScene = scene;
@@ -128,7 +134,6 @@ function showGame(): void {
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_HORIZONTALLY },
     scene,
   });
-  if (lastCastle) onCastle(lastCastle);
 }
 
 function showEnd(r: RoomView): void {

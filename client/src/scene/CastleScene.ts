@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { BuildingType, BuildingView, CastleView } from '../types';
+import type { BuildingType, BuildingView, CastleView, PlayerColor } from '../types';
 import { createAnimations, preloadAssets } from './assets';
 import { CASTLE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH, type Part } from './layout';
 import { Soldiers } from './Soldiers';
@@ -40,13 +40,14 @@ export class CastleScene extends Phaser.Scene {
   private workers!: Workers;
   private soldiers!: Soldiers;
 
-  constructor() {
+  /** <paramref name="color"/>: the player's colour; units and buildings are drawn in it. */
+  constructor(private readonly color: PlayerColor) {
     super('castle');
   }
 
   preload(): void {
     this.load.on('loaderror', () => { this.loadFailed = true; });
-    preloadAssets(this);
+    preloadAssets(this, this.color);
   }
 
   create(): void {
@@ -56,7 +57,7 @@ export class CastleScene extends Phaser.Scene {
         { ...LABEL_STYLE, fontSize: '22px' }).setOrigin(0.5);
       return;
     }
-    createAnimations(this);
+    createAnimations(this, this.color);
     this.drawGround();
     this.add.image(CASTLE.x, CASTLE.y, 'castle').setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(CASTLE.y);
     for (const type of Object.keys(SITES) as BuildingType[]) this.createSite(type);
