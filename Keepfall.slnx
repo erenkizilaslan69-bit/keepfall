@@ -3,4 +3,7 @@
     <Project Path="src/BattleSim/BattleSim.csproj" />
     <Project Path="src/Keepfall.Core/Keepfall.Core.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Keepfall.Core.Tests/Keepfall.Core.Tests.csproj" />
+  </Folder>
 </Solution>

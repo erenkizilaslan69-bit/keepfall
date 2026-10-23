@@ -1,0 +1,195 @@
+using Keepfall.Core;
+using Keepfall.Core.Config;
+using Keepfall.Core.Economy;
+using Keepfall.Core.Match;
+
+namespace Keepfall.Core.Tests;
+
+/// <summary>Economy rules against the numbers in config/balance.json (Excel v1).</summary>
+public class EconomyTests
+{
+    private static readonly GameRules Rules = BalanceConfigLoader.LoadFromFile(
+        BalanceConfigLoader.FindDefaultPath(AppContext.BaseDirectory)
+        ?? throw new InvalidOperationException("config/balance.json bulunamadı."));
+
+    private static Castle NewCastle(bool growth = false)
+    {
+        var castle = new Castle(Rules);
+        castle.Execute(new SetGrowth(growth));
+        return castle;
+    }
+
+    private static void Run(Castle castle, double seconds)
+    {
+        for (int i = 0; i < seconds; i++) castle.Tick(1);
+    }
+
+    private static void Ok(CommandResult result) => Assert.True(result.Ok, result.Error);
+
+    [Theory]
+    [InlineData(10, 15)]
+    [InlineData(12, 19)]
+    [InlineData(16, 30)]
+    [InlineData(20, 47)]
+    [InlineData(30, 145)]
+    [InlineData(40, 449)]
+    public void New_person_cost_matches_the_spreadsheet_table(int population, double cost) =>
+        Assert.Equal(cost, Rules.Economy.NewPersonCost(population));
+
+    [Fact]
+    public void Prep_time_of_the_short_mode_is_five_minutes() =>
+        Assert.Equal(300, Rules.Match.ShortModePrepSeconds);
+
+    [Fact]
+    public void Castle_starts_with_everyone_idle_and_the_starting_resources()
+    {
+        var castle = new Castle(Rules);
+        Assert.Equal(10, castle.Workers[Job.Idle]);
+        Assert.Equal(10, castle.Population);
+        Assert.Equal((30.0, 20.0, 10.0), (castle.Food, castle.Wood, castle.Iron));
+    }
+
+    [Fact]
+    public void Growth_adds_an_idle_person_and_pays_the_cost()
+    {
+        var castle = NewCastle(growth: true);
+        castle.Tick(1);
+        Assert.Equal(11, castle.Population);
+        Assert.Equal(11, castle.Workers[Job.Idle]);
+        Assert.Equal(1, castle.Stats.PeopleBorn);
+        // 30 food − 10/60 eaten − 15 for the newcomer.
+        Assert.Equal(30 - 10.0 / 60 - 15, castle.Food, 6);
+    }
+
+    [Fact]
+    public void Food_never_goes_negative_and_starvation_halves_production()
+    {
+        var castle = NewCastle();
+        Run(castle, 180); // 10 people eat 10 food/min: 30 food lasts 3 minutes
+        Assert.Equal(0, castle.Food);
+        Assert.True(castle.Starving);
+
+        Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Lumberjack, 4)));
+        double before = castle.Wood;
+        Run(castle, 60);
+        // 4 lumberjacks × 5 wood/min × 0.5 starvation.
+        Assert.Equal(10, castle.Wood - before, 6);
+        Assert.Equal(0, castle.Food);
+    }
+
+    [Fact]
+    public void Starvation_ends_once_food_production_covers_consumption()
+    {
+        var castle = NewCastle();
+        Run(castle, 180);
+        Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Farmer, 4)));
+        castle.Tick(1); // 4 × 6 × 0.5 = 12/min in, 10/min out
+        Assert.False(castle.Starving);
+        Assert.True(castle.Food > 0);
+    }
+
+    [Fact]
+    public void Soldiers_eat_more_than_workers()
+    {
+        var castle = NewCastle();
+        Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Blacksmith, 1)));
+        Ok(castle.Execute(new QueueWeapon("okcu", 2)));
+        Run(castle, 50); // 2 bows at 25 s each
+        Assert.Equal(2, castle.Weapons[Rules.FindUnit("okcu")!]);
+        Assert.Equal(10, castle.FoodConsumptionPerMinute);
+
+        Ok(castle.Execute(new ArmWorkers("okcu", 2)));
+        Assert.Equal(8 * 1 + 2 * 1.5, castle.FoodConsumptionPerMinute);
+    }
+
+    [Fact]
+    public void Building_capacity_limits_workers_until_upgraded()
+    {
+        var castle = NewCastle();
+        Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Farmer, 4)));
+        Assert.False(castle.Execute(new MoveWorkers(Job.Idle, Job.Farmer, 1)).Ok);
+
+        // Level 2 costs 30 wood + 10 iron; we start with 20 wood.
+        Assert.False(castle.Execute(new UpgradeBuilding(BuildingType.Farm)).Ok);
+        Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Lumberjack, 4)));
+        Run(castle, 30); // +20 wood/min × 0.5 min = 10
+        Ok(castle.Execute(new UpgradeBuilding(BuildingType.Farm)));
+        Assert.True(castle.Building(BuildingType.Farm).IsUpgrading);
+
+        Run(castle, 59);
+        Assert.Equal(4, castle.Capacity(BuildingType.Farm)); // still level 1 while upgrading
+        castle.Tick(1);
+        Assert.Equal(2, castle.Building(BuildingType.Farm).Level);
+        Assert.Equal(6, castle.Capacity(BuildingType.Farm));
+        Assert.Equal(1.5, castle.Multiplier(BuildingType.Farm));
+        Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Farmer, 2)));
+        Assert.Equal(6 * 6 * 1.5, castle.ProductionPerMinute(Resource.Food));
+    }
+
+    [Fact]
+    public void Weapon_queue_charges_up_front_and_refunds_on_cancel()
+    {
+        var castle = NewCastle();
+        Ok(castle.Execute(new QueueWeapon("okcu", 2))); // 1 iron + 4 wood each
+        Assert.Equal((12.0, 8.0), (castle.Wood, castle.Iron));
+        Assert.False(castle.Execute(new QueueWeapon("kilicli", 3)).Ok); // 9 iron needed, 8 left
+
+        Ok(castle.Execute(new CancelWeapon(0)));
+        Assert.Equal((20.0, 10.0), (castle.Wood, castle.Iron));
+        Assert.Empty(castle.Queue);
+    }
+
+    [Fact]
+    public void Forge_speed_scales_with_blacksmiths_and_stops_without_them()
+    {
+        var castle = NewCastle();
+        Ok(castle.Execute(new QueueWeapon("mizrakci", 2))); // 20 s each
+        Run(castle, 30);
+        Assert.Equal(0, castle.Stats.WeaponsMade);
+
+        Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Blacksmith, 2)));
+        Run(castle, 10); // 2 blacksmiths: one spear per 10 s
+        Assert.Equal(1, castle.Stats.WeaponsMade);
+        Run(castle, 10);
+        Assert.Equal(2, castle.Stats.WeaponsMade);
+        Assert.Empty(castle.Queue);
+    }
+
+    [Fact]
+    public void Arming_takes_from_the_chosen_job_and_disarming_returns_to_idle()
+    {
+        var castle = NewCastle();
+        var spear = Rules.FindUnit("mizrakci")!;
+        Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Blacksmith, 2)));
+        Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Farmer, 3)));
+        Ok(castle.Execute(new QueueWeapon("mizrakci", 1)));
+        Run(castle, 10);
+
+        Assert.False(castle.Execute(new ArmWorkers("mizrakci", 2, Job.Farmer)).Ok); // only 1 spear
+        Ok(castle.Execute(new ArmWorkers("mizrakci", 1, Job.Farmer)));
+        Assert.Equal(2, castle.Workers[Job.Farmer]);
+        Assert.Equal(1, castle.Soldiers[spear]);
+        Assert.Equal(0, castle.Weapons[spear]);
+        Assert.Equal(10, castle.Population);
+
+        Ok(castle.Execute(new DisarmSoldiers("mizrakci", 1)));
+        Assert.Equal(0, castle.Soldiers[spear]);
+        Assert.Equal(1, castle.Weapons[spear]);
+        Assert.Equal(6, castle.Workers[Job.Idle]);
+    }
+
+    [Fact]
+    public void Preparation_ends_with_a_summary_and_rejects_commands()
+    {
+        var game = new GameState(Rules, prepSeconds: 90);
+        game.Execute(new SetGrowth(false));
+        for (int i = 0; i < 100; i++) game.Tick(1);
+
+        Assert.Equal(MatchPhase.Ended, game.Phase);
+        Assert.Equal(90, game.ElapsedSeconds);
+        Assert.NotNull(game.Summary);
+        Assert.Equal(90, game.Summary!.DurationSeconds);
+        Assert.Equal(new[] { 0.0, 30, 60, 90 }, game.Summary.Samples.Select(s => s.Seconds));
+        Assert.False(game.Execute(new MoveWorkers(Job.Idle, Job.Farmer, 1)).Ok);
+    }
+}
