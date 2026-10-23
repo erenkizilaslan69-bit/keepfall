@@ -7,12 +7,15 @@ export type MatchPhase = 'preparation' | 'ended';
 export interface Resources { food: number; wood: number; iron: number }
 export interface Rates { foodIn: number; foodOut: number; wood: number; iron: number; forgeSpeed: number }
 export interface JobView { job: Job; name: string; count: number; capacity: number | null }
-export interface CostView { wood: number; iron: number; seconds: number }
+export type Resource = 'food' | 'wood' | 'iron';
+export interface CostView { wood: number; iron: number; seconds: number; multiplier: number }
 
 export interface BuildingView {
   type: BuildingType;
   name: string;
   worker: Job;
+  /** What the workers gather; null for the forge. */
+  product: Resource | null;
   level: number;
   maxLevel: number;
   capacity: number;
@@ -20,6 +23,8 @@ export interface BuildingView {
   upgradeRemaining: number | null;
   upgradeTotal: number;
   nextUpgrade: CostView | null;
+  /** Extra per minute (forge: extra forge speed) the next level gives with today's workers. */
+  upgradeGain: number | null;
 }
 
 export interface UnitView { id: string; name: string; wood: number; iron: number; buildSeconds: number; weapons: number; soldiers: number }

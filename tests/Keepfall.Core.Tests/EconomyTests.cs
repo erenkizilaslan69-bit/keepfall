@@ -46,7 +46,7 @@ public class EconomyTests
         var castle = new Castle(Rules);
         Assert.Equal(10, castle.Workers[Job.Idle]);
         Assert.Equal(10, castle.Population);
-        Assert.Equal((30.0, 20.0, 10.0), (castle.Food, castle.Wood, castle.Iron));
+        Assert.Equal((30.0, 40.0, 20.0), (castle.Food, castle.Wood, castle.Iron));
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class EconomyTests
     public void Growth_waits_until_the_reserve_is_left_after_paying()
     {
         var castle = NewCastle(growth: true);
-        Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Farmer, 4))); // +24 −10..12 food/min
+        Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Farmer, 4))); // +32 −10..12 food/min
         castle.Tick(1); // 30 food covers 15 cost + 10 reserve: first birth
         Assert.Equal(11, castle.Population);
 
@@ -123,7 +123,7 @@ public class EconomyTests
         var castle = NewCastle();
         Run(castle, 180);
         Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Farmer, 4)));
-        castle.Tick(1); // 4 × 6 × 0.5 = 12/min in, 10/min out
+        castle.Tick(1); // 4 × 8 × 0.5 = 16/min in, 10/min out
         Assert.False(castle.Starving);
         Assert.True(castle.Food > 0);
     }
@@ -149,21 +149,49 @@ public class EconomyTests
         Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Farmer, 4)));
         Assert.False(castle.Execute(new MoveWorkers(Job.Idle, Job.Farmer, 1)).Ok);
 
-        // Level 2 costs 30 wood + 10 iron; we start with 20 wood.
-        Assert.False(castle.Execute(new UpgradeBuilding(BuildingType.Farm)).Ok);
-        Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Lumberjack, 4)));
-        Run(castle, 30); // +20 wood/min × 0.5 min = 10
+        // Level 2 costs 20 wood + 10 iron and takes 30 s; we start with 40 wood and 20 iron.
         Ok(castle.Execute(new UpgradeBuilding(BuildingType.Farm)));
+        Assert.Equal((20.0, 10.0), (castle.Wood, castle.Iron));
         Assert.True(castle.Building(BuildingType.Farm).IsUpgrading);
 
-        Run(castle, 59);
+        Run(castle, 29);
         Assert.Equal(4, castle.Capacity(BuildingType.Farm)); // still level 1 while upgrading
         castle.Tick(1);
         Assert.Equal(2, castle.Building(BuildingType.Farm).Level);
         Assert.Equal(6, castle.Capacity(BuildingType.Farm));
         Assert.Equal(1.5, castle.Multiplier(BuildingType.Farm));
         Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Farmer, 2)));
-        Assert.Equal(6 * 6 * 1.5, castle.ProductionPerMinute(Resource.Food));
+        Assert.Equal(6 * 8 * 1.5, castle.ProductionPerMinute(Resource.Food));
+
+        // Level 3 costs 40 wood + 25 iron: not affordable with what is left.
+        Assert.False(castle.Execute(new UpgradeBuilding(BuildingType.Farm)).Ok);
+        Assert.Equal((40.0, 25.0, 60.0), (Rules.Economy.Level(3).UpgradeWood, Rules.Economy.Level(3).UpgradeIron, Rules.Economy.Level(3).UpgradeSeconds));
+    }
+
+    [Fact]
+    public void Upgrade_gain_is_the_extra_output_of_todays_workers()
+    {
+        var castle = NewCastle();
+        Assert.Equal(0, castle.UpgradeGain(BuildingType.Farm)); // nobody works there yet
+
+        Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Farmer, 4)));
+        Assert.Equal(4 * 8 * 0.5, castle.UpgradeGain(BuildingType.Farm)); // ×1 → ×1.5: +16 food/min
+        Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Miner, 2)));
+        Assert.Equal(2 * 4 * 0.5, castle.UpgradeGain(BuildingType.Mine)); // +4 iron/min
+        Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Blacksmith, 2)));
+        Assert.Equal(2 * 0.5, castle.UpgradeGain(BuildingType.Forge)); // forge speed 2 → 3
+
+        // The gain ignores starvation: it is what the building adds when people are fed.
+        Ok(castle.Execute(new UpgradeBuilding(BuildingType.Farm)));
+        Run(castle, 30);
+        Assert.Equal(2, castle.Building(BuildingType.Farm).Level);
+        Assert.Equal(4 * 8 * 0.5, castle.UpgradeGain(BuildingType.Farm)); // ×1.5 → ×2
+
+        Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Lumberjack, 2)));
+        Run(castle, 120); // gather enough for level 3
+        Ok(castle.Execute(new UpgradeBuilding(BuildingType.Farm)));
+        Run(castle, 60);
+        Assert.Null(castle.UpgradeGain(BuildingType.Farm)); // max level
     }
 
     [Fact]
@@ -171,11 +199,11 @@ public class EconomyTests
     {
         var castle = NewCastle();
         Ok(castle.Execute(new QueueWeapon("okcu", 2))); // 1 iron + 4 wood each
-        Assert.Equal((12.0, 8.0), (castle.Wood, castle.Iron));
-        Assert.False(castle.Execute(new QueueWeapon("kilicli", 3)).Ok); // 9 iron needed, 8 left
+        Assert.Equal((32.0, 18.0), (castle.Wood, castle.Iron));
+        Assert.False(castle.Execute(new QueueWeapon("kilicli", 7)).Ok); // 21 iron needed, 18 left
 
         Ok(castle.Execute(new CancelWeapon(0)));
-        Assert.Equal((20.0, 10.0), (castle.Wood, castle.Iron));
+        Assert.Equal((40.0, 20.0), (castle.Wood, castle.Iron));
         Assert.Empty(castle.Queue);
     }
 

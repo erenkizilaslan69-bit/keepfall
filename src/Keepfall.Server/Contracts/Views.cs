@@ -11,11 +11,13 @@ public sealed record RatesView(double FoodIn, double FoodOut, double Wood, doubl
 
 public sealed record JobView(Job Job, string Name, int Count, int? Capacity);
 
-public sealed record CostView(double Wood, double Iron, double Seconds);
+public sealed record CostView(double Wood, double Iron, double Seconds, double Multiplier);
 
+/// <param name="Product">What the workers gather (null for the forge).</param>
+/// <param name="UpgradeGain">Extra per minute (or forge speed) the next level gives with today's workers.</param>
 public sealed record BuildingView(
-    BuildingType Type, string Name, Job Worker, int Level, int MaxLevel, int Capacity, double Multiplier,
-    double? UpgradeRemaining, double UpgradeTotal, CostView? NextUpgrade);
+    BuildingType Type, string Name, Job Worker, Resource? Product, int Level, int MaxLevel, int Capacity, double Multiplier,
+    double? UpgradeRemaining, double UpgradeTotal, CostView? NextUpgrade, double? UpgradeGain);
 
 public sealed record UnitView(string Id, string Name, double Wood, double Iron, double BuildSeconds, int Weapons, int Soldiers);
 
@@ -64,9 +66,10 @@ public static class ViewMapper
             var b = c.Building(type);
             var max = c.Economy.MaxBuildingLevel;
             var next = b.Level < max ? c.Economy.Level(b.Level + 1) : null;
-            return new BuildingView(type, Jobs.Name(type), Jobs.WorkerOf(type), b.Level, max,
-                c.Capacity(type), c.Multiplier(type), b.UpgradeRemaining, b.UpgradeTotal,
-                next is null ? null : new CostView(next.UpgradeWood, next.UpgradeIron, next.UpgradeSeconds));
+            return new BuildingView(type, Jobs.Name(type), Jobs.WorkerOf(type), Jobs.ProductOf(Jobs.WorkerOf(type)),
+                b.Level, max, c.Capacity(type), c.Multiplier(type), b.UpgradeRemaining, b.UpgradeTotal,
+                next is null ? null : new CostView(next.UpgradeWood, next.UpgradeIron, next.UpgradeSeconds, next.Multiplier),
+                c.UpgradeGain(type));
         }).ToList();
 
     private static List<UnitView> UnitsOf(Castle c) =>

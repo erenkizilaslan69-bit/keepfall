@@ -1,5 +1,5 @@
 import type { GameConnection } from './net';
-import type { BuildingType, CastleView, CommandResult, Job, SummaryView } from './types';
+import type { BuildingType, BuildingView, CastleView, CommandResult, Job, SummaryView } from './types';
 
 // Plain-HTML panel. The structure is built once from the first state and then updated in place,
 // so dropdowns and hover states survive the once-per-second refresh.
@@ -65,7 +65,7 @@ export class Hud {
       <div class="row building" data-building="${b.type}">
         <span class="label">${esc(b.name)} <b data-f="level"></b></span>
         <span class="detail" data-f="detail"></span>
-        <span class="buttons"><button data-action="upgrade" data-building="${b.type}" data-f="upgrade"></button></span>
+        <span class="buttons"><button class="upgrade" data-action="upgrade" data-building="${b.type}" data-f="upgrade"></button></span>
         <div class="bar" data-f="bar"><div></div></div>
       </div>`).join('');
 
@@ -175,7 +175,9 @@ export class Hud {
       } else {
         bar.classList.add('hidden');
         const n = b.nextUpgrade;
-        button.textContent = n ? `Yükselt: ${n.wood} odun, ${n.iron} demir, ${n.seconds} sn` : 'En üst seviye';
+        button.innerHTML = n
+          ? `${esc(upgradeGainText(b))}<small>${n.wood} odun · ${n.iron} demir · ${n.seconds} sn</small>`
+          : 'En üst seviye';
         button.disabled = !n || s.resources.wood + 1e-6 < n.wood || s.resources.iron + 1e-6 < n.iron;
       }
     }
@@ -256,6 +258,19 @@ export class Hud {
   private q(selector: string): HTMLElement {
     return this.root.querySelector<HTMLElement>(selector)!;
   }
+}
+
+const PRODUCT_NAMES: Record<string, string> = { food: 'yemek', wood: 'odun', iron: 'demir' };
+
+/** "Yükselt → +16 yemek/dk" with today's workers; the forge shows its speed gain instead. */
+function upgradeGainText(b: BuildingView): string {
+  const gain = b.upgradeGain ?? 0;
+  if (b.product === null) {
+    const percent = Math.round((b.nextUpgrade!.multiplier / b.multiplier - 1) * 100);
+    return `Yükselt → +%${percent} silah hızı`;
+  }
+  if (gain <= 0) return `Yükselt → +0 ${PRODUCT_NAMES[b.product]}/dk (işçi yok)`;
+  return `Yükselt → +${Number(gain.toFixed(1))} ${PRODUCT_NAMES[b.product]}/dk`;
 }
 
 function summaryHtml(s: SummaryView): string {

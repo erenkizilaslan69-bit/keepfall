@@ -94,6 +94,11 @@ button {
 button:hover:not(:disabled) { border-color: var(--accent); }
 button:disabled { opacity: 0.4; cursor: default; }
 button.active { background: var(--accent); color: #1d1b18; border-color: var(--accent); }
+/* Building rows: name + capacity on top, the upgrade button (gain + cost) on its own line. */
+.building { grid-template-columns: 1fr auto; }
+.building .buttons { grid-column: 1 / -1; justify-self: end; }
+button.upgrade { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25; white-space: nowrap; }
+button.upgrade small { color: var(--muted); font-size: 11px; }
 button.primary { background: var(--accent); color: #1d1b18; font-weight: 600; padding: 6px 16px; }
 select { background: #3a352c; color: var(--text); border: 1px solid #4d473b; border-radius: 4px; padding: 2px 4px; font: inherit; }
 .buttons { display: flex; gap: 4px; }

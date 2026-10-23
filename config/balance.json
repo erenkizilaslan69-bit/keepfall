@@ -1,4 +1,5 @@
 // Keepfall denge ayarları (v1 — denge v1) — kaynak: docs/kale_oyunu_sayilar.xlsx
+// Ekonomi: ilk oyun testinden sonra Excel'den ayrıştı (başlangıç odun/demir, çiftçi üretimi, yükseltme maliyetleri).
 // Bu dosya yorum satırlarına izin verir. Sayıları değiştir, BattleSim'i tekrar çalıştır.
 {
   // Excel "Maç" sekmesi.
@@ -10,14 +11,14 @@
     // Sunucu bu aralıkla tick atar (sn); üretim ve tüketim her tick'te hesaplanır.
     "serverTickSeconds": 1,
     "startingPopulation": 10,
-    "startingResources": { "food": 30, "wood": 20, "iron": 10 }
+    "startingResources": { "food": 30, "wood": 40, "iron": 20 }
   },
 
   // Excel "Ekonomi" sekmesi.
   "economy": {
     // Kişi başı dakikada üretim (çiftçi → yemek, oduncu → odun, madenci → demir).
     // Birlik maliyetini "odun karşılığına" çevirmek için de kullanılır.
-    "productionPerMinute": { "food": 6, "wood": 5, "iron": 4 },
+    "productionPerMinute": { "food": 8, "wood": 5, "iron": 4 },
     "workerFoodPerMinute": 1,
     "soldierFoodPerMinute": 1.5,
     // Yemek 0'a düşerse tüm üretim bu çarpanla çalışır.
@@ -36,8 +37,8 @@
   // Demirhanede multiplier = silah üretim hızı.
   "buildingLevels": [
     { "capacity": 4, "multiplier": 1.0, "upgradeWood": 0,  "upgradeIron": 0,  "upgradeSeconds": 0 },
-    { "capacity": 6, "multiplier": 1.5, "upgradeWood": 30, "upgradeIron": 10, "upgradeSeconds": 60 },
-    { "capacity": 8, "multiplier": 2.0, "upgradeWood": 60, "upgradeIron": 30, "upgradeSeconds": 90 }
+    { "capacity": 6, "multiplier": 1.5, "upgradeWood": 20, "upgradeIron": 10, "upgradeSeconds": 30 },
+    { "capacity": 8, "multiplier": 2.0, "upgradeWood": 40, "upgradeIron": 25, "upgradeSeconds": 60 }
   ],
 
   "combat": {

@@ -91,14 +91,29 @@ public sealed class Castle
     public double ProductionPerMinute(Resource resource)
     {
         var job = Jobs.Working.First(j => Jobs.ProductOf(j) == resource);
-        double perPerson = resource switch
-        {
-            Resource.Food => _rules.Production.FoodPerMinute,
-            Resource.Wood => _rules.Production.WoodPerMinute,
-            _ => _rules.Production.IronPerMinute,
-        };
-        return _workers[job] * perPerson * Multiplier(Jobs.BuildingOf(job)!.Value) * ProductionMultiplier;
+        return _workers[job] * PerPersonPerMinute(resource) * Multiplier(Jobs.BuildingOf(job)!.Value) * ProductionMultiplier;
     }
+
+    /// <summary>
+    /// What the next level of a building adds with the workers it has now, ignoring starvation:
+    /// resource per minute for gathering buildings, forge speed for the forge. Null at max level.
+    /// </summary>
+    public double? UpgradeGain(BuildingType type)
+    {
+        var level = _buildings[type].Level;
+        if (level >= _rules.Economy.MaxBuildingLevel) return null;
+        double extra = _rules.Economy.Level(level + 1).Multiplier - _rules.Economy.Level(level).Multiplier;
+        var job = Jobs.WorkerOf(type);
+        double perPerson = Jobs.ProductOf(job) is { } resource ? PerPersonPerMinute(resource) : 1;
+        return _workers[job] * perPerson * extra;
+    }
+
+    private double PerPersonPerMinute(Resource resource) => resource switch
+    {
+        Resource.Food => _rules.Production.FoodPerMinute,
+        Resource.Wood => _rules.Production.WoodPerMinute,
+        _ => _rules.Production.IronPerMinute,
+    };
 
     /// <summary>Food automatic growth leaves untouched: GrowthReserveSeconds of the current consumption.</summary>
     public double GrowthReserve => FoodConsumptionPerMinute * _rules.Economy.GrowthReserveSeconds / 60;
