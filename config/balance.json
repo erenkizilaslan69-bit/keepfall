@@ -25,7 +25,10 @@
     // Yeni kişi maliyeti = newPersonBaseCost × (1 + newPersonCostGrowth) ^ (nüfus − newPersonBasePopulation), yuvarlanır.
     "newPersonBaseCost": 15,
     "newPersonCostGrowth": 0.12,
-    "newPersonBasePopulation": 10
+    "newPersonBasePopulation": 10,
+    // Otomatik büyüme bu kadar saniyelik yemek tüketimini rezerv olarak bırakır:
+    // yeni kişi, maliyeti düşüldükten sonra elde en az (dakikalık tüketim × süre / 60) yemek kalıyorsa doğar.
+    "growthReserveSeconds": 60
   },
 
   // Excel "Binalar" sekmesi: tarla, oduncu kampı, maden ve demirhane aynı tabloyu kullanır.

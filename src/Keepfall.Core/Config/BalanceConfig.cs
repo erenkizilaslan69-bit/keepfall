@@ -37,6 +37,7 @@ public sealed class EconomyConfig
     public double NewPersonBaseCost { get; set; }
     public double NewPersonCostGrowth { get; set; }
     public int NewPersonBasePopulation { get; set; } = 10;
+    public double GrowthReserveSeconds { get; set; }
 }
 
 public sealed class BuildingLevelConfig
@@ -160,6 +161,7 @@ public static class BalanceConfigLoader
         if (e.StarvationMultiplier < 0 || e.StarvationMultiplier > 1) errors.Add("economy.starvationMultiplier 0 ile 1 arasında olmalı.");
         if (e.NewPersonBaseCost <= 0) errors.Add("economy.newPersonBaseCost sıfırdan büyük olmalı.");
         if (e.NewPersonCostGrowth < 0) errors.Add("economy.newPersonCostGrowth negatif olamaz.");
+        if (e.GrowthReserveSeconds < 0) errors.Add("economy.growthReserveSeconds negatif olamaz.");
 
         if (config.BuildingLevels.Count == 0) errors.Add("buildingLevels: en az bir seviye tanımlanmalı.");
         for (int i = 0; i < config.BuildingLevels.Count; i++)
@@ -236,7 +238,7 @@ public static class BalanceConfigLoader
                 mc.ServerTickSeconds, mc.StartingPopulation, sr.Food, sr.Wood, sr.Iron),
             new EconomyRules(
                 e.WorkerFoodPerMinute, e.SoldierFoodPerMinute, e.StarvationMultiplier,
-                e.NewPersonBaseCost, e.NewPersonCostGrowth, e.NewPersonBasePopulation,
+                e.NewPersonBaseCost, e.NewPersonCostGrowth, e.NewPersonBasePopulation, e.GrowthReserveSeconds,
                 config.BuildingLevels.Select((l, i) => new BuildingLevel(
                     i + 1, l.Capacity, l.Multiplier, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList()));
     }

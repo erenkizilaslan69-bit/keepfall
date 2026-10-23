@@ -31,7 +31,7 @@ public sealed record CastleView(
     MatchPhase Phase, double ElapsedSeconds, double RemainingSeconds, double PrepSeconds,
     int Speed, bool SpeedControl,
     ResourcesView Resources, RatesView Rates,
-    int Population, int Soldiers, double NextPersonCost, bool GrowthEnabled, bool Starving,
+    int Population, int Soldiers, double NextPersonCost, double FoodReserve, bool GrowthEnabled, bool Starving,
     IReadOnlyList<JobView> Jobs, IReadOnlyList<BuildingView> Buildings,
     IReadOnlyList<UnitView> Units, IReadOnlyList<OrderView> Queue,
     SummaryView? Summary);
@@ -48,7 +48,7 @@ public static class ViewMapper
             new ResourcesView(c.Food, c.Wood, c.Iron),
             new RatesView(c.ProductionPerMinute(Resource.Food), c.FoodConsumptionPerMinute,
                 c.ProductionPerMinute(Resource.Wood), c.ProductionPerMinute(Resource.Iron), c.ForgeSpeed),
-            c.Population, c.SoldierCount, c.NextPersonCost, c.GrowthEnabled, c.Starving,
+            c.Population, c.SoldierCount, c.NextPersonCost, c.GrowthReserve, c.GrowthEnabled, c.Starving,
             JobsOf(c), BuildingsOf(c), UnitsOf(c),
             c.Queue.Select(o => new OrderView(o.Type.Id, o.Type.Name, o.Remaining, o.Progress, o.Type.BuildSeconds)).ToList(),
             game.Summary is { } s ? ToView(s, c) : null);

@@ -27,6 +27,7 @@ public sealed record EconomyRules(
     double NewPersonBaseCost,
     double NewPersonCostGrowth,
     int NewPersonBasePopulation,
+    double GrowthReserveSeconds,
     IReadOnlyList<BuildingLevel> BuildingLevels)
 {
     public int MaxBuildingLevel => BuildingLevels.Count;

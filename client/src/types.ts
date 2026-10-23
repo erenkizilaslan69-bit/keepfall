@@ -55,6 +55,8 @@ export interface CastleView {
   population: number;
   soldiers: number;
   nextPersonCost: number;
+  /** Food automatic growth keeps untouched (a minute of consumption by default). */
+  foodReserve: number;
   growthEnabled: boolean;
   starving: boolean;
   jobs: JobView[];

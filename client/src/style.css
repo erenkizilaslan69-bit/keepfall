@@ -52,6 +52,13 @@ section { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 4px;
 .resources { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding-top: 10px; }
 .resources b { font-size: 20px; font-variant-numeric: tabular-nums; }
 .res-name { display: block; color: var(--muted); font-size: 12px; }
+.small { font-size: 12px; }
+
+.foodbar-wrap { grid-column: 1 / -1; }
+.foodbar { position: relative; height: 10px; background: #15130f; border-radius: 5px; overflow: hidden; margin-top: 2px; }
+.foodbar .fill { height: 100%; background: #6fae4a; transition: width 0.3s; }
+.foodbar .fill.low { background: #d9823f; }
+.foodbar .mark { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--text); transform: translateX(-1px); }
 
 .row {
   display: grid;

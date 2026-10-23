@@ -62,6 +62,46 @@ public class EconomyTests
     }
 
     [Fact]
+    public void Growth_reserve_is_a_minute_of_consumption_by_default()
+    {
+        var castle = NewCastle();
+        Assert.Equal(60, Rules.Economy.GrowthReserveSeconds);
+        Assert.Equal(10, castle.GrowthReserve, 6); // 10 workers × 1 food/min × 1 min
+        Assert.Equal(15 + 10, castle.GrowthThreshold, 6);
+    }
+
+    [Fact]
+    public void Growth_waits_until_the_reserve_is_left_after_paying()
+    {
+        var castle = NewCastle(growth: true);
+        Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Farmer, 4))); // +24 −10..12 food/min
+        castle.Tick(1); // 30 food covers 15 cost + 10 reserve: first birth
+        Assert.Equal(11, castle.Population);
+
+        // Next person: 17 food + 11 reserve. Track every tick: no birth while cost would eat into the reserve.
+        int births = 0;
+        for (int t = 0; t < 180; t++)
+        {
+            int before = castle.Population;
+            double reserve = castle.GrowthReserve, cost = castle.NextPersonCost;
+            double expectedFood = castle.Food + (castle.ProductionPerMinute(Resource.Food) - castle.FoodConsumptionPerMinute) / 60;
+            castle.Tick(1);
+            if (castle.Population > before)
+            {
+                births++;
+                Assert.True(expectedFood - cost >= reserve - 1e-6, $"t={t}: {expectedFood:0.00} − {cost} < reserve {reserve:0.00}");
+                Assert.True(castle.Food >= reserve - 1e-6);
+            }
+            else
+            {
+                Assert.True(expectedFood - cost < reserve + 1e-6, $"t={t}: could afford a birth with the reserve but none came");
+            }
+        }
+        Assert.True(births >= 1);
+        Assert.False(castle.Starving);
+    }
+
+    [Fact]
     public void Food_never_goes_negative_and_starvation_halves_production()
     {
         var castle = NewCastle();

@@ -39,7 +39,7 @@ public sealed class CastleStats
 /// All rules come from <see cref="GameRules"/>; nothing here talks to the network.
 ///
 /// A tick, in order: production (halved while starving) → forge → upgrades → food consumption
-/// → automatic growth → starvation check.
+/// → automatic growth (keeping a food reserve) → starvation check.
 /// </summary>
 public sealed class Castle
 {
@@ -100,6 +100,12 @@ public sealed class Castle
         return _workers[job] * perPerson * Multiplier(Jobs.BuildingOf(job)!.Value) * ProductionMultiplier;
     }
 
+    /// <summary>Food automatic growth leaves untouched: GrowthReserveSeconds of the current consumption.</summary>
+    public double GrowthReserve => FoodConsumptionPerMinute * _rules.Economy.GrowthReserveSeconds / 60;
+
+    /// <summary>Food needed before the next person is born: their cost plus the reserve.</summary>
+    public double GrowthThreshold => NextPersonCost + GrowthReserve;
+
     public double FoodConsumptionPerMinute =>
         WorkerCount * _rules.Economy.WorkerFoodPerMinute + SoldierCount * _rules.Economy.SoldierFoodPerMinute;
 
@@ -128,8 +134,9 @@ public sealed class Castle
 
         Food = Math.Max(0, Food - FoodConsumptionPerMinute / 60 * dt);
 
-        // Strictly more than the cost, so growth alone never leaves the castle at exactly 0 food.
-        if (GrowthEnabled && Food > NextPersonCost)
+        // A newcomer is born only if the reserve is still there after paying for them.
+        // Strictly more than the cost as well, so growth never leaves exactly 0 food when the reserve is 0.
+        if (GrowthEnabled && Food > NextPersonCost && Food - NextPersonCost + 1e-9 >= GrowthReserve)
         {
             Food -= NextPersonCost;
             _workers[Job.Idle]++;

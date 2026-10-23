@@ -88,6 +88,13 @@ export class Hud {
         <div><span class="res-name">Yemek</span> <b id="food"></b> <span class="muted" id="food-rate"></span></div>
         <div><span class="res-name">Odun</span> <b id="wood"></b> <span class="muted" id="wood-rate"></span></div>
         <div><span class="res-name">Demir</span> <b id="iron"></b> <span class="muted" id="iron-rate"></span></div>
+        <div class="foodbar-wrap">
+          <div class="foodbar" title="Yemek: çizgi = rezerv, çubuğun sonu = yeni kişinin doğacağı miktar">
+            <div class="fill" id="food-fill"></div>
+            <div class="mark" id="food-mark"></div>
+          </div>
+          <div class="muted small" id="food-bar-label"></div>
+        </div>
       </section>
       <section>
         <div class="row">
@@ -117,6 +124,16 @@ export class Hud {
     this.q('#starving').classList.toggle('hidden', !s.starving);
     this.q('#food').textContent = fmt(s.resources.food);
     this.q('#food-rate').textContent = `${rate(s.rates.foodIn - s.rates.foodOut)}/dk (+${s.rates.foodIn.toFixed(1)} −${s.rates.foodOut.toFixed(1)})`;
+    // Food bar: the line is the reserve growth keeps; the end of the bar is where the next person is born.
+    const threshold = s.foodReserve + s.nextPersonCost;
+    const scale = Math.max(threshold, s.resources.food, 1);
+    const fill = this.q('#food-fill');
+    fill.style.width = `${Math.min(100, (100 * s.resources.food) / scale)}%`;
+    fill.classList.toggle('low', s.resources.food < s.foodReserve);
+    this.q('#food-mark').style.left = `${(100 * s.foodReserve) / scale}%`;
+    this.q('#food-bar-label').textContent = s.growthEnabled
+      ? `rezerv ${fmt(s.foodReserve)} · yeni kişi ${fmt(threshold)} yemekte doğar`
+      : `rezerv ${fmt(s.foodReserve)} · büyüme kapalı`;
     this.q('#wood').textContent = fmt(s.resources.wood);
     this.q('#wood-rate').textContent = `${rate(s.rates.wood)}/dk`;
     this.q('#iron').textContent = fmt(s.resources.iron);
