@@ -38,5 +38,6 @@ Sayıları değiştirmek için derlemeye gerek yok.
 
 - Yakın birlikler, düşmanın ön sırası düşene kadar arka sıraya ulaşamaz. Okçular, öncelikli tür seçildiyse arka sıradaki o türü de vurabilir.
 - Uzak birlikler (okçu) her sıradan vurur. Yakın birlikler sadece ön sıradan vurur; arkaya konan yakın birlik yedektir, ön sıra düşünce öne geçer.
+- Savaş başında yakın dövüşçüler `approachTime` saniye (varsayılan 3) hedefe ulaşamaz; bu sürede okçular serbest atış yapar.
 - Hasar = birliğin hasarı × karşılık çarpanı. Bir adımdaki tüm vuruşlar aynı anda işlenir.
 - Yakın dövüşçüler her zaman en öndekine vurur. Okçular varsayılan olarak da ön sıraya vurur; ordu başına öncelikli bir birlik türü seçilebilir (`--hedef-a okcu`), okçular o türü arka sırada olsa da hedefler.

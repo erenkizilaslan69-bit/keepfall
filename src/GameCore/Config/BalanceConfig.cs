@@ -32,6 +32,7 @@ public sealed class CombatConfig
     public double TickSeconds { get; set; } = 0.1;
     public double MaxBattleSeconds { get; set; } = 600;
     public bool RandomizeFirstAttack { get; set; } = true;
+    public double ApproachTime { get; set; }
     public double AdvantageMultiplier { get; set; } = 1.5;
     public double DisadvantageMultiplier { get; set; } = 0.75;
     public double NeutralMultiplier { get; set; } = 1.0;
@@ -105,6 +106,7 @@ public static class BalanceConfigLoader
         var c = config.Combat;
         if (c.TickSeconds <= 0) errors.Add("combat.tickSeconds sıfırdan büyük olmalı.");
         if (c.MaxBattleSeconds <= 0) errors.Add("combat.maxBattleSeconds sıfırdan büyük olmalı.");
+        if (c.ApproachTime < 0) errors.Add("combat.approachTime negatif olamaz.");
 
         var units = new List<UnitType>();
         var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -166,7 +168,7 @@ public static class BalanceConfigLoader
         return new GameRules(
             units,
             new CounterMatrix(matrix),
-            new CombatSettings(c.TickSeconds, c.MaxBattleSeconds, c.RandomizeFirstAttack),
+            new CombatSettings(c.TickSeconds, c.MaxBattleSeconds, c.RandomizeFirstAttack, c.ApproachTime),
             new ProductionRates(p.Food, p.Wood, p.Iron));
     }
 

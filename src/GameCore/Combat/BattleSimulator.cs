@@ -12,6 +12,7 @@ namespace Keepfall.GameCore.Combat;
 ///   type wherever it stands (back row included) while any of it is alive.
 /// - Ranged units attack from either row. Melee units attack only from the front row; melee units
 ///   placed in the back are reserves and step forward when their own front row is gone.
+/// - Melee units need ApproachTime seconds to reach the enemy at the start; ranged units shoot freely meanwhile.
 /// - Damage = attacker damage × counter multiplier. All hits in a tick land simultaneously,
 ///   so neither side gets a first-strike advantage from processing order.
 /// - A unit keeps its target until the target dies or becomes unreachable.
@@ -115,10 +116,9 @@ public sealed class BattleSimulator
         {
             for (int i = 0; i < count; i++)
             {
-                soldiers.Add(new Soldier(type, i + 1, setup.RowOf(type))
-                {
-                    Cooldown = _rules.Combat.RandomizeFirstAttack ? rng.NextDouble() * type.AttackInterval : 0,
-                });
+                double firstAttack = _rules.Combat.RandomizeFirstAttack ? rng.NextDouble() * type.AttackInterval : 0;
+                if (type.Range == AttackRange.Melee) firstAttack += _rules.Combat.ApproachTime;
+                soldiers.Add(new Soldier(type, i + 1, setup.RowOf(type)) { Cooldown = firstAttack });
             }
         }
         return soldiers;

@@ -14,6 +14,8 @@
     // true: her birliğin ilk vuruşu 0..saldırı aralığı arasında rastgele bir anda gelir
     // (herkesin aynı anda vurmasını engeller). false: herkes ilk vuruşu hemen yapar.
     "randomizeFirstAttack": true,
+    // Savaş başında yakın dövüşçülerin hedefe ulaşma süresi (sn). Bu sürede sadece okçular vurur.
+    "approachTime": 3,
 
     // Karşılık matrisindeki "+", "-", "=" sembollerinin değeri.
     "advantageMultiplier": 1.5,

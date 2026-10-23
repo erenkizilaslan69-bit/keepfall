@@ -5,7 +5,8 @@ namespace Keepfall.GameCore;
 public sealed record CombatSettings(
     double TickSeconds,
     double MaxBattleSeconds,
-    bool RandomizeFirstAttack);
+    bool RandomizeFirstAttack,
+    double ApproachTime);
 
 public sealed record ProductionRates(double FoodPerMinute, double WoodPerMinute, double IronPerMinute);
 
