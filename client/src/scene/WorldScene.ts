@@ -19,6 +19,9 @@ const PAN_SPEED = 900; // px per second at zoom 1 (keyboard)
 const ROAD_COLOR = 0xd8b779, ROAD_EDGE = 0xa98b57;
 // Things stand in front of each other by their y; parts of the map lie at negative y, so the ground
 // layers sit far below anything that can stand on them.
+/** Trees this close (tiles) to a battle turn see-through so the fighting stays visible. */
+const BATTLE_CLEARING = 4;
+const TREE_FADED_ALPHA = 0.3;
 const DEPTH_WATER = -100_000, DEPTH_GROUND = -90_000, DEPTH_ROAD = -80_000;
 
 // Tilemap_color1: the flat grass island is the 3×3 block in the top-left of the sheet (9 tiles per row).
@@ -70,6 +73,7 @@ export class WorldScene extends Phaser.Scene {
   private pendingBattles: BattleStartedView[] = [];
   /** Battles we can see but are not in: just a cloud of dust and crossed swords where they are. */
   private markers = new Map<string, Phaser.GameObjects.GameObject[]>();
+  private trees: { sprite: Phaser.GameObjects.Sprite; tile: Vec }[] = [];
   /** The server's clock at the last castle state, and when that arrived (to run it on between ticks). */
   private clock = { elapsed: 0, at: performance.now(), speed: 1 };
   private otherCastles = new Map<number, { image: Phaser.GameObjects.Image; label: Phaser.GameObjects.Text; name: string }>();
@@ -208,6 +212,7 @@ export class WorldScene extends Phaser.Scene {
     this.workers.update(dt);
     this.movers.update(dt);
     this.battles.update();
+    this.clearTreesAroundBattles(dt);
     this.panWithKeys(dt);
     if (this.map) {
       // The castle's circle comes from the server; the walking circles follow the drawn armies and scouts.
@@ -295,9 +300,21 @@ export class WorldScene extends Phaser.Scene {
         placed++;
         const w = toWorld(p);
         const key = rnd() < 0.5 ? 'tree1' : 'tree2';
-        this.add.sprite(w.x, w.y, key).setOrigin(0.5, 0.9).setScale(0.75 + rnd() * 0.25).setDepth(w.y)
-          .play({ key, startFrame: Math.floor(rnd() * 4) });
+        const sprite = this.add.sprite(w.x, w.y, key).setOrigin(0.5, 0.9).setScale(0.75 + rnd() * 0.25).setDepth(w.y);
+        sprite.play({ key, startFrame: Math.floor(rnd() * 4) });
+        this.trees.push({ sprite, tile: p });
       }
+    }
+  }
+
+  /** Trees near any battle we can see fade out, and come back when it is over. */
+  private clearTreesAroundBattles(dt: number): void {
+    const spots = [...(this.map?.battles.map((b) => b.at) ?? []), ...this.battles.active.map((b) => b.at)];
+    const k = Math.min(1, dt * 8);
+    for (const t of this.trees) {
+      const near = spots.some((s) => Math.hypot(t.tile.x - s.x, t.tile.y - s.y) < BATTLE_CLEARING);
+      const goal = near ? TREE_FADED_ALPHA : 1;
+      if (Math.abs(t.sprite.alpha - goal) > 0.01) t.sprite.setAlpha(t.sprite.alpha + (goal - t.sprite.alpha) * k);
     }
   }
 
