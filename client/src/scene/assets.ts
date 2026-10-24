@@ -45,6 +45,9 @@ const units = (color: string): SheetDef[] => {
     { key: 'warrior-run', path: `${u}Warrior/Warrior_Run.png`, frame: 192 },
     { key: 'archer-run', path: `${u}Archer/Archer_Run.png`, frame: 192 },
     { key: 'lancer-run', path: `${u}Lancer/Lancer_Run.png`, frame: 320 },
+    { key: 'warrior-attack', path: `${u}Warrior/Warrior_Attack1.png`, frame: 192 },
+    { key: 'archer-shoot', path: `${u}Archer/Archer_Shoot.png`, frame: 192 },
+    { key: 'lancer-attack', path: `${u}Lancer/Lancer_Right_Attack.png`, frame: 320 },
   ];
 };
 
@@ -59,6 +62,7 @@ const SHARED_SHEETS: SheetDef[] = [
   { key: 'sheep-grass', path: 'Terrain/Resources/Meat/Sheep/Sheep_Grass.png', frame: 128 },
   { key: 'sheep-idle', path: 'Terrain/Resources/Meat/Sheep/Sheep_Idle.png', frame: 128 },
   { key: 'dust', path: 'Particle FX/Dust_01.png', frame: 64 },
+  { key: 'explosion', path: 'Particle FX/Explosion_01.png', frame: 192 },
   { key: 'tiles', path: 'Terrain/Tileset/Tilemap_color1.png', frame: 64 },
 ];
 
@@ -88,7 +92,7 @@ const IMAGES: Record<string, string> = {
 };
 
 /** Sheets other players' armies and scouts need on the map, loaded in their colours as "<colour>-<key>". */
-const MOVER_KEYS = ['pawn-run', 'warrior-run', 'archer-run', 'lancer-run', 'warrior-guard'];
+const MOVER_KEYS = ['pawn-run', 'warrior-run', 'archer-run', 'lancer-run', 'warrior-guard', 'warrior-attack', 'archer-shoot', 'lancer-attack'];
 const moverSheets = (others: PlayerColor[]): SheetDef[] =>
   others.flatMap((c) => units(COLOR_FOLDER[c]).filter((s) => MOVER_KEYS.includes(s.key)).map((s) => ({ ...s, key: `${c}-${s.key}` })));
 
@@ -108,7 +112,7 @@ export function preloadAssets(scene: Phaser.Scene, color: PlayerColor, others: P
 
 /** Looping animation per sheet, named after the sheet key. */
 export function createAnimations(scene: Phaser.Scene, color: PlayerColor, others: PlayerColor[] = []): void {
-  const rates: Record<string, number> = { 'pawn-run': 12, dust: 14 };
+  const rates: Record<string, number> = { 'pawn-run': 12, dust: 14, explosion: 14 };
   for (const s of [...sheets(color), ...moverSheets(others)]) {
     if (scene.anims.exists(s.key)) continue;
     if (s.key === 'tiles') continue;

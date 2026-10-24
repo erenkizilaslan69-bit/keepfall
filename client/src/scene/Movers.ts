@@ -52,8 +52,15 @@ interface Track {
 export class Movers {
   private tracks = new Map<string, Track>();
   private gameSpeed = 1;
+  /** Spots where a clash is being shown: armies there are hidden until it is over. */
+  private hidden: { at: Vec; radius: number; until: number }[] = [];
 
   constructor(private readonly scene: Phaser.Scene, private readonly ownColor: PlayerColor) {}
+
+  /** Hide any army or scout within <paramref name="radius"/> tiles of <paramref name="at"/> for <paramref name="ms"/>. */
+  hideNear(at: Vec, radius: number, ms: number): void {
+    this.hidden.push({ at, radius, until: performance.now() + ms });
+  }
 
   /** ×1 / ×5 / ×20: game seconds per real second, for extrapolating between ticks. */
   setGameSpeed(speed: number): void {
@@ -106,6 +113,7 @@ export class Movers {
 
   update(dt: number): void {
     const now = performance.now();
+    this.hidden = this.hidden.filter((h) => h.until > now);
     for (const t of this.tracks.values()) {
       const ahead = Math.min((now - t.receivedAt) / 1000, MAX_AHEAD_TICKS) * this.gameSpeed;
       let target: Vec, heading: Vec;
@@ -122,6 +130,9 @@ export class Movers {
       const jump = Math.hypot(target.x - t.shown.x, target.y - t.shown.y) > 3;
       t.shown = jump ? target : { x: t.shown.x + (target.x - t.shown.x) * k, y: t.shown.y + (target.y - t.shown.y) * k };
       if (heading.x !== 0 || heading.y !== 0) t.heading = heading;
+      const hide = this.hidden.some((h) => Math.hypot(t.shown.x - h.at.x, t.shown.y - h.at.y) < h.radius);
+      for (const s of t.sprites) s.setVisible(!hide);
+      t.extra?.setVisible(!hide);
       this.place(t);
     }
   }

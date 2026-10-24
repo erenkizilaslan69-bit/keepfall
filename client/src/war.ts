@@ -1,5 +1,6 @@
 import { COLOR_CSS, esc, fmt } from './format';
 import type { GameConnection } from './net';
+import { CLASH_MS } from './scene/Clash';
 import type { BattleReportView, CastleView, IncomingView, RoomView, Row } from './types';
 
 // The war part of the panel: castle HP and famine, the "army approaching" warning with a live
@@ -160,7 +161,8 @@ export class WarPanel {
     else {
       const fresh = w.battles.find((b) => !this.seenBattles!.has(b.id));
       this.seenBattles = new Set([...this.seenBattles, ...ids]);
-      if (fresh) this.openReport(fresh);
+      // The report opens once the clash at the gate has played out on the map.
+      if (fresh) setTimeout(() => this.openReport(fresh), CLASH_MS);
     }
   }
 

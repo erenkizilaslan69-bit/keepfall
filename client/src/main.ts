@@ -70,6 +70,7 @@ function onRoom(r: RoomView): void {
   else if (screen === 'game') {
     document.getElementById('roster')!.innerHTML = rosterHtml(r, net.seat);
     hud?.setRoom(r);
+    scene?.setRoom(r);
   }
   else if (screen === 'end') end!.update(r);
 }

@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
-import type { BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, Vec } from '../types';
+import type { BattleReportView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
 import type { Minimap } from '../minimap';
 import { createAnimations, preloadAssets } from './assets';
 import { CASTLE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH, type Part } from './layout';
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
+import { CLASH_MS, Clash } from './Clash';
 import { Fog } from './Fog';
 import { Movers } from './Movers';
 import { Soldiers } from './Soldiers';
@@ -65,6 +66,10 @@ export class WorldScene extends Phaser.Scene {
   private soldiers!: Soldiers;
   private movers!: Movers;
   private fog!: Fog;
+  private clash!: Clash;
+  /** Battles already known (shown or there before we joined); new ones get a clash. */
+  private seenBattles: Set<number> | null = null;
+  private otherCastles = new Map<number, { image: Phaser.GameObjects.Image; label: Phaser.GameObjects.Text; name: string }>();
   private castleSprite!: Phaser.GameObjects.Image;
   private wallBar!: Phaser.GameObjects.Graphics;
   private wallText!: Phaser.GameObjects.Text;
@@ -106,6 +111,7 @@ export class WorldScene extends Phaser.Scene {
     this.soldiers = new Soldiers(this);
     this.movers = new Movers(this, this.color);
     this.fog = new Fog(this, this.layout.size);
+    this.clash = new Clash(this, this.color);
     this.setupCamera();
     this.ready = true;
     if (this.state) this.apply(this.state);
@@ -116,6 +122,16 @@ export class WorldScene extends Phaser.Scene {
   setMap(state: MapStateView): void {
     this.map = state;
     if (this.ready) this.movers.sync(state);
+  }
+
+  /** Players who fell: their castle greys out. */
+  setRoom(room: RoomView): void {
+    for (const p of room.players) {
+      const c = this.otherCastles.get(p.seat);
+      if (!c) continue;
+      c.image.setAlpha(p.eliminated ? 0.45 : 1);
+      c.label.setText(p.eliminated ? `${c.name} (düştü)` : c.name);
+    }
   }
 
   /** Point the camera at a spot on the map (minimap clicks). */
@@ -162,6 +178,7 @@ export class WorldScene extends Phaser.Scene {
     this.workers.sync(s.jobs);
     this.soldiers.sync(s.units);
     this.movers.setGameSpeed(s.speed);
+    this.playNewBattles(s.war.battles);
     this.updateWall(s);
   }
 
@@ -242,8 +259,27 @@ export class WorldScene extends Phaser.Scene {
       if (r.seat === null || r.seat === this.mySeat || !r.color) continue;
       const base = toWorld(r.origin);
       const x = base.x + CASTLE.x, y = base.y + CASTLE.y;
-      this.add.image(x, y, `castle-${r.color}`).setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(y);
-      this.add.text(x, y + 16, r.name ?? '', LABEL_STYLE).setOrigin(0.5, 0).setDepth(10_000);
+      const image = this.add.image(x, y, `castle-${r.color}`).setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(y);
+      const label = this.add.text(x, y + 16, r.name ?? '', LABEL_STYLE).setOrigin(0.5, 0).setDepth(10_000);
+      this.otherCastles.set(r.seat, { image, label, name: r.name ?? '' });
+    }
+  }
+
+  /** A clash at the defender's gate for every battle we fought since the last state. */
+  private playNewBattles(battles: BattleReportView[]): void {
+    const ids = new Set(battles.map((b) => b.id));
+    if (this.seenBattles === null) { this.seenBattles = ids; return; }
+    for (const b of battles) {
+      if (this.seenBattles.has(b.id)) continue;
+      this.seenBattles.add(b.id);
+      const region = b.attacking ? this.layout.regions.find((r) => r.seat === b.opponentSeat) : this.ownRegion;
+      if (!region) continue;
+      const west = region.corner === 'northWest' || region.corner === 'southWest';
+      const opponent = b.opponentColor;
+      this.clash.play(region.gate, west ? 1 : -1,
+        { color: b.attacking ? this.color : opponent, lines: b.attackerUnits },
+        { color: b.attacking ? opponent : this.color, lines: b.defenderUnits });
+      this.movers.hideNear(region.gate, 5, CLASH_MS);
     }
   }
 
