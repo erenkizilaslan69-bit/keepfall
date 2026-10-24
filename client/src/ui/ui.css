@@ -192,7 +192,8 @@ html:not(.ui-art) .report-tag { padding: 4px 8px; }
 
 .modal-shade { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(10, 14, 22, .45); }
 .win { position: relative; width: min(calc(420px * var(--u)), 94vw); max-height: 84vh; overflow-y: auto; overflow-x: hidden; pointer-events: auto; }
-.win-close { position: absolute; top: calc(2px * var(--u)); right: calc(2px * var(--u)); z-index: 2; }
+/* The cross hangs off the window's outer top-right corner, level with the title ribbon, far from the plus and minus buttons. */
+.win-close { position: absolute; top: calc(-43px * var(--u)); right: calc(-46px * var(--u)); z-index: 2; width: calc(34px * var(--u)); height: calc(34px * var(--u)); }
 .win-close .ico { width: 70%; height: 70%; }
 .win-foot { display: flex; justify-content: center; margin-top: calc(10px * var(--u)); }
 .report-win { padding: calc(4px * var(--u)); }

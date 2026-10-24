@@ -63,6 +63,8 @@ export abstract class Win {
 }
 
 const MARGIN = 8;
+/** The close cross hangs this far (px) outside the window's right edge. */
+const CLOSE_OVERHANG = 34;
 
 export class WindowManager {
   private win: Win | null = null;
@@ -117,8 +119,8 @@ export class WindowManager {
     } else {
       // To the right of the target if it fits, else to the left; vertically centred on it.
       x = a.x + a.reach + MARGIN;
-      if (x + w > vw - MARGIN) x = a.x - a.reach - MARGIN - w;
-      x = Math.max(MARGIN, Math.min(vw - w - MARGIN, x));
+      if (x + w > vw - MARGIN - CLOSE_OVERHANG) x = a.x - a.reach - MARGIN - w;
+      x = Math.max(MARGIN, Math.min(vw - w - MARGIN - CLOSE_OVERHANG, x));
       y = Math.max(top, Math.min(vh - h - MARGIN, a.y - h / 2));
     }
     // Stay off the minimap and the home button: above them if there is room, else beside them.
@@ -127,7 +129,7 @@ export class WindowManager {
         if (x + w <= r.left || x >= r.right || y + h <= r.top || y >= r.bottom) continue;
         if (r.top - h - MARGIN >= top) y = r.top - h - MARGIN;
         else if (r.left - w - MARGIN >= MARGIN) x = r.left - w - MARGIN;
-        else x = Math.min(vw - w - MARGIN, r.right + MARGIN);
+        else x = Math.min(vw - w - MARGIN - CLOSE_OVERHANG, r.right + MARGIN);
       }
     }
     el.style.left = `${Math.round(x)}px`;
