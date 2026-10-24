@@ -339,9 +339,10 @@ function scoutSection(s: CastleView, sources: string): string {
   const sc = s.scouting;
   if (sc.targets.length === 0)
     return `<section><h2>Gözcü</h2><p class="muted small">Gözetlenecek rakip yok.</p></section>`;
-  const targets = sc.targets.map((t) => `<option value="${t.seat}">${esc(t.name)}</option>`).join('');
+  const targets = sc.targets.map((t) =>
+    `<option value="${t.seat}">${esc(t.name)} (gidiş-dönüş ${Math.ceil(2 * t.scoutSeconds)} sn)</option>`).join('');
   return `
-    <section><h2>Gözcü <span class="muted">(görev ${sc.missionSeconds} sn)</span></h2>
+    <section><h2>Gözcü</h2>
       <div class="row scout-send">
         <select data-f="scout-target" title="Hangi rakip">${targets}</select>
         <select data-f="scout-source" title="Gözcü hangi meslekten çıksın">${sources}</select>

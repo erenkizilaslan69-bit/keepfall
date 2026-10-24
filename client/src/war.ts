@@ -130,7 +130,8 @@ export class WarPanel {
       if (Number(input.value) > u.soldiers) input.value = String(u.soldiers);
       total += Number(input.value) || 0;
     }
-    this.q('#attack-total').textContent = total > 0 ? `${total} asker, yol ${w.marchSeconds} sn` : 'Gönderilecek askeri seç.';
+    const march = s.scouting.targets.find((t) => String(t.seat) === this.q<HTMLSelectElement>('[data-w="target"]').value)?.marchSeconds ?? 0;
+    this.q('#attack-total').textContent = total > 0 ? `${total} asker, yol ${Math.ceil(march)} sn` : 'Gönderilecek askeri seç.';
     this.q<HTMLButtonElement>('[data-war-action="send"]').disabled = total === 0 || targets.length === 0;
 
     this.q('#armies').innerHTML = w.armies.map((a) => `

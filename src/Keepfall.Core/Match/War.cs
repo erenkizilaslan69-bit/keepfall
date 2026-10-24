@@ -1,18 +1,20 @@
 using Keepfall.Core.Economy;
 using Keepfall.Core.Units;
+using Keepfall.Core.World;
 
 namespace Keepfall.Core.Match;
 
 public enum ArmyState { Marching, Returning }
 
 /// <summary>
-/// An army on the road. Only its owner ever learns about it; the target gets a warning shortly
-/// before it arrives that says who it comes from — never how big it is or what it is made of.
+/// An army on the road, walking from its castle's gate to the target's along the map's roads and
+/// back. Only its owner ever learns about it; the target gets a warning shortly before it arrives
+/// that says who it comes from — never how big it is or what it is made of.
 /// </summary>
 public sealed class ArmyMarch
 {
     internal ArmyMarch(int id, string from, string target, IReadOnlyDictionary<UnitType, int> units,
-        IReadOnlyDictionary<UnitType, Row> rows, UnitType? archerPriority, double departedAt, WarRules rules)
+        IReadOnlyDictionary<UnitType, Row> rows, UnitType? archerPriority, double departedAt, Route route, double speed)
     {
         Id = id;
         From = from;
@@ -21,8 +23,7 @@ public sealed class ArmyMarch
         Rows = rows;
         ArcherPriority = archerPriority;
         DepartedAt = departedAt;
-        ArrivesAt = departedAt + rules.MarchSeconds;
-        WarnAt = ArrivesAt - rules.WarningSeconds;
+        Out = new Traveller(route, speed);
     }
 
     public int Id { get; }
@@ -32,20 +33,24 @@ public sealed class ArmyMarch
     public IReadOnlyDictionary<UnitType, Row> Rows { get; }
     public UnitType? ArcherPriority { get; }
     public double DepartedAt { get; }
-    public double ArrivesAt { get; }
-    public double WarnAt { get; }
+    /// <summary>The way to the target.</summary>
+    public Traveller Out { get; }
+    /// <summary>The way home after the battle; null while marching.</summary>
+    public Traveller? Back { get; internal set; }
+    public Traveller Leg => Back ?? Out;
     public bool Warned { get; internal set; }
     public ArmyState State { get; internal set; } = ArmyState.Marching;
-    public double ReturnsAt { get; internal set; }
     /// <summary>Who is walking home after the battle (empty while marching).</summary>
     public IReadOnlyDictionary<UnitType, int> Survivors { get; internal set; } = new Dictionary<UnitType, int>();
 
     public int Size => State == ArmyState.Marching ? Units.Values.Sum() : Survivors.Values.Sum();
 
+    public Vec Position => Leg.Position;
+    /// <summary>Seconds until it reaches the target (marching) or home (returning).</summary>
+    public double SecondsLeft => Leg.SecondsLeft;
+
     /// <summary>0 → 1 out to the target, then 1 → 0 back home.</summary>
-    public double Distance(double now) => State == ArmyState.Marching
-        ? Math.Clamp((now - DepartedAt) / (ArrivesAt - DepartedAt), 0, 1)
-        : Math.Clamp((ReturnsAt - now) / (ReturnsAt - ArrivesAt), 0, 1);
+    public double Distance => Back is null ? Out.Fraction : 1 - Back.Fraction;
 }
 
 public enum BattleWinner { Attacker, Defender, Draw }

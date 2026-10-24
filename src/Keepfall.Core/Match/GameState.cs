@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using Keepfall.Core.Combat;
 using Keepfall.Core.Economy;
 using Keepfall.Core.Units;
+using Keepfall.Core.World;
 
 namespace Keepfall.Core.Match;
 
@@ -45,6 +46,7 @@ public sealed class GameState
     public const double SampleIntervalSeconds = 30;
 
     private readonly Dictionary<string, PlayerEconomy> _players;
+    private readonly Dictionary<string, Corner> _corners;
     private readonly List<ScoutMission> _missions = [];
     private readonly Dictionary<(string From, string Target), ScoutReport> _reports = [];
     private readonly List<ArmyMarch> _armies = [];
@@ -59,8 +61,9 @@ public sealed class GameState
     /// <param name="prepSeconds">Preparation length; default: the short mode's.</param>
     /// <param name="warSeconds">War length; default: the short mode's.</param>
     /// <param name="rng">Randomness for scout errors and battles; tests pass a seeded one.</param>
+    /// <param name="corners">Which corner of the map each player gets; default: <see cref="AssignCorners"/>.</param>
     public GameState(GameRules rules, IEnumerable<string> playerKeys, double? prepSeconds = null,
-        double? warSeconds = null, Random? rng = null)
+        double? warSeconds = null, Random? rng = null, IReadOnlyDictionary<string, Corner>? corners = null)
     {
         Rules = rules;
         _rng = rng ?? new Random(RandomNumberGenerator.GetInt32(int.MaxValue));
@@ -69,10 +72,30 @@ public sealed class GameState
         WarSeconds = warSeconds ?? rules.Match.ShortModeWarSeconds;
         _players = playerKeys.Distinct().ToDictionary(k => k, _ => new PlayerEconomy(new Castle(rules)));
         if (_players.Count == 0) throw new ArgumentException("A match needs at least one player.", nameof(playerKeys));
+        if (_players.Count > 4) throw new ArgumentException("The map has four corners.", nameof(playerKeys));
+        _corners = corners?.ToDictionary(kv => kv.Key, kv => kv.Value) ?? AssignCorners(_players.Keys.ToList());
+        if (!_players.Keys.All(_corners.ContainsKey) || _corners.Values.Distinct().Count() != _corners.Count)
+            throw new ArgumentException("Every player needs a corner of their own.", nameof(corners));
         TakeSamples();
     }
 
+    /// <summary>
+    /// Two players get opposite corners; three get three of the four, chosen at random (so no seat is
+    /// always the one between two neighbours); four fill the map. Who gets which is random too.
+    /// Uses its own randomness, so a seeded match plays its battles the same whatever the corners.
+    /// </summary>
+    public static Dictionary<string, Corner> AssignCorners(IReadOnlyList<string> players)
+    {
+        var rng = new Random(RandomNumberGenerator.GetInt32(int.MaxValue));
+        Corner[] pool = players.Count == 2
+            ? rng.Next(2) == 0 ? [Corner.NorthWest, Corner.SouthEast] : [Corner.NorthEast, Corner.SouthWest]
+            : [Corner.NorthWest, Corner.NorthEast, Corner.SouthWest, Corner.SouthEast];
+        rng.Shuffle(pool);
+        return players.Select((p, i) => (p, i)).ToDictionary(x => x.p, x => pool[x.i]);
+    }
+
     public GameRules Rules { get; }
+    public WorldMap Map { get; } = WorldMap.Standard;
     public MatchPhase Phase { get; private set; } = MatchPhase.Preparation;
     public double PrepSeconds { get; }
     public double WarSeconds { get; }
@@ -89,6 +112,17 @@ public sealed class GameState
     private double PhaseEndsAt => Phase == MatchPhase.Preparation ? PrepSeconds : PrepSeconds + WarSeconds;
 
     public Castle? CastleOf(string playerKey) => _players.GetValueOrDefault(playerKey)?.Castle;
+    public Corner CornerOf(string playerKey) => _corners[playerKey];
+    public IReadOnlyDictionary<string, Corner> Corners => _corners;
+
+    /// <summary>The road from one player's gate to another's.</summary>
+    public Route RouteBetween(string from, string to) => Map.RouteBetween(_corners[from], _corners[to]);
+
+    /// <summary>How long an army needs from one castle to another (one way).</summary>
+    public double MarchSeconds(string from, string to) => RouteBetween(from, to).Length / Rules.Map.ArmySpeed;
+
+    /// <summary>How long a scout needs from one castle to another (one way).</summary>
+    public double ScoutSeconds(string from, string to) => RouteBetween(from, to).Length / Rules.Map.ScoutSpeed;
     public bool IsEliminated(string playerKey) => _eliminated.ContainsKey(playerKey);
     public IReadOnlyDictionary<string, double> Eliminated => _eliminated;
 
@@ -114,8 +148,8 @@ public sealed class GameState
     /// </summary>
     public IReadOnlyList<(string From, double ArrivesAt)> IncomingWarningsOf(string playerKey) =>
         _armies.Where(a => a.Target == playerKey && a.State == ArmyState.Marching && a.Warned)
+            .Select(a => (a.From, ArrivesAt: ElapsedSeconds + a.SecondsLeft))
             .OrderBy(a => a.ArrivesAt)
-            .Select(a => (a.From, a.ArrivesAt))
             .ToList();
 
     /// <summary>Battles this player fought in (as attacker or defender), oldest first.</summary>
@@ -140,8 +174,8 @@ public sealed class GameState
             p.Castle.Tick(dt);
         }
         ElapsedSeconds += dt;
-        AdvanceScouts();
-        AdvanceArmies();
+        AdvanceScouts(dt);
+        AdvanceArmies(dt);
         if (Phase == MatchPhase.Ended) return; // the last castle standing ended it
         if (ElapsedSeconds + 1e-9 >= _nextSample) TakeSamples();
         if (RemainingSeconds <= 1e-9)
@@ -176,25 +210,29 @@ public sealed class GameState
             return CommandResult.Fail("Bu rakibe zaten bir gözcün gidiyor.");
         var sent = player.Castle.SendScout(c.From);
         if (!sent.Ok) return sent;
-        _missions.Add(new ScoutMission(from, c.TargetKey, ElapsedSeconds, Rules.Scouting));
+        _missions.Add(new ScoutMission(from, c.TargetKey, ElapsedSeconds, RouteBetween(from, c.TargetKey), Rules.Map.ScoutSpeed));
         return CommandResult.Success;
     }
 
-    private void AdvanceScouts()
+    /// <summary>Scouts walk to the target's gate, look, and walk home with the report.</summary>
+    private void AdvanceScouts(double dt)
     {
         foreach (var m in _missions.ToList())
         {
-            if (!m.Arrived && ElapsedSeconds + 1e-9 >= m.ArrivesAt)
+            if (!m.Arrived)
             {
+                m.Out.Advance(dt);
+                if (!m.Out.Arrived) continue;
                 m.Report = Observe(m.Target, ElapsedSeconds);
                 Notify(m.Target, new GameNotification(NotificationKind.ScoutedBy, m.From, ElapsedSeconds));
+                m.Back = new Traveller(m.Out.Route.Reversed(), m.Out.Speed);
+                continue;
             }
-            if (ElapsedSeconds + 1e-9 >= m.ReturnsAt)
-            {
-                _reports[(m.From, m.Target)] = m.Report! with { DeliveredAt = ElapsedSeconds };
-                _players[m.From].Castle.ReturnScout();
-                _missions.Remove(m);
-            }
+            m.Back!.Advance(dt);
+            if (!m.Back.Arrived) continue;
+            _reports[(m.From, m.Target)] = m.Report! with { DeliveredAt = ElapsedSeconds };
+            _players[m.From].Castle.ReturnScout();
+            _missions.Remove(m);
         }
     }
 
@@ -246,24 +284,27 @@ public sealed class GameState
 
         var sent = player.Castle.DispatchArmy(units);
         if (!sent.Ok) return sent;
-        _armies.Add(new ArmyMarch(_nextId++, from, c.TargetKey, units, rows, priority, ElapsedSeconds, Rules.War));
+        _armies.Add(new ArmyMarch(_nextId++, from, c.TargetKey, units, rows, priority, ElapsedSeconds,
+            RouteBetween(from, c.TargetKey), Rules.Map.ArmySpeed));
         return CommandResult.Success;
     }
 
-    private void AdvanceArmies()
+    private void AdvanceArmies(double dt)
     {
+        foreach (var a in _armies) a.Leg.Advance(dt);
+
         // The target hears about an army a little before it arrives: only who sent it.
-        foreach (var a in _armies.Where(a => a.State == ArmyState.Marching && !a.Warned && ElapsedSeconds + 1e-9 >= a.WarnAt))
+        foreach (var a in _armies.Where(a => a.State == ArmyState.Marching && !a.Warned && a.SecondsLeft <= Rules.War.WarningSeconds + 1e-9))
         {
             a.Warned = true;
             if (!_eliminated.ContainsKey(a.Target))
-                Notify(a.Target, new GameNotification(NotificationKind.ArmyIncoming, a.From, ElapsedSeconds, a.ArrivesAt));
+                Notify(a.Target, new GameNotification(NotificationKind.ArmyIncoming, a.From, ElapsedSeconds, ElapsedSeconds + a.SecondsLeft));
         }
 
-        // Arrivals in order; armies arriving together fight one after the other, earliest sent first.
+        // Armies arriving in the same tick fight one after the other, earliest sent first.
         var arriving = _armies
-            .Where(a => a.State == ArmyState.Marching && ElapsedSeconds + 1e-9 >= a.ArrivesAt)
-            .OrderBy(a => a.ArrivesAt).ThenBy(a => a.Id)
+            .Where(a => a.State == ArmyState.Marching && a.Out.Arrived)
+            .OrderBy(a => a.Id)
             .ToList();
         foreach (var a in arriving)
         {
@@ -271,7 +312,7 @@ public sealed class GameState
             Arrive(a);
         }
 
-        foreach (var a in _armies.Where(a => a.State == ArmyState.Returning && ElapsedSeconds + 1e-9 >= a.ReturnsAt).ToList())
+        foreach (var a in _armies.Where(a => a.State == ArmyState.Returning && a.Back!.Arrived).ToList())
         {
             _players[a.From].Castle.ArmyReturned(a.Survivors);
             _armies.Remove(a);
@@ -367,7 +408,7 @@ public sealed class GameState
         }
         a.State = ArmyState.Returning;
         a.Survivors = survivors;
-        a.ReturnsAt = ElapsedSeconds + Rules.War.MarchSeconds;
+        a.Back = new Traveller(a.Out.Route.Reversed(), a.Out.Speed);
     }
 
     private static List<BattleUnitLine> Lines(IReadOnlyDictionary<UnitType, int> present, IReadOnlyDictionary<UnitType, int> lost) =>

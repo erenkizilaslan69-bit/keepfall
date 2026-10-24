@@ -33,10 +33,15 @@
     "growthReserveSeconds": 60
   },
 
+  // Ortak harita: ordular ve gözcüler yollarda bu hızla yürür (karo/sn). Yolculuk süresi = yol uzunluğu / hız.
+  // Standart haritada komşu kaleye yol 56 karo, çapraz kaleye (ormanın içinden) yaklaşık 64 karo.
+  "map": {
+    "armySpeed": 1.5,
+    "scoutSpeed": 2.5
+  },
+
   // Excel "Maç" ve "Binalar" sekmeleri: savaş fazı. Savaş süresi = mod süresi − hazırlık (15 dk → 8 dk).
   "war": {
-    // Ordunun hedefe yolculuğu (sn); hayatta kalanlar aynı sürede geri döner.
-    "marchSeconds": 30,
     // Saldıran ordu varmadan bu kadar sn önce savunana "X'den bir ordu yaklaşıyor!" uyarısı gider.
     "warningSeconds": 10,
     // Kıtlık: savaşın bu oranından sonra yemek üretimi bu çarpanla çalışır.
@@ -50,11 +55,9 @@
   },
 
   // Excel "Maç" sekmesi: gözcü.
+  // Gözcü hedefin kapısına yürür, raporu orada alır ve eve dönünce teslim eder.
+  // Görevdeki gözcü çalışmaz ama yemek yer; dönünce boşta olur.
   "scouting": {
-    // Gidiş + dönüş (sn). Görevdeki gözcü çalışmaz ama yemek yer; görev bitince boşta döner.
-    "missionSeconds": 45,
-    // Gözcü hedefe görevin bu kesrinde varır; rapor o an hesaplanır, dönüşte teslim edilir.
-    "arrivalFraction": 0.5,
     // Asker sayıları bu oranda (±), ama en az ±1 asker hatalı görünür; türler ve bina seviyeleri kesin
     // (asker yoksa 0, varsa en az 1 görünür).
     "reportError": 0.2

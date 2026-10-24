@@ -3,6 +3,7 @@ using Keepfall.Core.Config;
 using Keepfall.Core.Economy;
 using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
+using Keepfall.Core.World;
 
 namespace Keepfall.Core.Tests;
 
@@ -15,8 +16,21 @@ public class ScoutingTests
 
     private const string A = "o1", B = "o2", C = "o3";
 
-    private static GameState NewGame(int players = 2, int seed = 1) =>
-        new(Rules, Enumerable.Range(1, players).Select(i => $"o{i}"), prepSeconds: 100_000, rng: new Random(seed));
+    /// <summary>A (o1) and B (o2) sit in opposite corners; C (o3) is a neighbour of both.</summary>
+    private static readonly Corner[] Corners = [Corner.NorthWest, Corner.SouthEast, Corner.NorthEast];
+
+    private static GameState NewGame(int players = 2, int seed = 1)
+    {
+        var keys = Enumerable.Range(1, players).Select(i => $"o{i}").ToList();
+        return new(Rules, keys, prepSeconds: 100_000, rng: new Random(seed),
+            corners: keys.Select((k, i) => (k, i)).ToDictionary(x => x.k, x => Corners[x.i]));
+    }
+
+    /// <summary>Ticks until a scout sent now reaches the target's gate.</summary>
+    private static int OneWay(GameState game, string from, string to) => (int)Math.Ceiling(game.ScoutSeconds(from, to) - 1e-9);
+
+    /// <summary>Ticks until a scout sent now is home with its report.</summary>
+    private static int RoundTrip(GameState game, string from, string to) => 2 * OneWay(game, from, to);
 
     private static void Ok(CommandResult r) => Assert.True(r.Ok, r.Error);
 
@@ -46,7 +60,7 @@ public class ScoutingTests
     // ---- timing ------------------------------------------------------------------------------
 
     [Fact]
-    public void Mission_takes_45_seconds_and_the_scout_comes_back_idle()
+    public void The_scout_walks_to_the_target_and_back_and_comes_home_idle()
     {
         var game = GameWithGrowthOff();
         var castle = game.CastleOf(A)!;
@@ -59,7 +73,8 @@ public class ScoutingTests
         Assert.Equal(12, castle.Population);                  // still counted
         Assert.Equal(consumption, castle.FoodConsumptionPerMinute); // and still eats
 
-        Run(game, 44);
+        int there = OneWay(game, A, B), back = RoundTrip(game, A, B);
+        Run(game, back - 1);
         Assert.Single(game.MissionsOf(A));
         Assert.Empty(game.ReportsOf(A));                      // nothing until the scout is home
 
@@ -69,8 +84,8 @@ public class ScoutingTests
         Assert.Equal(11, castle.Workers[Job.Idle]);           // 10 idle + the returning scout
         var report = Assert.Single(game.ReportsOf(A));
         Assert.Equal(B, report.Target);
-        Assert.Equal(22.5, report.ObservedAt, 0.51);          // taken on arrival (half way, on a tick)
-        Assert.Equal(45, report.DeliveredAt);
+        Assert.Equal(there, report.ObservedAt);               // taken on arrival at the gate
+        Assert.Equal(back, report.DeliveredAt);
     }
 
     [Fact]
@@ -82,7 +97,7 @@ public class ScoutingTests
         Assert.False(again.Ok);
         Ok(game.Execute(A, new SendScout(C)));               // another target is fine
         Ok(game.Execute(C, new SendScout(B)));               // and so is another player's scout
-        Run(game, 45);
+        Run(game, RoundTrip(game, A, B));
         Ok(game.Execute(A, new SendScout(B)));               // after it is back: allowed again
     }
 
@@ -103,7 +118,7 @@ public class ScoutingTests
     {
         var game = GameWithGrowthOff(players: 3);
         Ok(game.Execute(A, new SendScout(B)));
-        Run(game, 22);
+        Run(game, OneWay(game, A, B) - 1);
         Assert.Empty(game.TakeNotifications(B));             // not there yet
         game.Tick(1);
         var n = Assert.Single(game.TakeNotifications(B));
@@ -124,7 +139,8 @@ public class ScoutingTests
         Ok(room.SetReady(red.Token, true));
         Ok(room.Start(blue.Token));
         Ok(room.Execute(red.Token, new SendScout(Room.CastleKeyOf(blue.Seat))));
-        for (int i = 0; i < 23; i++) room.Tick(1);
+        int there = (int)Math.Ceiling(room.Game!.ScoutSeconds(Room.CastleKeyOf(red.Seat), Room.CastleKeyOf(blue.Seat)) - 1e-9);
+        for (int i = 0; i < there; i++) room.Tick(1);
 
         Assert.Equal(["Kırmızı'nın gözcüsü kaleni gözetledi."], room.TakeNotifications(blue));
         Assert.Empty(room.TakeNotifications(red));
@@ -152,7 +168,7 @@ public class ScoutingTests
         for (int i = 0; i < 200; i++)
         {
             Ok(game.Execute(A, new SendScout(B)));
-            Run(game, 45);
+            Run(game, RoundTrip(game, A, B));
             var report = Assert.Single(game.ReportsOf(A));
             int spears = report.Soldiers.Single(s => s.UnitId == "mizrakci").Count;
             Assert.InRange(spears, 8, 12);                    // 10 ± 20 %
@@ -178,7 +194,7 @@ public class ScoutingTests
             var game = GameWithGrowthOff(seed: seed);
             Arm(game, B, real);
             Ok(game.Execute(A, new SendScout(B)));
-            Run(game, 45);
+            Run(game, RoundTrip(game, A, B));
             int count = game.ReportsOf(A)[0].Soldiers.Single(s => s.UnitId == "mizrakci").Count;
             Assert.InRange(count, min, max);
             seen.Add(count);
@@ -199,7 +215,7 @@ public class ScoutingTests
         Assert.Equal(3, game.CastleOf(B)!.Weapons[Rules.FindUnit("okcu")!]);
 
         Ok(game.Execute(A, new SendScout(B)));
-        Run(game, 45);
+        Run(game, RoundTrip(game, A, B));
         var report = game.ReportsOf(A).Single();
         Assert.All(report.Soldiers, s => Assert.Equal(0, s.Count)); // stored bows are not soldiers
 
@@ -220,9 +236,9 @@ public class ScoutingTests
         Run(game, 30); // farm level 2
 
         Ok(game.Execute(A, new SendScout(B)));
-        Run(game, 23); // arrived: report taken now
+        Run(game, OneWay(game, A, B)); // arrived: report taken now
         Arm(game, B, 4); // soldiers made after the scout has looked
-        Run(game, 45);
+        Run(game, RoundTrip(game, A, B));
 
         var report = game.ReportsOf(A).Single();
         Assert.Equal(2, report.BuildingLevels[BuildingType.Farm]);
@@ -235,7 +251,7 @@ public class ScoutingTests
     {
         var game = GameWithGrowthOff(players: 3);
         Ok(game.Execute(A, new SendScout(B)));
-        Run(game, 45);
+        Run(game, RoundTrip(game, A, B));
         Assert.Single(game.ReportsOf(A));
         Assert.Empty(game.ReportsOf(B));
         Assert.Empty(game.ReportsOf(C));

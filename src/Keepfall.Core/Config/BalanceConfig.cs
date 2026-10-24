@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Keepfall.Core.Economy;
 using Keepfall.Core.Units;
+using Keepfall.Core.World;
 
 namespace Keepfall.Core.Config;
 
@@ -15,6 +16,7 @@ public sealed class BalanceConfig
     public List<BuildingLevelConfig> BuildingLevels { get; set; } = [];
     public ScoutingConfig Scouting { get; set; } = new();
     public WarConfig War { get; set; } = new();
+    public MapConfig Map { get; set; } = new();
     public CombatConfig Combat { get; set; } = new();
     public List<UnitConfig> Units { get; set; } = [];
     public Dictionary<string, Dictionary<string, JsonElement>> Counters { get; set; } = [];
@@ -43,9 +45,14 @@ public sealed class EconomyConfig
     public double GrowthReserveSeconds { get; set; }
 }
 
+public sealed class MapConfig
+{
+    public double ArmySpeed { get; set; } = 1.5;
+    public double ScoutSpeed { get; set; } = 2.5;
+}
+
 public sealed class WarConfig
 {
-    public double MarchSeconds { get; set; } = 30;
     public double WarningSeconds { get; set; } = 10;
     public double FamineStart { get; set; } = 0.7;
     public double FamineFoodMultiplier { get; set; } = 0.5;
@@ -56,8 +63,6 @@ public sealed class WarConfig
 
 public sealed class ScoutingConfig
 {
-    public double MissionSeconds { get; set; } = 45;
-    public double ArrivalFraction { get; set; } = 0.5;
     public double ReportError { get; set; } = 0.2;
 }
 
@@ -188,16 +193,15 @@ public static class BalanceConfigLoader
         if (e.GrowthReserveSeconds < 0) errors.Add("economy.growthReserveSeconds negatif olamaz.");
 
         var w = config.War;
-        if (w.MarchSeconds <= 0) errors.Add("war.marchSeconds sıfırdan büyük olmalı.");
-        if (w.WarningSeconds < 0 || w.WarningSeconds > w.MarchSeconds) errors.Add("war.warningSeconds 0 ile marchSeconds arasında olmalı.");
+        if (w.WarningSeconds < 0) errors.Add("war.warningSeconds negatif olamaz.");
         if (w.FamineStart < 0 || w.FamineStart > 1) errors.Add("war.famineStart 0 ile 1 arasında olmalı.");
         if (w.FamineFoodMultiplier < 0 || w.FamineFoodMultiplier > 1) errors.Add("war.famineFoodMultiplier 0 ile 1 arasında olmalı.");
         if (w.CastleHp <= 0) errors.Add("war.castleHp sıfırdan büyük olmalı.");
         if (w.SiegeSeconds < 0 || w.ArcherSiegeMultiplier < 0) errors.Add("war: kuşatma değerleri negatif olamaz.");
 
         var sc = config.Scouting;
-        if (sc.MissionSeconds <= 0) errors.Add("scouting.missionSeconds sıfırdan büyük olmalı.");
-        if (sc.ArrivalFraction <= 0 || sc.ArrivalFraction >= 1) errors.Add("scouting.arrivalFraction 0 ile 1 arasında olmalı.");
+        var mp = config.Map;
+        if (mp.ArmySpeed <= 0 || mp.ScoutSpeed <= 0) errors.Add("map: hızlar sıfırdan büyük olmalı.");
         if (sc.ReportError < 0 || sc.ReportError >= 1) errors.Add("scouting.reportError 0 ile 1 arasında olmalı.");
 
         if (config.BuildingLevels.Count == 0) errors.Add("buildingLevels: en az bir seviye tanımlanmalı.");
@@ -280,9 +284,10 @@ public static class BalanceConfigLoader
                 e.NewPersonBaseCost, e.NewPersonCostGrowth, e.NewPersonBasePopulation, e.GrowthReserveSeconds,
                 config.BuildingLevels.Select((l, i) => new BuildingLevel(
                     i + 1, l.Capacity, l.Multiplier, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList()),
-            new ScoutingRules(sc.MissionSeconds, sc.ArrivalFraction, sc.ReportError),
-            new WarRules(w.MarchSeconds, w.WarningSeconds, w.FamineStart, w.FamineFoodMultiplier,
-                w.CastleHp, w.SiegeSeconds, w.ArcherSiegeMultiplier));
+            new ScoutingRules(sc.ReportError),
+            new WarRules(w.WarningSeconds, w.FamineStart, w.FamineFoodMultiplier,
+                w.CastleHp, w.SiegeSeconds, w.ArcherSiegeMultiplier),
+            new MapRules(mp.ArmySpeed, mp.ScoutSpeed));
     }
 
     private static double? ParseMultiplier(JsonElement value, CombatConfig c)

@@ -106,7 +106,6 @@ export interface BattleReportView {
   defenderEliminated: boolean;
 }
 export interface WarView {
-  marchSeconds: number;
   warningSeconds: number;
   wallHp: number;
   maxWallHp: number;
@@ -132,7 +131,8 @@ export interface WarStats {
 export interface JoinView { ok: boolean; error: string | null; code: string | null; token: string | null; seat: number; room: RoomView | null }
 
 // Scouting: a report is all we ever learn about another castle.
-export interface ScoutTargetView { seat: number; name: string; color: PlayerColor; busy: boolean }
+/** scoutSeconds / marchSeconds: one way along the roads to that castle. */
+export interface ScoutTargetView { seat: number; name: string; color: PlayerColor; busy: boolean; scoutSeconds: number; marchSeconds: number }
 export interface ScoutMissionView { targetSeat: number; progress: number; arrived: boolean; remainingSeconds: number }
 export interface ScoutReportView {
   targetSeat: number;
@@ -144,7 +144,6 @@ export interface ScoutReportView {
   buildings: { type: BuildingType; name: string; level: number }[];
 }
 export interface ScoutingView {
-  missionSeconds: number;
   scoutsAway: number;
   targets: ScoutTargetView[];
   missions: ScoutMissionView[];

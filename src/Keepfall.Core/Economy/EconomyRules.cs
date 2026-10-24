@@ -12,9 +12,8 @@ public sealed record MatchRules(
     double StartingWood,
     double StartingIron);
 
-/// <summary>War phase ("Maç" and "Binalar" sheets): marching, the approach warning, famine, castle and siege.</summary>
+/// <summary>War phase ("Maç" and "Binalar" sheets): the approach warning, famine, castle and siege.</summary>
 public sealed record WarRules(
-    double MarchSeconds,
     double WarningSeconds,
     double FamineStart,
     double FamineFoodMultiplier,
@@ -22,11 +21,8 @@ public sealed record WarRules(
     double SiegeSeconds,
     double ArcherSiegeMultiplier);
 
-/// <summary>Scout missions ("Maç" sheet): duration, when the scout arrives, how wrong the soldier counts are.</summary>
-public sealed record ScoutingRules(double MissionSeconds, double ArrivalFraction, double ReportError)
-{
-    public double ArrivalSeconds => MissionSeconds * ArrivalFraction;
-}
+/// <summary>Scout reports ("Maç" sheet): how wrong the soldier counts are. How long a mission takes depends on the map.</summary>
+public sealed record ScoutingRules(double ReportError);
 
 /// <summary>One row of the shared building table. Upgrade cost and time are what it takes to reach this level.</summary>
 public sealed record BuildingLevel(

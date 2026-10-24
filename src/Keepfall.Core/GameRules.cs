@@ -1,5 +1,6 @@
 using Keepfall.Core.Economy;
 using Keepfall.Core.Units;
+using Keepfall.Core.World;
 
 namespace Keepfall.Core;
 
@@ -15,7 +16,7 @@ public sealed record ProductionRates(double FoodPerMinute, double WoodPerMinute,
 public sealed class GameRules
 {
     public GameRules(IReadOnlyList<UnitType> units, CounterMatrix counters, CombatSettings combat, ProductionRates production,
-        MatchRules match, EconomyRules economy, ScoutingRules scouting, WarRules war)
+        MatchRules match, EconomyRules economy, ScoutingRules scouting, WarRules war, MapRules map)
     {
         Units = units;
         Counters = counters;
@@ -25,6 +26,7 @@ public sealed class GameRules
         Economy = economy;
         Scouting = scouting;
         War = war;
+        Map = map;
     }
 
     public IReadOnlyList<UnitType> Units { get; }
@@ -35,6 +37,7 @@ public sealed class GameRules
     public EconomyRules Economy { get; }
     public ScoutingRules Scouting { get; }
     public WarRules War { get; }
+    public MapRules Map { get; }
 
     public UnitType? FindUnit(string idOrName) =>
         Units.FirstOrDefault(u => string.Equals(u.Id, idOrName, StringComparison.OrdinalIgnoreCase)

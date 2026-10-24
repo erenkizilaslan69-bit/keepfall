@@ -47,13 +47,14 @@ public sealed record BattleReportView(
     BattleWinner Winner, bool YouWon, double CastleDamage, double CastleHpAfter, double CastleHpMax, bool DefenderEliminated);
 public sealed record DefenseView(IReadOnlyDictionary<string, Row> Rows, string? ArcherPriority);
 public sealed record WarView(
-    double MarchSeconds, double WarningSeconds, double WallHp, double MaxWallHp, bool Famine, double FamineStartsIn,
+    double WarningSeconds, double WallHp, double MaxWallHp, bool Famine, double FamineStartsIn,
     int SoldiersAway, IReadOnlyList<ArmyView> Armies, IReadOnlyList<IncomingView> Incoming,
     IReadOnlyList<BattleReportView> Battles, DefenseView Defense);
 
 // Scouting. A report is all the client ever learns about another castle: approximate soldier
-// counts and building levels. Targets carry only public facts (seat, name, colour).
-public sealed record ScoutTargetView(int Seat, string Name, PlayerColor Color, bool Busy);
+// counts and building levels. Targets carry only public facts (seat, name, colour) and how far
+// away they are (the map is the same for everyone).
+public sealed record ScoutTargetView(int Seat, string Name, PlayerColor Color, bool Busy, double ScoutSeconds, double MarchSeconds);
 public sealed record ScoutMissionView(int TargetSeat, double Progress, bool Arrived, double RemainingSeconds);
 public sealed record ScoutedUnitView(string UnitId, string Name, int Count);
 public sealed record ScoutBuildingView(BuildingType Type, string Name, int Level);
@@ -61,7 +62,7 @@ public sealed record ScoutReportView(
     int TargetSeat, string TargetName, PlayerColor TargetColor, double ObservedAt, double DeliveredAt,
     IReadOnlyList<ScoutedUnitView> Soldiers, IReadOnlyList<ScoutBuildingView> Buildings);
 public sealed record ScoutingView(
-    double MissionSeconds, int ScoutsAway, IReadOnlyList<ScoutTargetView> Targets,
+    int ScoutsAway, IReadOnlyList<ScoutTargetView> Targets,
     IReadOnlyList<ScoutMissionView> Missions, IReadOnlyList<ScoutReportView> Reports);
 
 public sealed record CastleView(
@@ -150,13 +151,12 @@ public static class ViewMapper
             lines.Select(l => new BattleLineView(l.UnitId, l.Name, l.Count, l.Lost)).ToList();
 
         return new WarView(
-            rules.MarchSeconds, rules.WarningSeconds, c.WallHp, c.MaxWallHp, game.Famine, game.FamineStartsIn, c.SoldiersAway,
+            rules.WarningSeconds, c.WallHp, c.MaxWallHp, game.Famine, game.FamineStartsIn, c.SoldiersAway,
             game.ArmiesOf(player.CastleKey).Select(a =>
             {
                 var target = Other(a.Target);
-                double remaining = a.State == ArmyState.Marching ? a.ArrivesAt - now : a.ReturnsAt - now;
                 return new ArmyView(a.Id, target?.Seat ?? 0, target?.Name ?? "?", target?.Color ?? PlayerColor.Blue, a.State,
-                    Units(a.State == ArmyState.Marching ? a.Units : a.Survivors), a.Distance(now), Math.Max(0, remaining));
+                    Units(a.State == ArmyState.Marching ? a.Units : a.Survivors), a.Distance, a.SecondsLeft);
             }).ToList(),
             // Only who and when: an incoming army's size and units are never part of this.
             game.IncomingWarningsOf(player.CastleKey).Select(w =>
@@ -181,13 +181,12 @@ public static class ViewMapper
         var missions = game.MissionsOf(player.CastleKey);
         int SeatOf(string key) => room.PlayerOfCastle(key)?.Seat ?? 0;
         return new ScoutingView(
-            game.Rules.Scouting.MissionSeconds,
             c.ScoutsAway,
             room.Players.Where(p => p.Seat != player.Seat)
-                .Select(p => new ScoutTargetView(p.Seat, p.Name, p.Color, missions.Any(m => m.Target == p.CastleKey)))
+                .Select(p => new ScoutTargetView(p.Seat, p.Name, p.Color, missions.Any(m => m.Target == p.CastleKey),
+                    game.ScoutSeconds(player.CastleKey, p.CastleKey), game.MarchSeconds(player.CastleKey, p.CastleKey)))
                 .ToList(),
-            missions.Select(m => new ScoutMissionView(
-                SeatOf(m.Target), m.Progress(game.ElapsedSeconds), m.Arrived, Math.Max(0, m.ReturnsAt - game.ElapsedSeconds))).ToList(),
+            missions.Select(m => new ScoutMissionView(SeatOf(m.Target), m.Progress, m.Arrived, m.SecondsLeft)).ToList(),
             game.ReportsOf(player.CastleKey).Select(r =>
             {
                 var target = room.PlayerOfCastle(r.Target);
