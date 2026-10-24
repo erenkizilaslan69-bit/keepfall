@@ -267,6 +267,7 @@ public class WarTests
         Assert.True(battle.FightSeconds > 2, "a real fight takes a while");
         Assert.Equal(battle.Winner == BattleWinner.Attacker ? Rules.War.SiegeSeconds : 0, battle.SiegeSeconds);
         Assert.Equal(8 + 5, battle.Record.Soldiers.Count);
+        Assert.Empty(game.IncomingWarningsOf(B)); // it is here: no more "coming" warning
 
         // Both sides are told once that it started; nobody else is.
         Assert.Same(battle, Assert.Single(game.TakeStartedBattles(A)));

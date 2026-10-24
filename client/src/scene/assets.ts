@@ -83,6 +83,7 @@ const buildingImages = (color: PlayerColor): Record<string, string> => {
 
 const IMAGES: Record<string, string> = {
   water: 'Terrain/Tileset/Water Background color.png',
+  arrow: 'Units/Blue Units/Archer/Arrow.png',
   stump1: 'Terrain/Resources/Wood/Trees/Stump 1.png',
   stump2: 'Terrain/Resources/Wood/Trees/Stump 2.png',
   'wood-pile': 'Terrain/Resources/Wood/Wood Resource/Wood Resource.png',

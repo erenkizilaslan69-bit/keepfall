@@ -6,7 +6,7 @@ import { GameConnection, type ConnectionStatus } from './net';
 import { SCENE_HEIGHT, SCENE_WIDTH, WorldScene } from './scene/WorldScene';
 import { Minimap } from './minimap';
 import { EndScreen, HomeScreen, LobbyScreen, rosterHtml } from './screens';
-import type { CastleView, MapLayoutView, MapStateView, RoomView, SummaryView } from './types';
+import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SummaryView } from './types';
 
 // Routes: "/" is the home screen, "/oda/ABCD" is a room. Inside a room the screen follows the
 // room's phase: lobby → game (preparation and war) → end screen.
@@ -25,6 +25,7 @@ let screen: Screen = 'none';
 let lastCastle: CastleView | null = null;
 let lastLayout: MapLayoutView | null = null;
 let lastMap: MapStateView | null = null;
+let pendingBattles: BattleStartedView[] = [];
 let summary: SummaryView | null = null;
 let status = '';
 
@@ -41,7 +42,10 @@ const net = new GameConnection({
     lastLayout = layout;
     if (screen === 'game' && !scene && lastCastle) onCastle(lastCastle);
   },
-  battleStarted: () => {},
+  battleStarted: (battle) => {
+    if (scene) scene.playBattle(battle);
+    else pendingBattles.push(battle); // e.g. right after a reconnect, before the scene is up
+  },
   mapState: (state) => {
     lastMap = state;
     scene?.setMap(state);
@@ -123,6 +127,7 @@ function showLobby(r: RoomView): void {
   lastCastle = null;
   lastLayout = null;
   lastMap = null;
+  pendingBattles = [];
   summary = null;
   lobby = new LobbyScreen(app, net, net.seat, r, saveName);
 }
@@ -148,6 +153,8 @@ function startScene(color: CastleView['color'], layout: MapLayoutView): void {
   const world = scene;
   world.minimap = new Minimap(document.getElementById('stage')!, layout, (tile) => world.lookAt(tile));
   if (lastMap) scene.setMap(lastMap);
+  for (const b of pendingBattles) scene.playBattle(b);
+  pendingBattles = [];
   // Dev only: lets the console preview other building levels / counts without playing up to them.
   if (import.meta.env.DEV) (window as unknown as { keepfallScene: WorldScene }).keepfallScene = scene;
   game = new Phaser.Game({

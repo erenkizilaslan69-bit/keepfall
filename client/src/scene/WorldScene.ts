@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
-import type { BattleReportView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
+import type { BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
 import type { Minimap } from '../minimap';
 import { createAnimations, preloadAssets } from './assets';
-import { CASTLE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH, type Part } from './layout';
+import { CASTLE, COURTYARD, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH, type Part } from './layout';
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
-import { CLASH_MS, Clash } from './Clash';
+import { BattlePlayer } from './BattlePlayer';
 import { Fog } from './Fog';
 import { Movers } from './Movers';
 import { Soldiers } from './Soldiers';
@@ -66,9 +66,10 @@ export class WorldScene extends Phaser.Scene {
   private soldiers!: Soldiers;
   private movers!: Movers;
   private fog!: Fog;
-  private clash!: Clash;
-  /** Battles already known (shown or there before we joined); new ones get a clash. */
-  private seenBattles: Set<number> | null = null;
+  private battles!: BattlePlayer;
+  private pendingBattles: BattleStartedView[] = [];
+  /** The server's clock at the last castle state, and when that arrived (to run it on between ticks). */
+  private clock = { elapsed: 0, at: performance.now(), speed: 1 };
   private otherCastles = new Map<number, { image: Phaser.GameObjects.Image; label: Phaser.GameObjects.Text; name: string }>();
   private castleSprite!: Phaser.GameObjects.Image;
   private wallBar!: Phaser.GameObjects.Graphics;
@@ -111,7 +112,9 @@ export class WorldScene extends Phaser.Scene {
     this.soldiers = new Soldiers(this);
     this.movers = new Movers(this, this.color);
     this.fog = new Fog(this, this.layout.size);
-    this.clash = new Clash(this, this.color);
+    this.battles = new BattlePlayer(this, this.color, () => this.gameNow(), (seat) => this.courtyardOf(seat));
+    for (const b of this.pendingBattles) this.battles.start(b);
+    this.pendingBattles = [];
     this.setupCamera();
     this.ready = true;
     if (this.state) this.apply(this.state);
@@ -122,6 +125,26 @@ export class WorldScene extends Phaser.Scene {
   setMap(state: MapStateView): void {
     this.map = state;
     if (this.ready) this.movers.sync(state);
+  }
+
+  /** A battle we fight in: replayed on the map from its record. */
+  playBattle(battle: BattleStartedView): void {
+    if (this.ready) this.battles.start(battle);
+    else this.pendingBattles.push(battle);
+  }
+
+  /** The server's game time right now, run on from the last castle state at the game speed. */
+  private gameNow(): { now: number; speed: number } {
+    const { elapsed, at, speed } = this.clock;
+    return { now: elapsed + Math.min(((performance.now() - at) / 1000) * speed, 1.5 * speed), speed };
+  }
+
+  /** Where a player's soldiers stand at home (scene pixels). */
+  private courtyardOf(seat: number): { x: number; y: number } | null {
+    const region = this.layout.regions.find((r) => r.seat === seat);
+    if (!region) return null;
+    const o = toWorld(region.origin);
+    return { x: o.x + (COURTYARD.left + COURTYARD.right) / 2, y: o.y + (COURTYARD.top + COURTYARD.bottom) / 2 };
   }
 
   /** Players who fell: their castle greys out. */
@@ -161,6 +184,7 @@ export class WorldScene extends Phaser.Scene {
     const dt = Math.min(delta, 100) / 1000;
     this.workers.update(dt);
     this.movers.update(dt);
+    this.battles.update();
     this.panWithKeys(dt);
     if (this.map) {
       // The castle's circle comes from the server; the walking circles follow the drawn armies and scouts.
@@ -178,7 +202,7 @@ export class WorldScene extends Phaser.Scene {
     this.workers.sync(s.jobs);
     this.soldiers.sync(s.units);
     this.movers.setGameSpeed(s.speed);
-    this.playNewBattles(s.war.battles);
+    this.clock = { elapsed: s.elapsedSeconds, at: performance.now(), speed: s.speed };
     this.updateWall(s);
   }
 
@@ -262,24 +286,6 @@ export class WorldScene extends Phaser.Scene {
       const image = this.add.image(x, y, `castle-${r.color}`).setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(y);
       const label = this.add.text(x, y + 16, r.name ?? '', LABEL_STYLE).setOrigin(0.5, 0).setDepth(10_000);
       this.otherCastles.set(r.seat, { image, label, name: r.name ?? '' });
-    }
-  }
-
-  /** A clash at the defender's gate for every battle we fought since the last state. */
-  private playNewBattles(battles: BattleReportView[]): void {
-    const ids = new Set(battles.map((b) => b.id));
-    if (this.seenBattles === null) { this.seenBattles = ids; return; }
-    for (const b of battles) {
-      if (this.seenBattles.has(b.id)) continue;
-      this.seenBattles.add(b.id);
-      const region = b.attacking ? this.layout.regions.find((r) => r.seat === b.opponentSeat) : this.ownRegion;
-      if (!region) continue;
-      const west = region.corner === 'northWest' || region.corner === 'southWest';
-      const opponent = b.opponentColor;
-      this.clash.play(region.gate, west ? 1 : -1,
-        { color: b.attacking ? this.color : opponent, lines: b.attackerUnits },
-        { color: b.attacking ? opponent : this.color, lines: b.defenderUnits });
-      this.movers.hideNear(region.gate, 5, CLASH_MS);
     }
   }
 

@@ -41,6 +41,8 @@ interface Track {
   travelled: number;
   speed: number;
   vision: number;
+  /** In a battle: the battle replay draws its soldiers, so the marching column is hidden. */
+  fighting: boolean;
   receivedAt: number;
   // What is drawn:
   shown: Vec;
@@ -52,15 +54,8 @@ interface Track {
 export class Movers {
   private tracks = new Map<string, Track>();
   private gameSpeed = 1;
-  /** Spots where a clash is being shown: armies there are hidden until it is over. */
-  private hidden: { at: Vec; radius: number; until: number }[] = [];
 
   constructor(private readonly scene: Phaser.Scene, private readonly ownColor: PlayerColor) {}
-
-  /** Hide any army or scout within <paramref name="radius"/> tiles of <paramref name="at"/> for <paramref name="ms"/>. */
-  hideNear(at: Vec, radius: number, ms: number): void {
-    this.hidden.push({ at, radius, until: performance.now() + ms });
-  }
 
   /** ×1 / ×5 / ×20: game seconds per real second, for extrapolating between ticks. */
   setGameSpeed(speed: number): void {
@@ -81,6 +76,7 @@ export class Movers {
       t.travelled = o.travelled;
       t.speed = o.speed;
       t.vision = o.visionRadius;
+      t.fighting = o.fighting;
       t.receivedAt = now;
       alive.add(t.key);
     }
@@ -113,7 +109,6 @@ export class Movers {
 
   update(dt: number): void {
     const now = performance.now();
-    this.hidden = this.hidden.filter((h) => h.until > now);
     for (const t of this.tracks.values()) {
       const ahead = Math.min((now - t.receivedAt) / 1000, MAX_AHEAD_TICKS) * this.gameSpeed;
       let target: Vec, heading: Vec;
@@ -130,9 +125,8 @@ export class Movers {
       const jump = Math.hypot(target.x - t.shown.x, target.y - t.shown.y) > 3;
       t.shown = jump ? target : { x: t.shown.x + (target.x - t.shown.x) * k, y: t.shown.y + (target.y - t.shown.y) * k };
       if (heading.x !== 0 || heading.y !== 0) t.heading = heading;
-      const hide = this.hidden.some((h) => Math.hypot(t.shown.x - h.at.x, t.shown.y - h.at.y) < h.radius);
-      for (const s of t.sprites) s.setVisible(!hide);
-      t.extra?.setVisible(!hide);
+      for (const s of t.sprites) s.setVisible(!t.fighting);
+      t.extra?.setVisible(!t.fighting);
       this.place(t);
     }
   }
@@ -156,7 +150,7 @@ export class Movers {
       ? this.scene.add.text(0, 0, `+${total - MAX_DRAWN}`, LABEL_STYLE).setOrigin(0.5, 1).setDepth(10_000)
       : null;
     const fresh: Track = {
-      key, color, scout, units, position, velocity: { x: 0, y: 0 }, route: null, cumulative: [], travelled: 0, speed: 0, vision: 0,
+      key, color, scout, units, position, velocity: { x: 0, y: 0 }, route: null, cumulative: [], travelled: 0, speed: 0, vision: 0, fighting: false,
       receivedAt: performance.now(), shown: t?.shown ?? position, heading: t?.heading ?? { x: 1, y: 0 }, sprites, extra,
     };
     this.tracks.set(key, fresh);

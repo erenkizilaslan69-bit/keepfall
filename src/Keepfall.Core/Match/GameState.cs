@@ -149,7 +149,7 @@ public sealed class GameState
     /// (What they are made of the player sees on the map, through <see cref="SeenBy"/>.)
     /// </summary>
     public IReadOnlyList<(string From, double ArrivesAt)> IncomingWarningsOf(string playerKey) =>
-        _armies.Where(a => a.Target == playerKey && a.State == ArmyState.Marching && a.Sighted)
+        _armies.Where(a => a.Target == playerKey && a.State == ArmyState.Marching && a.Sighted && a.Battle is null && !a.Out.Arrived)
             .Select(a => (a.From, ArrivesAt: ElapsedSeconds + a.SecondsLeft))
             .OrderBy(a => a.ArrivesAt)
             .ToList();
