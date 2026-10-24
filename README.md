@@ -82,10 +82,10 @@ Arkadaşlar için tek bir adres yeter: sunucu, derlenmiş istemciyi ve oyun bağ
 
 ```bash
 npm --prefix client run build
-ASPNETCORE_ENVIRONMENT=Production dotnet run --project src/Keepfall.Server --urls http://localhost:5080
+ASPNETCORE_ENVIRONMENT=Production dotnet run --project src/Keepfall.Server --no-launch-profile --urls http://localhost:5080
 ```
 
-PowerShell'de: `$env:ASPNETCORE_ENVIRONMENT = 'Production'` yazıp `dotnet run --project src/Keepfall.Server --urls http://localhost:5080` çalıştır.
+PowerShell'de: `$env:ASPNETCORE_ENVIRONMENT = 'Production'` yazıp `dotnet run --project src/Keepfall.Server --no-launch-profile --urls http://localhost:5080` çalıştır. `--no-launch-profile` şart: yoksa `dotnet run` kendi profilini kullanır ve sunucu yine `Development` açılır (açılışta yazılan "Hosting environment" satırından kontrol edebilirsin).
 
 Sonra tüneli 5080'e aç. Hesapsız, geçici bir adres için Cloudflare Quick Tunnel:
 
