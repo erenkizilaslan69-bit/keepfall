@@ -183,6 +183,9 @@ function startScene(color: CastleView['color'], layout: MapLayoutView): void {
     backgroundColor: '#47aba9',
     pixelArt: true,
     scale: { mode: Phaser.Scale.NONE },
+    // Only events that hit the canvas count: by default Phaser also listens on the window, so a click on a UI
+    // window, the top bar or the minimap would reach the map underneath.
+    input: { windowEvents: false },
     scene,
   });
   window.addEventListener('resize', onWindowResize);

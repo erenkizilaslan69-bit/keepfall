@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import type { MapStateView, MoverUnit, PlayerColor, Vec } from '../types';
 import { SHIELD_SCALE, UNIT_SCALE, colorKey, unitOriginY } from './assets';
 import type { Target } from '../ui/windows';
+import type { WorldLabels } from '../ui/world-labels';
+import { COLOR_CSS } from '../format';
 import { toWorld } from './world';
 
 // Armies and scouts walking on the map: our own (we know their road) and the others the server lets
@@ -25,10 +27,6 @@ const ROW_GAP = 34, COL_GAP = 38; // px: far enough apart to tell the types from
 /** Never extrapolate further than this many ticks without news (stops runaways if ticks stop). */
 const MAX_AHEAD_TICKS = 1.5;
 
-const LABEL_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
-  fontFamily: 'system-ui, sans-serif', fontSize: '14px', color: '#fff8e6', stroke: '#1d1b18', strokeThickness: 4,
-};
-
 interface Track {
   key: string;
   color: PlayerColor;
@@ -49,7 +47,6 @@ interface Track {
   shown: Vec;
   heading: Vec;
   sprites: Phaser.GameObjects.Sprite[];
-  extra: Phaser.GameObjects.Text | null;
   /** Ours only: what a click on it opens, and the invisible area that catches the click. */
   select: Target | null;
   zone: Phaser.GameObjects.Zone | null;
@@ -62,7 +59,7 @@ export class Movers {
   /** Set by the scene: a click on one of our armies or scouts. */
   onSelect: (target: Target) => void = () => {};
 
-  constructor(private readonly scene: Phaser.Scene, private readonly ownColor: PlayerColor) {}
+  constructor(private readonly scene: Phaser.Scene, private readonly ownColor: PlayerColor, private readonly labels: WorldLabels) {}
 
   /** ×1 / ×5 / ×20: game seconds per real second, for extrapolating between ticks. */
   setGameSpeed(speed: number): void {
@@ -105,7 +102,7 @@ export class Movers {
       if (alive.has(key)) continue;
       // Out of sight (or home): it simply is not there any more.
       for (const s of t.sprites) s.destroy();
-      t.extra?.destroy();
+      this.labels.remove(`army:${key}`);
       t.zone?.destroy();
       this.tracks.delete(key);
     }
@@ -140,7 +137,6 @@ export class Movers {
       t.shown = jump ? target : { x: t.shown.x + (target.x - t.shown.x) * k, y: t.shown.y + (target.y - t.shown.y) * k };
       if (heading.x !== 0 || heading.y !== 0) t.heading = heading;
       for (const s of t.sprites) s.setVisible(!t.fighting);
-      t.extra?.setVisible(!t.fighting);
       this.place(t);
     }
   }
@@ -149,7 +145,7 @@ export class Movers {
     let t = this.tracks.get(key);
     const signature = scout ? 'scout' : units.map((u) => `${u.unitId}:${u.count}`).join(',');
     if (t && t.sprites.map((s) => s.getData('sig'))[0] === signature) return t;
-    if (t) { for (const s of t.sprites) s.destroy(); t.extra?.destroy(); t.zone?.destroy(); }
+    if (t) { for (const s of t.sprites) s.destroy(); t.zone?.destroy(); }
 
     const kinds = scout ? ['pawn'] : formation(units);
     const sprites = kinds.map((unit) => {
@@ -159,13 +155,9 @@ export class Movers {
       s.play({ key: anim, startFrame: Phaser.Math.Between(0, 3) });
       return s;
     });
-    const total = units.reduce((n, u) => n + u.count, 0);
-    const extra = !scout && total > MAX_DRAWN
-      ? this.scene.add.text(0, 0, `+${total - MAX_DRAWN}`, LABEL_STYLE).setOrigin(0.5, 1).setDepth(10_000)
-      : null;
     const fresh: Track = {
       key, color, scout, units, position, velocity: { x: 0, y: 0 }, route: null, cumulative: [], travelled: 0, speed: 0, vision: 0, fighting: false,
-      receivedAt: performance.now(), shown: t?.shown ?? position, heading: t?.heading ?? { x: 1, y: 0 }, sprites, extra,
+      receivedAt: performance.now(), shown: t?.shown ?? position, heading: t?.heading ?? { x: 1, y: 0 }, sprites,
       select: null, zone: null,
     };
     this.tracks.set(key, fresh);
@@ -185,7 +177,13 @@ export class Movers {
       const y = lead.y - h.y * row * ROW_GAP + p.y * col * COL_GAP;
       s.setPosition(x, y).setDepth(y).setFlipX(faceLeft);
     });
-    t.extra?.setPosition(lead.x, lead.y - 44);
+    // A sign with the number of soldiers over the column (scouts have none); hidden while the fight is replayed.
+    const total = t.units.reduce((n, u) => n + u.count, 0);
+    if (t.scout || t.fighting) this.labels.remove(`army:${t.key}`);
+    else this.labels.set(`army:${t.key}`, {
+      x: lead.x, y: lead.y - 44, anchor: 'bottom', minZoom: 0.45, cls: 'wl-small',
+      html: `<div class="wl-sign"><i class="dot" style="background:${COLOR_CSS[t.color] ?? '#888'}"></i><i class="ico ico-sword"></i><b>${total}</b></div>`,
+    });
     t.zone?.setPosition(lead.x - h.x * ROW_GAP, lead.y - h.y * ROW_GAP - 18);
   }
 

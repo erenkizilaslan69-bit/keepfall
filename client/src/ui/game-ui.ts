@@ -9,12 +9,14 @@ import { WindowManager, sameTarget, type Target, type Win, type WinContext } fro
 import { Notifications, type NoteKind } from './notifications';
 import { ReportTags } from './reports';
 import { TopBar } from './topbar';
+import { WorldLabels } from './world-labels';
 
 // Everything drawn over the map: the top bar, ribbons, report tags (and, step by step, the windows).
 // One instance per game screen; `update` takes every castle state the server sends.
 
 export class GameUi {
   private readonly top: HTMLElement;
+  private readonly labels: WorldLabels;
   private readonly bar: TopBar;
   private readonly notes: Notifications;
   private readonly reports: ReportTags;
@@ -29,6 +31,7 @@ export class GameUi {
 
   constructor(root: HTMLElement, net: GameConnection, seat: number, home: () => void) {
     root.innerHTML = '';
+    this.labels = new WorldLabels(root); // first, so every window is drawn over the signs
     const seat0 = seat;
     this.top = document.createElement('div');
     this.top.className = 'ui-top';
@@ -63,7 +66,11 @@ export class GameUi {
     this.scene = scene;
     scene.onSelect = (t) => this.open(t);
     scene.onDeselect = () => this.windows.close();
-    scene.onFrame = () => this.windows.reposition();
+    scene.labels = this.labels;
+    scene.onFrame = () => {
+      this.labels.layout((p) => scene.screenOf(p), scene.cameras.main.zoom);
+      this.windows.reposition();
+    };
   }
 
   /** Open (or move) the window for a target; clicking the same thing again closes it. */
@@ -92,6 +99,7 @@ export class GameUi {
 
   destroy(): void {
     window.removeEventListener('keydown', this.onKey);
+    this.labels.destroy();
   }
 
   update(s: CastleView): void {

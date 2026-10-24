@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import type { UnitView } from '../types';
 import { SHIELD_SCALE, UNIT_SCALE, unitOriginY } from './assets';
+import type { WorldLabels } from '../ui/world-labels';
+import { esc } from '../format';
 import { CASTLE, COURTYARD } from './layout';
 
 // Soldiers stand in the castle courtyard, one block per unit type from left to right
@@ -27,9 +29,8 @@ const DEPTH_BASE = CASTLE.y + 1;
 
 export class Soldiers {
   private blocks = new Map<string, Phaser.GameObjects.Sprite[]>();
-  private labels = new Map<string, Phaser.GameObjects.Text>();
 
-  constructor(private readonly scene: Phaser.Scene) {}
+  constructor(private readonly scene: Phaser.Scene, private readonly labels: WorldLabels) {}
 
   sync(units: UnitView[]): void {
     const ids = [...BLOCK_ORDER.filter((id) => units.some((u) => u.id === id)),
@@ -69,17 +70,11 @@ export class Soldiers {
     });
 
     // Name and the real count on the wall below the block (a block shows at most PER_BLOCK).
-    let label = this.labels.get(id);
-    if (count > 0) {
-      label ??= this.scene.add.text(0, 0, '', {
-        fontFamily: 'system-ui, sans-serif', fontSize: '13px', fontStyle: 'bold',
-        color: '#fff8e6', stroke: '#1d1b18', strokeThickness: 4,
-      }).setOrigin(0.5, 0);
-      label.setText(`${name} ${count}`).setPosition(centerX, COURTYARD.bottom + 14).setDepth(DEPTH_BASE + 1);
-      this.labels.set(id, label);
-    } else {
-      label?.destroy();
-      this.labels.delete(id);
-    }
+    if (count > 0)
+      this.labels.set(`soldiers:${id}`, {
+        x: centerX, y: COURTYARD.bottom + 14, anchor: 'top', minZoom: 0.6, cls: 'wl-small',
+        html: `<div class="wl-sign"><b>${esc(name)}</b> ${count}</div>`,
+      });
+    else this.labels.remove(`soldiers:${id}`);
   }
 }

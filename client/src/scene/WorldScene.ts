@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import type { ArmyView, BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
 import type { Minimap } from '../minimap';
 import type { Anchor, Target } from '../ui/windows';
+import type { WorldLabels } from '../ui/world-labels';
+import { COLOR_CSS, esc } from '../format';
 import { createAnimations, preloadAssets } from './assets';
 import { CASTLE, COURTYARD, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH, type Part } from './layout';
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
@@ -24,8 +26,8 @@ const DEPTH_WATER = -100_000, DEPTH_GROUND = -90_000, DEPTH_ROAD = -80_000;
 // Tilemap_color1: the flat grass island is the 3×3 block in the top-left of the sheet (9 tiles per row).
 const GRASS = { tl: 0, t: 1, tr: 2, l: 9, c: 10, r: 11, bl: 18, b: 19, br: 20 };
 
-/** Castle HP bar: kept inside the top edge of the world, tall enough for its label. */
-const WALL_BAR = { w: 200, h: 20, y: 8 };
+/** Where the castle's health sign hangs: just inside the top edge of the world. */
+const WALL_SIGN_Y = 8;
 
 const LABEL_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
   fontFamily: 'system-ui, sans-serif',
@@ -39,10 +41,10 @@ const LABEL_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
 interface BuildingSlot {
   level: number;
   sprites: Phaser.GameObjects.Sprite[];
-  label: Phaser.GameObjects.Text;
-  bar: Phaser.GameObjects.Graphics;
   dust: Phaser.GameObjects.Sprite;
 }
+
+const sign = (inner: string, cls = '') => `<div class="wl-sign ${cls}">${inner}</div>`;
 
 /**
  * The shared map with our own corner in full detail: everything here is cosmetic, driven by the
@@ -74,13 +76,13 @@ export class WorldScene extends Phaser.Scene {
   private pendingBattles: BattleStartedView[] = [];
   /** Battles we can see but are not in: just a cloud of dust and crossed swords where they are. */
   private markers = new Map<string, Phaser.GameObjects.GameObject[]>();
+  /** The signs over the map (HTML, set by the UI when it takes the scene). */
+  labels!: WorldLabels;
   private trees: { sprite: Phaser.GameObjects.Sprite; tile: Vec }[] = [];
   /** The server's clock at the last castle state, and when that arrived (to run it on between ticks). */
   private clock = { elapsed: 0, at: performance.now(), speed: 1 };
-  private otherCastles = new Map<number, { image: Phaser.GameObjects.Image; label: Phaser.GameObjects.Text; name: string }>();
+  private otherCastles = new Map<number, { image: Phaser.GameObjects.Image; name: string; color: PlayerColor }>();
   private castleSprite!: Phaser.GameObjects.Image;
-  private wallBar!: Phaser.GameObjects.Graphics;
-  private wallText!: Phaser.GameObjects.Text;
   private lastWallHp: number | null = null;
 
   /** <paramref name="color"/>: the player's colour; units and buildings are drawn in it. */
@@ -113,13 +115,10 @@ export class WorldScene extends Phaser.Scene {
     this.makeForestClickable();
     this.castleSprite = this.add.image(CASTLE.x, CASTLE.y, 'castle').setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(CASTLE.y);
     this.castleSprite.setInteractive({ useHandCursor: true }).on('pointerup', () => this.select({ kind: 'castle' }));
-    this.wallBar = this.add.graphics().setDepth(10_002);
-    this.wallText = this.add.text(CASTLE.x, WALL_BAR.y + WALL_BAR.h / 2, '', { ...LABEL_STYLE, fontSize: '13px' })
-      .setOrigin(0.5).setDepth(10_003);
     for (const type of Object.keys(SITES) as BuildingType[]) this.createSite(type);
-    this.workers = new Workers(this);
-    this.soldiers = new Soldiers(this);
-    this.movers = new Movers(this, this.color);
+    this.workers = new Workers(this, this.labels);
+    this.soldiers = new Soldiers(this, this.labels);
+    this.movers = new Movers(this, this.color, this.labels);
     this.movers.onSelect = (t) => this.select(t);
     this.fog = new Fog(this, this.layout.size);
     this.battles = new BattlePlayer(this, this.color, () => this.gameNow(), (seat) => this.courtyardOf(seat));
@@ -145,6 +144,7 @@ export class WorldScene extends Phaser.Scene {
     for (const [id, parts] of this.markers) {
       if (shown.has(id)) continue;
       parts.forEach((p) => p.destroy());
+      this.labels.remove(`battle:${id}`);
       this.markers.delete(id);
     }
     for (const b of state.battles) {
@@ -152,9 +152,8 @@ export class WorldScene extends Phaser.Scene {
       const p = toWorld(b.at);
       const dust = this.add.sprite(p.x, p.y, 'dust').setScale(3).setDepth(p.y).setAlpha(0.9);
       dust.play('dust');
-      const label = this.add.text(p.x, p.y - 46, '⚔ Savaş', { ...LABEL_STYLE, fontSize: '16px' }).setOrigin(0.5, 1).setDepth(10_000);
-      this.tweens.add({ targets: label, scale: 1.12, duration: 500, yoyo: true, repeat: -1 });
-      this.markers.set(b.id, [dust, label]);
+      this.labels.set(`battle:${b.id}`, { x: p.x, y: p.y - 46, html: sign('<i class="ico ico-sword"></i><b>Savaş</b>', 'wl-fight') });
+      this.markers.set(b.id, [dust]);
     }
   }
 
@@ -184,8 +183,17 @@ export class WorldScene extends Phaser.Scene {
       const c = this.otherCastles.get(p.seat);
       if (!c) continue;
       c.image.setAlpha(p.eliminated ? 0.45 : 1);
-      c.label.setText(p.eliminated ? `${c.name} (düştü)` : c.name);
+      this.setEnemySign(p.seat, c, p.eliminated);
     }
+  }
+
+  private setEnemySign(seat: number, c: { name: string; color: PlayerColor }, fallen: boolean): void {
+    const region = this.layout.regions.find((r) => r.seat === seat)!;
+    const base = toWorld(region.origin);
+    this.labels.set(`castle:${seat}`, {
+      x: base.x + CASTLE.x, y: base.y + CASTLE.y + 16, anchor: 'top',
+      html: sign(`<i class="dot" style="background:${COLOR_CSS[c.color] ?? '#888'}"></i><b>${esc(c.name)}</b>${fallen ? ' <small>(düştü)</small>' : ''}`),
+    });
   }
 
   /** Point the camera at a spot on the map (minimap clicks). */
@@ -325,12 +333,13 @@ export class WorldScene extends Phaser.Scene {
   /** Castle HP bar above the towers, label inside it; the castle flashes red when it takes damage. */
   private updateWall(s: CastleView): void {
     const { wallHp, maxWallHp } = s.war;
-    const { w, h, y } = WALL_BAR, x = CASTLE.x - w / 2;
     const p = Math.max(0, wallHp / maxWallHp);
-    this.wallBar.clear();
-    this.wallBar.fillStyle(0x1d1b18, 0.85).fillRoundedRect(x - 2, y - 2, w + 4, h + 4, 4);
-    this.wallBar.fillStyle(p < 0.35 ? 0xc2453a : 0x6fae4a).fillRoundedRect(x, y, w * p, h, 3);
-    this.wallText.setText(s.eliminated ? 'Kale düştü' : `Kale ${Math.ceil(wallHp)} / ${maxWallHp}`);
+    this.labels.set('castle:own', {
+      x: CASTLE.x, y: WALL_SIGN_Y, anchor: 'top',
+      html: `<div class="wl-stack">${sign('<i class="ico ico-shield"></i><b>Kale</b>')}
+        <div class="gbar wl-hp${p < 0.35 ? ' low' : ''}"><div class="fill" style="width:${100 * p}%"></div>
+          <span class="gbar-text">${s.eliminated ? 'Kale düştü' : `${Math.ceil(wallHp)} / ${maxWallHp}`}</span></div></div>`,
+    });
     if (this.lastWallHp !== null && wallHp < this.lastWallHp - 1e-6) {
       this.castleSprite.setTint(0xff6b5e);
       this.cameras.main.shake(250, 0.004);
@@ -414,8 +423,9 @@ export class WorldScene extends Phaser.Scene {
       const image = this.add.image(x, y, `castle-${r.color}`).setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(y);
       const seat = r.seat;
       image.setInteractive({ useHandCursor: true }).on('pointerup', () => this.select({ kind: 'enemy', seat }));
-      const label = this.add.text(x, y + 16, r.name ?? '', LABEL_STYLE).setOrigin(0.5, 0).setDepth(10_000);
-      this.otherCastles.set(r.seat, { image, label, name: r.name ?? '' });
+      const castle = { image, name: r.name ?? '', color: r.color };
+      this.otherCastles.set(r.seat, castle);
+      this.setEnemySign(r.seat, castle, false);
     }
   }
 
@@ -449,6 +459,11 @@ export class WorldScene extends Phaser.Scene {
       cam.setScroll(drag.scrollX - dx / cam.zoom, drag.scrollY - dy / cam.zoom);
     });
     this.input.on('pointerup', () => { drag = null; });
+    // A drag that is let go of over the UI never reaches the canvas: end it here.
+    const endDrag = () => { drag = null; };
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('blur', endDrag);
+    this.events.once('shutdown', () => { window.removeEventListener('pointerup', endDrag); window.removeEventListener('blur', endDrag); });
     this.input.on('wheel', (p: Phaser.Input.Pointer, _over: unknown, _dx: number, dy: number) => {
       const before = cam.getWorldPoint(p.x, p.y);
       cam.setZoom(Phaser.Math.Clamp(cam.zoom * (dy > 0 ? 0.88 : 1.14), this.minZoom(), MAX_ZOOM));
@@ -482,10 +497,8 @@ export class WorldScene extends Phaser.Scene {
     const { x, y } = site.center;
     const zone = this.add.zone(x, y, site.area.w, site.area.h).setInteractive({ useHandCursor: true });
     zone.on('pointerup', () => this.select({ kind: 'building', type }));
-    const label = this.add.text(x, y + site.area.h / 2 - 10, '', LABEL_STYLE).setOrigin(0.5, 1).setDepth(10_000);
-    const bar = this.add.graphics().setDepth(10_001);
     const dust = this.add.sprite(x, y, 'dust').setScale(2).setDepth(9_000).setVisible(false);
-    this.buildings.set(type, { level: 0, sprites: [], label, bar, dust });
+    this.buildings.set(type, { level: 0, sprites: [], dust });
   }
 
   private updateBuilding(b: BuildingView, s: CastleView): void {
@@ -498,18 +511,16 @@ export class WorldScene extends Phaser.Scene {
     }
 
     const workers = s.jobs.find((j) => j.job === b.worker)?.count ?? 0;
-    slot.label.setText(`${b.name} · Sv ${b.level}   ${workers}/${b.capacity}`);
-
-    slot.bar.clear();
     const upgrading = b.upgradeRemaining !== null;
     slot.dust.setVisible(upgrading);
-    if (upgrading) {
-      if (!slot.dust.anims.isPlaying) slot.dust.play('dust');
-      const w = 140, x = site.center.x - w / 2, y = site.center.y - site.area.h / 2 + 4;
-      const p = 1 - b.upgradeRemaining! / b.upgradeTotal;
-      slot.bar.fillStyle(0x1d1b18, 0.85).fillRoundedRect(x - 2, y - 2, w + 4, 12, 4);
-      slot.bar.fillStyle(0xffd84a).fillRoundedRect(x, y, w * p, 8, 3);
-    }
+    if (upgrading && !slot.dust.anims.isPlaying) slot.dust.play('dust');
+    const progress = upgrading ? `<div class="wl-prog" title="Yükseltiliyor"><i style="width:${100 * (1 - b.upgradeRemaining! / b.upgradeTotal)}%"></i></div>` : '';
+    const state = b.capacity > 0 && workers >= b.capacity ? ' full' : workers === 0 ? ' empty' : '';
+    this.labels.set(`building:${b.type}`, {
+      x: site.center.x, y: site.center.y + site.area.h / 2 - 6, anchor: 'bottom', minZoom: 0.5,
+      html: sign(`<span class="wl-lv" title="Seviye ${b.level}">${b.level}</span><b>${esc(b.name)}</b>
+        <span class="wl-workers${state}" title="İşçi"><i class="ico ico-hammer"></i><b>${workers}/${b.capacity}</b></span>${progress}`),
+    });
   }
 
   private placePart(p: Part): Phaser.GameObjects.Sprite {

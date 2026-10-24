@@ -96,19 +96,13 @@ html.ui-art .btn-round.btn-red { background-image: var(--round-red); }
 html.ui-art .btn-round:not(:disabled):active { background-image: var(--round-blue-down); }
 html.ui-art .btn-round.btn-red:not(:disabled):active { background-image: var(--round-red-down); }
 
-/* ---- bars ------------------------------------------------------------------------------------- */
-.gbar { position: relative; height: calc(16px * var(--u)); background: #1d1b18; border: 2px solid #5a4a30; border-radius: 4px; overflow: hidden; min-width: 60px; }
-.gbar > .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: #6fae4a; transition: width .25s; }
-.gbar.low > .fill { background: #c2453a; }
-html.ui-art .gbar {
-  height: calc(32px * var(--u)); background: transparent; border: solid transparent; border-width: 0 calc(32px * var(--u)); border-radius: 0; overflow: visible;
-  border-image: var(--bar-base) 0 64 fill / 0 calc(32px * var(--u)) stretch;
+/* ---- bars: a dark slot in a wooden frame, a gradient fill and the text centred over it --------- */
+.gbar {
+  position: relative; height: calc(22px * var(--u)); min-width: 60px; background: #1d1b18; border: calc(3px * var(--u)) solid #8a6a3a;
+  border-radius: 5px; overflow: hidden; box-shadow: 0 0 0 calc(2px * var(--u)) #3a2a18;
 }
-html.ui-art .gbar > .fill {
-  inset: calc(10px * var(--u)) auto calc(11px * var(--u)) calc(-26px * var(--u)); border-radius: 3px;
-  background: linear-gradient(#9be062, #5da535 55%, #4a8a2a);
-}
-html.ui-art .gbar.low > .fill { background: linear-gradient(#f08a7c, #c2453a 55%, #9a3027); }
+.gbar > .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(#9be062, #5da535 55%, #4a8a2a); transition: width .25s; }
+.gbar.low > .fill { background: linear-gradient(#f08a7c, #c2453a 55%, #9a3027); }
 
 /* ---- icons (4 meat, 2 wood, 1 hammer, 5 sword, 6 shield; iron is a grey ore stone) ------------ */
 .ico { display: inline-block; width: calc(26px * var(--u)); height: calc(26px * var(--u)); flex: none; background: center / contain no-repeat; vertical-align: middle; }
@@ -163,9 +157,11 @@ html.ui-art .strip {
 .tb-clock b { font-size: 1.5em; font-variant-numeric: tabular-nums; }
 .tb-clock small { font-size: .85em; opacity: .95; text-transform: capitalize; }
 
-.tb-hp .gbar { width: calc(150px * var(--u)); }
-.gbar-text { position: absolute; inset: 0; display: grid; place-items: center; font-size: .8em; color: #fff; text-shadow: 0 1px 0 #000, 1px 0 0 #000; z-index: 1; }
-html.ui-art .gbar-text { inset: calc(2px * var(--u)) calc(-24px * var(--u)); }
+.tb-hp .gbar { width: calc(190px * var(--u)); margin: 0 calc(4px * var(--u)); }
+.gbar-text {
+  position: absolute; inset: 0; display: grid; place-items: center; white-space: nowrap; font-size: .85em; color: #fff; z-index: 1;
+  text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000;
+}
 
 .chip { display: inline-flex; align-items: center; gap: calc(4px * var(--u)); cursor: pointer; padding: 0 calc(4px * var(--u)); border-bottom: 3px solid transparent; }
 .chip[data-color="blue"] { border-color: #4a8fd9; } .chip[data-color="red"] { border-color: #d9534a; }
@@ -267,7 +263,37 @@ html.ui-art .unit-row .btn { border-width: calc(12px * var(--u)); border-image-w
 /* ---- narrow windows ---------------------------------------------------------------------------- */
 @media (max-width: 900px) {
   .chip-name { display: none; }
-  .tb-hp .gbar { width: calc(110px * var(--u)); }
+  .tb-hp .gbar { width: calc(150px * var(--u)); }
   .strip { gap: calc(8px * var(--u)); }
   .home-btn { font-size: .9em; }
 }
+
+/* ---- signs on the map: building names, castle health, army sizes (world-labels.ts) --------------- */
+.world-labels { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.wl { position: absolute; left: 0; top: 0; transform-origin: 0 0; white-space: nowrap; font-size: calc(16px * var(--u)); }
+.wl-stack { display: flex; flex-direction: column; align-items: center; gap: calc(4px * var(--u)); }
+.wl-sign {
+  display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: calc(6px * var(--u)); min-height: calc(28px * var(--u));
+  padding: 0 calc(8px * var(--u)); background: var(--parchment); color: var(--ink); border: 3px solid #8a6a3a; border-radius: 6px;
+  box-shadow: 0 2px 0 rgba(40, 25, 10, .45);
+}
+html.ui-art .wl-sign {
+  background: transparent; border: calc(10px * var(--u)) solid transparent; border-radius: 0; box-shadow: none; padding: 0 calc(4px * var(--u));
+  min-height: calc(40px * var(--u)); border-image: var(--paper) 64 fill / calc(10px * var(--u)) stretch;
+}
+.wl-sign b { font-weight: 700; }
+.wl-sign .ico { width: calc(18px * var(--u)); height: calc(18px * var(--u)); }
+.wl-sign .dot { margin-right: 0; }
+.wl-lv {
+  display: inline-grid; place-items: center; min-width: calc(20px * var(--u)); height: calc(20px * var(--u)); padding: 0 calc(3px * var(--u));
+  border-radius: 50%; background: var(--gold); border: 2px solid #8a5a14; color: #3a2a18; font-size: .85em; font-weight: 700;
+}
+.wl-workers { display: inline-flex; align-items: center; gap: calc(2px * var(--u)); font-variant-numeric: tabular-nums; }
+.wl-workers.full b { color: #2f7a2a; }
+.wl-workers.empty b { color: #b23a2e; }
+.wl-prog { flex-basis: 100%; height: calc(8px * var(--u)); margin-bottom: calc(2px * var(--u)); background: #1d1b18; border-radius: 4px; overflow: hidden; }
+.wl-prog > i { display: block; height: 100%; background: linear-gradient(#ffe27a, #e0a82a); }
+.wl-hp { width: calc(210px * var(--u)); }
+.wl-warn .wl-sign b { color: #b23a2e; animation: blink 1.2s steps(2) infinite; }
+.wl-fight .wl-sign b { color: #b23a2e; }
+.wl-small { font-size: calc(12px * var(--u)); }

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { BuildingType, Job, JobView } from '../types';
+import type { WorldLabels } from '../ui/world-labels';
 import { UNIT_SCALE, unitOriginY } from './assets';
 import { GATE, IDLE_AREA, JOB_LOOK, SITES, type Point } from './layout';
 
@@ -34,13 +35,8 @@ interface Pawn {
 export class Workers {
   private pawns: Pawn[] = [];
   private placed = false;
-  private idleLabel: Phaser.GameObjects.Text;
 
-  constructor(private readonly scene: Phaser.Scene) {
-    this.idleLabel = scene.add.text(GATE.x, IDLE_AREA.bottom + 6, '', {
-      fontFamily: 'system-ui, sans-serif', fontSize: '16px', fontStyle: 'bold',
-      color: '#ffd84a', stroke: '#1d1b18', strokeThickness: 4,
-    }).setOrigin(0.5, 0).setDepth(10_000);
+  constructor(private readonly scene: Phaser.Scene, private readonly labels: WorldLabels) {
   }
 
   /** Match the number of pawns per job to the server's counts. */
@@ -65,7 +61,9 @@ export class Workers {
     this.placed = true;
 
     const idle = target.get('idle') ?? 0;
-    this.idleLabel.setText(idle > 0 ? `${idle} kişi boşta!` : '');
+    if (idle > 0)
+      this.labels.set('idle', { x: GATE.x, y: IDLE_AREA.bottom + 6, anchor: 'top', minZoom: 0.5, cls: 'wl-warn', html: `<div class="wl-sign"><b>${idle} kişi boşta!</b></div>` });
+    else this.labels.remove('idle');
   }
 
   update(dt: number): void {
