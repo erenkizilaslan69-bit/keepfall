@@ -31,6 +31,16 @@ public class WarTests
     /// <summary>Whole one-second ticks needed to cover <paramref name="seconds"/>.</summary>
     private static int Ticks(double seconds) => (int)Math.Ceiling(seconds - 1e-9);
 
+    /// <summary>Ticks until <paramref name="player"/> has <paramref name="count"/> battle reports (battles take their time).</summary>
+    private static void RunUntilReports(GameState game, string player, int count = 1)
+    {
+        for (int t = 0; game.BattlesOf(player).Count < count; t++)
+        {
+            Assert.True(t < 400, $"{player} never got {count} battle report(s)");
+            game.Tick(1);
+        }
+    }
+
     /// <summary>Ticks until an army sent now from <paramref name="from"/> reaches <paramref name="to"/>.</summary>
     private static int March(GameState game, string from, string to) => Ticks(game.MarchSeconds(from, to));
 
@@ -201,7 +211,7 @@ public class WarTests
         RunUntilWarned(game, B);
         Assert.Empty(game.BattlesOf(B));
         Ok(game.Execute(B, new ArmWorkers("mizrakci", 6, Job.Idle))); // react to the warning
-        Run(game, Ticks(game.ArmiesOf(A).Single().SecondsLeft));
+        RunUntilReports(game, B);
 
         var report = Assert.Single(game.BattlesOf(B));
         var spears = Assert.Single(report.DefenderUnits);
@@ -219,19 +229,85 @@ public class WarTests
         Ok(game.Execute(A, Attack(B, (Sword, 4))));
         Run(game, March(game, A, B));
 
+        // Nobody defends, so there is no fight: the swordsmen hammer the gate for the siege seconds.
+        var siege = Assert.Single(game.ActiveBattlesOf(A));
+        Assert.Equal((BattleKind.Siege, 0.0, 5.0), (siege.Kind, siege.FightSeconds, siege.SiegeSeconds));
+        Run(game, 4);
+        Assert.Equal(500, game.CastleOf(B)!.WallHp); // damage lands when the siege is over
+        Assert.Empty(game.BattlesOf(A));
+        RunUntilReports(game, A);
+
         var report = Assert.Single(game.BattlesOf(A));
         Assert.Equal(BattleWinner.Attacker, report.Winner);
         Assert.Empty(report.DefenderUnits);
         Assert.Equal(4 * 8.5 * 5, report.CastleDamage, 6); // 4 swordsmen × 8.5 DPS × 5 s
         Assert.Equal(500 - 170, game.CastleOf(B)!.WallHp, 6);
         Assert.Equal(0, a.Soldiers[Sword]); // still walking home
-        Run(game, March(game, B, A) - 1);
+        Run(game, Ticks(game.ArmiesOf(A).Single().SecondsLeft) - 1);
         Assert.Equal(0, a.Soldiers[Sword]);
 
         game.Tick(1);
         Assert.Equal(4, a.Soldiers[Sword]);
         Assert.Equal(0, a.SoldiersAway);
         Assert.Empty(game.ArmiesOf(A));
+    }
+
+    [Fact]
+    public void A_battle_takes_as_long_as_the_fight_and_holds_everyone_in_it()
+    {
+        var game = War(players: 3, seed: 2);
+        game.CastleOf(A)!.AddSoldiers(Sword, 8);
+        game.CastleOf(B)!.AddSoldiers(Shield, 3);
+        game.CastleOf(B)!.AddSoldiers(Archer, 2);
+        Ok(game.Execute(A, Attack(B, (Sword, 8))));
+        Run(game, March(game, A, B));
+
+        var battle = Assert.Single(game.ActiveBattles);
+        Assert.Equal(battle.Record.Ticks * battle.Record.TickSeconds / Rules.War.BattlePlayback, battle.FightSeconds, 9);
+        Assert.True(battle.FightSeconds > 2, "a real fight takes a while");
+        Assert.Equal(battle.Winner == BattleWinner.Attacker ? Rules.War.SiegeSeconds : 0, battle.SiegeSeconds);
+        Assert.Equal(8 + 5, battle.Record.Soldiers.Count);
+
+        // Both sides are told once that it started; nobody else is.
+        Assert.Same(battle, Assert.Single(game.TakeStartedBattles(A)));
+        Assert.Same(battle, Assert.Single(game.TakeStartedBattles(B)));
+        Assert.Empty(game.TakeStartedBattles(A));
+        Assert.Empty(game.TakeStartedBattles(C));
+        Assert.Empty(game.ActiveBattlesOf(C));
+
+        // The defenders are down at the gate: still B's people, but out of reach.
+        var castle = game.CastleOf(B)!;
+        Assert.Equal(0, castle.SoldierCount);
+        Assert.Equal(5, castle.SoldiersDefending);
+        Assert.False(game.Execute(B, Attack(C, (Shield, 1))).Ok);
+        Assert.False(game.Execute(B, new DisarmSoldiers("kalkanli", 1)).Ok);
+        Assert.Equal(battle.Attacker, game.ArmiesOf(A).Single());
+        var at = game.ArmiesOf(A).Single().Position;
+        game.Tick(1);
+        Assert.Equal(at, game.ArmiesOf(A).Single().Position); // the army stands still
+        Assert.DoesNotContain(game.SeenBy(B), m => m.Kind == MoverKind.Army); // fighting armies are not seen walking
+
+        Run(game, Ticks(battle.EndsAt - game.ElapsedSeconds) - 1);
+        Assert.Empty(game.BattlesOf(A));
+        game.Tick(1);
+        var report = Assert.Single(game.BattlesOf(A));
+        Assert.Equal(battle.Id, report.Id);
+        Assert.Equal(0, castle.SoldiersDefending);
+        Assert.Equal(report.DefenderUnits.Sum(u => u.Count - u.Lost), castle.SoldierCount);
+    }
+
+    [Fact]
+    public void When_time_runs_out_a_battle_still_going_on_ends_with_its_outcome()
+    {
+        double march = WorldMap.Standard.RouteBetween(Corner.NorthWest, Corner.SouthEast).Length / Rules.Map.ArmySpeed;
+        var game = War(war: Ticks(march) + 2);
+        game.CastleOf(A)!.AddSoldiers(Sword, 4);
+        Ok(game.Execute(A, Attack(B, (Sword, 4))));
+        Run(game, Ticks(march) + 2); // the siege needs 5 s, the war ends after 2
+        Assert.Equal(MatchPhase.Ended, game.Phase);
+        Assert.Empty(game.ActiveBattles);
+        Assert.Equal(500 - 170, game.CastleOf(B)!.WallHp, 6);
+        Assert.Single(game.BattlesOf(A));
     }
 
     [Fact]
@@ -249,7 +325,7 @@ public class WarTests
         game.CastleOf(A)!.AddSoldiers(Archer, 2);
         game.CastleOf(B)!.AddSoldiers(Shield, 10);
         Ok(game.Execute(A, Attack(B, (Archer, 2))));
-        Run(game, March(game, A, B));
+        RunUntilReports(game, A);
 
         var report = Assert.Single(game.BattlesOf(A));
         Assert.Same(report, Assert.Single(game.BattlesOf(B)));
@@ -278,11 +354,14 @@ public class WarTests
         Ok(game.Execute(A, Attack(C, (Spear, 2))));  // sent first: fights first
         Ok(game.Execute(B, Attack(C, (Sword, 12))));
         Run(game, March(game, A, C));
+        Assert.Equal(A, Assert.Single(game.ActiveBattles).Attacker.From); // B's army waits at the gate
+        RunUntilReports(game, C, 2);
 
         var battles = game.BattlesOf(C);
         Assert.Equal(2, battles.Count);
         Assert.Equal(A, battles[0].Attacker);
         Assert.Equal(B, battles[1].Attacker);
+        Assert.True(battles[1].At > battles[0].At);
         int leftAfterFirst = battles[0].DefenderUnits.Sum(u => u.Count - u.Lost);
         Assert.Equal(leftAfterFirst, battles[1].DefenderUnits.Sum(u => u.Count));
         // A never sees B's battle and the other way round.
@@ -298,7 +377,7 @@ public class WarTests
         game.CastleOf(B)!.AddSoldiers(Sword, 4);
         Ok(game.Execute(A, Attack(B, (Sword, 4))));
         Ok(game.Execute(B, Attack(A, (Sword, 4))));
-        Run(game, March(game, A, B));
+        RunUntilReports(game, A, 2);
 
         Assert.Equal(2, game.BattlesOf(A).Count);
         Assert.All(game.BattlesOf(A), b => Assert.Empty(b.DefenderUnits)); // both castles were empty
@@ -314,7 +393,7 @@ public class WarTests
         var game = War();
         game.CastleOf(A)!.AddSoldiers(Sword, 20); // 20 × 8.5 × 5 = 850 > 500
         Ok(game.Execute(A, Attack(B, (Sword, 20))));
-        Run(game, March(game, A, B));
+        RunUntilReports(game, B);
 
         Assert.True(game.IsEliminated(B));
         Assert.Equal(MatchPhase.Ended, game.Phase);
@@ -340,14 +419,14 @@ public class WarTests
         Ok(game.Execute(A, Attack(B, (Sword, 20))));
         Run(game, 10);
         Ok(game.Execute(B, Attack(C, (Sword, 4)))); // B's castle is now empty
-        Run(game, March(game, A, B) - 10);
+        while (!game.IsEliminated(B)) game.Tick(1);
 
         Assert.True(game.IsEliminated(B));
         Assert.Equal(MatchPhase.War, game.Phase); // A and C are still standing
         Assert.False(game.Execute(B, new SetGrowth(true)).Ok); // spectators cannot act
         Assert.Contains(game.TakeNotifications(C), n => n.Kind == NotificationKind.Eliminated && n.OtherPlayer == B);
 
-        Run(game, Ticks(game.ArmiesOf(B).Single().SecondsLeft)); // B's army reaches C anyway
+        RunUntilReports(game, C); // B's army reaches C anyway
         var report = Assert.Single(game.BattlesOf(C));
         Assert.Equal(B, report.Attacker);
         Assert.Equal(BattleWinner.Attacker, report.Winner);

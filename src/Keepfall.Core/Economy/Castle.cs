@@ -85,6 +85,8 @@ public sealed class Castle
     public double FoodFactor { get; internal set; } = 1;
     /// <summary>Soldiers marching with an army: they count and eat like soldiers, but do not defend.</summary>
     public int SoldiersAway { get; private set; }
+    /// <summary>Soldiers down at the gate in a battle: they cannot be sent or disarmed until it is over.</summary>
+    public int SoldiersDefending { get; private set; }
     /// <summary>How the soldiers at home line up when attacked: row per type, archers' preferred target.</summary>
     public IReadOnlyDictionary<UnitType, Row> DefenseRows => _defenseRows;
     public UnitType? DefensePriority { get; private set; }
@@ -100,7 +102,7 @@ public sealed class Castle
     public int SoldierCount => _soldiers.Values.Sum();
     /// <summary>People away on scout missions: they count and eat, but do not work.</summary>
     public int ScoutsAway { get; private set; }
-    public int Population => WorkerCount + ScoutsAway + SoldierCount + SoldiersAway;
+    public int Population => WorkerCount + ScoutsAway + SoldierCount + SoldiersAway + SoldiersDefending;
     public double NextPersonCost => _rules.Economy.NewPersonCost(Population);
 
     public Building Building(BuildingType type) => _buildings[type];
@@ -145,7 +147,7 @@ public sealed class Castle
 
     public double FoodConsumptionPerMinute =>
         (WorkerCount + ScoutsAway) * _rules.Economy.WorkerFoodPerMinute
-        + (SoldierCount + SoldiersAway) * _rules.Economy.SoldierFoodPerMinute;
+        + (SoldierCount + SoldiersAway + SoldiersDefending) * _rules.Economy.SoldierFoodPerMinute;
 
     /// <summary>Sends one person from <paramref name="from"/> out as a scout (see <see cref="Match.GameState"/>).</summary>
     internal CommandResult SendScout(Job from)
@@ -195,11 +197,19 @@ public sealed class Castle
         SoldiersAway = Math.Max(0, SoldiersAway - survivors.Values.Sum());
     }
 
-    /// <summary>Defenders who fell at home.</summary>
-    internal void LoseDefenders(IReadOnlyDictionary<UnitType, int> lost)
+    /// <summary>The soldiers at home go down to the gate to fight; they are out of reach until the battle is over.</summary>
+    internal void CommitDefenders(IReadOnlyDictionary<UnitType, int> defenders)
     {
-        foreach (var (type, n) in lost) _soldiers[type] = Math.Max(0, _soldiers[type] - n);
-        Stats.SoldiersLost += lost.Values.Sum();
+        foreach (var (type, n) in defenders) _soldiers[type] -= n;
+        SoldiersDefending += defenders.Values.Sum();
+    }
+
+    /// <summary>The battle at the gate is over: the survivors are home again, the fallen are gone.</summary>
+    internal void DefendersBack(IReadOnlyDictionary<UnitType, int> survivors, int fallen)
+    {
+        foreach (var (type, n) in survivors) _soldiers[type] += n;
+        SoldiersDefending = Math.Max(0, SoldiersDefending - survivors.Values.Sum() - fallen);
+        Stats.SoldiersLost += fallen;
     }
 
     internal void TakeWallDamage(double amount)

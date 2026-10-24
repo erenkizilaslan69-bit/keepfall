@@ -42,6 +42,8 @@ public sealed class ArmyMarch
     /// <summary>The way home after the battle; null while marching.</summary>
     public Traveller? Back { get; internal set; }
     public Traveller Leg => Back ?? Out;
+    /// <summary>The battle it is fighting right now; it does not move until that is over.</summary>
+    public ActiveBattle? Battle { get; internal set; }
     /// <summary>The target has seen it coming (and been warned).</summary>
     public bool Sighted { get; internal set; }
     public ArmyState State { get; internal set; } = ArmyState.Marching;
@@ -81,7 +83,8 @@ public sealed record BattleReport(
     double CastleDamage,
     double CastleHpAfter,
     double CastleHpMax,
-    bool DefenderEliminated);
+    bool DefenderEliminated,
+    BattleKind Kind = BattleKind.Siege);
 
 /// <summary>Place 1 is the winner (several players can share it on a tie).</summary>
 public sealed record RankedPlayer(string Player, int Place, int Population, bool Eliminated, double? EliminatedAt);

@@ -53,7 +53,10 @@
     "castleHp": 500,
     // Saldıran kazanırsa: kale hasarı = Σ hayatta kalan × DPS × siegeSeconds (okçular × archerSiegeMultiplier).
     "siegeSeconds": 5,
-    "archerSiegeMultiplier": 0.5
+    "archerSiegeMultiplier": 0.5,
+    // Savaşlar görünür ve gerçek zamanlı: simülasyonun her saniyesi oyunda 1 / battlePlayback saniye sürer.
+    // Kalede: önce savaş, saldıran kazanırsa siegeSeconds boyunca kapıya vurur; hasar ve sonuçlar sonunda uygulanır.
+    "battlePlayback": 1.0
   },
 
   // Excel "Maç" sekmesi: gözcü.

@@ -195,6 +195,8 @@ export interface VisionView { center: Vec; radius: number }
 export interface OwnMoverView {
   id: string; kind: MoverKind; targetSeat: number; returning: boolean;
   position: Vec; velocity: Vec; units: MoverUnit[]; route: Vec[]; travelled: number; speed: number; visionRadius: number;
+  /** In a battle: it stands still and nobody else sees it walking. */
+  fighting: boolean;
 }
 /** Someone else's army or scout inside our vision: never its target, road or arrival time. */
 export interface SeenMoverView { id: string; kind: MoverKind; ownerSeat: number; ownerColor: PlayerColor; position: Vec; velocity: Vec; units: MoverUnit[] }

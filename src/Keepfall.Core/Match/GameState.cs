@@ -51,6 +51,8 @@ public sealed class GameState
     private readonly Dictionary<(string From, string Target), ScoutReport> _reports = [];
     private readonly List<ArmyMarch> _armies = [];
     private readonly List<BattleReport> _battles = [];
+    private readonly List<ActiveBattle> _active = [];
+    private readonly Dictionary<string, List<ActiveBattle>> _startedBattles = [];
     private readonly Dictionary<string, double> _eliminated = [];
     private readonly Dictionary<string, List<GameNotification>> _notifications = [];
     private readonly BattleSimulator _simulator;
@@ -181,13 +183,23 @@ public sealed class GameState
         if (vision.Count == 0) return [];
         bool Visible(Vec p) => vision.Any(c => c.Contains(p));
         var seen = new List<SeenMover>();
-        foreach (var a in _armies.Where(a => a.From != playerKey && Visible(a.Position)))
+        foreach (var a in _armies.Where(a => a.From != playerKey && a.Battle is null && Visible(a.Position)))
             seen.Add(new SeenMover(a.PublicId, MoverKind.Army, a.From, a.Position, a.Velocity,
                 a.Walking.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value)));
         foreach (var m in _missions.Where(m => m.From != playerKey && Visible(m.Position)))
             seen.Add(new SeenMover(m.PublicId, MoverKind.Scout, m.From, m.Position, m.Velocity, new Dictionary<UnitType, int>()));
         return seen;
     }
+
+    /// <summary>Battles being fought right now that this player is part of (a fallen castle keeps watching its own).</summary>
+    public IReadOnlyList<ActiveBattle> ActiveBattlesOf(string playerKey) => _active.Where(b => b.Involves(playerKey)).ToList();
+
+    /// <summary>Every battle being fought right now.</summary>
+    public IReadOnlyList<ActiveBattle> ActiveBattles => _active;
+
+    /// <summary>Battles this player became part of since the last call; each is returned once.</summary>
+    public IReadOnlyList<ActiveBattle> TakeStartedBattles(string playerKey) =>
+        _startedBattles.Remove(playerKey, out var list) ? list : [];
 
     /// <summary>Battles this player fought in (as attacker or defender), oldest first.</summary>
     public IReadOnlyList<BattleReport> BattlesOf(string playerKey) =>
@@ -218,7 +230,11 @@ public sealed class GameState
         if (RemainingSeconds <= 1e-9)
         {
             if (Phase == MatchPhase.Preparation) Phase = MatchPhase.War;
-            else EndMatch(byElimination: false);
+            else
+            {
+                FinishAllBattles();
+                if (Phase != MatchPhase.Ended) EndMatch(byElimination: false);
+            }
         }
     }
 
@@ -328,7 +344,14 @@ public sealed class GameState
 
     private void AdvanceArmies(double dt)
     {
-        foreach (var a in _armies) a.Leg.Advance(dt);
+        // Battles that are over: losses, damage and reports land now, and the survivors move on.
+        foreach (var b in _active.Where(b => ElapsedSeconds + 1e-9 >= b.EndsAt).OrderBy(b => b.EndsAt).ThenBy(b => b.Id).ToList())
+        {
+            if (Phase == MatchPhase.Ended) return;
+            FinishBattle(b);
+        }
+
+        foreach (var a in _armies.Where(a => a.Battle is null)) a.Leg.Advance(dt);
 
         // The sentry: the target is warned the moment an army coming for it is in sight of the castle.
         foreach (var a in _armies.Where(a => a.State == ArmyState.Marching && !a.Sighted && !_eliminated.ContainsKey(a.Target)))
@@ -338,15 +361,13 @@ public sealed class GameState
             Notify(a.Target, new GameNotification(NotificationKind.ArmyIncoming, a.From, ElapsedSeconds, ElapsedSeconds + a.SecondsLeft));
         }
 
-        // Armies arriving in the same tick fight one after the other, earliest sent first.
-        var arriving = _armies
-            .Where(a => a.State == ArmyState.Marching && a.Out.Arrived)
-            .OrderBy(a => a.Id)
-            .ToList();
-        foreach (var a in arriving)
+        // Armies at their target's gate lay siege one at a time per castle, earliest sent first; the rest wait.
+        foreach (var a in _armies.Where(a => a.State == ArmyState.Marching && a.Battle is null && a.Out.Arrived).OrderBy(a => a.Id).ToList())
         {
             if (Phase == MatchPhase.Ended) return;
-            Arrive(a);
+            if (_eliminated.ContainsKey(a.Target)) { SendHome(a, a.Units); continue; } // nothing left to attack
+            if (_active.Any(b => b.Kind == BattleKind.Siege && b.Defender == a.Target)) continue;
+            StartSiege(a);
         }
 
         foreach (var a in _armies.Where(a => a.State == ArmyState.Returning && a.Back!.Arrived).ToList())
@@ -357,75 +378,115 @@ public sealed class GameState
     }
 
     /// <summary>
-    /// The army fights whoever is at home in the target castle right now. If it wins, its survivors
-    /// damage the castle; at 0 HP the defender is out. Survivors walk home (or disband if their own
-    /// castle has fallen in the meantime).
+    /// The army fights whoever is at home in the target castle right now; they come down to the gate
+    /// and are held there until it is over. If the army wins, its survivors then hammer the gate.
     /// </summary>
-    private void Arrive(ArmyMarch a)
+    private void StartSiege(ArmyMarch a)
     {
-        var attacker = _players[a.From].Castle;
-        if (_eliminated.ContainsKey(a.Target))
-        {
-            SendHome(a, a.Units); // nothing left to attack
-            return;
-        }
-        var defender = _players[a.Target].Castle;
+        var castle = _players[a.Target].Castle;
+        var defenders = castle.Soldiers.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
+        castle.CommitDefenders(defenders);
+        var battle = new ActiveBattle(_nextId++, NewPublicId(), BattleKind.Siege, Map.RegionOf(_corners[a.Target]).Gate,
+            a.Out.Direction, ElapsedSeconds, a, null, a.Target);
 
-        var attackSetup = new ArmySetup("Saldıran") { Targeting = a.ArcherPriority is { } p ? TargetPriority.Prefer(p) : TargetPriority.Front };
-        foreach (var (type, n) in a.Units) attackSetup.Add(type, n);
-        foreach (var (type, row) in a.Rows) attackSetup.PlaceIn(type, row);
-
-        var defenders = defender.Soldiers.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
-        var defendSetup = new ArmySetup("Savunan") { Targeting = defender.DefensePriority is { } d ? TargetPriority.Prefer(d) : TargetPriority.Front };
+        var defendSetup = new ArmySetup("Savunan") { Targeting = castle.DefensePriority is { } d ? TargetPriority.Prefer(d) : TargetPriority.Front };
         foreach (var (type, n) in defenders) defendSetup.Add(type, n);
-        foreach (var (type, row) in defender.DefenseRows) defendSetup.PlaceIn(type, row);
+        foreach (var (type, row) in castle.DefenseRows) defendSetup.PlaceIn(type, row);
+        Fight(battle, defendSetup, defenders);
 
-        Dictionary<UnitType, int> attackSurvivors, defendSurvivors;
-        BattleWinner winner;
-        if (defendSetup.TotalCount == 0)
+        if (battle.Winner == BattleWinner.Attacker)
         {
-            winner = BattleWinner.Attacker; // an empty castle does not fight back
-            attackSurvivors = a.Units.ToDictionary(kv => kv.Key, kv => kv.Value);
-            defendSurvivors = [];
+            // A wall cannot lose more than it has left (keeps damage stats honest).
+            battle.CastleDamage = Math.Min(SiegeDamage(battle.AttackerSurvivors), castle.WallHp);
+            battle.SiegeSeconds = Rules.War.SiegeSeconds;
         }
-        else
-        {
-            var result = _simulator.Simulate(attackSetup, defendSetup, _rng);
-            winner = result.Outcome switch
+        Begin(battle);
+    }
+
+    /// <summary>Simulates the battle between its attacking army (side A) and <paramref name="sideB"/>, with a record to replay.</summary>
+    private void Fight(ActiveBattle battle, ArmySetup sideB, IReadOnlyDictionary<UnitType, int> sideBUnits)
+    {
+        var a = battle.Attacker;
+        var setup = new ArmySetup("Saldıran") { Targeting = a.ArcherPriority is { } p ? TargetPriority.Prefer(p) : TargetPriority.Front };
+        foreach (var (type, n) in a.Walking) if (n > 0) setup.Add(type, n);
+        foreach (var (type, row) in a.Rows) setup.PlaceIn(type, row);
+
+        var result = _simulator.Simulate(setup, sideB, _rng, recordBattle: true);
+        battle.AttackerUnits = a.Walking.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
+        battle.DefenderUnits = sideBUnits.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
+        battle.AttackerSurvivors = result.SideA.ByType.Where(t => t.Survivors > 0).ToDictionary(t => t.Type, t => t.Survivors);
+        battle.DefenderSurvivors = result.SideB.ByType.Where(t => t.Survivors > 0).ToDictionary(t => t.Type, t => t.Survivors);
+        battle.Winner = sideB.TotalCount == 0 ? BattleWinner.Attacker // an empty castle does not fight back
+            : result.Outcome switch
             {
                 BattleOutcome.SideAWins => BattleWinner.Attacker,
                 BattleOutcome.SideBWins => BattleWinner.Defender,
                 _ => BattleWinner.Draw,
             };
-            attackSurvivors = result.SideA.ByType.ToDictionary(t => t.Type, t => t.Survivors);
-            defendSurvivors = result.SideB.ByType.ToDictionary(t => t.Type, t => t.Survivors);
-        }
+        battle.Record = result.Record!;
+        battle.FightSeconds = result.DurationSeconds / Rules.War.BattlePlayback;
+    }
 
-        var attackLost = a.Units.ToDictionary(kv => kv.Key, kv => kv.Value - attackSurvivors.GetValueOrDefault(kv.Key));
-        var defendLost = defenders.ToDictionary(kv => kv.Key, kv => kv.Value - defendSurvivors.GetValueOrDefault(kv.Key));
+    private void Begin(ActiveBattle battle)
+    {
+        battle.Attacker.Battle = battle;
+        if (battle.Opponent is { } o) o.Battle = battle;
+        _active.Add(battle);
+        foreach (var p in new[] { battle.Attacker.From, battle.Defender }.Distinct())
+        {
+            if (!_startedBattles.TryGetValue(p, out var list)) _startedBattles[p] = list = [];
+            list.Add(battle);
+        }
+    }
+
+    /// <summary>The battle is over: losses, castle damage, the report and (maybe) a fallen castle.</summary>
+    private void FinishBattle(ActiveBattle b)
+    {
+        _active.Remove(b);
+        var a = b.Attacker;
+        a.Battle = null;
+        var attacker = _players[a.From].Castle;
+        var defender = _players[b.Defender].Castle;
+        var attackLost = Lost(b.AttackerUnits, b.AttackerSurvivors);
+        var defendLost = Lost(b.DefenderUnits, b.DefenderSurvivors);
         attacker.ArmyLost(attackLost.Values.Sum());
-        defender.LoseDefenders(defendLost);
         attacker.Stats.EnemiesKilled += defendLost.Values.Sum();
         defender.Stats.EnemiesKilled += attackLost.Values.Sum();
 
-        double damage = 0;
-        if (winner == BattleWinner.Attacker)
+        bool fell = false;
+        if (b.Kind == BattleKind.Siege)
         {
-            // A wall cannot lose more than it has left (keeps damage stats honest).
-            damage = Math.Min(SiegeDamage(attackSurvivors), defender.WallHp);
-            defender.TakeWallDamage(damage);
-            attacker.Stats.CastleDamageDealt += damage;
+            defender.DefendersBack(b.DefenderSurvivors, defendLost.Values.Sum());
+            if (b.CastleDamage > 0)
+            {
+                defender.TakeWallDamage(b.CastleDamage);
+                attacker.Stats.CastleDamageDealt += b.CastleDamage;
+            }
+            fell = b.Winner == BattleWinner.Attacker && defender.WallHp <= 1e-9;
         }
-        bool fell = winner == BattleWinner.Attacker && defender.WallHp <= 1e-9;
 
-        var report = new BattleReport(_nextId++, ElapsedSeconds, a.From, a.Target,
-            Lines(a.Units, attackLost), Lines(defenders, defendLost), winner, damage, defender.WallHp, defender.MaxWallHp, fell);
+        var report = new BattleReport(b.Id, ElapsedSeconds, a.From, b.Defender,
+            Lines(b.AttackerUnits, attackLost), Lines(b.DefenderUnits, defendLost), b.Winner, b.CastleDamage,
+            defender.WallHp, defender.MaxWallHp, fell, b.Kind);
         _battles.Add(report);
-        Notify(a.From, new GameNotification(NotificationKind.BattleFought, a.Target, ElapsedSeconds, BattleId: report.Id));
-        Notify(a.Target, new GameNotification(NotificationKind.BattleFought, a.From, ElapsedSeconds, BattleId: report.Id));
+        Notify(a.From, new GameNotification(NotificationKind.BattleFought, b.Defender, ElapsedSeconds, BattleId: report.Id));
+        Notify(b.Defender, new GameNotification(NotificationKind.BattleFought, a.From, ElapsedSeconds, BattleId: report.Id));
 
-        SendHome(a, attackSurvivors.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value));
-        if (fell) Eliminate(a.Target);
+        SendHome(a, b.AttackerSurvivors);
+        if (fell) Eliminate(b.Defender);
+    }
+
+    private static Dictionary<UnitType, int> Lost(IReadOnlyDictionary<UnitType, int> before, IReadOnlyDictionary<UnitType, int> after) =>
+        before.ToDictionary(kv => kv.Key, kv => kv.Value - after.GetValueOrDefault(kv.Key));
+
+    /// <summary>When time runs out mid-battle, the battles going on end now with the outcome already fought out.</summary>
+    private void FinishAllBattles()
+    {
+        foreach (var b in _active.OrderBy(b => b.EndsAt).ThenBy(b => b.Id).ToList())
+        {
+            if (Phase == MatchPhase.Ended) return;
+            FinishBattle(b);
+        }
     }
 
     /// <summary>Σ surviving attackers × DPS × siege seconds; archers count only partly against walls.</summary>

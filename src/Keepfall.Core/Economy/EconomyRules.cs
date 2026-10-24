@@ -18,7 +18,8 @@ public sealed record WarRules(
     double FamineFoodMultiplier,
     double CastleHp,
     double SiegeSeconds,
-    double ArcherSiegeMultiplier);
+    double ArcherSiegeMultiplier,
+    double BattlePlayback);
 
 /// <summary>Scout reports ("Maç" sheet): how wrong the soldier counts are. How long a mission takes depends on the map.</summary>
 public sealed record ScoutingRules(double ReportError);

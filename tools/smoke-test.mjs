@@ -159,14 +159,15 @@ check('nobody ever sees their own movers as "seen"',
   [[mapsA, 1], [mapsB, 2], [mapsC, 3]].every(([maps, seat]) => maps.every((m) => m.seen.every((s) => s.ownerSeat !== seat))));
 check('whatever is seen is inside the vision',
   [...mapsA, ...mapsB, ...mapsC].every((m) => m.seen.every((s) => inVision(s.position, m))));
-// Ground truth: A's own army position at each tick. B and C must see it exactly when it is in their vision.
+// Ground truth: A's own army position at each tick. B and C must see it exactly when it is in their vision
+// (while it is fighting, nobody but the two sides sees it at all).
 let compared = 0, mismatches = [];
 for (const [name, maps] of [['B', mapsB], ['C', mapsC]]) {
   for (const { t, o } of ownArmy) {
     const m = maps.find((x) => Math.abs(x.elapsedSeconds - t) < 1e-6);
     if (!m) continue;
     compared++;
-    const shouldSee = inVision(o.position, m);
+    const shouldSee = !o.fighting && inVision(o.position, m);
     const sees = m.seen.some((s) => s.id === o.id);
     if (shouldSee !== sees) mismatches.push(`${name}@${t}: ${shouldSee ? 'missing' : 'leaked'}`);
   }
