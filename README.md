@@ -48,6 +48,25 @@ Aynı tarayıcıda birden fazla oyuncu olarak denemek için her sekme ayrı oyun
 Geliştirme ortamında oda sahibine ×5 / ×20 hız butonları çıkar ve tek kişiyle de maç başlatılabilir.
 `npm --prefix client run build` sonrası sunucu `client/dist`'i kendisi de sunar (http://localhost:5080).
 
+## Arkadaşlarla oynama (tünel)
+
+Arkadaşlar için tek bir adres yeter: sunucu, derlenmiş istemciyi ve oyun bağlantısını (`/hub`) aynı portta (5080) sunar. Tüneli **Vite'a (5173) değil, sunucuya (5080)** yönelt; Vite yabancı alan adlarını reddeder.
+
+```bash
+npm --prefix client run build
+ASPNETCORE_ENVIRONMENT=Production dotnet run --project src/Keepfall.Server --urls http://localhost:5080
+```
+
+PowerShell'de: `$env:ASPNETCORE_ENVIRONMENT = 'Production'` yazıp `dotnet run --project src/Keepfall.Server --urls http://localhost:5080` çalıştır.
+
+Sonra tüneli 5080'e aç (ör. `cloudflared tunnel --url http://localhost:5080` ya da `ngrok http 5080`) ve çıkan adresi gönder. Oda kurunca adres `https://<tünel-adresi>/oda/ABCD` olur; arkadaşlar linke tıklayıp adlarını yazar.
+
+- İstemciyi her değiştirdiğinde `npm --prefix client run build` komutunu tekrar çalıştır; sunucu `client/dist`'i okur.
+- `config/balance.json` sunucu açılırken okunur: değiştirince sunucuyu yeniden başlat. Odalar bellektedir, yeniden başlatınca kaybolur.
+- `Production` modunda hız butonları (×5 / ×20) ve tek kişiyle maç başlatma kapalıdır; maç en az 2 oyuncuyla başlar. Bunlar gerekirse sunucuyu `Development` ile çalıştır (`dotnet run --project src/Keepfall.Server`): oda sahibi hızı değiştirebilir.
+- Tiny Swords görselleri `client/public/assets/` altında olmalı (yukarıya bak); lisans yüzünden depoda yoktur, derleme onları `dist`'e kopyalar.
+- Tüneli ya da sunucuyu kapatınca oyun da kapanır.
+
 Testler:
 
 ```bash
