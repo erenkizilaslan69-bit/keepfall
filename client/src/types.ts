@@ -66,6 +66,26 @@ export interface RoomView {
 
 export interface JoinView { ok: boolean; error: string | null; code: string | null; token: string | null; seat: number; room: RoomView | null }
 
+// Scouting: a report is all we ever learn about another castle.
+export interface ScoutTargetView { seat: number; name: string; color: PlayerColor; busy: boolean }
+export interface ScoutMissionView { targetSeat: number; progress: number; arrived: boolean; remainingSeconds: number }
+export interface ScoutReportView {
+  targetSeat: number;
+  targetName: string;
+  targetColor: PlayerColor;
+  observedAt: number;
+  deliveredAt: number;
+  soldiers: { unitId: string; name: string; count: number }[];
+  buildings: { type: BuildingType; name: string; level: number }[];
+}
+export interface ScoutingView {
+  missionSeconds: number;
+  scoutsAway: number;
+  targets: ScoutTargetView[];
+  missions: ScoutMissionView[];
+  reports: ScoutReportView[];
+}
+
 export interface CastleView {
   phase: MatchPhase;
   color: PlayerColor;
@@ -87,6 +107,7 @@ export interface CastleView {
   buildings: BuildingView[];
   units: UnitView[];
   queue: OrderView[];
+  scouting: ScoutingView;
   summary: SummaryView | null;
 }
 

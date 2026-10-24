@@ -8,6 +8,8 @@ export interface ConnectionEvents {
   room: (room: RoomView) => void;
   castle: (castle: CastleView) => void;
   matchEnded: (summary: SummaryView) => void;
+  /** Something that happened to us, e.g. "Kırmızı'nın gözcüsü kaleni gözetledi." */
+  notification: (text: string) => void;
   status: (status: ConnectionStatus) => void;
 }
 
@@ -28,6 +30,7 @@ export class GameConnection {
     this.hub.on('RoomState', (room: RoomView) => this.on.room(room));
     this.hub.on('CastleState', (castle: CastleView) => this.on.castle(castle));
     this.hub.on('MatchEnded', (summary: SummaryView) => this.on.matchEnded(summary));
+    this.hub.on('Notification', (text: string) => this.on.notification(text));
     this.hub.onreconnecting(() => this.on.status('reconnecting'));
     // A reconnect is a new connection on the server: rejoin the same seat with our token.
     this.hub.onreconnected(() => { if (this.code) void this.joinRoom(this.code, this.name); });
@@ -77,6 +80,7 @@ export class GameConnection {
   disarmSoldiers = (unitId: string, count: number) => this.call('DisarmSoldiers', unitId, count);
   upgradeBuilding = (building: BuildingType) => this.call('UpgradeBuilding', building);
   setGrowth = (enabled: boolean) => this.call('SetGrowth', enabled);
+  sendScout = (targetSeat: number, from: Job) => this.call('SendScout', targetSeat, from);
   setSpeed = (speed: number) => this.call('SetSpeed', speed);
 
   private async call(method: string, ...args: unknown[]): Promise<CommandResult> {

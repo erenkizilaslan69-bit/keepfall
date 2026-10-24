@@ -184,3 +184,12 @@ select { background: #3a352c; color: var(--text); border: 1px solid #4d473b; bor
 .end #roster { margin-top: 8px; }
 
 .banner.top { position: sticky; top: 0; z-index: 10; margin: 0; border-radius: 0; text-align: center; }
+
+/* ---- scouting ------------------------------------------------------------------------- */
+
+.scout-send { grid-template-columns: 1fr auto auto; }
+.small-dot { width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; }
+.report { border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; margin: 6px 0; }
+.report-head { display: flex; align-items: center; gap: 4px; }
+.report-head .muted { margin-left: auto; }
+.toast.info { background: #2f4f7a; bottom: 70px; }

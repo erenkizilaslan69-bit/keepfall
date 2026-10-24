@@ -35,6 +35,7 @@ const net = new GameConnection({
   room: onRoom,
   castle: onCastle,
   matchEnded: (s) => { summary = s; end?.setSummary(s); },
+  notification: (text) => hud?.notify(text),
   status: (s) => {
     status = statusText[s];
     hud?.setStatus(status);
