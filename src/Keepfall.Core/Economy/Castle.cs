@@ -1,3 +1,4 @@
+using Keepfall.Core.Combat;
 using Keepfall.Core.Match;
 using Keepfall.Core.Units;
 
@@ -32,6 +33,12 @@ public sealed class CastleStats
     public int PeakPopulation { get; internal set; }
     public double StarvingSeconds { get; internal set; }
     public double IdleWorkerSeconds { get; internal set; }
+    // War
+    public int AttacksLaunched { get; internal set; }
+    public int SoldiersLost { get; internal set; }
+    public int EnemiesKilled { get; internal set; }
+    public double CastleDamageDealt { get; internal set; }
+    public double CastleDamageTaken { get; internal set; }
 }
 
 /// <summary>
@@ -49,6 +56,7 @@ public sealed class Castle
     private readonly Dictionary<UnitType, int> _weapons = [];
     private readonly Dictionary<UnitType, int> _soldiers = [];
     private readonly List<WeaponOrder> _queue = [];
+    private readonly Dictionary<UnitType, Row> _defenseRows = [];
 
     public Castle(GameRules rules)
     {
@@ -59,6 +67,7 @@ public sealed class Castle
         Wood = m.StartingWood;
         Iron = m.StartingIron;
         foreach (var u in rules.Units) { _weapons[u] = 0; _soldiers[u] = 0; }
+        WallHp = MaxWallHp = rules.War.CastleHp;
         Stats.PeakPopulation = Population;
     }
 
@@ -69,6 +78,16 @@ public sealed class Castle
     /// <summary>True when the last tick ended with no food; production runs at the starvation multiplier.</summary>
     public bool Starving { get; private set; }
     public CastleStats Stats { get; } = new();
+
+    public double WallHp { get; private set; }
+    public double MaxWallHp { get; }
+    /// <summary>Food production factor set by the match (famine late in the war); 1 otherwise.</summary>
+    public double FoodFactor { get; internal set; } = 1;
+    /// <summary>Soldiers marching with an army: they count and eat like soldiers, but do not defend.</summary>
+    public int SoldiersAway { get; private set; }
+    /// <summary>How the soldiers at home line up when attacked: row per type, archers' preferred target.</summary>
+    public IReadOnlyDictionary<UnitType, Row> DefenseRows => _defenseRows;
+    public UnitType? DefensePriority { get; private set; }
 
     public IReadOnlyDictionary<Job, int> Workers => _workers;
     public IReadOnlyDictionary<UnitType, int> Weapons => _weapons;
@@ -81,7 +100,7 @@ public sealed class Castle
     public int SoldierCount => _soldiers.Values.Sum();
     /// <summary>People away on scout missions: they count and eat, but do not work.</summary>
     public int ScoutsAway { get; private set; }
-    public int Population => WorkerCount + ScoutsAway + SoldierCount;
+    public int Population => WorkerCount + ScoutsAway + SoldierCount + SoldiersAway;
     public double NextPersonCost => _rules.Economy.NewPersonCost(Population);
 
     public Building Building(BuildingType type) => _buildings[type];
@@ -93,7 +112,8 @@ public sealed class Castle
     public double ProductionPerMinute(Resource resource)
     {
         var job = Jobs.Working.First(j => Jobs.ProductOf(j) == resource);
-        return _workers[job] * PerPersonPerMinute(resource) * Multiplier(Jobs.BuildingOf(job)!.Value) * ProductionMultiplier;
+        double factor = resource == Resource.Food ? FoodFactor : 1;
+        return _workers[job] * PerPersonPerMinute(resource) * Multiplier(Jobs.BuildingOf(job)!.Value) * ProductionMultiplier * factor;
     }
 
     /// <summary>
@@ -124,7 +144,8 @@ public sealed class Castle
     public double GrowthThreshold => NextPersonCost + GrowthReserve;
 
     public double FoodConsumptionPerMinute =>
-        (WorkerCount + ScoutsAway) * _rules.Economy.WorkerFoodPerMinute + SoldierCount * _rules.Economy.SoldierFoodPerMinute;
+        (WorkerCount + ScoutsAway) * _rules.Economy.WorkerFoodPerMinute
+        + (SoldierCount + SoldiersAway) * _rules.Economy.SoldierFoodPerMinute;
 
     /// <summary>Sends one person from <paramref name="from"/> out as a scout (see <see cref="Match.GameState"/>).</summary>
     internal CommandResult SendScout(Job from)
@@ -142,6 +163,53 @@ public sealed class Castle
         ScoutsAway--;
         _workers[Job.Idle]++;
     }
+
+    // ---- war (called by GameState) -------------------------------------------------------------
+
+    /// <summary>Soldiers leave home with an army.</summary>
+    internal CommandResult DispatchArmy(IReadOnlyDictionary<UnitType, int> units)
+    {
+        if (units.Values.Sum() <= 0) return CommandResult.Fail("En az bir asker seçmelisin.");
+        foreach (var (type, n) in units)
+        {
+            if (n < 0) return CommandResult.Fail("Asker sayısı negatif olamaz.");
+            if (_soldiers[type] < n) return CommandResult.Fail($"Kalede sadece {_soldiers[type]} {type.Name} var.");
+        }
+        foreach (var (type, n) in units) _soldiers[type] -= n;
+        SoldiersAway += units.Values.Sum();
+        Stats.AttacksLaunched++;
+        return CommandResult.Success;
+    }
+
+    /// <summary>Soldiers of a marching army died (or disbanded): they stop eating.</summary>
+    internal void ArmyLost(int count)
+    {
+        SoldiersAway = Math.Max(0, SoldiersAway - count);
+        Stats.SoldiersLost += count;
+    }
+
+    /// <summary>A returning army is home: its soldiers can defend again.</summary>
+    internal void ArmyReturned(IReadOnlyDictionary<UnitType, int> survivors)
+    {
+        foreach (var (type, n) in survivors) _soldiers[type] += n;
+        SoldiersAway = Math.Max(0, SoldiersAway - survivors.Values.Sum());
+    }
+
+    /// <summary>Defenders who fell at home.</summary>
+    internal void LoseDefenders(IReadOnlyDictionary<UnitType, int> lost)
+    {
+        foreach (var (type, n) in lost) _soldiers[type] = Math.Max(0, _soldiers[type] - n);
+        Stats.SoldiersLost += lost.Values.Sum();
+    }
+
+    internal void TakeWallDamage(double amount)
+    {
+        WallHp = Math.Max(0, WallHp - amount);
+        Stats.CastleDamageTaken += amount;
+    }
+
+    /// <summary>Setup helper for tests and dev tools: soldiers appear at home (as extra people).</summary>
+    internal void AddSoldiers(UnitType type, int count) => _soldiers[type] += count;
 
     /// <summary>Forge speed in weapon-seconds per second (0 without blacksmiths).</summary>
     public double ForgeSpeed => _workers[Job.Blacksmith] * Multiplier(BuildingType.Forge) * ProductionMultiplier;
@@ -210,6 +278,7 @@ public sealed class Castle
         DisarmSoldiers c => Disarm(c),
         UpgradeBuilding c => Upgrade(c),
         SetGrowth c => ToggleGrowth(c),
+        SetDefense c => SetDefense_(c),
         _ => CommandResult.Fail("Bilinmeyen komut."),
     };
 
@@ -284,6 +353,23 @@ public sealed class Castle
         Pay(next.UpgradeWood, next.UpgradeIron, 0);
         if (next.UpgradeSeconds <= 0) b.Level++;
         else { b.UpgradeRemaining = next.UpgradeSeconds; b.UpgradeTotal = next.UpgradeSeconds; }
+        return CommandResult.Success;
+    }
+
+    private CommandResult SetDefense_(SetDefense c)
+    {
+        var rows = new Dictionary<UnitType, Row>();
+        foreach (var (id, row) in c.Rows ?? new Dictionary<string, Row>())
+        {
+            if (FindUnit(id) is not { } type) return CommandResult.Fail($"Bilinmeyen birlik \"{id}\".");
+            rows[type] = row;
+        }
+        UnitType? priority = null;
+        if (!string.IsNullOrEmpty(c.ArcherPriority) && (priority = FindUnit(c.ArcherPriority)) is null)
+            return CommandResult.Fail($"Bilinmeyen birlik \"{c.ArcherPriority}\".");
+        _defenseRows.Clear();
+        foreach (var (type, row) in rows) _defenseRows[type] = row;
+        DefensePriority = priority;
         return CommandResult.Success;
     }
 

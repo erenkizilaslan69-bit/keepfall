@@ -40,7 +40,18 @@ public sealed record ScoutReport(
     IReadOnlyList<ScoutedUnit> Soldiers,
     IReadOnlyDictionary<BuildingType, int> BuildingLevels);
 
-public enum NotificationKind { ScoutedBy }
+public enum NotificationKind
+{
+    /// <summary>OtherPlayer's scout looked at our castle.</summary>
+    ScoutedBy,
+    /// <summary>An army from OtherPlayer arrives at ArrivesAt. Deliberately nothing about its size.</summary>
+    ArmyIncoming,
+    /// <summary>We fought OtherPlayer; the report is BattleId.</summary>
+    BattleFought,
+    /// <summary>OtherPlayer's castle fell (sent to everyone).</summary>
+    Eliminated,
+}
 
-/// <summary>Something that happened to a player because of another one (e.g. their scout looked in).</summary>
-public sealed record GameNotification(NotificationKind Kind, string OtherPlayer, double At);
+/// <summary>Something that happened to a player because of another one.</summary>
+public sealed record GameNotification(NotificationKind Kind, string OtherPlayer, double At,
+    double? ArrivesAt = null, int? BattleId = null);

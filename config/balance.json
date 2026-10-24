@@ -32,6 +32,22 @@
     "growthReserveSeconds": 60
   },
 
+  // Excel "Maç" ve "Binalar" sekmeleri: savaş fazı. Savaş süresi = mod süresi − hazırlık (15 dk → 10 dk).
+  "war": {
+    // Ordunun hedefe yolculuğu (sn); hayatta kalanlar aynı sürede geri döner.
+    "marchSeconds": 30,
+    // Saldıran ordu varmadan bu kadar sn önce savunana "X'den bir ordu yaklaşıyor!" uyarısı gider.
+    "warningSeconds": 10,
+    // Kıtlık: savaşın bu oranından sonra yemek üretimi bu çarpanla çalışır.
+    "famineStart": 0.7,
+    "famineFoodMultiplier": 0.5,
+    // Kale (sur seviye 1) canı. 0 olursa oyuncu elenir.
+    "castleHp": 500,
+    // Saldıran kazanırsa: kale hasarı = Σ hayatta kalan × DPS × siegeSeconds (okçular × archerSiegeMultiplier).
+    "siegeSeconds": 5,
+    "archerSiegeMultiplier": 0.5
+  },
+
   // Excel "Maç" sekmesi: gözcü.
   "scouting": {
     // Gidiş + dönüş (sn). Görevdeki gözcü çalışmaz ama yemek yer; görev bitince boşta döner.

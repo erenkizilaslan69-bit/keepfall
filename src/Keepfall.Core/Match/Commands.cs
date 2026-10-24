@@ -1,4 +1,5 @@
 using Keepfall.Core.Economy;
+using Keepfall.Core.Units;
 
 namespace Keepfall.Core.Match;
 
@@ -24,6 +25,19 @@ public sealed record UpgradeBuilding(BuildingType Building) : GameCommand;
 
 /// <summary>Send one person from <paramref name="From"/> to scout <paramref name="TargetKey"/>'s castle.</summary>
 public sealed record SendScout(string TargetKey, Job From = Job.Idle) : GameCommand;
+
+/// <summary>
+/// War: send soldiers (unit id → count) to attack <paramref name="TargetKey"/>, with an optional row per
+/// type and the archers' preferred target.
+/// </summary>
+public sealed record SendArmy(
+    string TargetKey,
+    IReadOnlyDictionary<string, int> Units,
+    IReadOnlyDictionary<string, Row>? Rows = null,
+    string? ArcherPriority = null) : GameCommand;
+
+/// <summary>How the soldiers at home line up when the castle is attacked.</summary>
+public sealed record SetDefense(IReadOnlyDictionary<string, Row>? Rows, string? ArcherPriority) : GameCommand;
 
 /// <summary>Turn automatic population growth on or off.</summary>
 public sealed record SetGrowth(bool Enabled) : GameCommand;

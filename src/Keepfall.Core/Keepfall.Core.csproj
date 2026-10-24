@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -6,5 +6,10 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Keepfall.Core</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Tests set up armies directly (Castle.AddSoldiers) instead of forging every weapon. -->
+    <InternalsVisibleTo Include="Keepfall.Core.Tests" />
+  </ItemGroup>
 
 </Project>

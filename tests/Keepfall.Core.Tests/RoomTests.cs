@@ -216,7 +216,7 @@ public class RoomTests
         var a = Join(room);
         var r = room.Execute(a.Token, new MoveWorkers(Job.Idle, Job.Farmer, 1));
         Assert.False(r.Ok);
-        Assert.Contains("hazırlık", r.Error);
+        Assert.Contains("maç sırasında", r.Error);
     }
 
     [Fact]

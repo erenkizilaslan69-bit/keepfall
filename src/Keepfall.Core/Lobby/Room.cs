@@ -3,7 +3,7 @@ using Keepfall.Core.Match;
 
 namespace Keepfall.Core.Lobby;
 
-public enum RoomPhase { Lobby, Preparation, Ended }
+public enum RoomPhase { Lobby, Preparation, War, Ended }
 
 /// <summary>Player colours in seat order; Tiny Swords also has Black, kept spare.</summary>
 public enum PlayerColor { Blue, Red, Yellow, Purple }
@@ -20,6 +20,7 @@ public sealed record RoomOptions
     /// <summary>Dev-only ×N game speed, settable by the host.</summary>
     public bool AllowSpeedControl { get; init; }
     public double? PrepSeconds { get; init; }
+    public double? WarSeconds { get; init; }
 }
 
 /// <summary>
@@ -93,12 +94,59 @@ public sealed class Room
     public IReadOnlyList<string> TakeNotifications(RoomPlayer player)
     {
         if (Game is null) return [];
-        return Game.TakeNotifications(player.CastleKey).Select(n => n.Kind switch
+        return Game.TakeNotifications(player.CastleKey).Select(n =>
         {
-            NotificationKind.ScoutedBy => $"{ColorGenitive(PlayerOfCastle(n.OtherPlayer)?.Color)} gözcüsü kaleni gözetledi.",
-            _ => n.Kind.ToString(),
+            var other = PlayerOfCastle(n.OtherPlayer);
+            return n.Kind switch
+            {
+                NotificationKind.ScoutedBy => $"{ColorGenitive(other?.Color)} gözcüsü kaleni gözetledi.",
+                // Who, and nothing else: no size, no unit types.
+                NotificationKind.ArmyIncoming => $"{ColorAblative(other?.Color)} bir ordu yaklaşıyor!",
+                NotificationKind.BattleFought => BattleText(player, n.BattleId),
+                NotificationKind.Eliminated => other == player
+                    ? "Kalen düştü, elendin. Artık izleyicisin."
+                    : $"{other?.Name ?? "Bir oyuncu"} ({ColorName(other?.Color)}) elendi.",
+                _ => n.Kind.ToString(),
+            };
         }).ToList();
     }
+
+    private string BattleText(RoomPlayer player, int? battleId)
+    {
+        var report = Game!.BattlesOf(player.CastleKey).FirstOrDefault(b => b.Id == battleId);
+        if (report is null) return "Savaş oldu.";
+        bool attacking = report.Attacker == player.CastleKey;
+        var other = PlayerOfCastle(attacking ? report.Defender : report.Attacker);
+        string them = ColorName(other?.Color);
+        return (attacking, report.Winner) switch
+        {
+            (true, BattleWinner.Attacker) => $"{them} kalesine saldırın kazandı: {report.CastleDamage:0} kale hasarı.",
+            (true, BattleWinner.Defender) => $"{them} kalesine saldırın püskürtüldü.",
+            (true, _) => $"{them} kalesine saldırı berabere bitti.",
+            (false, BattleWinner.Attacker) => $"{them} saldırısı savunmanı yendi: kalen {report.CastleDamage:0} hasar aldı.",
+            (false, BattleWinner.Defender) => $"{them} saldırısını püskürttün!",
+            _ => $"{them} saldırısı berabere bitti.",
+        };
+    }
+
+    public static string ColorName(PlayerColor? color) => color switch
+    {
+        PlayerColor.Blue => "Mavi",
+        PlayerColor.Red => "Kırmızı",
+        PlayerColor.Yellow => "Sarı",
+        PlayerColor.Purple => "Mor",
+        _ => "?",
+    };
+
+    /// <summary>"Mavi'den", "Kırmızı'dan", "Sarı'dan", "Mor'dan".</summary>
+    public static string ColorAblative(PlayerColor? color) => color switch
+    {
+        PlayerColor.Blue => "Mavi'den",
+        PlayerColor.Red => "Kırmızı'dan",
+        PlayerColor.Yellow => "Sarı'dan",
+        PlayerColor.Purple => "Mor'dan",
+        _ => "Bir rakipten",
+    };
 
     /// <summary>"Mavi'nin", "Kırmızı'nın", "Sarı'nın", "Mor'un".</summary>
     public static string ColorGenitive(PlayerColor? color) => color switch
@@ -193,7 +241,7 @@ public sealed class Room
         if (p.Seat != HostSeat) return CommandResult.Fail("Maçı sadece odayı kuran başlatabilir.");
         if (_players.Count < Options.MinPlayers) return CommandResult.Fail($"En az {Options.MinPlayers} oyuncu gerekiyor.");
         if (!_players.All(x => x.Ready && x.Connected)) return CommandResult.Fail("Herkes hazır değil.");
-        Game = new GameState(_rules, _players.Select(x => x.CastleKey), Options.PrepSeconds);
+        Game = new GameState(_rules, _players.Select(x => x.CastleKey), Options.PrepSeconds, Options.WarSeconds);
         Phase = RoomPhase.Preparation;
         return CommandResult.Success;
     });
@@ -204,7 +252,7 @@ public sealed class Room
     public CommandResult Execute(string token, GameCommand command)
     {
         if (Find(token) is not { } player) return NotInRoom;
-        if (Phase != RoomPhase.Preparation) return CommandResult.Fail("Bu komut sadece hazırlık sırasında kullanılabilir.");
+        if (Phase is not (RoomPhase.Preparation or RoomPhase.War)) return CommandResult.Fail("Bu komut sadece maç sırasında kullanılabilir.");
         return Game!.Execute(player.CastleKey, command);
     }
 
@@ -213,7 +261,7 @@ public sealed class Room
         if (Find(token) is not { } player) return NotInRoom;
         if (!Options.AllowSpeedControl) return CommandResult.Fail("Hız ayarı kapalı.");
         if (player.Seat != HostSeat) return CommandResult.Fail("Hızı sadece odayı kuran değiştirebilir.");
-        if (Phase != RoomPhase.Preparation) return CommandResult.Fail("Hız sadece hazırlık sırasında değiştirilebilir.");
+        if (Phase is not (RoomPhase.Preparation or RoomPhase.War)) return CommandResult.Fail("Hız sadece maç sırasında değiştirilebilir.");
         if (speed is not (1 or 5 or 20)) return CommandResult.Fail("Geçersiz hız.");
         Speed = speed;
         return CommandResult.Success;
@@ -231,15 +279,21 @@ public sealed class Room
         return CommandResult.Success;
     }
 
-    /// <summary>Advances the shared clock; returns true on the tick the preparation ends.</summary>
+    /// <summary>Advances the shared clock; returns true on the tick the match ends.</summary>
     public bool Tick(double dt)
     {
-        if (Phase != RoomPhase.Preparation) return false;
-        for (int i = 0; i < Speed && Game!.Phase == MatchPhase.Preparation; i++) Game.Tick(dt);
-        if (Game!.Phase != MatchPhase.Ended) return false;
-        Phase = RoomPhase.Ended;
-        return true;
+        if (Phase is not (RoomPhase.Preparation or RoomPhase.War)) return false;
+        for (int i = 0; i < Speed && Game!.Phase != MatchPhase.Ended; i++) Game.Tick(dt);
+        Phase = Game!.Phase switch
+        {
+            MatchPhase.Preparation => RoomPhase.Preparation,
+            MatchPhase.War => RoomPhase.War,
+            _ => RoomPhase.Ended,
+        };
+        return Phase == RoomPhase.Ended;
     }
+
+    public bool IsEliminated(RoomPlayer player) => Game?.IsEliminated(player.CastleKey) ?? false;
 
     // ---- helpers -----------------------------------------------------------------------------
 

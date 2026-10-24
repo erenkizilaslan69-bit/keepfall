@@ -247,18 +247,22 @@ public class EconomyTests
     }
 
     [Fact]
-    public void Preparation_ends_with_a_summary_and_rejects_commands()
+    public void Preparation_then_war_then_a_summary_and_no_more_commands()
     {
-        var game = new GameState(Rules, ["o1"], prepSeconds: 90);
+        var game = new GameState(Rules, ["o1"], prepSeconds: 90, warSeconds: 60);
         game.Execute("o1", new SetGrowth(false));
-        for (int i = 0; i < 100; i++) game.Tick(1);
+        for (int i = 0; i < 90; i++) game.Tick(1);
+        Assert.Equal(MatchPhase.War, game.Phase);
+        Assert.Null(game.SummaryOf("o1"));
+        Assert.True(game.Execute("o1", new MoveWorkers(Job.Idle, Job.Farmer, 1)).Ok); // economy goes on
 
+        for (int i = 0; i < 100; i++) game.Tick(1);
         Assert.Equal(MatchPhase.Ended, game.Phase);
-        Assert.Equal(90, game.ElapsedSeconds);
+        Assert.Equal(150, game.ElapsedSeconds);
         var summary = game.SummaryOf("o1");
         Assert.NotNull(summary);
-        Assert.Equal(90, summary!.DurationSeconds);
-        Assert.Equal(new[] { 0.0, 30, 60, 90 }, summary.Samples.Select(s => s.Seconds));
+        Assert.Equal(150, summary!.DurationSeconds);
+        Assert.Equal(new[] { 0.0, 30, 60, 90, 120, 150 }, summary.Samples.Select(s => s.Seconds));
         Assert.False(game.Execute("o1", new MoveWorkers(Job.Idle, Job.Farmer, 1)).Ok);
     }
 }

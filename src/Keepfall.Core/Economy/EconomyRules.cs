@@ -4,11 +4,23 @@ namespace Keepfall.Core.Economy;
 public sealed record MatchRules(
     double ShortModePrepSeconds,
     double LongModePrepSeconds,
+    double ShortModeWarSeconds,
+    double LongModeWarSeconds,
     double ServerTickSeconds,
     int StartingPopulation,
     double StartingFood,
     double StartingWood,
     double StartingIron);
+
+/// <summary>War phase ("Maç" and "Binalar" sheets): marching, the approach warning, famine, castle and siege.</summary>
+public sealed record WarRules(
+    double MarchSeconds,
+    double WarningSeconds,
+    double FamineStart,
+    double FamineFoodMultiplier,
+    double CastleHp,
+    double SiegeSeconds,
+    double ArcherSiegeMultiplier);
 
 /// <summary>Scout missions ("Maç" sheet): duration, when the scout arrives, how wrong the soldier counts are.</summary>
 public sealed record ScoutingRules(double MissionSeconds, double ArrivalFraction, double ReportError)
