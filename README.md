@@ -1,36 +1,60 @@
 # Keepfall
 
-2–4 kişilik, maç tabanlı kale strateji oyunu. Şu an: arayüzsüz savaş simülatörü.
+2–4 kişilik, maç tabanlı bir kale strateji oyunu. Her oyuncunun tek bir kalesi var. **Hazırlık fazında** işçileri işlere dağıtır, silah üretir ve askerleri hazırlarsın; **savaş fazında** ordular haritada yürür, yolda ve kale kapısında çarpışır. Son ayakta kalan kale kazanır; süre dolarsa en yüksek nüfus kazanır.
+
+Tarayıcıda oynanır. Tüm oyun mantığı sunucudadır; istemci yalnızca komut gönderir ve sunucunun gösterdiğini çizer.
+
+## Oyun
+
+**Maç**
+- 15 dk modu: 10 dk hazırlık + 5 dk savaş. 30 dk modu: 20 dk hazırlık + 10 dk savaş (`config/balance.json`).
+- Oda kurulur (`/oda/ABCD`), link arkadaşlara gönderilir, herkes "Hazırım" der, oda sahibi başlatır.
+
+**Hazırlık: ekonomi**
+- İşçileri çiftçi, oduncu, madenci ve demirci olarak çalıştırırsın; yemek, odun ve demir üretilir. İnsanlar yemek yer; yemek biterse tüm üretim yarıya iner.
+- Binalar (tarla, oduncu kampı, maden, demirhane) 3 seviyedir; yükseltince kapasite ve üretim artar.
+- Demirhane silah üretir; silah verilen işçi asker olur: okçu, kılıçlı, mızrakçı, kalkanlı.
+- Nüfus otomatik büyür; her yeni kişi bir öncekinden pahalıdır ve yemek rezervi korunur.
+- Gözcü gönderip rakibin askerlerini ve bina seviyelerini öğrenebilirsin; rapor yaklaşıktır (±%20, en az ±1).
+
+**Savaş: harita**
+- Ortak kare bir harita: kaleler köşelerde, ortada orman, aralarında yollar. Her köşeden komşulara ve çapraz köşeye olan yollar adil olacak şekilde kurulmuştur.
+- Ordular ve gözcüler yollarda gerçekten yürür; yolculuk süresi mesafeye bağlıdır.
+- **Savaş sisi:** Yalnızca kalenin, kendi ordularının ve gözcülerinin gördüğü yeri görürsün. Sis sunucu tarafındadır: görüş dışındaki hiçbir şey istemciye gönderilmez. Düşman ordusu kalenin görüşüne girince uyarı çıkar ve askerleri görünür.
+- Yolda karşılaşan iki ordu (farklı oyunculara ait) durup savaşır. Yoldaki orduyu **geri çağırabilir** ya da ordu göndermek yerine **önünü kesme** emri verebilirsin.
+- Savaşlar görünürdür ve gerçek zamanlı oynar: askerler karşı karşıya gelir, okçular ok atar, düşenler kayıttaki anda düşer. Kale savaşında savunanlar kapıya iner; saldıran kazanırsa kapıya vurur.
+- Kale canı 500'dür; sıfırlanan oyuncu elenir ve izleyici olur. Savaşın son %30'unda kıtlık başlar (yemek üretimi yarıya iner).
+
+**Gizli bilgi:** Oyuncu yalnızca kendi kalesini görür. Başkalarının kalesi yalnızca gözcü ve savaş raporlarıyla bilinir; savaş kaydı yalnızca savaşan iki tarafa gider.
 
 ## Yapı
 
 | Yol | Ne |
 | --- | --- |
-| `config/balance.json` | Tüm denge sayıları (birlikler, karşılık matrisi, savaş ayarları). Kaynak: `docs/kale_oyunu_sayilar.xlsx`. |
-| `src/Keepfall.Core` | Oyun mantığı kütüphanesi. Sunucu da bunu kullanacak. |
-| `src/Keepfall.Core/Config` | `balance.json` okuma ve doğrulama → `GameRules`. |
-| `src/Keepfall.Core/Combat` | `ArmySetup` (kompozisyon, diziliş, hedef) ve `BattleSimulator`. |
+| `config/balance.json` | Tüm denge sayıları: süreler, ekonomi, bina seviyeleri, harita hızları ve görüş, savaş, birlikler, karşılık matrisi. Kaynak: `docs/kale_oyunu_sayilar.xlsx`. |
+| `src/Keepfall.Core` | Oyun mantığı: `Combat` (savaş simülatörü ve kaydı), `Economy` (kale), `Match` (maç, ordular, savaşlar), `World` (harita, yollar, görüş), `Lobby` (oda). |
+| `src/Keepfall.Server` | ASP.NET Core + SignalR. Tick döngüsü ve gizli bilgi kuralı burada. |
 | `src/BattleSim` | Konsol aracı: tek savaş ve denge raporu. |
-| `src/Keepfall.Core/Economy`, `Match` | Kale ekonomisi (meslekler, binalar, demirhane, açlık, büyüme), maç durumu ve komutlar. |
-| `src/Keepfall.Server` | ASP.NET Core + SignalR. Tick döngüsü sunucuda; istemci sadece komut yollar. |
 | `client/` | Vite + TypeScript + Phaser istemcisi. |
-| `tests/Keepfall.Core.Tests` | Ekonomi birim testleri. |
+| `tests/Keepfall.Core.Tests` | Birim testleri (ekonomi, savaş, harita, görüş, oda). |
+| `tools/smoke-test.mjs` | Gizli bilgi duman testi. |
 
-## Tek kale prototipi (tarayıcıda)
+## Çalıştırma (geliştirme)
 
-İki terminalde:
-
-```bash
-dotnet run --project src/Keepfall.Server
-```
+Gereken: .NET 10 SDK ve Node.js.
 
 ```bash
 npm --prefix client install
-```
-
-```bash
+dotnet run --project src/Keepfall.Server
 npm --prefix client run dev
 ```
+
+Son iki komut ayrı terminallerde çalışır. Sonra http://localhost:5173 adresini aç: "Oda kur" ile oda kurulur, linki (`/oda/ABCD`) diğer oyunculara gönder.
+
+Geliştirme modunda:
+- Oda sahibine ×5 / ×20 hız butonları çıkar ve tek kişiyle de maç başlatılabilir.
+- Aynı tarayıcıda birden fazla oyuncu denemek için her sekme ayrı oyuncudur; `?oyuncu=N` sabit bir test kimliği seçer, örneğin `http://localhost:5173/oda/ABCD?oyuncu=2`.
+- Konsolda `window.keepfallNet` (komut gönderir) ve `window.keepfallScene` (sahne) bulunur.
 
 ### Görseller (Tiny Swords)
 
@@ -40,13 +64,17 @@ npm --prefix client run dev
 2. Zip'i `client/public/assets/tiny-swords/` içine aç. Sonuç: `client/public/assets/tiny-swords/Tiny Swords (Free Pack)/Units/...`
 3. `client/public/assets/` git tarafından yok sayılır.
 
-Sonra http://localhost:5173 adresini aç: "Oda kur" ile oda kurulur, linki (`/oda/ABCD`) diğer oyunculara gönder.
-Herkes "Hazırım" deyince oda sahibi maçı başlatır.
+### Testler
 
-Aynı tarayıcıda birden fazla oyuncu olarak denemek için her sekme ayrı oyuncudur. Geliştirme modunda
-`?oyuncu=N` sabit bir test kimliği seçer, örneğin `http://localhost:5173/oda/ABCD?oyuncu=2`.
-Geliştirme ortamında oda sahibine ×5 / ×20 hız butonları çıkar ve tek kişiyle de maç başlatılabilir.
-`npm --prefix client run build` sonrası sunucu `client/dist`'i kendisi de sunar (http://localhost:5080).
+```bash
+dotnet test
+```
+
+Gizli bilgi duman testi (geliştirme modunda çalışan sunucuya karşı; üç bağlantıyla kısa bir maç oynar, sisi ve savaş kaydının kime gittiğini kontrol eder):
+
+```bash
+node tools/smoke-test.mjs
+```
 
 ## Arkadaşlarla oynama (tünel)
 
@@ -59,37 +87,25 @@ ASPNETCORE_ENVIRONMENT=Production dotnet run --project src/Keepfall.Server --url
 
 PowerShell'de: `$env:ASPNETCORE_ENVIRONMENT = 'Production'` yazıp `dotnet run --project src/Keepfall.Server --urls http://localhost:5080` çalıştır.
 
-Sonra tüneli 5080'e aç (ör. `cloudflared tunnel --url http://localhost:5080` ya da `ngrok http 5080`) ve çıkan adresi gönder. Oda kurunca adres `https://<tünel-adresi>/oda/ABCD` olur; arkadaşlar linke tıklayıp adlarını yazar.
+Sonra tüneli 5080'e aç. Hesapsız, geçici bir adres için Cloudflare Quick Tunnel:
+
+```bash
+winget install --id Cloudflare.cloudflared
+cloudflared tunnel --url http://localhost:5080
+```
+
+Çıkan `https://….trycloudflare.com` adresini aç, oda kur ve oda linkini (`…/oda/ABCD`) arkadaşlara gönder. (`ngrok http 5080` de olur.)
 
 - İstemciyi her değiştirdiğinde `npm --prefix client run build` komutunu tekrar çalıştır; sunucu `client/dist`'i okur.
 - `config/balance.json` sunucu açılırken okunur: değiştirince sunucuyu yeniden başlat. Odalar bellektedir, yeniden başlatınca kaybolur.
-- `Production` modunda hız butonları (×5 / ×20) ve tek kişiyle maç başlatma kapalıdır; maç en az 2 oyuncuyla başlar. Bunlar gerekirse sunucuyu `Development` ile çalıştır (`dotnet run --project src/Keepfall.Server`): oda sahibi hızı değiştirebilir.
-- Tiny Swords görselleri `client/public/assets/` altında olmalı (yukarıya bak); lisans yüzünden depoda yoktur, derleme onları `dist`'e kopyalar.
-- Tüneli ya da sunucuyu kapatınca oyun da kapanır.
+- `Production` modunda hız butonları ve tek kişiyle maç başlatma kapalıdır; maç en az 2 oyuncuyla başlar. Bunlar gerekirse sunucuyu `Development` ile çalıştır.
+- Tünel adresi her açılışta değişir. Tüneli ya da sunucuyu kapatınca oyun da kapanır.
 
-Testler:
-
-```bash
-dotnet test
-```
-
-Gizli bilgi duman testi (geliştirme modunda çalışan sunucuya karşı; iki bağlantıyla kısa bir maç oynar):
-
-```bash
-node tools/smoke-test.mjs
-```
-
-## Çalıştırma
+## BattleSim (denge aracı)
 
 ```bash
 dotnet run --project src/BattleSim -c Release -- denge
-```
-
-```bash
 dotnet run --project src/BattleSim -c Release -- denge --butce kaynak --mac 20000
-```
-
-```bash
 dotnet run --project src/BattleSim -c Release -- savas "okcu:10,kalkanli:10" "kilicli:20" --hedef-b okcu
 ```
 
@@ -98,13 +114,13 @@ dotnet run --project src/BattleSim -c Release -- savas "okcu:10,kalkanli:10" "ki
 - `savas`: iki ordu, savaş günlüğüyle. `--tekrar 500` ile kazanma oranı.
 - `kontrol`: ayar dosyasını doğrular.
 
-Ayar dosyası çalışma klasöründen yukarı doğru `config/balance.json` olarak aranır; `--config <yol>` ile başka bir dosya verilebilir.
-Sayıları değiştirmek için derlemeye gerek yok.
+Ayar dosyası çalışma klasöründen yukarı doğru `config/balance.json` olarak aranır; `--config <yol>` ile başka bir dosya verilebilir. Sayıları değiştirmek için derlemeye gerek yok.
 
-## Savaş kuralları (şimdilik)
+## Savaş kuralları
 
 - Yakın birlikler, düşmanın ön sırası düşene kadar arka sıraya ulaşamaz. Okçular, öncelikli tür seçildiyse arka sıradaki o türü de vurabilir.
 - Uzak birlikler (okçu) her sıradan vurur. Yakın birlikler sadece ön sıradan vurur; arkaya konan yakın birlik yedektir, ön sıra düşünce öne geçer.
-- Savaş başında yakın dövüşçüler `approachTime` saniye (varsayılan 3) hedefe ulaşamaz; bu sürede okçular serbest atış yapar.
+- Savaş başında yakın dövüşçüler `approachTime` saniye hedefe ulaşamaz; bu sürede okçular serbest atış yapar.
 - Hasar = birliğin hasarı × karşılık çarpanı. Bir adımdaki tüm vuruşlar aynı anda işlenir.
-- Yakın dövüşçüler her zaman en öndekine vurur. Okçular varsayılan olarak da ön sıraya vurur; ordu başına öncelikli bir birlik türü seçilebilir (`--hedef-a okcu`), okçular o türü arka sırada olsa da hedefler.
+- Yakın dövüşçüler her zaman en öndekine vurur. Okçular varsayılan olarak da ön sıraya vurur; ordu başına öncelikli bir birlik türü seçilebilir (`--hedef-a okcu`).
+- Kale savaşını saldıran kazanırsa kale hasarı = hayatta kalanların toplam DPS'i × 5 sn (okçular ×0,5), kalan canla sınırlı.
