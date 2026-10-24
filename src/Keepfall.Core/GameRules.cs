@@ -15,7 +15,7 @@ public sealed record ProductionRates(double FoodPerMinute, double WoodPerMinute,
 public sealed class GameRules
 {
     public GameRules(IReadOnlyList<UnitType> units, CounterMatrix counters, CombatSettings combat, ProductionRates production,
-        MatchRules match, EconomyRules economy)
+        MatchRules match, EconomyRules economy, ScoutingRules scouting)
     {
         Units = units;
         Counters = counters;
@@ -23,6 +23,7 @@ public sealed class GameRules
         Production = production;
         Match = match;
         Economy = economy;
+        Scouting = scouting;
     }
 
     public IReadOnlyList<UnitType> Units { get; }
@@ -31,6 +32,7 @@ public sealed class GameRules
     public ProductionRates Production { get; }
     public MatchRules Match { get; }
     public EconomyRules Economy { get; }
+    public ScoutingRules Scouting { get; }
 
     public UnitType? FindUnit(string idOrName) =>
         Units.FirstOrDefault(u => string.Equals(u.Id, idOrName, StringComparison.OrdinalIgnoreCase)

@@ -10,6 +10,12 @@ public sealed record MatchRules(
     double StartingWood,
     double StartingIron);
 
+/// <summary>Scout missions ("Maç" sheet): duration, when the scout arrives, how wrong the soldier counts are.</summary>
+public sealed record ScoutingRules(double MissionSeconds, double ArrivalFraction, double ReportError)
+{
+    public double ArrivalSeconds => MissionSeconds * ArrivalFraction;
+}
+
 /// <summary>One row of the shared building table. Upgrade cost and time are what it takes to reach this level.</summary>
 public sealed record BuildingLevel(
     int Level,

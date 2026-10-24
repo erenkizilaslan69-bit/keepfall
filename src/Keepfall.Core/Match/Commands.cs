@@ -22,6 +22,9 @@ public sealed record DisarmSoldiers(string UnitId, int Count) : GameCommand;
 
 public sealed record UpgradeBuilding(BuildingType Building) : GameCommand;
 
+/// <summary>Send one person from <paramref name="From"/> to scout <paramref name="TargetKey"/>'s castle.</summary>
+public sealed record SendScout(string TargetKey, Job From = Job.Idle) : GameCommand;
+
 /// <summary>Turn automatic population growth on or off.</summary>
 public sealed record SetGrowth(bool Enabled) : GameCommand;
 

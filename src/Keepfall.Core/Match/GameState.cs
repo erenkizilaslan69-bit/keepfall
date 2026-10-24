@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Keepfall.Core.Economy;
 
 namespace Keepfall.Core.Match;
@@ -32,17 +33,25 @@ public sealed record EconomySummary(
 /// A match: one shared preparation clock and one castle per player. <see cref="Tick"/> is a plain
 /// function of elapsed time, so tests can drive it directly; the server just calls it once per tick.
 /// Commands always name the player, so a command can only ever touch that player's own castle.
+/// The one exception is scouting, which looks at another castle: it never changes it, and what it
+/// sees goes into a <see cref="ScoutReport"/> (approximate soldiers, building levels), nothing more.
 /// </summary>
 public sealed class GameState
 {
     public const double SampleIntervalSeconds = 30;
 
     private readonly Dictionary<string, PlayerEconomy> _players;
+    private readonly List<ScoutMission> _missions = [];
+    private readonly Dictionary<(string From, string Target), ScoutReport> _reports = [];
+    private readonly Dictionary<string, List<GameNotification>> _notifications = [];
+    private readonly Random _rng;
     private double _nextSample;
 
-    public GameState(GameRules rules, IEnumerable<string> playerKeys, double? prepSeconds = null)
+    /// <param name="rng">Randomness for scout report errors; tests pass a seeded one.</param>
+    public GameState(GameRules rules, IEnumerable<string> playerKeys, double? prepSeconds = null, Random? rng = null)
     {
         Rules = rules;
+        _rng = rng ?? new Random(RandomNumberGenerator.GetInt32(int.MaxValue));
         PrepSeconds = prepSeconds ?? rules.Match.ShortModePrepSeconds;
         _players = playerKeys.Distinct().ToDictionary(k => k, _ => new PlayerEconomy(new Castle(rules)));
         if (_players.Count == 0) throw new ArgumentException("A match needs at least one player.", nameof(playerKeys));
@@ -64,12 +73,24 @@ public sealed class GameState
     public IReadOnlyList<EconomySample> SamplesOf(string playerKey) =>
         _players.GetValueOrDefault(playerKey)?.Samples ?? [];
 
+    /// <summary>The player's scouts that are still out.</summary>
+    public IReadOnlyList<ScoutMission> MissionsOf(string playerKey) => _missions.Where(m => m.From == playerKey).ToList();
+
+    /// <summary>The latest delivered report per target, for this player only.</summary>
+    public IReadOnlyList<ScoutReport> ReportsOf(string playerKey) =>
+        _reports.Where(kv => kv.Key.From == playerKey).Select(kv => kv.Value).OrderBy(r => r.Target).ToList();
+
+    /// <summary>Notifications for this player since the last call; each is returned once.</summary>
+    public IReadOnlyList<GameNotification> TakeNotifications(string playerKey) =>
+        _notifications.Remove(playerKey, out var list) ? list : [];
+
     public void Tick(double dt)
     {
         if (Phase != MatchPhase.Preparation) return;
         dt = Math.Min(dt, RemainingSeconds);
         foreach (var p in _players.Values) p.Castle.Tick(dt);
         ElapsedSeconds += dt;
+        AdvanceScouts();
         if (ElapsedSeconds + 1e-9 >= _nextSample) TakeSamples();
         if (RemainingSeconds <= 1e-9)
         {
@@ -87,7 +108,65 @@ public sealed class GameState
     {
         if (Phase != MatchPhase.Preparation) return CommandResult.Fail("Hazırlık süresi bitti.");
         if (!_players.TryGetValue(playerKey, out var player)) return CommandResult.Fail("Bu maçta böyle bir oyuncu yok.");
+        if (command is SendScout scout) return LaunchScout(playerKey, player, scout);
         return player.Castle.Execute(command);
+    }
+
+    // ---- scouting ----------------------------------------------------------------------------
+
+    private CommandResult LaunchScout(string from, PlayerEconomy player, SendScout c)
+    {
+        if (c.TargetKey == from) return CommandResult.Fail("Kendi kaleni gözetleyemezsin.");
+        if (!_players.ContainsKey(c.TargetKey)) return CommandResult.Fail("Böyle bir rakip yok.");
+        if (_missions.Any(m => m.From == from && m.Target == c.TargetKey))
+            return CommandResult.Fail("Bu rakibe zaten bir gözcün gidiyor.");
+        var sent = player.Castle.SendScout(c.From);
+        if (!sent.Ok) return sent;
+        _missions.Add(new ScoutMission(from, c.TargetKey, ElapsedSeconds, Rules.Scouting));
+        return CommandResult.Success;
+    }
+
+    private void AdvanceScouts()
+    {
+        foreach (var m in _missions.ToList())
+        {
+            if (!m.Arrived && ElapsedSeconds + 1e-9 >= m.ArrivesAt)
+            {
+                m.Report = Observe(m.Target, ElapsedSeconds);
+                Notify(m.Target, new GameNotification(NotificationKind.ScoutedBy, m.From, ElapsedSeconds));
+            }
+            if (ElapsedSeconds + 1e-9 >= m.ReturnsAt)
+            {
+                _reports[(m.From, m.Target)] = m.Report! with { DeliveredAt = ElapsedSeconds };
+                _players[m.From].Castle.ReturnScout();
+                _missions.Remove(m);
+            }
+        }
+    }
+
+    /// <summary>
+    /// What a scout sees: every soldier type with its count off by up to ±ReportError (rounded,
+    /// never below 0, and exactly 0 when there are none), and exact building levels. Nothing else.
+    /// </summary>
+    private ScoutReport Observe(string target, double now)
+    {
+        var castle = _players[target].Castle;
+        double error = Rules.Scouting.ReportError;
+        var soldiers = Rules.Units.Select(u =>
+        {
+            int real = castle.Soldiers[u];
+            int seen = real == 0 ? 0
+                : Math.Max(0, (int)Math.Round(real * (1 + (_rng.NextDouble() * 2 - 1) * error), MidpointRounding.AwayFromZero));
+            return new ScoutedUnit(u.Id, u.Name, seen);
+        }).ToList();
+        var levels = Jobs.Buildings.ToDictionary(b => b, b => castle.Building(b).Level);
+        return new ScoutReport(target, now, now, soldiers, levels);
+    }
+
+    private void Notify(string player, GameNotification notification)
+    {
+        if (!_notifications.TryGetValue(player, out var list)) _notifications[player] = list = [];
+        list.Add(notification);
     }
 
     private void TakeSamples()

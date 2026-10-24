@@ -32,6 +32,16 @@
     "growthReserveSeconds": 60
   },
 
+  // Excel "Maç" sekmesi: gözcü.
+  "scouting": {
+    // Gidiş + dönüş (sn). Görevdeki gözcü çalışmaz ama yemek yer; görev bitince boşta döner.
+    "missionSeconds": 45,
+    // Gözcü hedefe görevin bu kesrinde varır; rapor o an hesaplanır, dönüşte teslim edilir.
+    "arrivalFraction": 0.5,
+    // Asker sayıları bu oranda (±) hatalı görünür; türler ve bina seviyeleri kesin.
+    "reportError": 0.2
+  },
+
   // Excel "Binalar" sekmesi: tarla, oduncu kampı, maden ve demirhane aynı tabloyu kullanır.
   // Sıra = seviye (ilki seviye 1). upgrade* = o seviyeye çıkmanın maliyeti ve süresi (sn).
   // Demirhanede multiplier = silah üretim hızı.

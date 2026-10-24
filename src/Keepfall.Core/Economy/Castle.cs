@@ -79,7 +79,9 @@ public sealed class Castle
 
     public int WorkerCount => _workers.Values.Sum();
     public int SoldierCount => _soldiers.Values.Sum();
-    public int Population => WorkerCount + SoldierCount;
+    /// <summary>People away on scout missions: they count and eat, but do not work.</summary>
+    public int ScoutsAway { get; private set; }
+    public int Population => WorkerCount + ScoutsAway + SoldierCount;
     public double NextPersonCost => _rules.Economy.NewPersonCost(Population);
 
     public Building Building(BuildingType type) => _buildings[type];
@@ -122,7 +124,24 @@ public sealed class Castle
     public double GrowthThreshold => NextPersonCost + GrowthReserve;
 
     public double FoodConsumptionPerMinute =>
-        WorkerCount * _rules.Economy.WorkerFoodPerMinute + SoldierCount * _rules.Economy.SoldierFoodPerMinute;
+        (WorkerCount + ScoutsAway) * _rules.Economy.WorkerFoodPerMinute + SoldierCount * _rules.Economy.SoldierFoodPerMinute;
+
+    /// <summary>Sends one person from <paramref name="from"/> out as a scout (see <see cref="Match.GameState"/>).</summary>
+    internal CommandResult SendScout(Job from)
+    {
+        if (_workers[from] < 1) return CommandResult.Fail($"{Jobs.Name(from)} olarak kimse yok.");
+        _workers[from]--;
+        ScoutsAway++;
+        return CommandResult.Success;
+    }
+
+    /// <summary>A scout is back home and idle.</summary>
+    internal void ReturnScout()
+    {
+        if (ScoutsAway == 0) return;
+        ScoutsAway--;
+        _workers[Job.Idle]++;
+    }
 
     /// <summary>Forge speed in weapon-seconds per second (0 without blacksmiths).</summary>
     public double ForgeSpeed => _workers[Job.Blacksmith] * Multiplier(BuildingType.Forge) * ProductionMultiplier;

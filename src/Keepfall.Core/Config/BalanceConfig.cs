@@ -13,6 +13,7 @@ public sealed class BalanceConfig
     public MatchConfig Match { get; set; } = new();
     public EconomyConfig Economy { get; set; } = new();
     public List<BuildingLevelConfig> BuildingLevels { get; set; } = [];
+    public ScoutingConfig Scouting { get; set; } = new();
     public CombatConfig Combat { get; set; } = new();
     public List<UnitConfig> Units { get; set; } = [];
     public Dictionary<string, Dictionary<string, JsonElement>> Counters { get; set; } = [];
@@ -38,6 +39,13 @@ public sealed class EconomyConfig
     public double NewPersonCostGrowth { get; set; }
     public int NewPersonBasePopulation { get; set; } = 10;
     public double GrowthReserveSeconds { get; set; }
+}
+
+public sealed class ScoutingConfig
+{
+    public double MissionSeconds { get; set; } = 45;
+    public double ArrivalFraction { get; set; } = 0.5;
+    public double ReportError { get; set; } = 0.2;
 }
 
 public sealed class BuildingLevelConfig
@@ -163,6 +171,11 @@ public static class BalanceConfigLoader
         if (e.NewPersonCostGrowth < 0) errors.Add("economy.newPersonCostGrowth negatif olamaz.");
         if (e.GrowthReserveSeconds < 0) errors.Add("economy.growthReserveSeconds negatif olamaz.");
 
+        var sc = config.Scouting;
+        if (sc.MissionSeconds <= 0) errors.Add("scouting.missionSeconds sıfırdan büyük olmalı.");
+        if (sc.ArrivalFraction <= 0 || sc.ArrivalFraction >= 1) errors.Add("scouting.arrivalFraction 0 ile 1 arasında olmalı.");
+        if (sc.ReportError < 0 || sc.ReportError >= 1) errors.Add("scouting.reportError 0 ile 1 arasında olmalı.");
+
         if (config.BuildingLevels.Count == 0) errors.Add("buildingLevels: en az bir seviye tanımlanmalı.");
         for (int i = 0; i < config.BuildingLevels.Count; i++)
         {
@@ -240,7 +253,8 @@ public static class BalanceConfigLoader
                 e.WorkerFoodPerMinute, e.SoldierFoodPerMinute, e.StarvationMultiplier,
                 e.NewPersonBaseCost, e.NewPersonCostGrowth, e.NewPersonBasePopulation, e.GrowthReserveSeconds,
                 config.BuildingLevels.Select((l, i) => new BuildingLevel(
-                    i + 1, l.Capacity, l.Multiplier, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList()));
+                    i + 1, l.Capacity, l.Multiplier, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList()),
+            new ScoutingRules(sc.MissionSeconds, sc.ArrivalFraction, sc.ReportError));
     }
 
     // Same rounding as the spreadsheet: whole minutes of the mode, times the prep share.

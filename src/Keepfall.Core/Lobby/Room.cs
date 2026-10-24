@@ -45,7 +45,7 @@ public sealed class RoomPlayer
     public bool Connected => Connections > 0;
     public DateTime? DisconnectedAtUtc { get; internal set; }
     /// <summary>The player's key in <see cref="GameState"/>.</summary>
-    public string CastleKey => $"o{Seat}";
+    public string CastleKey => Room.CastleKeyOf(Seat);
 }
 
 public sealed record JoinResult(RoomPlayer? Player, bool Rejoined, string? Error)
@@ -83,6 +83,32 @@ public sealed class Room
         token is null ? null : _players.FirstOrDefault(p => FixedTimeEquals(p.Token, token));
 
     public Castle? CastleOf(RoomPlayer player) => Game?.CastleOf(player.CastleKey);
+
+    public RoomPlayer? PlayerOfCastle(string castleKey) => _players.FirstOrDefault(p => p.CastleKey == castleKey);
+
+    /// <summary>Castle key of the player in <paramref name="seat"/> (for commands that name another player).</summary>
+    public static string CastleKeyOf(int seat) => $"o{seat}";
+
+    /// <summary>The player's new notifications as text, e.g. "Kırmızı'nın gözcüsü kaleni gözetledi."</summary>
+    public IReadOnlyList<string> TakeNotifications(RoomPlayer player)
+    {
+        if (Game is null) return [];
+        return Game.TakeNotifications(player.CastleKey).Select(n => n.Kind switch
+        {
+            NotificationKind.ScoutedBy => $"{ColorGenitive(PlayerOfCastle(n.OtherPlayer)?.Color)} gözcüsü kaleni gözetledi.",
+            _ => n.Kind.ToString(),
+        }).ToList();
+    }
+
+    /// <summary>"Mavi'nin", "Kırmızı'nın", "Sarı'nın", "Mor'un".</summary>
+    public static string ColorGenitive(PlayerColor? color) => color switch
+    {
+        PlayerColor.Blue => "Mavi'nin",
+        PlayerColor.Red => "Kırmızı'nın",
+        PlayerColor.Yellow => "Sarı'nın",
+        PlayerColor.Purple => "Mor'un",
+        _ => "Bir rakibin",
+    };
 
     /// <summary>All players ready (and connected), enough of them, still in the lobby.</summary>
     public bool CanStart =>
