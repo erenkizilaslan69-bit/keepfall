@@ -343,46 +343,222 @@ public class WarTests
     }
 
     [Fact]
-    public void Two_armies_at_the_same_castle_fight_one_after_the_other()
+    public void Armies_at_the_same_castle_fight_one_after_the_other()
     {
-        // A and B are both C's neighbours, so their armies reach C in the same tick.
         var game = War(players: 3, seed: 5);
         game.CastleOf(A)!.AddSoldiers(Spear, 2);
-        game.CastleOf(B)!.AddSoldiers(Sword, 12);
+        game.CastleOf(A)!.AddSoldiers(Sword, 12);
         game.CastleOf(C)!.AddSoldiers(Shield, 4);
-        Assert.Equal(March(game, A, C), March(game, B, C));
         Ok(game.Execute(A, Attack(C, (Spear, 2))));  // sent first: fights first
-        Ok(game.Execute(B, Attack(C, (Sword, 12))));
-        Run(game, March(game, A, C));
-        Assert.Equal(A, Assert.Single(game.ActiveBattles).Attacker.From); // B's army waits at the gate
+        game.Tick(1);
+        Ok(game.Execute(A, Attack(C, (Sword, 12))));
+        Run(game, March(game, A, C) + 1);
+        var first = Assert.Single(game.ActiveBattles); // the second army waits at the gate
+        Assert.Equal(new Dictionary<UnitType, int> { [Spear] = 2 }, first.AttackerUnits);
         RunUntilReports(game, C, 2);
 
         var battles = game.BattlesOf(C);
         Assert.Equal(2, battles.Count);
-        Assert.Equal(A, battles[0].Attacker);
-        Assert.Equal(B, battles[1].Attacker);
+        Assert.Equal("mizrakci", battles[0].AttackerUnits.Single().UnitId);
+        Assert.Equal("kilicli", battles[1].AttackerUnits.Single().UnitId);
         Assert.True(battles[1].At > battles[0].At);
         int leftAfterFirst = battles[0].DefenderUnits.Sum(u => u.Count - u.Lost);
         Assert.Equal(leftAfterFirst, battles[1].DefenderUnits.Sum(u => u.Count));
-        // A never sees B's battle and the other way round.
-        Assert.Single(game.BattlesOf(A));
-        Assert.Single(game.BattlesOf(B));
+        Assert.Empty(game.BattlesOf(B)); // B never hears of it
+    }
+
+    // ---- on the road -------------------------------------------------------------------------
+
+    /// <summary>Ticks until a battle is going on; returns it.</summary>
+    private static ActiveBattle RunUntilBattle(GameState game, double dt = 1)
+    {
+        for (int t = 0; game.ActiveBattles.Count == 0; t++)
+        {
+            Assert.True(t < 400, "no battle");
+            game.Tick(dt);
+        }
+        return game.ActiveBattles.Single();
     }
 
     [Fact]
-    public void Armies_attacking_each_other_do_not_meet_on_the_road()
+    public void Armies_attacking_each_other_meet_on_the_road_and_fight_there()
     {
         var game = War();
-        game.CastleOf(A)!.AddSoldiers(Sword, 4);
-        game.CastleOf(B)!.AddSoldiers(Sword, 4);
-        Ok(game.Execute(A, Attack(B, (Sword, 4))));
-        Ok(game.Execute(B, Attack(A, (Sword, 4))));
-        RunUntilReports(game, A, 2);
+        game.CastleOf(A)!.AddSoldiers(Sword, 6);
+        game.CastleOf(B)!.AddSoldiers(Sword, 3);
+        Ok(game.Execute(A, Attack(B, (Sword, 6))));
+        Ok(game.Execute(B, Attack(A, (Sword, 3))));
+        var battle = RunUntilBattle(game);
 
-        Assert.Equal(2, game.BattlesOf(A).Count);
-        Assert.All(game.BattlesOf(A), b => Assert.Empty(b.DefenderUnits)); // both castles were empty
-        Assert.Equal(330, game.CastleOf(A)!.WallHp, 6);
-        Assert.Equal(330, game.CastleOf(B)!.WallHp, 6);
+        Assert.Equal(BattleKind.Field, battle.Kind);
+        var hub = game.Map.Nodes.Single(n => n.Id == "hub").Position;
+        Assert.True(battle.Position.DistanceTo(hub) < 1, $"they meet in the middle of the forest, not at {battle.Position}");
+        var (a, b) = (game.ArmiesOf(A).Single(), game.ArmiesOf(B).Single());
+        Assert.True(a.Position.DistanceTo(b.Position) <= Rules.War.EncounterRadius + 1e-9);
+        Assert.Same(battle, a.Battle);
+        Assert.Same(battle, b.Battle);
+
+        RunUntilReports(game, A);
+        var report = Assert.Single(game.BattlesOf(A));
+        Assert.Equal(BattleKind.Field, report.Kind);
+        Assert.Equal(0, report.CastleDamage);
+        Assert.Same(report, Assert.Single(game.BattlesOf(B)));
+        Assert.Equal(BattleWinner.Attacker, report.Winner); // 6 swordsmen beat 3
+        Assert.Empty(game.ArmiesOf(B)); // the loser is gone
+        var winner = game.ArmiesOf(A).Single();
+        Assert.Equal(ArmyState.Marching, winner.State); // and the winner goes on to B
+        Assert.Equal(6 - report.AttackerUnits.Single().Lost, winner.Size);
+        Assert.Equal(500, game.CastleOf(A)!.WallHp);
+        RunUntilReports(game, A, 2);
+        Assert.Equal(BattleKind.Siege, game.BattlesOf(A)[1].Kind);
+    }
+
+    [Fact]
+    public void Armies_meet_even_at_twenty_times_speed()
+    {
+        var game = War();
+        game.CastleOf(A)!.AddSoldiers(Sword, 2);
+        game.CastleOf(B)!.AddSoldiers(Sword, 2);
+        Ok(game.Execute(A, Attack(B, (Sword, 2))));
+        Ok(game.Execute(B, Attack(A, (Sword, 2))));
+        var battle = RunUntilBattle(game, dt: 20); // 20 game seconds in one go: 30 tiles each
+        Assert.Equal(BattleKind.Field, battle.Kind);
+    }
+
+    [Fact]
+    public void Armies_on_different_roads_meet_at_a_junction()
+    {
+        // C (north-east) goes through the forest to D (south-west); A (north-west) goes down the west
+        // road to D. Both reach the south-west junction at the same moment from different roads.
+        var game = War(players: 4);
+        const string D = "o4";
+        game.CastleOf(A)!.AddSoldiers(Sword, 2);
+        game.CastleOf(C)!.AddSoldiers(Sword, 2);
+        var junction = game.Map.Nodes.Single(n => n.Id == "junction-SouthWest").Position;
+        double toJunction(string from) => game.RouteBetween(from, D).Points.TakeWhile(p => p != junction)
+            .Zip(game.RouteBetween(from, D).Points.Skip(1)).Sum(x => x.First.DistanceTo(x.Second)) / Rules.Map.ArmySpeed;
+        double head = toJunction(C) - toJunction(A);
+        Assert.True(head > 0);
+        Ok(game.Execute(C, Attack(D, (Sword, 2))));
+        game.Tick(head);
+        Ok(game.Execute(A, Attack(D, (Sword, 2))));
+        var battle = RunUntilBattle(game);
+        // They meet as they close in on the junction from two roads, about a tile before reaching it.
+        Assert.True(battle.Position.DistanceTo(junction) < 1.5, $"met at {battle.Position}, junction {junction}");
+    }
+
+    [Fact]
+    public void Scouts_walk_past_armies()
+    {
+        var game = War();
+        game.CastleOf(B)!.AddSoldiers(Sword, 3);
+        Ok(game.Execute(B, Attack(A, (Sword, 3))));
+        Ok(game.Execute(A, new SendScout(B)));
+        Run(game, 40);
+        Assert.Empty(game.ActiveBattles);
+        Assert.NotEmpty(game.MissionsOf(A));
+    }
+
+    [Fact]
+    public void A_third_army_waits_outside_a_battle_on_the_road()
+    {
+        // A and B fight in the forest; C's army to B comes the same way and has to wait.
+        var game = War(players: 4);
+        game.CastleOf(A)!.AddSoldiers(Shield, 12);
+        game.CastleOf(B)!.AddSoldiers(Shield, 12);
+        Ok(game.Execute(A, Attack(B, (Shield, 12))));
+        Ok(game.Execute(B, Attack(A, (Shield, 12))));
+        var battle = RunUntilBattle(game);
+        Assert.True(battle.FightSeconds > 10, "a long battle of shield bearers");
+
+        game.CastleOf("o4")!.AddSoldiers(Sword, 2); // D, south-west: its road to C (north-east) crosses the forest
+        Ok(game.Execute("o4", Attack(C, (Sword, 2))));
+        var d = game.ArmiesOf("o4").Single();
+        while (game.ActiveBattles.Contains(battle))
+        {
+            game.Tick(1);
+            if (game.ActiveBattles.Contains(battle))
+                Assert.True(d.Position.DistanceTo(battle.Position) >= Rules.War.EncounterRadius * 1.5 - 1e-6, $"{d.Position}");
+        }
+        Assert.True(d.Position.DistanceTo(battle.Position) < Rules.War.EncounterRadius * 1.5 + 0.2, "it waited right outside");
+    }
+
+    // ---- recall and intercept ----------------------------------------------------------------
+
+    [Fact]
+    public void A_recalled_army_turns_round_where_it_is()
+    {
+        var game = War();
+        game.CastleOf(A)!.AddSoldiers(Sword, 3);
+        Ok(game.Execute(A, Attack(B, (Sword, 3))));
+        Run(game, 10);
+        var army = game.ArmiesOf(A).Single();
+        var at = army.Position;
+        Ok(game.Execute(A, new RecallArmy(army.Id)));
+        Assert.Equal(ArmyState.Returning, army.State);
+        Assert.True(at.DistanceTo(army.Position) < 1e-9);
+        Assert.False(game.Execute(A, new RecallArmy(army.Id)).Ok); // already on its way home
+        Assert.False(game.Execute(B, new RecallArmy(army.Id)).Ok); // not B's to call
+        RunUntilHome(game, A);
+        Assert.Empty(game.ArmiesOf(A));
+        Assert.Equal(3, game.CastleOf(A)!.Soldiers[Sword]);
+        Assert.Empty(game.BattlesOf(B));
+    }
+
+    [Fact]
+    public void An_army_in_a_battle_cannot_be_recalled()
+    {
+        var game = War();
+        game.CastleOf(A)!.AddSoldiers(Sword, 3);
+        game.CastleOf(B)!.AddSoldiers(Sword, 3);
+        Ok(game.Execute(A, Attack(B, (Sword, 3))));
+        Ok(game.Execute(B, Attack(A, (Sword, 3))));
+        RunUntilBattle(game);
+        Assert.False(game.Execute(A, new RecallArmy(game.ArmiesOf(A).Single().Id)).Ok);
+    }
+
+    [Fact]
+    public void An_interceptor_that_meets_nobody_turns_back_half_way_unseen()
+    {
+        var game = War();
+        game.CastleOf(A)!.AddSoldiers(Sword, 3);
+        Ok(game.Execute(A, new SendArmy(B, new Dictionary<string, int> { ["kilicli"] = 3 }, Mode: ArmyMode.Intercept)));
+        var army = game.ArmiesOf(A).Single();
+        double half = army.Out.Route.Length / 2;
+        while (army.State == ArmyState.Marching) game.Tick(1);
+        Assert.InRange(army.Out.Travelled, half, half + Rules.Map.ArmySpeed);
+        Run(game, 60);
+        Assert.Empty(game.ArmiesOf(A));
+        Assert.Equal(3, game.CastleOf(A)!.Soldiers[Sword]);
+        Assert.Empty(game.TakeNotifications(B)); // never came close enough to be seen by B's castle
+        Assert.Empty(game.BattlesOf(B));
+    }
+
+    [Fact]
+    public void An_interceptor_goes_home_after_its_battle_on_the_road()
+    {
+        var game = War();
+        game.CastleOf(A)!.AddSoldiers(Sword, 8);
+        game.CastleOf(B)!.AddSoldiers(Archer, 2);
+        Ok(game.Execute(B, Attack(A, (Archer, 2))));
+        Run(game, 5);
+        Ok(game.Execute(A, new SendArmy(B, new Dictionary<string, int> { ["kilicli"] = 8 }, Mode: ArmyMode.Intercept)));
+        RunUntilReports(game, A);
+        Assert.Equal(BattleKind.Field, game.BattlesOf(A).Single().Kind);
+        var army = game.ArmiesOf(A).Single();
+        Assert.Equal(ArmyState.Returning, army.State);
+        RunUntilHome(game, A);
+        Assert.Single(game.BattlesOf(A)); // never laid siege to B
+        Assert.Equal(500, game.CastleOf(B)!.WallHp);
+    }
+
+    private static void RunUntilHome(GameState game, string player)
+    {
+        for (int t = 0; game.ArmiesOf(player).Count > 0; t++)
+        {
+            Assert.True(t < 200, "never came home");
+            game.Tick(1);
+        }
     }
 
     // ---- elimination and the end ------------------------------------------------------------

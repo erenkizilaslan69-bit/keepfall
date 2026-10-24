@@ -248,6 +248,7 @@ public sealed class GameState
         {
             SendScout scout => LaunchScout(playerKey, player, scout),
             SendArmy army => LaunchArmy(playerKey, player, army),
+            RecallArmy recall => Recall(playerKey, recall.ArmyId),
             _ => player.Castle.Execute(command),
         };
     }
@@ -338,8 +339,26 @@ public sealed class GameState
         var sent = player.Castle.DispatchArmy(units);
         if (!sent.Ok) return sent;
         _armies.Add(new ArmyMarch(_nextId++, NewPublicId(), from, c.TargetKey, units, rows, priority, ElapsedSeconds,
-            RouteBetween(from, c.TargetKey), Rules.Map.ArmySpeed));
+            RouteBetween(from, c.TargetKey), Rules.Map.ArmySpeed, c.Mode));
         return CommandResult.Success;
+    }
+
+    private CommandResult Recall(string player, int armyId)
+    {
+        var a = _armies.FirstOrDefault(x => x.Id == armyId && x.From == player);
+        if (a is null) return CommandResult.Fail("Böyle bir ordun yok.");
+        if (a.Battle is not null) return CommandResult.Fail("Savaştaki ordu geri çağrılamaz.");
+        if (a.State == ArmyState.Returning) return CommandResult.Fail("Bu ordu zaten eve dönüyor.");
+        TurnBack(a);
+        return CommandResult.Success;
+    }
+
+    /// <summary>The army turns round where it is and walks home along the same road.</summary>
+    private void TurnBack(ArmyMarch a)
+    {
+        a.State = ArmyState.Returning;
+        a.Survivors = a.Units;
+        a.Back = new Traveller(a.Out.Route.Reversed(), a.Out.Speed, a.Out.Route.Length - a.Out.Travelled);
     }
 
     private void AdvanceArmies(double dt)
@@ -351,7 +370,7 @@ public sealed class GameState
             FinishBattle(b);
         }
 
-        foreach (var a in _armies.Where(a => a.Battle is null)) a.Leg.Advance(dt);
+        MoveAndMeet(dt);
 
         // The sentry: the target is warned the moment an army coming for it is in sight of the castle.
         foreach (var a in _armies.Where(a => a.State == ArmyState.Marching && !a.Sighted && !_eliminated.ContainsKey(a.Target)))
@@ -375,6 +394,83 @@ public sealed class GameState
             _players[a.From].Castle.ArmyReturned(a.Survivors);
             _armies.Remove(a);
         }
+    }
+
+    /// <summary>Sub-steps per game second for walking and meeting.</summary>
+    private const int SubSteps = 10;
+
+    /// <summary>
+    /// Armies walk in small steps (a tenth of a second each, a fraction of a tile), so two armies coming
+    /// at each other always meet, even at ×20 speed where a tick is many seconds of walking. Armies of
+    /// different players that come within the encounter radius stop and fight right there. An army that
+    /// would walk into a battle already going on waits just outside it. Intercepting armies turn back
+    /// half way if nobody came.
+    /// </summary>
+    private void MoveAndMeet(double dt)
+    {
+        int steps = Math.Max(1, (int)Math.Ceiling(dt * SubSteps - 1e-9));
+        double step = dt / steps, radius = Rules.War.EncounterRadius;
+        for (int i = 0; i < steps; i++)
+        {
+            foreach (var a in _armies.Where(a => a.Battle is null && !a.Leg.Arrived))
+            {
+                var next = a.Leg.Route.PointAt(a.Leg.Travelled + a.Leg.Speed * step);
+                if (_active.Any(b => b.Kind == BattleKind.Field && b.Position.DistanceTo(next) < radius * 1.5)) continue;
+                a.Leg.Advance(step);
+                if (a.Mode == ArmyMode.Intercept && a.State == ArmyState.Marching && a.Out.Travelled >= a.Out.Route.Length / 2)
+                    TurnBack(a);
+            }
+
+            var free = _armies.Where(a => a.Battle is null).OrderBy(a => a.Id).ToList();
+            for (int x = 0; x < free.Count; x++)
+                for (int y = x + 1; y < free.Count; y++)
+                {
+                    var a = free[x];
+                    var b = free[y];
+                    if (a.Battle is not null || b.Battle is not null || a.From == b.From) continue;
+                    if (a.Position.DistanceTo(b.Position) > radius + 1e-9) continue;
+                    StartFieldBattle(a, b);
+                }
+        }
+    }
+
+    /// <summary>Two armies met on the road: they fight where they are.</summary>
+    private void StartFieldBattle(ArmyMarch a, ArmyMarch b)
+    {
+        var mid = (a.Position + b.Position) * 0.5;
+        var toward = b.Position - a.Position;
+        var facing = toward.Length > 1e-9 ? toward * (1 / toward.Length) : a.Leg.Direction;
+        var battle = new ActiveBattle(_nextId++, NewPublicId(), BattleKind.Field, mid, facing, ElapsedSeconds, a, b, b.From);
+
+        var setup = new ArmySetup("Karşı taraf") { Targeting = b.ArcherPriority is { } p ? TargetPriority.Prefer(p) : TargetPriority.Front };
+        foreach (var (type, n) in b.Walking) if (n > 0) setup.Add(type, n);
+        foreach (var (type, row) in b.Rows) setup.PlaceIn(type, row);
+        Fight(battle, setup, b.Walking);
+        Begin(battle);
+    }
+
+    /// <summary>After a battle on the road: the survivors go on their way (an interceptor heads home).</summary>
+    private void GoOn(ArmyMarch a, IReadOnlyDictionary<UnitType, int> survivors)
+    {
+        if (survivors.Values.Sum() == 0)
+        {
+            _armies.Remove(a); // its losses are already counted
+            return;
+        }
+        if (a.State == ArmyState.Returning)
+        {
+            a.Survivors = survivors;
+            if (_eliminated.ContainsKey(a.From)) Disband(a);
+            return;
+        }
+        a.Units = survivors;
+        if (a.Mode == ArmyMode.Intercept) TurnBack(a);
+    }
+
+    private void Disband(ArmyMarch a)
+    {
+        _players[a.From].Castle.ArmyLost(a.Size);
+        _armies.Remove(a);
     }
 
     /// <summary>
@@ -454,6 +550,11 @@ public sealed class GameState
         defender.Stats.EnemiesKilled += attackLost.Values.Sum();
 
         bool fell = false;
+        if (b.Opponent is { } o)
+        {
+            o.Battle = null;
+            defender.ArmyLost(defendLost.Values.Sum());
+        }
         if (b.Kind == BattleKind.Siege)
         {
             defender.DefendersBack(b.DefenderSurvivors, defendLost.Values.Sum());
@@ -472,7 +573,12 @@ public sealed class GameState
         Notify(a.From, new GameNotification(NotificationKind.BattleFought, b.Defender, ElapsedSeconds, BattleId: report.Id));
         Notify(b.Defender, new GameNotification(NotificationKind.BattleFought, a.From, ElapsedSeconds, BattleId: report.Id));
 
-        SendHome(a, b.AttackerSurvivors);
+        if (b.Kind == BattleKind.Siege) SendHome(a, b.AttackerSurvivors);
+        else
+        {
+            GoOn(a, b.AttackerSurvivors);
+            GoOn(b.Opponent!, b.DefenderSurvivors);
+        }
         if (fell) Eliminate(b.Defender);
     }
 
@@ -523,7 +629,7 @@ public sealed class GameState
         if (_eliminated.ContainsKey(player)) return;
         _eliminated[player] = ElapsedSeconds;
         _missions.RemoveAll(m => m.From == player);
-        foreach (var a in _armies.Where(a => a.From == player && a.State == ArmyState.Returning).ToList())
+        foreach (var a in _armies.Where(a => a.From == player && a.State == ArmyState.Returning && a.Battle is null).ToList())
         {
             _players[player].Castle.ArmyLost(a.Survivors.Values.Sum());
             _armies.Remove(a);

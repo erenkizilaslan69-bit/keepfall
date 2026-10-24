@@ -26,15 +26,28 @@ public sealed record UpgradeBuilding(BuildingType Building) : GameCommand;
 /// <summary>Send one person from <paramref name="From"/> to scout <paramref name="TargetKey"/>'s castle.</summary>
 public sealed record SendScout(string TargetKey, Job From = Job.Idle) : GameCommand;
 
+public enum ArmyMode
+{
+    /// <summary>March to the target's castle and lay siege.</summary>
+    Attack,
+    /// <summary>Head down the road towards the target to cut off whoever comes the other way: home after the
+    /// first battle on the road, or from half way if nobody came. Nobody else can tell the difference.</summary>
+    Intercept,
+}
+
 /// <summary>
-/// War: send soldiers (unit id → count) to attack <paramref name="TargetKey"/>, with an optional row per
-/// type and the archers' preferred target.
+/// War: send soldiers (unit id → count) towards <paramref name="TargetKey"/>, with an optional row per
+/// type, the archers' preferred target and whether to attack the castle or cut off the road.
 /// </summary>
 public sealed record SendArmy(
     string TargetKey,
     IReadOnlyDictionary<string, int> Units,
     IReadOnlyDictionary<string, Row>? Rows = null,
-    string? ArcherPriority = null) : GameCommand;
+    string? ArcherPriority = null,
+    ArmyMode Mode = ArmyMode.Attack) : GameCommand;
+
+/// <summary>Call one of our armies home from wherever it is on the road (not while it is fighting).</summary>
+public sealed record RecallArmy(int ArmyId) : GameCommand;
 
 /// <summary>How the soldiers at home line up when the castle is attacked.</summary>
 public sealed record SetDefense(IReadOnlyDictionary<string, Row>? Rows, string? ArcherPriority) : GameCommand;

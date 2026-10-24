@@ -67,6 +67,7 @@ public sealed class WarConfig
     public double SiegeSeconds { get; set; } = 5;
     public double ArcherSiegeMultiplier { get; set; } = 0.5;
     public double BattlePlayback { get; set; } = 1;
+    public double EncounterRadius { get; set; } = 1;
 }
 
 public sealed class ScoutingConfig
@@ -206,6 +207,7 @@ public static class BalanceConfigLoader
         if (w.CastleHp <= 0) errors.Add("war.castleHp sıfırdan büyük olmalı.");
         if (w.SiegeSeconds < 0 || w.ArcherSiegeMultiplier < 0) errors.Add("war: kuşatma değerleri negatif olamaz.");
         if (w.BattlePlayback <= 0) errors.Add("war.battlePlayback sıfırdan büyük olmalı.");
+        if (w.EncounterRadius <= 0) errors.Add("war.encounterRadius sıfırdan büyük olmalı.");
 
         var sc = config.Scouting;
         var mp = config.Map;
@@ -295,7 +297,7 @@ public static class BalanceConfigLoader
                     i + 1, l.Capacity, l.Multiplier, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList()),
             new ScoutingRules(sc.ReportError),
             new WarRules(w.FamineStart, w.FamineFoodMultiplier,
-                w.CastleHp, w.SiegeSeconds, w.ArcherSiegeMultiplier, w.BattlePlayback),
+                w.CastleHp, w.SiegeSeconds, w.ArcherSiegeMultiplier, w.BattlePlayback, w.EncounterRadius),
             new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout));
     }
 

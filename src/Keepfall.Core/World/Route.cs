@@ -86,11 +86,13 @@ public sealed class Route
 /// </summary>
 public sealed class Traveller
 {
-    public Traveller(Route route, double speed)
+    /// <param name="travelled">Where on the route it starts (for turning back half way).</param>
+    public Traveller(Route route, double speed, double travelled = 0)
     {
         if (speed <= 0) throw new ArgumentOutOfRangeException(nameof(speed));
         Route = route;
         Speed = speed;
+        Travelled = Math.Clamp(travelled, 0, route.Length);
     }
 
     public Route Route { get; }

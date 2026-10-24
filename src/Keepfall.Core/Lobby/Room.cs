@@ -118,6 +118,12 @@ public sealed class Room
         bool attacking = report.Attacker == player.CastleKey;
         var other = PlayerOfCastle(attacking ? report.Defender : report.Attacker);
         string them = ColorName(other?.Color);
+        if (report.Kind == BattleKind.Field)
+        {
+            bool won = report.Winner == (attacking ? BattleWinner.Attacker : BattleWinner.Defender);
+            return report.Winner == BattleWinner.Draw ? $"Yolda {them} ordusuyla çarpıştın: berabere."
+                : won ? $"Yolda {them} ordusunu yendin!" : $"Yolda {them} ordusuna yenildin.";
+        }
         int damage = (int)Math.Floor(report.CastleDamage + 1e-9); // same rounding as the panel
         return (attacking, report.Winner) switch
         {

@@ -91,26 +91,29 @@ public class VisionTests
     }
 
     [Fact]
-    public void Armies_that_pass_each_other_see_each_other_but_bystanders_do_not()
+    public void Armies_coming_at_each_other_see_each_other_before_they_meet_but_bystanders_do_not()
     {
         var game = War();
         game.CastleOf(A)!.AddSoldiers(Sword, 2);
         game.CastleOf(B)!.AddSoldiers(Sword, 2);
         Ok(game.Execute(A, Attack(B, (Sword, 2))));
         Ok(game.Execute(B, Attack(A, (Sword, 2))));
-        bool met = false;
-        for (int t = 0; t < 30; t++)
+        bool sawIt = false;
+        while (game.ActiveBattles.Count == 0)
         {
             game.Tick(1);
+            if (game.ActiveBattles.Count > 0) break;
             var a = game.ArmiesOf(A).Single();
             var b = game.ArmiesOf(B).Single();
             bool close = a.Position.DistanceTo(b.Position) <= Rules.Map.ArmyVision;
             bool nearCastle = game.CastleVisionOf(A).Contains(b.Position) || game.CastleVisionOf(B).Contains(a.Position);
             if (!nearCastle) Assert.Equal(close, game.SeenBy(A).Any(m => m.Owner == B));
-            met |= close && !nearCastle;
-            Assert.Empty(game.SeenBy(C)); // they cross in the forest, far from C
+            sawIt |= close && !nearCastle;
+            Assert.Empty(game.SeenBy(C)); // they meet in the forest, far from C
         }
-        Assert.True(met, "the two armies should cross in the forest");
+        Assert.True(sawIt, "the two armies should see each other coming before they meet in the forest");
+        Assert.Empty(game.SeenBy(A)); // once they fight, nobody sees them walking
+        Assert.Empty(game.SeenBy(C));
     }
 
     [Fact]

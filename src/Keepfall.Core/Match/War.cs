@@ -15,8 +15,10 @@ public enum ArmyState { Marching, Returning }
 public sealed class ArmyMarch
 {
     internal ArmyMarch(int id, string publicId, string from, string target, IReadOnlyDictionary<UnitType, int> units,
-        IReadOnlyDictionary<UnitType, Row> rows, UnitType? archerPriority, double departedAt, Route route, double speed)
+        IReadOnlyDictionary<UnitType, Row> rows, UnitType? archerPriority, double departedAt, Route route, double speed,
+        ArmyMode mode = ArmyMode.Attack)
     {
+        Mode = mode;
         Id = id;
         PublicId = publicId;
         From = from;
@@ -33,7 +35,10 @@ public sealed class ArmyMarch
     public string PublicId { get; }
     public string From { get; }
     public string Target { get; }
-    public IReadOnlyDictionary<UnitType, int> Units { get; }
+    /// <summary>Who marches (fewer after a battle on the road).</summary>
+    public IReadOnlyDictionary<UnitType, int> Units { get; internal set; }
+    /// <summary>Attack the castle or cut off the road. Only the owner ever knows.</summary>
+    public ArmyMode Mode { get; }
     public IReadOnlyDictionary<UnitType, Row> Rows { get; }
     public UnitType? ArcherPriority { get; }
     public double DepartedAt { get; }
