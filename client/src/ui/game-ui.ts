@@ -51,7 +51,8 @@ export class GameUi {
     homeButton.addEventListener('click', home);
     root.appendChild(homeButton);
     this.windows = new WindowManager(root, () => this.top.getBoundingClientRect().bottom, () =>
-      [homeButton, document.querySelector('.minimap')].filter((e): e is Element => !!e).map((e) => e.getBoundingClientRect()));
+      [homeButton, document.querySelector('.minimap'), root.querySelector('.report-tags')].filter((e): e is Element => !!e)
+        .map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0));
     this.ctx = { net, say: (m) => this.error(m), info: (m) => this.notes.push(m, 'info', 3500), open: (t) => this.open(t), close: () => this.windows.close(),
       army: (id) => this.scene?.resolveArmy(id) };
     window.addEventListener('keydown', this.onKey);
