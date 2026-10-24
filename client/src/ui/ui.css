@@ -1,8 +1,24 @@
+/* Digits (and the signs that go with numbers) come from a clearer font than Pixelify Sans, where 2 looks like 8 and 5
+   like S: Atkinson Hyperlegible Next, which was designed so that characters cannot be mistaken for each other. The
+   unicode-range makes the browser take only these characters from it, in every text that uses the pixel font. */
+@font-face {
+  font-family: 'Keepfall Digits'; font-weight: 400; font-display: swap;
+  src: url('../../node_modules/@fontsource/atkinson-hyperlegible-next/files/atkinson-hyperlegible-next-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0025, U+002B-003A, U+00D7;
+}
+@font-face {
+  font-family: 'Keepfall Digits'; font-weight: 700; font-display: swap;
+  src: url('../../node_modules/@fontsource/atkinson-hyperlegible-next/files/atkinson-hyperlegible-next-latin-700-normal.woff2') format('woff2');
+  unicode-range: U+0025, U+002B-003A, U+00D7;
+}
+
 /* Tiny Swords look for the in-game UI. Pieces come from sprites.ts as custom properties; without the
    art (`html:not(.ui-art)`) the same classes fall back to plain parchment-coloured boxes. */
 
 :root {
-  --font-pixel: 'Pixelify Sans', system-ui, sans-serif;
+  --font-pixel: 'Keepfall Digits', 'Pixelify Sans', system-ui, sans-serif;
+  /* Small explanatory text: plain and readable (titles, ribbons and sign names stay in the pixel font). */
+  --font-text: 'Atkinson Hyperlegible Next', system-ui, sans-serif;
   --ink: #3a2a18;
   --ink-soft: #6b5434;
   --parchment: #ead9b0;
@@ -312,3 +328,8 @@ html:not(.ui-art) .spec-wait .ribbon { margin-top: 0; }
 .spec-body p:first-child { font-size: 1.35em; }
 .spec-n { font-size: 1.6em; color: #b23a2e; font-variant-numeric: tabular-nums; }
 .spec-body .gbar { margin: calc(10px * var(--u)) auto; max-width: 90%; }
+
+/* ---- small explanatory text in the readable font ------------------------------------------------ */
+.muted-ink, .small, .muted, .win p, .win small, .win .row.sub, .rep-note, .spec-body p, .win .warn, .tag, .field,
+.screen .error, .wl-small, .report-tag small { font-family: var(--font-text); }
+.muted-ink, .small { font-size: .95em; }

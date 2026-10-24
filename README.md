@@ -73,6 +73,7 @@ Geliştirme modunda:
 
 - **Tiny Swords (Free Pack)** — Pixel Frog. Görseller: https://pixelfrog-assets.itch.io/tiny-swords (yukarıdaki kuruluma bak; lisansı yeniden dağıtıma izin vermez, repoda yok).
 - **Pixelify Sans** — arayüz yazı tipi, The Pixelify Sans Project Authors (https://github.com/eifetx/Pixelify-Sans), SIL Open Font License 1.1. `@fontsource/pixelify-sans` paketi olarak gelir; lisans metni `client/licenses/PixelifySans-OFL.txt`. Türkçe karakterlerin (ç ğ ı İ ö ş ü, büyük ve küçük) hepsini içerdiği glif tablosundan doğrulanmıştır.
+- **Atkinson Hyperlegible Next** — sayılar ve küçük açıklama yazıları için (Pixelify'da 2 rakamı 8'e, 5 rakamı S'ye benziyordu): Braille Institute / The Atkinson Hyperlegible Next Project Authors (https://github.com/googlefonts/atkinson-hyperlegible-next), SIL Open Font License 1.1. `@fontsource/atkinson-hyperlegible-next` paketi olarak gelir; lisans metni `client/licenses/AtkinsonHyperlegibleNext-OFL.txt`. Türkçe karakterlerin (ç ğ ı İ ö ş ü, büyük ve küçük) hepsini içerdiği glif tablosundan doğrulanmıştır. Başlıklar, ribbon'lar ve tabela adları Pixelify Sans'ta kalır; rakamları `ui.css` içindeki `Keepfall Digits` yazı tipi (`unicode-range`) bu yazı tipinden alır.
 
 ### Testler
 
