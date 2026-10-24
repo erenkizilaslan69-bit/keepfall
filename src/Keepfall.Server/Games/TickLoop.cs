@@ -50,7 +50,7 @@ public sealed class TickLoop(
                 return;
             }
             roomChanged = room.Maintain(now);
-            preparing = room.Phase == RoomPhase.Preparation;
+            preparing = room.Phase is RoomPhase.Preparation or RoomPhase.War;
             if (preparing) ended = room.Tick(tickSeconds);
         }
 
@@ -66,7 +66,16 @@ public sealed class TickLoop(
             lock (session.Lock) view = ViewMapper.ToView(session.Room);
             await hub.Clients.Group(GameHub.RoomGroup(session.Room.Code)).SendAsync("RoomState", view);
         }
-        if (ended) await SendSummaries(session);
+        if (ended)
+        {
+            // Final castle states (with summaries) and the room view with the result.
+            await GameHub.PushCastles(hub.Clients, session);
+            RoomView final;
+            lock (session.Lock) final = ViewMapper.ToView(session.Room);
+            await hub.Clients.Group(GameHub.RoomGroup(session.Room.Code)).SendAsync("RoomState", final);
+            await SendNotifications(session);
+            await SendSummaries(session);
+        }
     }
 
     /// <summary>E.g. "Kırmızı'nın gözcüsü kaleni gözetledi." — only to the player it is about.</summary>

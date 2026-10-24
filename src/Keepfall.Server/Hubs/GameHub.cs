@@ -1,6 +1,7 @@
 using Keepfall.Core.Economy;
 using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
+using Keepfall.Core.Units;
 using Keepfall.Server.Contracts;
 using Keepfall.Server.Games;
 using Microsoft.AspNetCore.SignalR;
@@ -96,6 +97,15 @@ public sealed class GameHub(RoomRegistry registry) : Hub
     public Task<CommandResultView> SetGrowth(bool enabled) => Economy(new SetGrowth(enabled));
     /// <summary>The target is named by public seat; the castle itself is never addressed by the client.</summary>
     public Task<CommandResultView> SendScout(int targetSeat, Job from) => Economy(new SendScout(Room.CastleKeyOf(targetSeat), from));
+
+    /// <param name="units">Unit id → how many soldiers to send.</param>
+    /// <param name="rows">Optional row per unit id ("front" / "back").</param>
+    /// <param name="archerPriority">Optional unit id the archers aim at first.</param>
+    public Task<CommandResultView> SendArmy(int targetSeat, Dictionary<string, int> units, Dictionary<string, Row>? rows, string? archerPriority) =>
+        Economy(new SendArmy(Room.CastleKeyOf(targetSeat), units ?? [], rows, archerPriority));
+
+    public Task<CommandResultView> SetDefense(Dictionary<string, Row>? rows, string? archerPriority) =>
+        Economy(new SetDefense(rows, archerPriority));
 
     private async Task<CommandResultView> Economy(GameCommand command)
     {

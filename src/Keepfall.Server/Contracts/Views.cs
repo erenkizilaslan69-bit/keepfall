@@ -1,6 +1,7 @@
 using Keepfall.Core.Economy;
 using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
+using Keepfall.Core.Units;
 
 namespace Keepfall.Server.Contracts;
 
@@ -30,7 +31,25 @@ public sealed record SummaryView(
     double DurationSeconds, int StartPopulation, int FinalPopulation, int PeakPopulation, int PeopleBorn,
     IReadOnlyList<JobView> Workers, IReadOnlyList<UnitView> Units, int WeaponsMade,
     ResourcesView Produced, ResourcesView Final, double StarvingSeconds, double IdleWorkerSeconds,
-    IReadOnlyList<BuildingView> Buildings, IReadOnlyList<EconomySample> Samples);
+    IReadOnlyList<BuildingView> Buildings, IReadOnlyList<EconomySample> Samples, WarStats War);
+
+// War. A player sees their own armies, the warnings about armies coming at them (who and when,
+// nothing more) and the reports of battles they fought in. Never another player's army on the road.
+public sealed record ArmyUnitView(string UnitId, string Name, int Count);
+public sealed record ArmyView(
+    int Id, int TargetSeat, string TargetName, PlayerColor TargetColor, ArmyState State,
+    IReadOnlyList<ArmyUnitView> Units, double Distance, double RemainingSeconds);
+public sealed record IncomingView(int FromSeat, string FromName, PlayerColor FromColor, double ArrivesInSeconds);
+public sealed record BattleLineView(string UnitId, string Name, int Count, int Lost);
+public sealed record BattleReportView(
+    int Id, double At, bool Attacking, int OpponentSeat, string OpponentName, PlayerColor OpponentColor,
+    IReadOnlyList<BattleLineView> AttackerUnits, IReadOnlyList<BattleLineView> DefenderUnits,
+    BattleWinner Winner, bool YouWon, double CastleDamage, double CastleHpAfter, double CastleHpMax, bool DefenderEliminated);
+public sealed record DefenseView(IReadOnlyDictionary<string, Row> Rows, string? ArcherPriority);
+public sealed record WarView(
+    double MarchSeconds, double WarningSeconds, double WallHp, double MaxWallHp, bool Famine, double FamineStartsIn,
+    int SoldiersAway, IReadOnlyList<ArmyView> Armies, IReadOnlyList<IncomingView> Incoming,
+    IReadOnlyList<BattleReportView> Battles, DefenseView Defense);
 
 // Scouting. A report is all the client ever learns about another castle: approximate soldier
 // counts and building levels. Targets carry only public facts (seat, name, colour).
@@ -53,16 +72,24 @@ public sealed record CastleView(
     IReadOnlyList<JobView> Jobs, IReadOnlyList<BuildingView> Buildings,
     IReadOnlyList<UnitView> Units, IReadOnlyList<OrderView> Queue,
     ScoutingView Scouting,
+    WarView War,
+    bool Eliminated,
     SummaryView? Summary);
 
 public sealed record CommandResultView(bool Ok, string? Error);
 
 /// <summary>Public facts about a player. Never the token.</summary>
-public sealed record PlayerView(int Seat, string Name, PlayerColor Color, bool Ready, bool Connected, bool IsHost);
+public sealed record PlayerView(int Seat, string Name, PlayerColor Color, bool Ready, bool Connected, bool IsHost, bool Eliminated);
+
+/// <summary>Sent to everyone once the match is over: the hidden-information rule ends with the match.</summary>
+public sealed record RankView(int Seat, string Name, PlayerColor Color, int Place, int Population, bool Eliminated);
+public sealed record PlayerSummaryView(int Seat, string Name, PlayerColor Color, SummaryView Summary);
+public sealed record ResultView(
+    IReadOnlyList<int> Winners, bool ByElimination, IReadOnlyList<RankView> Ranking, IReadOnlyList<PlayerSummaryView> Summaries);
 
 public sealed record RoomView(
     string Code, RoomPhase Phase, IReadOnlyList<PlayerView> Players, int MinPlayers, int MaxPlayers,
-    bool CanStart, double? RemainingSeconds);
+    bool CanStart, double? RemainingSeconds, ResultView? Result);
 
 /// <summary>Answer to CreateRoom/JoinRoom: the caller's own secret token and seat.</summary>
 public sealed record JoinView(bool Ok, string? Error, string? Code, string? Token, int Seat, RoomView? Room);
@@ -71,8 +98,27 @@ public static class ViewMapper
 {
     public static RoomView ToView(Room room) => new(
         room.Code, room.Phase,
-        room.Players.Select(p => new PlayerView(p.Seat, p.Name, p.Color, p.Ready, p.Connected, p.Seat == room.HostSeat)).ToList(),
-        room.Options.MinPlayers, room.Options.MaxPlayers, room.CanStart, room.Game?.RemainingSeconds);
+        room.Players.Select(p => new PlayerView(p.Seat, p.Name, p.Color, p.Ready, p.Connected, p.Seat == room.HostSeat, room.IsEliminated(p))).ToList(),
+        room.Options.MinPlayers, room.Options.MaxPlayers, room.CanStart, room.Game?.RemainingSeconds,
+        room.Phase == RoomPhase.Ended ? ResultOf(room) : null);
+
+    private static ResultView? ResultOf(Room room)
+    {
+        if (room.Game is not { Result: { } result } game) return null;
+        int SeatOf(string key) => room.PlayerOfCastle(key)?.Seat ?? 0;
+        return new ResultView(
+            result.Winners.Select(SeatOf).ToList(),
+            result.ByElimination,
+            result.Ranking.Select(r =>
+            {
+                var p = room.PlayerOfCastle(r.Player);
+                return new RankView(p?.Seat ?? 0, p?.Name ?? "?", p?.Color ?? PlayerColor.Blue, r.Place, r.Population, r.Eliminated);
+            }).ToList(),
+            room.Players
+                .Where(p => game.SummaryOf(p.CastleKey) is not null)
+                .Select(p => new PlayerSummaryView(p.Seat, p.Name, p.Color, ToView(game.SummaryOf(p.CastleKey)!, game.CastleOf(p.CastleKey)!)))
+                .ToList());
+    }
 
     /// <summary>The castle of <paramref name="player"/>; null while the room has no match.</summary>
     public static CastleView? CastleOf(Room room, RoomPlayer player)
@@ -88,7 +134,46 @@ public static class ViewMapper
             JobsOf(c), BuildingsOf(c), UnitsOf(c),
             c.Queue.Select(o => new OrderView(o.Type.Id, o.Type.Name, o.Remaining, o.Progress, o.Type.BuildSeconds)).ToList(),
             ScoutingOf(room, game, player, c),
+            WarOf(room, game, player, c),
+            game.IsEliminated(player.CastleKey),
             game.SummaryOf(player.CastleKey) is { } s ? ToView(s, c) : null);
+    }
+
+    private static WarView WarOf(Room room, GameState game, RoomPlayer player, Castle c)
+    {
+        var rules = game.Rules.War;
+        var now = game.ElapsedSeconds;
+        RoomPlayer? Other(string key) => room.PlayerOfCastle(key);
+        List<ArmyUnitView> Units(IReadOnlyDictionary<UnitType, int> units) =>
+            units.Where(kv => kv.Value > 0).OrderBy(kv => kv.Key.Index).Select(kv => new ArmyUnitView(kv.Key.Id, kv.Key.Name, kv.Value)).ToList();
+        List<BattleLineView> Lines(IReadOnlyList<BattleUnitLine> lines) =>
+            lines.Select(l => new BattleLineView(l.UnitId, l.Name, l.Count, l.Lost)).ToList();
+
+        return new WarView(
+            rules.MarchSeconds, rules.WarningSeconds, c.WallHp, c.MaxWallHp, game.Famine, game.FamineStartsIn, c.SoldiersAway,
+            game.ArmiesOf(player.CastleKey).Select(a =>
+            {
+                var target = Other(a.Target);
+                double remaining = a.State == ArmyState.Marching ? a.ArrivesAt - now : a.ReturnsAt - now;
+                return new ArmyView(a.Id, target?.Seat ?? 0, target?.Name ?? "?", target?.Color ?? PlayerColor.Blue, a.State,
+                    Units(a.State == ArmyState.Marching ? a.Units : a.Survivors), a.Distance(now), Math.Max(0, remaining));
+            }).ToList(),
+            // Only who and when: an incoming army's size and units are never part of this.
+            game.IncomingWarningsOf(player.CastleKey).Select(w =>
+            {
+                var from = Other(w.From);
+                return new IncomingView(from?.Seat ?? 0, from?.Name ?? "?", from?.Color ?? PlayerColor.Blue, Math.Max(0, w.ArrivesAt - now));
+            }).ToList(),
+            game.BattlesOf(player.CastleKey).TakeLast(10).Reverse().Select(b =>
+            {
+                bool attacking = b.Attacker == player.CastleKey;
+                var opponent = Other(attacking ? b.Defender : b.Attacker);
+                bool youWon = attacking ? b.Winner == BattleWinner.Attacker : b.Winner == BattleWinner.Defender;
+                return new BattleReportView(b.Id, b.At, attacking, opponent?.Seat ?? 0, opponent?.Name ?? "?",
+                    opponent?.Color ?? PlayerColor.Blue, Lines(b.AttackerUnits), Lines(b.DefenderUnits), b.Winner, youWon,
+                    b.CastleDamage, b.CastleHpAfter, b.CastleHpMax, b.DefenderEliminated);
+            }).ToList(),
+            new DefenseView(c.DefenseRows.ToDictionary(kv => kv.Key.Id, kv => kv.Value), c.DefensePriority?.Id));
     }
 
     private static ScoutingView ScoutingOf(Room room, GameState game, RoomPlayer player, Castle c)
@@ -138,5 +223,5 @@ public static class ViewMapper
         JobsOf(c), UnitsOf(c), s.WeaponsMade,
         new ResourcesView(s.ProducedFood, s.ProducedWood, s.ProducedIron),
         new ResourcesView(s.FinalFood, s.FinalWood, s.FinalIron),
-        s.StarvingSeconds, s.IdleWorkerSeconds, BuildingsOf(c), s.Samples);
+        s.StarvingSeconds, s.IdleWorkerSeconds, BuildingsOf(c), s.Samples, s.War);
 }
