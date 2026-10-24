@@ -106,5 +106,8 @@ public sealed class Traveller
     public void Advance(double seconds) => Travelled = Math.Min(Route.Length, Travelled + Speed * seconds);
 }
 
-/// <summary>Moving on the map ("map" in the balance config): speeds in tiles per second.</summary>
-public sealed record MapRules(double ArmySpeed, double ScoutSpeed);
+/// <summary>
+/// Moving and seeing on the map ("map" in the balance config): speeds in tiles per second, vision
+/// radii in tiles around the castle gate, one's own armies and one's own scouts.
+/// </summary>
+public sealed record MapRules(double ArmySpeed, double ScoutSpeed, double CastleVision, double ArmyVision, double ScoutVision);

@@ -47,7 +47,7 @@ public sealed record BattleReportView(
     BattleWinner Winner, bool YouWon, double CastleDamage, double CastleHpAfter, double CastleHpMax, bool DefenderEliminated);
 public sealed record DefenseView(IReadOnlyDictionary<string, Row> Rows, string? ArcherPriority);
 public sealed record WarView(
-    double WarningSeconds, double WallHp, double MaxWallHp, bool Famine, double FamineStartsIn,
+    double WallHp, double MaxWallHp, bool Famine, double FamineStartsIn,
     int SoldiersAway, IReadOnlyList<ArmyView> Armies, IReadOnlyList<IncomingView> Incoming,
     IReadOnlyList<BattleReportView> Battles, DefenseView Defense);
 
@@ -151,7 +151,7 @@ public static class ViewMapper
             lines.Select(l => new BattleLineView(l.UnitId, l.Name, l.Count, l.Lost)).ToList();
 
         return new WarView(
-            rules.WarningSeconds, c.WallHp, c.MaxWallHp, game.Famine, game.FamineStartsIn, c.SoldiersAway,
+            c.WallHp, c.MaxWallHp, game.Famine, game.FamineStartsIn, c.SoldiersAway,
             game.ArmiesOf(player.CastleKey).Select(a =>
             {
                 var target = Other(a.Target);

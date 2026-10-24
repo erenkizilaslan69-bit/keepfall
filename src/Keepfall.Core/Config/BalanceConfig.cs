@@ -49,11 +49,18 @@ public sealed class MapConfig
 {
     public double ArmySpeed { get; set; } = 1.5;
     public double ScoutSpeed { get; set; } = 2.5;
+    public VisionConfig Vision { get; set; } = new();
+}
+
+public sealed class VisionConfig
+{
+    public double Castle { get; set; } = 20;
+    public double Army { get; set; } = 6;
+    public double Scout { get; set; } = 10;
 }
 
 public sealed class WarConfig
 {
-    public double WarningSeconds { get; set; } = 10;
     public double FamineStart { get; set; } = 0.7;
     public double FamineFoodMultiplier { get; set; } = 0.5;
     public double CastleHp { get; set; } = 500;
@@ -193,7 +200,6 @@ public static class BalanceConfigLoader
         if (e.GrowthReserveSeconds < 0) errors.Add("economy.growthReserveSeconds negatif olamaz.");
 
         var w = config.War;
-        if (w.WarningSeconds < 0) errors.Add("war.warningSeconds negatif olamaz.");
         if (w.FamineStart < 0 || w.FamineStart > 1) errors.Add("war.famineStart 0 ile 1 arasında olmalı.");
         if (w.FamineFoodMultiplier < 0 || w.FamineFoodMultiplier > 1) errors.Add("war.famineFoodMultiplier 0 ile 1 arasında olmalı.");
         if (w.CastleHp <= 0) errors.Add("war.castleHp sıfırdan büyük olmalı.");
@@ -202,6 +208,7 @@ public static class BalanceConfigLoader
         var sc = config.Scouting;
         var mp = config.Map;
         if (mp.ArmySpeed <= 0 || mp.ScoutSpeed <= 0) errors.Add("map: hızlar sıfırdan büyük olmalı.");
+        if (mp.Vision.Castle < 0 || mp.Vision.Army < 0 || mp.Vision.Scout < 0) errors.Add("map.vision: görüş yarıçapları negatif olamaz.");
         if (sc.ReportError < 0 || sc.ReportError >= 1) errors.Add("scouting.reportError 0 ile 1 arasında olmalı.");
 
         if (config.BuildingLevels.Count == 0) errors.Add("buildingLevels: en az bir seviye tanımlanmalı.");
@@ -285,9 +292,9 @@ public static class BalanceConfigLoader
                 config.BuildingLevels.Select((l, i) => new BuildingLevel(
                     i + 1, l.Capacity, l.Multiplier, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList()),
             new ScoutingRules(sc.ReportError),
-            new WarRules(w.WarningSeconds, w.FamineStart, w.FamineFoodMultiplier,
+            new WarRules(w.FamineStart, w.FamineFoodMultiplier,
                 w.CastleHp, w.SiegeSeconds, w.ArcherSiegeMultiplier),
-            new MapRules(mp.ArmySpeed, mp.ScoutSpeed));
+            new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout));
     }
 
     private static double? ParseMultiplier(JsonElement value, CombatConfig c)

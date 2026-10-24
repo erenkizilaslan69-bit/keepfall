@@ -143,14 +143,51 @@ public sealed class GameState
     public IReadOnlyList<ArmyMarch> ArmiesOf(string playerKey) => _armies.Where(a => a.From == playerKey).ToList();
 
     /// <summary>
-    /// Armies coming at this player that they have been warned about: who sent them and when they
-    /// arrive. Nothing about size or composition leaves this method.
+    /// Armies coming at this player that their castle has seen: who sent them and when they arrive.
+    /// (What they are made of the player sees on the map, through <see cref="SeenBy"/>.)
     /// </summary>
     public IReadOnlyList<(string From, double ArrivesAt)> IncomingWarningsOf(string playerKey) =>
-        _armies.Where(a => a.Target == playerKey && a.State == ArmyState.Marching && a.Warned)
+        _armies.Where(a => a.Target == playerKey && a.State == ArmyState.Marching && a.Sighted)
             .Select(a => (a.From, ArrivesAt: ElapsedSeconds + a.SecondsLeft))
             .OrderBy(a => a.ArrivesAt)
             .ToList();
+
+    // ---- fog of war ---------------------------------------------------------------------------
+
+    /// <summary>The castle's own sight: a circle round its gate.</summary>
+    public VisionCircle CastleVisionOf(string playerKey) =>
+        new(Map.RegionOf(_corners[playerKey]).Gate, Rules.Map.CastleVision);
+
+    /// <summary>
+    /// Everything this player sees right now: their castle, their armies and their scouts, each with
+    /// its own radius. A fallen castle sees nothing (spectators get no extra vision).
+    /// </summary>
+    public IReadOnlyList<VisionCircle> VisionOf(string playerKey)
+    {
+        if (!_players.ContainsKey(playerKey) || _eliminated.ContainsKey(playerKey)) return [];
+        var circles = new List<VisionCircle> { CastleVisionOf(playerKey) };
+        circles.AddRange(_armies.Where(a => a.From == playerKey).Select(a => new VisionCircle(a.Position, Rules.Map.ArmyVision)));
+        circles.AddRange(_missions.Where(m => m.From == playerKey).Select(m => new VisionCircle(m.Position, Rules.Map.ScoutVision)));
+        return circles;
+    }
+
+    /// <summary>
+    /// Other players' armies and scouts inside this player's vision, and nothing else: whatever is
+    /// outside it is not in the list at all. Never the player's own (they know those already).
+    /// </summary>
+    public IReadOnlyList<SeenMover> SeenBy(string playerKey)
+    {
+        var vision = VisionOf(playerKey);
+        if (vision.Count == 0) return [];
+        bool Visible(Vec p) => vision.Any(c => c.Contains(p));
+        var seen = new List<SeenMover>();
+        foreach (var a in _armies.Where(a => a.From != playerKey && Visible(a.Position)))
+            seen.Add(new SeenMover(a.PublicId, MoverKind.Army, a.From, a.Position, a.Velocity,
+                a.Walking.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value)));
+        foreach (var m in _missions.Where(m => m.From != playerKey && Visible(m.Position)))
+            seen.Add(new SeenMover(m.PublicId, MoverKind.Scout, m.From, m.Position, m.Velocity, new Dictionary<UnitType, int>()));
+        return seen;
+    }
 
     /// <summary>Battles this player fought in (as attacker or defender), oldest first.</summary>
     public IReadOnlyList<BattleReport> BattlesOf(string playerKey) =>
@@ -210,7 +247,7 @@ public sealed class GameState
             return CommandResult.Fail("Bu rakibe zaten bir gözcün gidiyor.");
         var sent = player.Castle.SendScout(c.From);
         if (!sent.Ok) return sent;
-        _missions.Add(new ScoutMission(from, c.TargetKey, ElapsedSeconds, RouteBetween(from, c.TargetKey), Rules.Map.ScoutSpeed));
+        _missions.Add(new ScoutMission(NewPublicId(), from, c.TargetKey, ElapsedSeconds, RouteBetween(from, c.TargetKey), Rules.Map.ScoutSpeed));
         return CommandResult.Success;
     }
 
@@ -284,7 +321,7 @@ public sealed class GameState
 
         var sent = player.Castle.DispatchArmy(units);
         if (!sent.Ok) return sent;
-        _armies.Add(new ArmyMarch(_nextId++, from, c.TargetKey, units, rows, priority, ElapsedSeconds,
+        _armies.Add(new ArmyMarch(_nextId++, NewPublicId(), from, c.TargetKey, units, rows, priority, ElapsedSeconds,
             RouteBetween(from, c.TargetKey), Rules.Map.ArmySpeed));
         return CommandResult.Success;
     }
@@ -293,12 +330,12 @@ public sealed class GameState
     {
         foreach (var a in _armies) a.Leg.Advance(dt);
 
-        // The target hears about an army a little before it arrives: only who sent it.
-        foreach (var a in _armies.Where(a => a.State == ArmyState.Marching && !a.Warned && a.SecondsLeft <= Rules.War.WarningSeconds + 1e-9))
+        // The sentry: the target is warned the moment an army coming for it is in sight of the castle.
+        foreach (var a in _armies.Where(a => a.State == ArmyState.Marching && !a.Sighted && !_eliminated.ContainsKey(a.Target)))
         {
-            a.Warned = true;
-            if (!_eliminated.ContainsKey(a.Target))
-                Notify(a.Target, new GameNotification(NotificationKind.ArmyIncoming, a.From, ElapsedSeconds, ElapsedSeconds + a.SecondsLeft));
+            if (!CastleVisionOf(a.Target).Contains(a.Position)) continue;
+            a.Sighted = true;
+            Notify(a.Target, new GameNotification(NotificationKind.ArmyIncoming, a.From, ElapsedSeconds, ElapsedSeconds + a.SecondsLeft));
         }
 
         // Armies arriving in the same tick fight one after the other, earliest sent first.
@@ -468,6 +505,8 @@ public sealed class GameState
     }
 
     // ---- helpers -----------------------------------------------------------------------------
+
+    private static string NewPublicId() => Convert.ToHexString(RandomNumberGenerator.GetBytes(8)).ToLowerInvariant();
 
     private void Notify(string player, GameNotification notification)
     {

@@ -8,7 +8,7 @@ using Keepfall.Core.World;
 
 namespace Keepfall.Core.Tests;
 
-/// <summary>War phase: marching, the approach warning, battles, siege, elimination and the winner.</summary>
+/// <summary>War phase: marching, the sentry warning, battles, siege, elimination and the winner.</summary>
 public class WarTests
 {
     private static readonly GameRules Rules = BalanceConfigLoader.LoadFromFile(
@@ -117,27 +117,44 @@ public class WarTests
         Assert.Empty(game.ArmiesOf(B)); // B never sees A's army
     }
 
-    // ---- the approach warning ----------------------------------------------------------------
+    /// <summary>Ticks until B has been warned about an army; fails if it never happens.</summary>
+    private static int RunUntilWarned(GameState game, string target)
+    {
+        for (int t = 1; t <= 200; t++)
+        {
+            game.Tick(1);
+            if (game.IncomingWarningsOf(target).Count > 0) return t;
+        }
+        throw new Xunit.Sdk.XunitException("no warning");
+    }
+
+    // ---- the sentry warning ------------------------------------------------------------------
 
     [Fact]
-    public void The_target_is_warned_shortly_before_arrival_with_only_the_sender()
+    public void The_target_is_warned_when_the_army_comes_into_sight_with_only_the_sender()
     {
         var game = War(players: 3);
         game.CastleOf(A)!.AddSoldiers(Sword, 5);
         Ok(game.Execute(A, Attack(B, (Sword, 5))));
-        int warnAt = Ticks(game.MarchSeconds(A, B) - Rules.War.WarningSeconds); // first tick with ≤ 10 s to go
-        Run(game, warnAt - 1);
-        Assert.Empty(game.TakeNotifications(B));
-        Assert.Empty(game.IncomingWarningsOf(B));
+        var army = Assert.Single(game.ArmiesOf(A));
+        var sight = game.CastleVisionOf(B);
+        while (true)
+        {
+            game.Tick(1);
+            if (sight.Contains(army.Position)) break;
+            Assert.Empty(game.TakeNotifications(B));
+            Assert.Empty(game.IncomingWarningsOf(B));
+        }
 
-        game.Tick(1);
         var warning = Assert.Single(game.TakeNotifications(B));
         Assert.Equal(NotificationKind.ArmyIncoming, warning.Kind);
         Assert.Equal(A, warning.OtherPlayer);
-        double arrives = game.ElapsedSeconds + Assert.Single(game.ArmiesOf(A)).SecondsLeft;
+        double arrives = game.ElapsedSeconds + army.SecondsLeft;
         Assert.Equal(arrives, warning.ArrivesAt!.Value, 6);
-        Assert.InRange(arrives - game.ElapsedSeconds, Rules.War.WarningSeconds - 1, Rules.War.WarningSeconds);
+        Assert.InRange(army.SecondsLeft, 15, 20); // well before it arrives
         Assert.Equal((A, arrives), Assert.Single(game.IncomingWarningsOf(B)));
+        Run(game, 3);
+        Assert.Empty(game.TakeNotifications(B)); // once per army
         Assert.Empty(game.TakeNotifications(A));
         Assert.Empty(game.TakeNotifications(C));
         Assert.Empty(game.IncomingWarningsOf(C));
@@ -160,8 +177,7 @@ public class WarTests
         Assert.Equal(RoomPhase.War, room.Phase);
         room.CastleOf(red)!.AddSoldiers(Sword, 7);
         Ok(room.Execute(red.Token, Attack(Room.CastleKeyOf(blue.Seat), (Sword, 7))));
-        int warnAt = Ticks(room.Game!.MarchSeconds(Room.CastleKeyOf(red.Seat), Room.CastleKeyOf(blue.Seat)) - Rules.War.WarningSeconds);
-        for (int i = 0; i < warnAt; i++) room.Tick(1);
+        while (room.Game!.IncomingWarningsOf(Room.CastleKeyOf(blue.Seat)).Count == 0) room.Tick(1);
 
         var text = Assert.Single(room.TakeNotifications(blue));
         Assert.Equal("Kırmızı'dan bir ordu yaklaşıyor!", text);
@@ -182,8 +198,8 @@ public class WarTests
 
         game.CastleOf(A)!.AddSoldiers(Archer, 3);
         Ok(game.Execute(A, Attack(B, (Archer, 3))));
-        Run(game, Ticks(game.MarchSeconds(A, B) - Rules.War.WarningSeconds));
-        Assert.Single(game.IncomingWarningsOf(B));
+        RunUntilWarned(game, B);
+        Assert.Empty(game.BattlesOf(B));
         Ok(game.Execute(B, new ArmWorkers("mizrakci", 6, Job.Idle))); // react to the warning
         Run(game, Ticks(game.ArmiesOf(A).Single().SecondsLeft));
 

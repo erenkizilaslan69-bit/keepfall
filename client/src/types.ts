@@ -106,7 +106,6 @@ export interface BattleReportView {
   defenderEliminated: boolean;
 }
 export interface WarView {
-  warningSeconds: number;
   wallHp: number;
   maxWallHp: number;
   famine: boolean;

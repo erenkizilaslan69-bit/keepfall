@@ -8,15 +8,17 @@ public enum ArmyState { Marching, Returning }
 
 /// <summary>
 /// An army on the road, walking from its castle's gate to the target's along the map's roads and
-/// back. Only its owner ever learns about it; the target gets a warning shortly before it arrives
-/// that says who it comes from — never how big it is or what it is made of.
+/// back. Its owner knows everything about it. Anybody else only learns what they see: while it is in
+/// their vision they see where it is, which way it goes and its soldiers (<see cref="SeenMover"/>),
+/// and the target is warned once it comes into sight of the castle.
 /// </summary>
 public sealed class ArmyMarch
 {
-    internal ArmyMarch(int id, string from, string target, IReadOnlyDictionary<UnitType, int> units,
+    internal ArmyMarch(int id, string publicId, string from, string target, IReadOnlyDictionary<UnitType, int> units,
         IReadOnlyDictionary<UnitType, Row> rows, UnitType? archerPriority, double departedAt, Route route, double speed)
     {
         Id = id;
+        PublicId = publicId;
         From = from;
         Target = target;
         Units = units;
@@ -27,6 +29,8 @@ public sealed class ArmyMarch
     }
 
     public int Id { get; }
+    /// <summary>What other players see it as: random, so it gives nothing away.</summary>
+    public string PublicId { get; }
     public string From { get; }
     public string Target { get; }
     public IReadOnlyDictionary<UnitType, int> Units { get; }
@@ -38,12 +42,16 @@ public sealed class ArmyMarch
     /// <summary>The way home after the battle; null while marching.</summary>
     public Traveller? Back { get; internal set; }
     public Traveller Leg => Back ?? Out;
-    public bool Warned { get; internal set; }
+    /// <summary>The target has seen it coming (and been warned).</summary>
+    public bool Sighted { get; internal set; }
     public ArmyState State { get; internal set; } = ArmyState.Marching;
     /// <summary>Who is walking home after the battle (empty while marching).</summary>
     public IReadOnlyDictionary<UnitType, int> Survivors { get; internal set; } = new Dictionary<UnitType, int>();
 
     public int Size => State == ArmyState.Marching ? Units.Values.Sum() : Survivors.Values.Sum();
+    /// <summary>Who is walking right now: everyone on the way there, the survivors on the way back.</summary>
+    public IReadOnlyDictionary<UnitType, int> Walking => State == ArmyState.Marching ? Units : Survivors;
+    public Vec Velocity => Leg.Arrived ? new Vec(0, 0) : Leg.Direction * Leg.Speed;
 
     public Vec Position => Leg.Position;
     /// <summary>Seconds until it reaches the target (marching) or home (returning).</summary>

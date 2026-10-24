@@ -12,9 +12,8 @@ public sealed record MatchRules(
     double StartingWood,
     double StartingIron);
 
-/// <summary>War phase ("Maç" and "Binalar" sheets): the approach warning, famine, castle and siege.</summary>
+/// <summary>War phase ("Maç" and "Binalar" sheets): famine, castle and siege.</summary>
 public sealed record WarRules(
-    double WarningSeconds,
     double FamineStart,
     double FamineFoodMultiplier,
     double CastleHp,

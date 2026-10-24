@@ -6,14 +6,17 @@ namespace Keepfall.Core.Match;
 /// <summary>A scout on the road from <see cref="From"/>'s gate to <see cref="Target"/>'s and back.</summary>
 public sealed class ScoutMission
 {
-    internal ScoutMission(string from, string target, double startedAt, Route route, double speed)
+    internal ScoutMission(string publicId, string from, string target, double startedAt, Route route, double speed)
     {
+        PublicId = publicId;
         From = from;
         Target = target;
         StartedAt = startedAt;
         Out = new Traveller(route, speed);
     }
 
+    /// <summary>What other players see it as: random, so it gives nothing away.</summary>
+    public string PublicId { get; }
     public string From { get; }
     public string Target { get; }
     public double StartedAt { get; }
@@ -22,6 +25,7 @@ public sealed class ScoutMission
     public Traveller? Back { get; internal set; }
     public Traveller Leg => Back ?? Out;
     public Vec Position => Leg.Position;
+    public Vec Velocity => Leg.Arrived ? new Vec(0, 0) : Leg.Direction * Leg.Speed;
     /// <summary>Taken when the scout arrives; handed to <see cref="From"/> only when the scout is back.</summary>
     public ScoutReport? Report { get; internal set; }
     public bool Arrived => Report is not null;
@@ -51,7 +55,7 @@ public enum NotificationKind
 {
     /// <summary>OtherPlayer's scout looked at our castle.</summary>
     ScoutedBy,
-    /// <summary>An army from OtherPlayer arrives at ArrivesAt. Deliberately nothing about its size.</summary>
+    /// <summary>An army from OtherPlayer came into sight of the castle and arrives at ArrivesAt.</summary>
     ArmyIncoming,
     /// <summary>We fought OtherPlayer; the report is BattleId.</summary>
     BattleFought,

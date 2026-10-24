@@ -37,13 +37,15 @@
   // Standart haritada komşu kaleye yol 56 karo, çapraz kaleye (ormanın içinden) yaklaşık 64 karo.
   "map": {
     "armySpeed": 1.5,
-    "scoutSpeed": 2.5
+    "scoutSpeed": 2.5,
+    // Savaş sisi: oyuncu sadece bu yarıçaplar (karo) içindekileri görür; gerisi sunucudan hiç gelmez.
+    // Kale görüşü kapıdan ölçülür; düşman ordusu buna girince "X'den bir ordu yaklaşıyor!" uyarısı çıkar
+    // (komşudan gelen ordu için varıştan ~18 sn, çaprazdan ~17 sn önce).
+    "vision": { "castle": 20, "army": 6, "scout": 10 }
   },
 
   // Excel "Maç" ve "Binalar" sekmeleri: savaş fazı. Savaş süresi = mod süresi − hazırlık (15 dk → 8 dk).
   "war": {
-    // Saldıran ordu varmadan bu kadar sn önce savunana "X'den bir ordu yaklaşıyor!" uyarısı gider.
-    "warningSeconds": 10,
     // Kıtlık: savaşın bu oranından sonra yemek üretimi bu çarpanla çalışır.
     "famineStart": 0.7,
     "famineFoodMultiplier": 0.5,
