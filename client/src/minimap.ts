@@ -40,7 +40,7 @@ export class Minimap {
   }
 
   /** <paramref name="view"/>: the camera's rectangle, in tiles. */
-  draw(vision: VisionView[], movers: MinimapMover[], view: { x: number; y: number; w: number; h: number }): void {
+  draw(vision: VisionView[], movers: MinimapMover[], view: { x: number; y: number; w: number; h: number }, battles: Vec[] = []): void {
     const now = performance.now();
     if (now - this.lastDraw < REDRAW_MS) return;
     this.lastDraw = now;
@@ -70,6 +70,17 @@ export class Minimap {
       ctx.fill();
       ctx.lineWidth = 1.2;
       ctx.strokeStyle = m.own ? '#fff8e6' : '#1d1b18';
+      ctx.stroke();
+    }
+
+    // Battles: a small red cross.
+    ctx.strokeStyle = '#ff5a4a';
+    ctx.lineWidth = 2;
+    for (const b of battles) {
+      const x = b.x * k, y = b.y * k;
+      ctx.beginPath();
+      ctx.moveTo(x - 4, y - 4); ctx.lineTo(x + 4, y + 4);
+      ctx.moveTo(x + 4, y - 4); ctx.lineTo(x - 4, y + 4);
       ctx.stroke();
     }
 

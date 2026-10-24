@@ -1,6 +1,6 @@
 import { COLOR_CSS, esc, fmt } from './format';
 import type { GameConnection } from './net';
-import type { BattleReportView, CastleView, IncomingView, RoomView, Row } from './types';
+import type { ArmyMode, ArmyView, BattleReportView, CastleView, IncomingView, RoomView, Row } from './types';
 
 // The war part of the panel: castle HP and famine, the "army approaching" warning with a live
 // countdown, the attack form, our armies, the defence line-up and battle reports (a new report
@@ -13,6 +13,7 @@ export class WarPanel {
   private built = false;
   private targetsKey = '';
   private battlesKey = '';
+  private armiesKey = '';
   private seenBattles: Set<number> | null = null;
   private incoming: IncomingView[] = [];
   private incomingAt = 0;
@@ -72,6 +73,11 @@ export class WarPanel {
               ${rowSelect('data-w-row', u.id, defaultRow(u.id))}`).join('')}
           </div>
           <div class="row"><span class="label">Okçu hedefi</span><span></span><select data-w="priority">${priorityOptions}</select></div>
+          <div class="row"><span class="label">Emir</span><span></span>
+            <select data-w="mode" title="Önünü kes: yolda karşılaştığı ilk orduyla savaşır ve eve döner; kimseyle karşılaşmazsa yolun yarısından döner. Rakip bunu bilemez.">
+              <option value="attack">Saldır (kaleye)</option>
+              <option value="intercept">Önünü kes (yolda karşıla, dön)</option>
+            </select></div>
           <div class="row"><span class="muted small" id="attack-total"></span><span></span>
             <button class="primary" data-war-action="send">Saldır</button></div>
         </div>
@@ -131,16 +137,13 @@ export class WarPanel {
       total += Number(input.value) || 0;
     }
     const march = s.scouting.targets.find((t) => String(t.seat) === this.q<HTMLSelectElement>('[data-w="target"]').value)?.marchSeconds ?? 0;
-    this.q('#attack-total').textContent = total > 0 ? `${total} asker, yol ${Math.ceil(march)} sn` : 'Gönderilecek askeri seç.';
-    this.q<HTMLButtonElement>('[data-war-action="send"]').disabled = total === 0 || targets.length === 0;
-
-    this.q('#armies').innerHTML = w.armies.map((a) => `
-      <div class="order">
-        <span>${dot(a.targetColor)}${esc(a.targetName)} · ${a.state === 'marching' ? 'yolda' : 'dönüyor'}</span>
-        <div class="bar"><div style="width:${100 * (a.state === 'marching' ? a.distance : 1 - a.distance)}%"></div></div>
-        <span class="muted small">${Math.ceil(a.remainingSeconds)} sn</span>
-        <span class="small army-units">${a.units.map((u) => `${u.count} ${esc(u.name)}`).join(' · ')}</span>
-      </div>`).join('');
+    const intercept = this.q<HTMLSelectElement>('[data-w="mode"]').value === 'intercept';
+    this.q('#attack-total').textContent = total === 0 ? 'Gönderilecek askeri seç.'
+      : intercept ? `${total} asker, yolun yarısına ${Math.ceil(march / 2)} sn` : `${total} asker, yol ${Math.ceil(march)} sn`;
+    const send = this.q<HTMLButtonElement>('[data-war-action="send"]');
+    send.textContent = intercept ? 'Önünü kes' : 'Saldır';
+    send.disabled = total === 0 || targets.length === 0;
+    this.renderArmies(w.armies);
 
     // Each state carries fresh "arrives in" values; count down locally from the moment it came.
     this.incoming = w.incoming;
@@ -192,8 +195,36 @@ export class WarPanel {
 
   // ---- input -------------------------------------------------------------------------------
 
+  /**
+   * Our armies on the road. The rows are rebuilt only when something about them changes (not their
+   * progress), so a click on "Geri çağır" is never lost to a refresh.
+   */
+  private renderArmies(armies: ArmyView[]): void {
+    const key = armies.map((a) => `${a.id}:${a.state}:${a.fighting}:${a.units.map((u) => u.count).join('.')}`).join(',');
+    const list = this.q('#armies');
+    if (key !== this.armiesKey) {
+      this.armiesKey = key;
+      list.innerHTML = armies.map((a) => `
+        <div class="order" data-army="${a.id}">
+          <span>${dot(a.targetColor)}${esc(a.targetName)} · ${a.fighting ? 'savaşta' : a.state === 'returning' ? 'dönüyor'
+            : a.mode === 'intercept' ? 'önünü kesiyor' : 'yolda'}</span>
+          <div class="bar"><div></div></div>
+          <span class="muted small" data-left></span>
+          <span class="small army-units">${a.units.map((u) => `${u.count} ${esc(u.name)}`).join(' · ')}</span>
+          ${a.state === 'marching' && !a.fighting
+            ? `<button class="small-btn" data-war-action="recall" data-id="${a.id}" title="Bulunduğu yerden aynı yoldan eve döner">Geri çağır</button>` : ''}
+        </div>`).join('');
+    }
+    for (const a of armies) {
+      const row = list.querySelector<HTMLElement>(`[data-army="${a.id}"]`);
+      if (!row) continue;
+      row.querySelector<HTMLElement>('.bar > div')!.style.width = `${100 * (a.state === 'marching' ? a.distance : 1 - a.distance)}%`;
+      row.querySelector('[data-left]')!.textContent = a.fighting ? '' : `${Math.ceil(a.remainingSeconds)} sn`;
+    }
+  }
+
   private onInput(e: Event): void {
-    if ((e.target as HTMLElement).matches('[data-w-count]') && this.state) this.refresh(this.state, this.room);
+    if ((e.target as HTMLElement).matches('[data-w-count], [data-w="mode"], [data-w="target"]') && this.state) this.refresh(this.state, this.room);
   }
 
   private async onClick(e: Event): Promise<void> {
@@ -216,9 +247,13 @@ export class WarPanel {
       }
       const target = Number(this.q<HTMLSelectElement>('[data-w="target"]').value);
       const priority = this.q<HTMLSelectElement>('[data-w="priority"]').value || null;
-      const r = await this.net.sendArmy(target, units, rows, priority);
+      const mode = this.q<HTMLSelectElement>('[data-w="mode"]').value as ArmyMode;
+      const r = await this.net.sendArmy(target, units, rows, priority, mode);
       if (!r.ok) { this.toast(r.error ?? 'Saldırı gönderilemedi.'); return; }
       this.section.querySelectorAll<HTMLInputElement>('[data-w-count]').forEach((i) => (i.value = '0'));
+    } else if (action === 'recall') {
+      const r = await this.net.recallArmy(Number(el.dataset.id));
+      if (!r.ok) this.toast(r.error ?? 'Geri çağrılamadı.');
     } else if (action === 'defense') {
       const rows: Record<string, Row> = {};
       for (const u of this.state.units) rows[u.id] = this.q<HTMLSelectElement>(`[data-d-row="${u.id}"]`).value as Row;
@@ -243,6 +278,15 @@ export function reportHtml(b: BattleReportView): string {
     <div class="side"><h3>${title}</h3>${lines.length === 0 ? '<p class="muted small">Kalede asker yoktu.</p>'
       : lines.map((l) => `<div class="small">${l.count} ${esc(l.name)} <span class="loss">−${l.lost}</span></div>`).join('')}</div>`;
   const them = `${dot(b.opponentColor)}${esc(b.opponentName)}`;
+  if (b.kind === 'field') {
+    // Two armies on the road: no castle in it.
+    return `
+    <h2>Yolda ${them} ile çarpışma — ${resultWord(b)}</h2>
+    <div class="battle-sides">
+      ${side(b.attacking ? 'Senin ordun' : 'Onların ordusu', b.attackerUnits)}
+      ${side(b.attacking ? 'Onların ordusu' : 'Senin ordun', b.defenderUnits)}
+    </div>`;
+  }
   const title = b.attacking ? `${them} kalesine saldırı` : `${them} saldırdı`;
   return `
     <h2>${title} — ${resultWord(b)}</h2>

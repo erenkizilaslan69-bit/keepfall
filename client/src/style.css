@@ -241,3 +241,6 @@ select { background: #3a352c; color: var(--text); border: 1px solid #4d473b; bor
 .ranking .pname { flex: 1; font-weight: 600; }
 .other-summary { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
 .other-summary summary { cursor: pointer; font-weight: 600; }
+
+/* ---- armies on the road ------------------------------------------------------------------ */
+.small-btn { font-size: 12px; padding: 2px 8px; }

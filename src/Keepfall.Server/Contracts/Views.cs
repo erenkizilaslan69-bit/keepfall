@@ -158,7 +158,7 @@ public static class ViewMapper
             {
                 var target = Other(a.Target);
                 return new ArmyView(a.Id, target?.Seat ?? 0, target?.Name ?? "?", target?.Color ?? PlayerColor.Blue, a.State,
-                    Units(a.State == ArmyState.Marching ? a.Units : a.Survivors), a.Distance, a.SecondsLeft, a.Mode, a.Battle is not null);
+                    Units(a.State == ArmyState.Marching ? a.Units : a.Survivors), a.Distance, RemainingOf(a), a.Mode, a.Battle is not null);
             }).ToList(),
             // Only who and when: an incoming army's size and units are never part of this.
             game.IncomingWarningsOf(player.CastleKey).Select(w =>
@@ -177,6 +177,12 @@ public static class ViewMapper
             }).ToList(),
             new DefenseView(c.DefenseRows.ToDictionary(kv => kv.Key.Id, kv => kv.Value), c.DefensePriority?.Id));
     }
+
+    /// <summary>Seconds until the army arrives (or is home); an interceptor that met nobody turns back half way.</summary>
+    private static double RemainingOf(ArmyMarch a) =>
+        a.Mode == ArmyMode.Intercept && a.State == ArmyState.Marching
+            ? Math.Max(0, a.Out.Route.Length / 2 - a.Out.Travelled) / a.Out.Speed
+            : a.SecondsLeft;
 
     private static ScoutingView ScoutingOf(Room room, GameState game, RoomPlayer player, Castle c)
     {

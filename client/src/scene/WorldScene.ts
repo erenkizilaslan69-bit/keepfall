@@ -68,6 +68,8 @@ export class WorldScene extends Phaser.Scene {
   private fog!: Fog;
   private battles!: BattlePlayer;
   private pendingBattles: BattleStartedView[] = [];
+  /** Battles we can see but are not in: just a cloud of dust and crossed swords where they are. */
+  private markers = new Map<string, Phaser.GameObjects.GameObject[]>();
   /** The server's clock at the last castle state, and when that arrived (to run it on between ticks). */
   private clock = { elapsed: 0, at: performance.now(), speed: 1 };
   private otherCastles = new Map<number, { image: Phaser.GameObjects.Image; label: Phaser.GameObjects.Text; name: string }>();
@@ -124,7 +126,28 @@ export class WorldScene extends Phaser.Scene {
   /** What we see on the map this tick. */
   setMap(state: MapStateView): void {
     this.map = state;
-    if (this.ready) this.movers.sync(state);
+    if (!this.ready) return;
+    this.movers.sync(state);
+    this.syncMarkers(state);
+  }
+
+  private syncMarkers(state: MapStateView): void {
+    const replaying = new Set(this.battles.active.map((b) => b.id));
+    const shown = new Set(state.battles.filter((b) => !replaying.has(b.id)).map((b) => b.id));
+    for (const [id, parts] of this.markers) {
+      if (shown.has(id)) continue;
+      parts.forEach((p) => p.destroy());
+      this.markers.delete(id);
+    }
+    for (const b of state.battles) {
+      if (!shown.has(b.id) || this.markers.has(b.id)) continue;
+      const p = toWorld(b.at);
+      const dust = this.add.sprite(p.x, p.y, 'dust').setScale(3).setDepth(p.y).setAlpha(0.9);
+      dust.play('dust');
+      const label = this.add.text(p.x, p.y - 46, '⚔ Savaş', { ...LABEL_STYLE, fontSize: '16px' }).setOrigin(0.5, 1).setDepth(10_000);
+      this.tweens.add({ targets: label, scale: 1.12, duration: 500, yoyo: true, repeat: -1 });
+      this.markers.set(b.id, [dust, label]);
+    }
   }
 
   /** A battle we fight in: replayed on the map from its record. */
@@ -193,7 +216,8 @@ export class WorldScene extends Phaser.Scene {
       this.fog.draw(fixed, moving);
       const view = this.cameras.main.worldView;
       const tl = toTiles({ x: view.x, y: view.y });
-      this.minimap?.draw([...fixed, ...moving], this.movers.all(), { x: tl.x, y: tl.y, w: view.width / TILE, h: view.height / TILE });
+      const battles = [...this.map.battles.map((b) => b.at), ...this.battles.active.map((b) => b.at)];
+      this.minimap?.draw([...fixed, ...moving], this.movers.all(), { x: tl.x, y: tl.y, w: view.width / TILE, h: view.height / TILE }, battles);
     }
   }
 
