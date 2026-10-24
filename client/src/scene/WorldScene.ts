@@ -10,10 +10,6 @@ import { Movers } from './Movers';
 import { Soldiers } from './Soldiers';
 import { Workers } from './Workers';
 
-/** The canvas: one region's worth of view; the camera moves over the whole map. */
-export const SCENE_WIDTH = WORLD_WIDTH;
-export const SCENE_HEIGHT = WORLD_HEIGHT;
-
 const MAX_ZOOM = 1.5;
 const PAN_SPEED = 900; // px per second at zoom 1 (keyboard)
 const ROAD_COLOR = 0xd8b779, ROAD_EDGE = 0xa98b57;
@@ -197,8 +193,15 @@ export class WorldScene extends Phaser.Scene {
   /** Back to our own castle (button and space bar). */
   centerOnCastle(): void {
     const cam = this.cameras.main;
-    cam.setZoom(1);
+    // The whole castle (a region and a little margin) fits on screen.
+    cam.setZoom(Phaser.Math.Clamp(Math.min(cam.width / 1100, cam.height / 830), this.minZoom(), MAX_ZOOM));
     cam.centerOn(CASTLE.x, CASTLE.y - 120);
+  }
+
+  /** The map always fills the view: never zoom out further than this. */
+  private minZoom(): number {
+    const cam = this.cameras.main, size = this.layout.size * TILE;
+    return Math.max(cam.width / size, cam.height / size);
   }
 
   setState(state: CastleView): void {
@@ -338,8 +341,9 @@ export class WorldScene extends Phaser.Scene {
     const topLeft = toWorld({ x: 0, y: 0 });
     const size = this.layout.size * TILE;
     cam.setBounds(topLeft.x, topLeft.y, size, size);
-    const minZoom = Math.max(cam.width / size, cam.height / size); // the map always fills the view
     this.centerOnCastle();
+    // The canvas is the whole window: when it changes size, keep the map filling it.
+    this.scale.on('resize', () => cam.setZoom(Math.max(cam.zoom, this.minZoom())));
 
     let drag: { x: number; y: number; scrollX: number; scrollY: number } | null = null;
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
@@ -356,7 +360,7 @@ export class WorldScene extends Phaser.Scene {
     this.input.on('pointerup', () => { drag = null; });
     this.input.on('wheel', (p: Phaser.Input.Pointer, _over: unknown, _dx: number, dy: number) => {
       const before = cam.getWorldPoint(p.x, p.y);
-      cam.setZoom(Phaser.Math.Clamp(cam.zoom * (dy > 0 ? 0.88 : 1.14), minZoom, MAX_ZOOM));
+      cam.setZoom(Phaser.Math.Clamp(cam.zoom * (dy > 0 ? 0.88 : 1.14), this.minZoom(), MAX_ZOOM));
       cam.preRender(); // update the view matrix before measuring again
       const after = cam.getWorldPoint(p.x, p.y);
       cam.setScroll(cam.scrollX + before.x - after.x, cam.scrollY + before.y - after.y);

@@ -56,7 +56,7 @@
     "archerSiegeMultiplier": 0.5,
     // Savaşlar görünür ve gerçek zamanlı: simülasyonun her saniyesi oyunda 1 / battlePlayback saniye sürer.
     // Kalede: önce savaş, saldıran kazanırsa siegeSeconds boyunca kapıya vurur; hasar ve sonuçlar sonunda uygulanır.
-    "battlePlayback": 1.0,
+    "battlePlayback": 0.75,
     // Farklı oyunculara ait iki ordu yolda bu kadar (karo) yaklaşırsa durup savaşır (kavşaklar dahil).
     // Süren bir yol savaşına bu mesafenin 1,5 katından fazla yaklaşamayan üçüncü ordular bekler.
     "encounterRadius": 1.0

@@ -3,7 +3,14 @@ import './style.css';
 import { Hud } from './hud';
 import { loadName, saveName } from './identity';
 import { GameConnection, type ConnectionStatus } from './net';
-import { SCENE_HEIGHT, SCENE_WIDTH, WorldScene } from './scene/WorldScene';
+import { WorldScene } from './scene/WorldScene';
+import { loadUiArt } from './ui/sprites';
+import { watchUiScale } from './ui/scale';
+import './ui/ui.css';
+import '@fontsource/pixelify-sans/latin-400.css';
+import '@fontsource/pixelify-sans/latin-ext-400.css';
+import '@fontsource/pixelify-sans/latin-700.css';
+import '@fontsource/pixelify-sans/latin-ext-700.css';
 import { Minimap } from './minimap';
 import { EndScreen, HomeScreen, LobbyScreen, rosterHtml } from './screens';
 import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SummaryView } from './types';
@@ -93,6 +100,7 @@ function onCastle(c: CastleView): void {
 // ---- screens -------------------------------------------------------------------------------
 
 function clear(): void {
+  document.documentElement.classList.remove('in-game');
   game?.destroy(true);
   game = null; scene = null; hud = null; lobby = null; end = null;
   app.innerHTML = '';
@@ -135,9 +143,13 @@ function showLobby(r: RoomView): void {
 function showGame(): void {
   clear();
   screen = 'game';
+  document.documentElement.classList.add('in-game');
+  // The map fills the window and never scrolls; the UI layer sits on top of it. The old side panel
+  // stays as a temporary drawer until its parts have moved into windows on the map.
   app.innerHTML = `
     <main class="game">
       <div id="stage"><button id="home-cam" class="stage-btn" title="Kamerayı kalene getirir (boşluk tuşu)">Kaleme dön</button></div>
+      <div id="ui" class="ui-root"></div>
       <aside id="panel"><div id="roster"></div><div id="hud"><p class="muted">Kale hazırlanıyor…</p></div></aside>
     </main>`;
   hud = new Hud(document.getElementById('hud')!, net);
@@ -160,11 +172,11 @@ function startScene(color: CastleView['color'], layout: MapLayoutView): void {
   game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'stage',
-    width: SCENE_WIDTH,
-    height: SCENE_HEIGHT,
+    width: '100%',
+    height: '100%',
     backgroundColor: '#47aba9',
     pixelArt: true,
-    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_HORIZONTALLY },
+    scale: { mode: Phaser.Scale.RESIZE },
     scene,
   });
 }
@@ -193,6 +205,8 @@ function showBanner(text: string): void {
 window.addEventListener('popstate', () => location.reload());
 
 async function main(): Promise<void> {
+  watchUiScale();
+  await loadUiArt(); // the UI art is cut once; without it the UI falls back to plain boxes
   try {
     await net.start();
   } catch (e) {

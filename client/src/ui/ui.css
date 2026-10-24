@@ -1,0 +1,132 @@
+/* Tiny Swords look for the in-game UI. Pieces come from sprites.ts as custom properties; without the
+   art (`html:not(.ui-art)`) the same classes fall back to plain parchment-coloured boxes. */
+
+:root {
+  --font-pixel: 'Pixelify Sans', system-ui, sans-serif;
+  --ink: #3a2a18;
+  --ink-soft: #6b5434;
+  --parchment: #ead9b0;
+  --parchment-dark: #2c3345;
+  --gold: #f1c84b;
+  --u: 1; /* UI scale: set from the window size in ui/scale.ts */
+}
+
+html.in-game, html.in-game body { height: 100dvh; overflow: hidden; }
+html.in-game body { background: #47aba9; }
+
+.ui-root {
+  position: fixed; inset: 0; pointer-events: none; z-index: 10; font-family: var(--font-pixel); color: var(--ink);
+  font-size: calc(15px * var(--u)); line-height: 1.25;
+}
+.ui-root * { box-sizing: border-box; }
+.ui-root .hit { pointer-events: auto; }
+.ui-root button, .ui-root select, .ui-root input { font-family: inherit; font-size: inherit; }
+
+/* ---- paper (windows) ------------------------------------------------------------------------- */
+.paper, .paper-dark {
+  background: var(--parchment); color: var(--ink);
+  border: 3px solid #8a6a3a; border-radius: 6px; padding: calc(10px * var(--u));
+}
+.paper-dark { background: var(--parchment-dark); color: #f1ead6; border-color: #14171f; }
+html.ui-art .paper {
+  background: transparent; border: calc(28px * var(--u)) solid transparent; border-radius: 0; padding: 0;
+  border-image: var(--paper) 64 fill / calc(28px * var(--u)) stretch;
+}
+html.ui-art .paper-dark {
+  background: transparent; border: calc(28px * var(--u)) solid transparent; border-radius: 0; padding: 0;
+  border-image: var(--paper-dark) 64 fill / calc(28px * var(--u)) stretch;
+}
+
+/* ---- ribbons (titles, notifications, the clock) --------------------------------------------- */
+.ribbon {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: calc(34px * var(--u));
+  padding: 2px 14px; background: #4a7fb5; color: #fff; text-shadow: 0 1px 0 rgba(0,0,0,.45); white-space: nowrap;
+  border-radius: 4px;
+}
+.ribbon-red { background: #b9473f; }
+.ribbon-yellow { background: #cfa23a; color: #3a2a18; text-shadow: none; }
+.ribbon-purple { background: #7c5aa6; }
+.ribbon-black { background: #3a3f4d; }
+html.ui-art .ribbon {
+  background: transparent; border-radius: 0; padding: 0; min-height: calc(64px * var(--u)); height: calc(64px * var(--u));
+  border: solid transparent; border-width: 0 calc(64px * var(--u));
+  border-image-slice: 0 128 0 128 fill; border-image-width: 0 calc(64px * var(--u)); border-image-repeat: stretch;
+}
+html.ui-art .ribbon-blue { border-image-source: var(--ribbon-blue); }
+html.ui-art .ribbon-red { border-image-source: var(--ribbon-red); }
+html.ui-art .ribbon-yellow { border-image-source: var(--ribbon-yellow); }
+html.ui-art .ribbon-purple { border-image-source: var(--ribbon-purple); }
+html.ui-art .ribbon-black { border-image-source: var(--ribbon-black); }
+/* The small ribbons: window titles and notifications. */
+.ribbon-sm { min-height: calc(26px * var(--u)); }
+html.ui-art .ribbon-sm {
+  min-height: calc(32px * var(--u)); height: calc(32px * var(--u)); border-width: 0 calc(32px * var(--u));
+  border-image-slice: 0 64 0 64 fill; border-image-width: 0 calc(32px * var(--u));
+}
+html.ui-art .ribbon-sm.ribbon-blue { border-image-source: var(--ribbon-small-blue); }
+html.ui-art .ribbon-sm.ribbon-red { border-image-source: var(--ribbon-small-red); }
+html.ui-art .ribbon-sm.ribbon-yellow { border-image-source: var(--ribbon-small-yellow); }
+html.ui-art .ribbon-sm.ribbon-purple { border-image-source: var(--ribbon-small-purple); }
+html.ui-art .ribbon-sm.ribbon-black { border-image-source: var(--ribbon-small-black); }
+
+/* ---- buttons ---------------------------------------------------------------------------------- */
+.btn {
+  cursor: pointer; border: 2px solid #1b4a73; border-radius: 6px; background: #3f86c7; color: #fff; padding: 4px 14px;
+  text-shadow: 0 1px 0 rgba(0,0,0,.5); min-height: calc(32px * var(--u)); display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn-red { background: #c4503f; border-color: #6e2118; }
+.btn:disabled { opacity: .5; cursor: default; filter: grayscale(.6); }
+html.ui-art .btn {
+  background: transparent; border: calc(20px * var(--u)) solid transparent; border-radius: 0; padding: 0 calc(6px * var(--u)); min-height: calc(40px * var(--u));
+  border-image: var(--btn-blue) 64 fill / calc(20px * var(--u)) stretch;
+}
+html.ui-art .btn-red { border-image-source: var(--btn-red); }
+html.ui-art .btn:not(:disabled):active { border-image-source: var(--btn-blue-down); }
+html.ui-art .btn-red:not(:disabled):active { border-image-source: var(--btn-red-down); }
+
+/* Small round buttons: plus, minus and close. */
+.btn-round {
+  width: calc(30px * var(--u)); height: calc(30px * var(--u)); padding: 0; cursor: pointer; border: 2px solid #1b4a73; border-radius: 50%;
+  background: #3f86c7; color: #fff; display: inline-grid; place-items: center; line-height: 1;
+}
+.btn-round.btn-red { background: #c4503f; border-color: #6e2118; }
+.btn-round:disabled { opacity: .45; cursor: default; filter: grayscale(.6); }
+html.ui-art .btn-round { border: 0; border-radius: 0; background: var(--round-blue) center / contain no-repeat; }
+html.ui-art .btn-round.btn-red { background-image: var(--round-red); }
+html.ui-art .btn-round:not(:disabled):active { background-image: var(--round-blue-down); }
+html.ui-art .btn-round.btn-red:not(:disabled):active { background-image: var(--round-red-down); }
+
+/* ---- bars ------------------------------------------------------------------------------------- */
+.bar { position: relative; height: calc(16px * var(--u)); background: #1d1b18; border: 2px solid #5a4a30; border-radius: 4px; overflow: hidden; min-width: 60px; }
+.bar > .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: #6fae4a; transition: width .25s; }
+.bar.low > .fill { background: #c2453a; }
+html.ui-art .bar {
+  height: calc(32px * var(--u)); background: transparent; border: solid transparent; border-width: 0 calc(32px * var(--u)); border-radius: 0; overflow: visible;
+  border-image: var(--bar-base) 0 64 fill / 0 calc(32px * var(--u)) stretch;
+}
+html.ui-art .bar > .fill {
+  inset: calc(10px * var(--u)) auto calc(11px * var(--u)) calc(-26px * var(--u)); border-radius: 3px;
+  background: linear-gradient(#9be062, #5da535 55%, #4a8a2a);
+}
+html.ui-art .bar.low > .fill { background: linear-gradient(#f08a7c, #c2453a 55%, #9a3027); }
+
+/* ---- icons (4 meat, 2 wood, 1 hammer, 5 sword, 6 shield; iron is a grey ore stone) ------------ */
+.ico { display: inline-block; width: calc(26px * var(--u)); height: calc(26px * var(--u)); flex: none; background: center / contain no-repeat; vertical-align: middle; }
+.ico-meat { background-image: var(--ico-meat); }
+.ico-wood { background-image: var(--ico-wood); }
+.ico-coin { background-image: var(--ico-coin); }
+.ico-hammer { background-image: var(--ico-hammer); }
+.ico-sword { background-image: var(--ico-sword); }
+.ico-shield { background-image: var(--ico-shield); }
+.ico-back { background-image: var(--ico-back); }
+.ico-close { background-image: var(--ico-close); }
+.ico-gear { background-image: var(--ico-gear); }
+.ico-info { background-image: var(--ico-info); }
+/* The sheet's gold stone with the gold taken out: the same stones as the mine in the scene. */
+.ico-iron {
+  background-image: url('/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/Terrain/Resources/Gold/Gold%20Stones/Gold%20Stone%202.png');
+  background-size: 380%; background-position: 51% 47%; filter: grayscale(1) contrast(1.15) brightness(.92);
+}
+html:not(.ui-art) .ico { background-color: rgba(0,0,0,.12); border-radius: 50%; }
+
+.muted-ink { color: var(--ink-soft); }
