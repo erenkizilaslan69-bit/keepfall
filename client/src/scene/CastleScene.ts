@@ -13,6 +13,9 @@ export const SCENE_HEIGHT = WORLD_HEIGHT;
 // Tilemap_color1: the flat grass island is the 3×3 block in the top-left of the sheet (9 tiles per row).
 const GRASS = { tl: 0, t: 1, tr: 2, l: 9, c: 10, r: 11, bl: 18, b: 19, br: 20 };
 
+/** Castle HP bar: kept inside the top edge of the world, tall enough for its label. */
+const WALL_BAR = { w: 200, h: 20, y: 8 };
+
 const LABEL_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
   fontFamily: 'system-ui, sans-serif',
   fontSize: '15px',
@@ -69,7 +72,8 @@ export class CastleScene extends Phaser.Scene {
     this.drawGround();
     this.castleSprite = this.add.image(CASTLE.x, CASTLE.y, 'castle').setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(CASTLE.y);
     this.wallBar = this.add.graphics().setDepth(10_002);
-    this.wallText = this.add.text(CASTLE.x, CASTLE.y - 320 * CASTLE.scale - 26, '', LABEL_STYLE).setOrigin(0.5, 1).setDepth(10_002);
+    this.wallText = this.add.text(CASTLE.x, WALL_BAR.y + WALL_BAR.h / 2, '', { ...LABEL_STYLE, fontSize: '13px' })
+      .setOrigin(0.5).setDepth(10_003);
     for (const type of Object.keys(SITES) as BuildingType[]) this.createSite(type);
     this.workers = new Workers(this);
     this.soldiers = new Soldiers(this);
@@ -97,10 +101,10 @@ export class CastleScene extends Phaser.Scene {
     this.updateWall(s);
   }
 
-  /** Castle HP bar above the towers; the castle flashes red when it takes damage. */
+  /** Castle HP bar above the towers, label inside it; the castle flashes red when it takes damage. */
   private updateWall(s: CastleView): void {
     const { wallHp, maxWallHp } = s.war;
-    const w = 200, h = 10, x = CASTLE.x - w / 2, y = CASTLE.y - 320 * CASTLE.scale - 18;
+    const { w, h, y } = WALL_BAR, x = CASTLE.x - w / 2;
     const p = Math.max(0, wallHp / maxWallHp);
     this.wallBar.clear();
     this.wallBar.fillStyle(0x1d1b18, 0.85).fillRoundedRect(x - 2, y - 2, w + 4, h + 4, 4);
