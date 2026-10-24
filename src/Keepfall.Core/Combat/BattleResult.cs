@@ -18,4 +18,5 @@ public sealed record BattleResult(
     bool TimedOut,
     SideReport SideA,
     SideReport SideB,
-    IReadOnlyList<string> Log);
+    IReadOnlyList<string> Log,
+    BattleRecord? Record = null);

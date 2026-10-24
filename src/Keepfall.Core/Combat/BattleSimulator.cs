@@ -23,10 +23,16 @@ public sealed class BattleSimulator
 
     public BattleSimulator(GameRules rules) => _rules = rules;
 
-    public BattleResult Simulate(ArmySetup a, ArmySetup b, Random rng, bool recordLog = false)
+    /// <param name="recordLog">A readable, line-by-line log (BattleSim).</param>
+    /// <param name="recordBattle">A <see cref="BattleRecord"/> of every hit, death and advance, for replaying the battle.</param>
+    public BattleResult Simulate(ArmySetup a, ArmySetup b, Random rng, bool recordLog = false, bool recordBattle = false)
     {
         var log = recordLog ? new List<string>() : null;
-        var sides = new[] { Deploy(a, rng), Deploy(b, rng) };
+        var sides = new[] { Deploy(a, rng, 0, 0), Deploy(b, rng, 1, a.TotalCount) };
+        var record = recordBattle
+            ? new BattleRecord(sides.SelectMany(s => s).Select(s => new RecordedSoldier(s.Index, s.Side, s.Type, s.Row)).ToList(),
+                _rules.Combat.TickSeconds)
+            : null;
         var setups = new[] { a, b };
         var combat = _rules.Combat;
         double dt = combat.TickSeconds;
@@ -45,7 +51,7 @@ public sealed class BattleSimulator
 
             double now = tick * dt;
             for (int s = 0; s < 2; s++)
-                AdvanceReserves(sides[s], log, now, setups[s].Name);
+                AdvanceReserves(sides[s], log, record, tick, now, setups[s].Name);
 
             for (int s = 0; s < 2; s++)
             {
@@ -73,6 +79,7 @@ public sealed class BattleSimulator
                     double damage = soldier.Type.Damage * _rules.Counters.Get(soldier.Type, target.Type);
                     target.PendingDamage += damage;
                     soldier.DamageDealt += damage;
+                    record?.Hit(tick, soldier.Index, target.Index);
                     soldier.Cooldown += soldier.Type.AttackInterval;
                 }
             }
@@ -85,8 +92,9 @@ public sealed class BattleSimulator
                     soldier.DamageTaken += Math.Min(soldier.PendingDamage, soldier.Hp);
                     soldier.Hp -= soldier.PendingDamage;
                     soldier.PendingDamage = 0;
-                    if (!soldier.Alive && log is not null)
-                        log.Add(Fmt(now, $"{setups[s].Name}: {soldier.Type.Name} #{soldier.Number} düştü."));
+                    if (soldier.Alive) continue;
+                    record?.Death(tick, soldier.Index);
+                    log?.Add(Fmt(now, $"{setups[s].Name}: {soldier.Type.Name} #{soldier.Number} düştü."));
                 }
             }
 
@@ -98,6 +106,7 @@ public sealed class BattleSimulator
             : finalA > 0 ? BattleOutcome.SideAWins
             : BattleOutcome.SideBWins;
         double duration = tick * dt;
+        if (record is not null) record.Ticks = tick;
         log?.Add(Fmt(duration, outcome switch
         {
             BattleOutcome.SideAWins => $"{a.Name} kazandı ({finalA}/{a.TotalCount} hayatta).",
@@ -106,10 +115,11 @@ public sealed class BattleSimulator
         }));
 
         return new BattleResult(outcome, duration, timedOut,
-            Report(a, sides[0]), Report(b, sides[1]), (IReadOnlyList<string>?)log ?? []);
+            Report(a, sides[0]), Report(b, sides[1]), (IReadOnlyList<string>?)log ?? [], record);
     }
 
-    private List<Soldier> Deploy(ArmySetup setup, Random rng)
+    /// <param name="firstIndex">Index of this side's first soldier in the battle record (side A first).</param>
+    private List<Soldier> Deploy(ArmySetup setup, Random rng, int side, int firstIndex)
     {
         var soldiers = new List<Soldier>(setup.TotalCount);
         foreach (var (type, count) in setup.Counts.OrderBy(kv => kv.Key.Index))
@@ -118,13 +128,13 @@ public sealed class BattleSimulator
             {
                 double firstAttack = _rules.Combat.RandomizeFirstAttack ? rng.NextDouble() * type.AttackInterval : 0;
                 if (type.Range == AttackRange.Melee) firstAttack += _rules.Combat.ApproachTime;
-                soldiers.Add(new Soldier(type, i + 1, setup.RowOf(type)) { Cooldown = firstAttack });
+                soldiers.Add(new Soldier(type, i + 1, setup.RowOf(type), side, firstIndex + soldiers.Count) { Cooldown = firstAttack });
             }
         }
         return soldiers;
     }
 
-    private static void AdvanceReserves(List<Soldier> army, List<string>? log, double now, string name)
+    private static void AdvanceReserves(List<Soldier> army, List<string>? log, BattleRecord? record, int tick, double now, string name)
     {
         if (HasAliveInRow(army, Row.Front)) return;
         int moved = 0;
@@ -133,6 +143,7 @@ public sealed class BattleSimulator
             if (soldier.Alive && soldier.Row == Row.Back && soldier.Type.Range == AttackRange.Melee)
             {
                 soldier.Row = Row.Front;
+                record?.Advance(tick, soldier.Index);
                 moved++;
             }
         }
@@ -191,10 +202,12 @@ public sealed class BattleSimulator
     private static string Fmt(double t, string message) =>
         string.Create(CultureInfo.InvariantCulture, $"[{t,6:0.0}s] {message}");
 
-    private sealed class Soldier(UnitType type, int number, Row row)
+    private sealed class Soldier(UnitType type, int number, Row row, int side, int index)
     {
         public UnitType Type { get; } = type;
         public int Number { get; } = number;
+        public int Side { get; } = side;
+        public int Index { get; } = index;
         public Row Row { get; set; } = row;
         public double Hp { get; set; } = type.Hp;
         public double Cooldown { get; set; }
