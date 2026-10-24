@@ -69,7 +69,9 @@ export class WindowManager {
   private target: Target | null = null;
   private anchor: (() => Anchor | null) | null = null;
 
-  constructor(private readonly root: HTMLElement, private readonly topBottom: () => number) {}
+  /** <paramref name="avoid"/>: parts of the screen a window should not cover (the minimap and the home button). */
+  constructor(private readonly root: HTMLElement, private readonly topBottom: () => number,
+    private readonly avoid: () => DOMRect[] = () => []) {}
 
   get current(): Target | null { return this.target; }
   get isOpen(): boolean { return this.win !== null; }
@@ -118,6 +120,14 @@ export class WindowManager {
       if (x + w > vw - MARGIN) x = a.x - a.reach - MARGIN - w;
       x = Math.max(MARGIN, Math.min(vw - w - MARGIN, x));
       y = Math.max(top, Math.min(vh - h - MARGIN, a.y - h / 2));
+    }
+    // Stay off the minimap and the home button: above them if there is room, else beside them.
+    if (vw >= 760) {
+      for (const r of this.avoid()) {
+        if (x + w <= r.left || x >= r.right || y + h <= r.top || y >= r.bottom) continue;
+        if (r.top - h - MARGIN >= top) y = r.top - h - MARGIN;
+        else x = Math.max(MARGIN, r.left - w - MARGIN);
+      }
     }
     el.style.left = `${Math.round(x)}px`;
     el.style.top = `${Math.round(y)}px`;

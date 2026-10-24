@@ -134,16 +134,11 @@ html:not(.ui-art) .ico { background-color: rgba(0,0,0,.12); border-radius: 50%; 
 /* ---- layout: the top column (bar + ribbons) --------------------------------------------------- */
 .hidden { display: none !important; }
 .ui-top { position: absolute; top: calc(6px * var(--u)); left: calc(8px * var(--u)); right: calc(8px * var(--u)); display: flex; flex-direction: column; gap: calc(6px * var(--u)); pointer-events: none; }
-.topbar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: calc(6px * var(--u)); }
-.tb-l, .tb-r { display: flex; gap: calc(6px * var(--u)); align-items: flex-start; flex-wrap: wrap; }
-.tb-l { justify-self: start; }
-.tb-r { justify-self: end; justify-content: flex-end; }
-.tb-c { display: flex; align-items: flex-start; margin-top: calc(-2px * var(--u)); justify-self: center; }
-/* On narrower windows the bar takes two rows: resources and clock above, health and players below. */
-@media (max-width: 1220px) {
-  .topbar { grid-template-columns: 1fr auto; }
-  .tb-r { grid-column: 1 / -1; grid-row: 2; justify-self: end; }
-}
+.topbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: calc(6px * var(--u)); }
+.tb-l, .tb-r { display: flex; gap: calc(6px * var(--u)); align-items: flex-start; }
+.tb-r { justify-content: flex-end; margin-left: auto; }
+.tb-c { display: flex; align-items: flex-start; margin-top: calc(-2px * var(--u)); }
+/* When the three groups do not fit side by side the bar wraps: health and players go to a second row. */
 
 /* A strip: a slim piece of paper for a group of numbers. */
 .strip {
@@ -268,3 +263,11 @@ html.ui-art .unit-row .btn { border-width: calc(12px * var(--u)); border-image-w
 
 .home-btn { position: absolute; right: calc(8px * var(--u)); bottom: calc(8px * var(--u) + min(22vw, 200px) + 14px); }
 .win .row.sub { flex-wrap: wrap; }
+
+/* ---- narrow windows ---------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .chip-name { display: none; }
+  .tb-hp .gbar { width: calc(110px * var(--u)); }
+  .strip { gap: calc(8px * var(--u)); }
+  .home-btn { font-size: .9em; }
+}

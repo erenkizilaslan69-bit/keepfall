@@ -292,6 +292,9 @@ export class WorldScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     if (!this.ready) return;
     const dt = Math.min(delta, 100) / 1000;
+    // The canvas is the whole window: follow it (Phaser does not always notice a window that shrinks).
+    if (this.scale.gameSize.width !== window.innerWidth || this.scale.gameSize.height !== window.innerHeight)
+      this.scale.resize(window.innerWidth, window.innerHeight);
     this.workers.update(dt);
     this.movers.update(dt);
     this.battles.update();

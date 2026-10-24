@@ -25,6 +25,11 @@ Tarayıcıda oynanır. Tüm oyun mantığı sunucudadır; istemci yalnızca komu
 - Savaşlar görünürdür ve gerçek zamanlı oynar: askerler karşı karşıya gelir, okçular ok atar, düşenler kayıttaki anda düşer. Kale savaşında savunanlar kapıya iner; saldıran kazanırsa kapıya vurur.
 - Kale canı 500'dür; sıfırlanan oyuncu elenir ve izleyici olur. Savaşın son %30'unda kıtlık başlar (yemek üretimi yarıya iner).
 
+**Arayüz:** Oyun tam ekrandır, sayfa kaymaz; her şey haritanın üstünde Tiny Swords parçalarıyla (kağıt, ribbon, düğme, çubuk) çizilir.
+- Üstte hep görünen şerit: yemek / odun / demir ve dakikalık artış, nüfus ve asker, boştaki işçi uyarısı, süre ve faz, kale canı, oyuncular (birine tıklayınca kamera o kaleye gider).
+- Bir şeye tıklayınca yanında pencere açılır: **bina** (işçi ekle/çıkar, yükselt; demirhanede silah üretimi ve sıra), **kendi kalen** (asker verme, büyüme, savunma dizilişi), **rakip kale** (gözcü, son rapor, saldır / önünü kes), **kendi ordun ya da gözcün** (bilgi, geri çağır), **orman** (yakında). Esc, boş yere tıklamak ya da çarpı pencereyi kapatır.
+- Bildirimler şeridin altında ribbon olarak çıkar; savaş raporları sol altta küçük etiketlerdir (tıklayınca ayrıntı). Sağ altta mini harita ve "Kaleme dön" düğmesi (boşluk tuşu da aynısı). Kamera: sürükle ya da WASD / oklar, tekerlekle yakınlaş.
+
 **Gizli bilgi:** Oyuncu yalnızca kendi kalesini görür. Başkalarının kalesi yalnızca gözcü ve savaş raporlarıyla bilinir; savaş kaydı yalnızca savaşan iki tarafa gider.
 
 ## Yapı
@@ -63,6 +68,11 @@ Geliştirme modunda:
 1. https://pixelfrog-assets.itch.io/tiny-swords adresinden **"Tiny Swords (Free Pack).zip"** dosyasını indir.
 2. Zip'i `client/public/assets/tiny-swords/` içine aç. Sonuç: `client/public/assets/tiny-swords/Tiny Swords (Free Pack)/Units/...`
 3. `client/public/assets/` git tarafından yok sayılır.
+
+### Kaynaklar ve lisanslar
+
+- **Tiny Swords (Free Pack)** — Pixel Frog. Görseller: https://pixelfrog-assets.itch.io/tiny-swords (yukarıdaki kuruluma bak; lisansı yeniden dağıtıma izin vermez, repoda yok).
+- **Pixelify Sans** — arayüz yazı tipi, The Pixelify Sans Project Authors (https://github.com/eifetx/Pixelify-Sans), SIL Open Font License 1.1. `@fontsource/pixelify-sans` paketi olarak gelir; lisans metni `client/licenses/PixelifySans-OFL.txt`. Türkçe karakterlerin (ç ğ ı İ ö ş ü, büyük ve küçük) hepsini içerdiği glif tablosundan doğrulanmıştır.
 
 ### Testler
 

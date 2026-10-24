@@ -98,7 +98,10 @@ function onCastle(c: CastleView): void {
 
 // ---- screens -------------------------------------------------------------------------------
 
+const onWindowResize = () => game?.scale.resize(window.innerWidth, window.innerHeight);
+
 function clear(): void {
+  window.removeEventListener('resize', onWindowResize);
   document.documentElement.classList.remove('in-game', 'in-menu');
   game?.destroy(true);
   game = null; scene = null; lobby = null; end = null;
@@ -173,13 +176,16 @@ function startScene(color: CastleView['color'], layout: MapLayoutView): void {
   game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'stage',
-    width: '100%',
-    height: '100%',
+    // The canvas is the whole window. Phaser's own RESIZE mode misses a window that shrinks, so the size
+    // is set here and followed explicitly (window events, and every frame in WorldScene.update).
+    width: window.innerWidth,
+    height: window.innerHeight,
     backgroundColor: '#47aba9',
     pixelArt: true,
-    scale: { mode: Phaser.Scale.RESIZE },
+    scale: { mode: Phaser.Scale.NONE },
     scene,
   });
+  window.addEventListener('resize', onWindowResize);
 }
 
 function showEnd(r: RoomView): void {
