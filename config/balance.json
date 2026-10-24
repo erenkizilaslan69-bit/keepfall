@@ -11,6 +11,8 @@
     "longModePrepMinutes": 20,
     // Sunucu bu aralıkla tick atar (sn); üretim ve tüketim her tick'te hesaplanır.
     "serverTickSeconds": 1,
+    // Elenen oyuncu tüm haritayı (sissiz) bu kadar oyun saniyesi gecikmeyle izler; 0 = gecikme yok.
+    "spectatorDelaySeconds": 30,
     "startingPopulation": 12,
     "startingResources": { "food": 30, "wood": 40, "iron": 20 }
   },

@@ -205,11 +205,11 @@ public static class ViewMapper
             }).ToList());
     }
 
-    private static List<JobView> JobsOf(Castle c) =>
+    public static List<JobView> JobsOf(Castle c) =>
         Jobs.All.Select(j => new JobView(j, Jobs.Name(j), c.Workers[j],
             Jobs.BuildingOf(j) is { } b ? c.Capacity(b) : null)).ToList();
 
-    private static List<BuildingView> BuildingsOf(Castle c) =>
+    public static List<BuildingView> BuildingsOf(Castle c) =>
         Jobs.Buildings.Select(type =>
         {
             var b = c.Building(type);
@@ -221,7 +221,7 @@ public static class ViewMapper
                 c.UpgradeGain(type));
         }).ToList();
 
-    private static List<UnitView> UnitsOf(Castle c) =>
+    public static List<UnitView> UnitsOf(Castle c) =>
         c.UnitTypes.Select(u => new UnitView(u.Id, u.Name, u.Cost.Wood, u.Cost.Iron, u.BuildSeconds,
             c.Weapons[u], c.Soldiers[u])).ToList();
 

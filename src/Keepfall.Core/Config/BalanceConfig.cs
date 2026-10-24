@@ -29,6 +29,8 @@ public sealed class MatchConfig
     public double LongModeMinutes { get; set; } = 30;
     public double LongModePrepMinutes { get; set; } = 12;
     public double ServerTickSeconds { get; set; } = 1;
+    /// <summary>How far behind (game seconds) a fallen player's view of the whole map runs; 0 = live.</summary>
+    public double SpectatorDelaySeconds { get; set; } = 30;
     public int StartingPopulation { get; set; } = 10;
     public ProductionConfig StartingResources { get; set; } = new();
 }
@@ -190,6 +192,7 @@ public static class BalanceConfigLoader
         if (mc.LongModePrepMinutes <= 0 || mc.LongModePrepMinutes >= mc.LongModeMinutes)
             errors.Add("match.longModePrepMinutes 0 ile longModeMinutes arasında olmalı.");
         if (mc.ServerTickSeconds <= 0) errors.Add("match.serverTickSeconds sıfırdan büyük olmalı.");
+        if (mc.SpectatorDelaySeconds < 0) errors.Add("match.spectatorDelaySeconds negatif olamaz.");
         if (mc.StartingPopulation < 0) errors.Add("match.startingPopulation negatif olamaz.");
         var sr = mc.StartingResources;
         if (sr.Food < 0 || sr.Wood < 0 || sr.Iron < 0) errors.Add("match.startingResources negatif olamaz.");
@@ -289,7 +292,7 @@ public static class BalanceConfigLoader
                 mc.ShortModePrepMinutes * 60, mc.LongModePrepMinutes * 60,
                 (mc.ShortModeMinutes - mc.ShortModePrepMinutes) * 60,
                 (mc.LongModeMinutes - mc.LongModePrepMinutes) * 60,
-                mc.ServerTickSeconds, mc.StartingPopulation, sr.Food, sr.Wood, sr.Iron),
+                mc.ServerTickSeconds, mc.StartingPopulation, sr.Food, sr.Wood, sr.Iron, mc.SpectatorDelaySeconds),
             new EconomyRules(
                 e.WorkerFoodPerMinute, e.SoldierFoodPerMinute, e.StarvationMultiplier,
                 e.NewPersonBaseCost, e.NewPersonCostGrowth, e.NewPersonBasePopulation, e.GrowthReserveSeconds,

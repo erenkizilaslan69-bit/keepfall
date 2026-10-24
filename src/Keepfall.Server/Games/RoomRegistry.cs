@@ -21,6 +21,8 @@ public sealed class RoomSession(Room room)
 {
     public Room Room { get; } = room;
     public Lock Lock { get; } = new();
+    /// <summary>The delayed pictures of the whole world that fallen players watch (guarded by <see cref="Lock"/>).</summary>
+    public SpectatorFeed Spectators { get; } = new();
 }
 
 /// <summary>Room code → room.</summary>

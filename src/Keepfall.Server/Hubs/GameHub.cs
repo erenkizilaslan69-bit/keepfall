@@ -61,8 +61,10 @@ public sealed class GameHub(RoomRegistry registry) : Hub
         MapLayoutView? layout;
         MapStateView? map;
         List<BattleStartedView> battles;
+        SpectatorStateView? spectator;
         lock (session.Lock)
         {
+            spectator = session.Spectators.LatestFor(session.Room, player); // only a fallen player has one
             room = ViewMapper.ToView(session.Room);
             castle = ViewMapper.CastleOf(session.Room, player);
             layout = MapViewMapper.LayoutOf(session.Room);
@@ -74,6 +76,7 @@ public sealed class GameHub(RoomRegistry registry) : Hub
         if (castle is not null) await Clients.Caller.SendAsync("CastleState", castle);
         if (map is not null) await Clients.Caller.SendAsync("MapState", map);
         foreach (var b in battles) await Clients.Caller.SendAsync("BattleStarted", b);
+        if (spectator is not null) await Clients.Caller.SendAsync("SpectatorState", spectator);
         return new JoinView(true, null, code, player.Token, player.Seat, room);
     }
 

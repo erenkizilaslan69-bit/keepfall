@@ -10,7 +10,9 @@
 // of war holds: everyone gets the same public map, and another player's army or scout is in a
 // MapState exactly when it is inside that player's vision — checked against the owner's own (true)
 // positions tick by tick — and then only with position, heading, owner and soldiers, never its
-// target, road or arrival time. Exits with code 1 if any check failed.
+// target, road or arrival time. Finally a second match checks the spectator view: a fallen player gets a
+// countdown and then the whole map a fixed delay behind the live game, exactly, and nobody still playing
+// ever gets one. Exits with code 1 if any check failed.
 
 const near = (p, c) => Math.hypot(p.x - c.center.x, p.y - c.center.y) <= c.radius + 1e-6;
 const inVision = (p, state) => state.vision.some((c) => near(p, c));
@@ -232,8 +234,68 @@ if (sent.ok) {
   check('A had soldiers left for the recall test', false, sent.error);
 }
 
+// ---- the fallen watch the whole map, late; nobody else does -----------------------------------------
+check('players still in the match never got a spectator picture or countdown',
+  [A, B, C].every((x) => x.of('SpectatorState').length === 0 && x.of('SpectatorWait').length === 0));
 A.ws.close();
 B.ws.close();
 C.ws.close();
+
+// A second match: X forges swords and besieges Y (an empty castle) until it falls; Z stays out of it.
+// Y then watches: first a countdown, then the whole world a fixed delay behind the live game.
+const DELAY = 30; // match.spectatorDelaySeconds in config/balance.json
+const X = client(), Y = client(), Z = client();
+await Promise.all([X.ready, Y.ready, Z.ready]);
+const jx = await X.call('CreateRoom', 'Xaver');
+await Y.call('JoinRoom', jx.code, 'Yeter', null, false);
+await Z.call('JoinRoom', jx.code, 'Zeki', null, false);
+for (const c of [X, Y, Z]) await c.call('SetReady', true);
+check('second match starts', (await X.call('StartMatch')).ok);
+await X.call('SetSpeed', 20);
+await X.call('MoveWorkers', 'idle', 'blacksmith', 4);
+await X.call('QueueWeapon', 'kilicli', 4);
+await sleep(3500);
+check('X arms 4 swordsmen', (await X.call('ArmWorkers', 'kilicli', 4, 'idle')).ok);
+check('the second war begins', await waitFor(() => X.of('RoomState').some((r) => r.phase === 'war'), 60000));
+const fallen = () => Y.of('CastleState').at(-1)?.eliminated === true;
+for (let i = 0; i < 160 && !fallen(); i++) {
+  const x = X.of('CastleState').at(-1);
+  const home = x.units.find((u) => u.id === 'kilicli').soldiers;
+  if (x.war.armies.length === 0 && home > 0) await X.call('SendArmy', 2, { kilicli: home }, null, null, 'attack');
+  await sleep(500);
+}
+check("Y's castle falls", fallen());
+await X.call('SetSpeed', 5);
+const fellAt = Y.of('CastleState').find((c) => c.eliminated).elapsedSeconds;
+check('a countdown comes before the first picture', await waitFor(() => Y.of('SpectatorWait').length > 0, 8000));
+check('the countdown is at most the delay', Y.of('SpectatorWait').every((w) => w.startsIn >= 0 && w.startsIn <= DELAY + 1e-6));
+check('the picture arrives', await waitFor(() => Y.of('SpectatorState').length >= 2, 30000), 'delay is 30 game seconds, ×5 → ~6 s');
+const frames = Y.of('SpectatorState');
+const live = Math.max(...X.of('CastleState').map((c) => c.elapsedSeconds));
+check('Y watches from the moment the castle fell', frames[0].elapsedSeconds >= fellAt - 1e-6);
+check(`every picture is at least ${DELAY} s behind the live game`, frames.every((f) => f.elapsedSeconds <= live - DELAY + 1e-6));
+check('pictures arrive in order', frames.every((f, i) => i === 0 || f.elapsedSeconds > frames[i - 1].elapsedSeconds));
+check('a picture has every castle, inside', frames.every((f) => f.castles.length === 3
+  && f.castles.every((c) => c.buildings.length > 0 && c.jobs.length > 0 && c.units.length > 0)));
+check('a picture says who has fallen', frames.at(-1).castles.find((c) => c.seat === 2).eliminated
+  && !frames.at(-1).castles.find((c) => c.seat === 1).eliminated);
+const exact = frames.filter((f) => X.of('CastleState').some((c) => c.elapsedSeconds === f.elapsedSeconds));
+check(`pictures match X's real castle at that moment (${exact.length} compared)`, exact.length > 0 && exact.every((f) => {
+  const real = X.of('CastleState').find((c) => c.elapsedSeconds === f.elapsedSeconds);
+  const seen = f.castles.find((c) => c.seat === 1);
+  return real.units.every((u) => seen.units.find((v) => v.id === u.id)?.soldiers === u.soldiers)
+    && Math.abs(seen.wallHp - real.war.wallHp) < 1e-6;
+}));
+check('movers in a picture carry no route, target or arrival',
+  frames.every((f) => f.movers.every((m) => !/route|target|arriv|mode/i.test(JSON.stringify(Object.keys(m))))));
+check('nobody still playing got a spectator picture or countdown',
+  [X, Z].every((c) => c.of('SpectatorState').length === 0 && c.of('SpectatorWait').length === 0));
+check("X's and Z's traffic never mentions the other castles' insides",
+  !Z.msgs.some((m) => m.target === 'CastleState' && m.arg.color !== 'yellow'));
+check('Y only ever got its own castle state', Y.of('CastleState').every((c) => c.color === 'red'));
+
+X.ws.close();
+Y.ws.close();
+Z.ws.close();
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);

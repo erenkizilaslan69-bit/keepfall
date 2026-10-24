@@ -53,6 +53,8 @@ public sealed class GameState
     private readonly List<BattleReport> _battles = [];
     private readonly List<ActiveBattle> _active = [];
     private readonly Dictionary<string, List<ActiveBattle>> _startedBattles = [];
+    /// <summary>Every battle that began since the spectator feed last asked (for fallen players, who watch all of them).</summary>
+    private readonly List<ActiveBattle> _startedForSpectators = [];
     private readonly Dictionary<string, double> _eliminated = [];
     private readonly Dictionary<string, List<GameNotification>> _notifications = [];
     private readonly BattleSimulator _simulator;
@@ -210,6 +212,29 @@ public sealed class GameState
     /// <summary>Battles this player became part of since the last call; each is returned once.</summary>
     public IReadOnlyList<ActiveBattle> TakeStartedBattles(string playerKey) =>
         _startedBattles.Remove(playerKey, out var list) ? list : [];
+
+    /// <summary>Battles that began since the last call, whoever fights them; each is returned once. Only the spectator feed uses this.</summary>
+    public IReadOnlyList<ActiveBattle> TakeAllStartedBattles()
+    {
+        var list = _startedForSpectators.ToList();
+        _startedForSpectators.Clear();
+        return list;
+    }
+
+    /// <summary>
+    /// Every army and scout on the map, wherever it is (armies that are fighting are left out: the battle
+    /// replay draws them). Spectators only: no player ever gets this.
+    /// </summary>
+    public IReadOnlyList<SeenMover> AllMovers()
+    {
+        var all = new List<SeenMover>();
+        foreach (var a in _armies.Where(a => a.Battle is null))
+            all.Add(new SeenMover(a.PublicId, MoverKind.Army, a.From, a.Position, a.Velocity,
+                a.Walking.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value)));
+        foreach (var m in _missions)
+            all.Add(new SeenMover(m.PublicId, MoverKind.Scout, m.From, m.Position, m.Velocity, new Dictionary<UnitType, int>()));
+        return all;
+    }
 
     /// <summary>Battles this player fought in (as attacker or defender), oldest first.</summary>
     public IReadOnlyList<BattleReport> BattlesOf(string playerKey) =>
@@ -538,6 +563,7 @@ public sealed class GameState
         battle.Attacker.Battle = battle;
         if (battle.Opponent is { } o) o.Battle = battle;
         _active.Add(battle);
+        _startedForSpectators.Add(battle);
         foreach (var p in new[] { battle.Attacker.From, battle.Defender }.Distinct())
         {
             if (!_startedBattles.TryGetValue(p, out var list)) _startedBattles[p] = list = [];

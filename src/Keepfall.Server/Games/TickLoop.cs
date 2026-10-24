@@ -41,6 +41,7 @@ public sealed class TickLoop(
     {
         var now = DateTime.UtcNow;
         bool roomChanged, ended = false, preparing;
+        List<(int Seat, List<SpectatorStateView> Frames, SpectatorWaitView? Wait)> spectating = [];
         lock (session.Lock)
         {
             var room = session.Room;
@@ -51,7 +52,22 @@ public sealed class TickLoop(
             }
             roomChanged = room.Maintain(now);
             preparing = room.Phase is RoomPhase.Preparation or RoomPhase.War;
-            if (preparing) ended = room.Tick(tickSeconds);
+            if (preparing)
+            {
+                ended = room.Tick(tickSeconds);
+                if (!ended)
+                {
+                    // Fallen players watch the whole map, a little late; nobody else ever gets this.
+                    session.Spectators.Capture(room, rules.Match.SpectatorDelaySeconds);
+                    spectating = session.Spectators.TakeDue(room, rules.Match.SpectatorDelaySeconds);
+                }
+            }
+        }
+        foreach (var (seat, frames, wait) in spectating)
+        {
+            var group = hub.Clients.Group(GameHub.PlayerGroup(session.Room.Code, seat));
+            foreach (var frame in frames) await group.SendAsync("SpectatorState", frame);
+            if (wait is not null) await group.SendAsync("SpectatorWait", wait);
         }
 
         if (preparing)

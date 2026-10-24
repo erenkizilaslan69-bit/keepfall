@@ -10,7 +10,8 @@ public sealed record MatchRules(
     int StartingPopulation,
     double StartingFood,
     double StartingWood,
-    double StartingIron);
+    double StartingIron,
+    double SpectatorDelaySeconds);
 
 /// <summary>War phase ("Maç" and "Binalar" sheets): famine, castle and siege.</summary>
 public sealed record WarRules(
