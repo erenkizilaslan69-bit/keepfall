@@ -58,13 +58,19 @@ public sealed class GameHub(RoomRegistry registry) : Hub
 
         RoomView room;
         CastleView? castle;
+        MapLayoutView? layout;
+        MapStateView? map;
         lock (session.Lock)
         {
             room = ViewMapper.ToView(session.Room);
             castle = ViewMapper.CastleOf(session.Room, player);
+            layout = MapViewMapper.LayoutOf(session.Room);
+            map = MapViewMapper.StateOf(session.Room, player);
         }
         await Clients.OthersInGroup(RoomGroup(code)).SendAsync("RoomState", room);
+        if (layout is not null) await Clients.Caller.SendAsync("MapLayout", layout);
         if (castle is not null) await Clients.Caller.SendAsync("CastleState", castle);
+        if (map is not null) await Clients.Caller.SendAsync("MapState", map);
         return new JoinView(true, null, code, player.Token, player.Seat, room);
     }
 
@@ -82,7 +88,7 @@ public sealed class GameHub(RoomRegistry registry) : Hub
 
     public Task<CommandResultView> SetName(string? name) => RoomCommand((room, token) => room.SetName(token, name));
     public Task<CommandResultView> SetReady(bool ready) => RoomCommand((room, token) => room.SetReady(token, ready));
-    public Task<CommandResultView> StartMatch() => RoomCommand((room, token) => room.Start(token), pushCastles: true);
+    public Task<CommandResultView> StartMatch() => RoomCommand((room, token) => room.Start(token), pushCastles: true, pushLayout: true);
     public Task<CommandResultView> BackToLobby() => RoomCommand((room, token) => room.BackToLobby(token));
     public Task<CommandResultView> SetSpeed(int speed) => RoomCommand((room, token) => room.SetSpeed(token, speed), pushCastles: true);
 
@@ -112,6 +118,7 @@ public sealed class GameHub(RoomRegistry registry) : Hub
         if (Bound() is not { } bound) return NotJoined;
         CommandResult result;
         CastleView? castle = null;
+        MapStateView? map = null;
         int seat = 0;
         lock (bound.Session.Lock)
         {
@@ -120,15 +127,19 @@ public sealed class GameHub(RoomRegistry registry) : Hub
             if (result.Ok && room.Find(bound.Token) is { } player)
             {
                 castle = ViewMapper.CastleOf(room, player);
+                map = MapViewMapper.StateOf(room, player);
                 seat = player.Seat;
             }
         }
         // Push right away so the UI does not wait for the next tick; only to the owner's group.
-        if (castle is not null) await Clients.Group(PlayerGroup(bound.Session.Room.Code, seat)).SendAsync("CastleState", castle);
+        var group = Clients.Group(PlayerGroup(bound.Session.Room.Code, seat));
+        if (castle is not null) await group.SendAsync("CastleState", castle);
+        if (map is not null) await group.SendAsync("MapState", map);
         return new CommandResultView(result.Ok, result.Error);
     }
 
-    private async Task<CommandResultView> RoomCommand(Func<Room, string, CommandResult> action, bool pushCastles = false)
+    private async Task<CommandResultView> RoomCommand(Func<Room, string, CommandResult> action, bool pushCastles = false,
+        bool pushLayout = false)
     {
         if (Bound() is not { } bound) return NotJoined;
         CommandResult result;
@@ -136,6 +147,7 @@ public sealed class GameHub(RoomRegistry registry) : Hub
         if (result.Ok)
         {
             await PushRoom(bound.Session);
+            if (pushLayout) await PushLayout(bound.Session);
             if (pushCastles) await PushCastles(Clients, bound.Session);
         }
         return new CommandResultView(result.Ok, result.Error);
@@ -150,18 +162,30 @@ public sealed class GameHub(RoomRegistry registry) : Hub
         return Clients.Group(RoomGroup(session.Room.Code)).SendAsync("RoomState", view);
     }
 
-    /// <summary>Each player's own castle to that player's group only.</summary>
+    /// <summary>The map's terrain, roads and corners: public, the same for the whole room.</summary>
+    private Task PushLayout(RoomSession session)
+    {
+        MapLayoutView? layout;
+        lock (session.Lock) layout = MapViewMapper.LayoutOf(session.Room);
+        return layout is null ? Task.CompletedTask : Clients.Group(RoomGroup(session.Room.Code)).SendAsync("MapLayout", layout);
+    }
+
+    /// <summary>Each player's own castle and what they see on the map, to that player's group only.</summary>
     public static async Task PushCastles(IHubClients<IClientProxy> clients, RoomSession session)
     {
-        List<(int Seat, CastleView View)> views;
+        List<(int Seat, CastleView View, MapStateView? Map)> views;
         lock (session.Lock)
             views = session.Room.Players
-                .Select(p => (p.Seat, View: ViewMapper.CastleOf(session.Room, p)))
+                .Select(p => (p.Seat, View: ViewMapper.CastleOf(session.Room, p), Map: MapViewMapper.StateOf(session.Room, p)))
                 .Where(x => x.View is not null)
-                .Select(x => (x.Seat, x.View!))
+                .Select(x => (x.Seat, x.View!, x.Map))
                 .ToList();
-        foreach (var (seat, view) in views)
-            await clients.Group(PlayerGroup(session.Room.Code, seat)).SendAsync("CastleState", view);
+        foreach (var (seat, view, map) in views)
+        {
+            var group = clients.Group(PlayerGroup(session.Room.Code, seat));
+            await group.SendAsync("CastleState", view);
+            if (map is not null) await group.SendAsync("MapState", map);
+        }
     }
 
     // ---- helpers ---------------------------------------------------------------------------
