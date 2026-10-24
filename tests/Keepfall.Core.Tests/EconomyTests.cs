@@ -39,8 +39,8 @@ public class EconomyTests
     [Fact]
     public void Modes_split_into_preparation_and_war()
     {
-        Assert.Equal((420, 480), (Rules.Match.ShortModePrepSeconds, Rules.Match.ShortModeWarSeconds));  // 7 + 8 min
-        Assert.Equal((720, 1080), (Rules.Match.LongModePrepSeconds, Rules.Match.LongModeWarSeconds));   // 12 + 18 min
+        Assert.Equal((600, 300), (Rules.Match.ShortModePrepSeconds, Rules.Match.ShortModeWarSeconds));  // 10 + 5 min
+        Assert.Equal((1200, 600), (Rules.Match.LongModePrepSeconds, Rules.Match.LongModeWarSeconds));   // 20 + 10 min
     }
 
     [Fact]

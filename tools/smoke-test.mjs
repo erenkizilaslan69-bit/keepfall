@@ -121,7 +121,7 @@ check('A got no notification', A.of('Notification').length === 0);
 
 // ---- war: A attacks B; C watches nothing ----------------------------------------------------
 const waitFor = async (pred, ms) => { for (let t = 0; t < ms; t += 250) { if (pred()) return true; await sleep(250); } return false; };
-check('the war phase begins', await waitFor(() => A.of('RoomState').some((r) => r.phase === 'war'), 30000));
+check('the war phase begins', await waitFor(() => A.of('RoomState').some((r) => r.phase === 'war'), 45000));
 await A.call('SetSpeed', 5); // 5 game seconds per tick, so the 10 s warning is seen before the battle
 const notesBefore = { A: A.of('Notification').length, B: B.of('Notification').length, C: C.of('Notification').length };
 const bMsgsBefore = B.msgs.length;

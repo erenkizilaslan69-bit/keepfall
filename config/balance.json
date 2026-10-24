@@ -4,11 +4,11 @@
 {
   // Excel "Maç" sekmesi.
   "match": {
-    // Mod süresi ve bunun hazırlığa ayrılan kısmı (dk). Savaş = mod − hazırlık (15 dk → 7 + 8, 30 dk → 12 + 18).
+    // Mod süresi ve bunun hazırlığa ayrılan kısmı (dk). Savaş = mod − hazırlık (15 dk → 10 + 5, 30 dk → 20 + 10).
     "shortModeMinutes": 15,
-    "shortModePrepMinutes": 7,
+    "shortModePrepMinutes": 10,
     "longModeMinutes": 30,
-    "longModePrepMinutes": 12,
+    "longModePrepMinutes": 20,
     // Sunucu bu aralıkla tick atar (sn); üretim ve tüketim her tick'te hesaplanır.
     "serverTickSeconds": 1,
     "startingPopulation": 12,
@@ -44,7 +44,7 @@
     "vision": { "castle": 20, "army": 6, "scout": 10 }
   },
 
-  // Excel "Maç" ve "Binalar" sekmeleri: savaş fazı. Savaş süresi = mod süresi − hazırlık (15 dk → 8 dk).
+  // Excel "Maç" ve "Binalar" sekmeleri: savaş fazı. Savaş süresi = mod süresi − hazırlık (15 dk → 5 dk).
   "war": {
     // Kıtlık: savaşın bu oranından sonra yemek üretimi bu çarpanla çalışır.
     "famineStart": 0.7,
