@@ -4,6 +4,7 @@ import type { WorldScene } from '../scene/WorldScene';
 import { BuildingWin } from './building-window';
 import { CastleWin } from './castle-window';
 import { EnemyWin } from './enemy-window';
+import { ArmyWin, ForestWin, ScoutWin } from './mover-windows';
 import { WindowManager, sameTarget, type Target, type Win, type WinContext } from './windows';
 import { Notifications, type NoteKind } from './notifications';
 import { ReportTags } from './reports';
@@ -26,7 +27,7 @@ export class GameUi {
   private eliminated = false;
   private readonly onKey = (e: KeyboardEvent) => this.keydown(e);
 
-  constructor(root: HTMLElement, net: GameConnection, seat: number) {
+  constructor(root: HTMLElement, net: GameConnection, seat: number, home: () => void) {
     root.innerHTML = '';
     const seat0 = seat;
     this.top = document.createElement('div');
@@ -43,8 +44,15 @@ export class GameUi {
     this.bar.setSeat(seat);
     this.notes = new Notifications(this.top);
     this.reports = new ReportTags(root);
+    const homeButton = document.createElement('button');
+    homeButton.className = 'btn home-btn hit';
+    homeButton.title = 'Kamerayı kalene getirir (boşluk tuşu)';
+    homeButton.innerHTML = '<i class="ico ico-shield"></i> Kaleme dön';
+    homeButton.addEventListener('click', home);
+    root.appendChild(homeButton);
     this.windows = new WindowManager(root, () => this.top.getBoundingClientRect().bottom);
-    this.ctx = { net, say: (m) => this.error(m), info: (m) => this.notes.push(m, 'info', 3500), open: (t) => this.open(t), close: () => this.windows.close() };
+    this.ctx = { net, say: (m) => this.error(m), info: (m) => this.notes.push(m, 'info', 3500), open: (t) => this.open(t), close: () => this.windows.close(),
+      army: (id) => this.scene?.resolveArmy(id) };
     window.addEventListener('keydown', this.onKey);
   }
 
@@ -73,6 +81,9 @@ export class GameUi {
       case 'building': return new BuildingWin(this.ctx, target.type, s);
       case 'castle': return new CastleWin(this.ctx, s);
       case 'enemy': return new EnemyWin(this.ctx, target.seat, s, this.room);
+      case 'army': return new ArmyWin(this.ctx, target.id, s);
+      case 'scout': return new ScoutWin(this.ctx, Number(target.id), s);
+      case 'forest': return new ForestWin(this.ctx);
       default: return null; // the other windows come in the next steps
     }
   }

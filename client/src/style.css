@@ -23,17 +23,9 @@ body {
 main.game { position: fixed; inset: 0; }
 #stage { position: absolute; inset: 0; }
 #stage canvas { display: block; }
-.stage-btn { position: absolute; top: 8px; left: 8px; z-index: 2; opacity: 0.92; }
 .minimap {
-  position: absolute; right: calc(var(--legacy-w, 0px) + 8px); bottom: 8px; z-index: 2; width: 22%; max-width: 200px; aspect-ratio: 1;
+  position: absolute; right: 8px; bottom: 8px; z-index: 2; width: 22%; max-width: 200px; aspect-ratio: 1;
   border: 2px solid #1d1b18; border-radius: 4px; cursor: crosshair; image-rendering: pixelated;
-}
-
-/* Temporary: the old panel as a drawer over the map's right edge (replaced by windows on the map). */
-html.in-game { --legacy-w: min(400px, 92vw); }
-#panel {
-  position: absolute; top: 0; right: 0; bottom: 0; width: var(--legacy-w); z-index: 5; overflow-y: auto;
-  background: rgba(39, 36, 31, 0.94); border-left: 1px solid var(--line); padding: 12px 14px;
 }
 
 header { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { MapStateView, MoverUnit, PlayerColor, Vec } from '../types';
 import { SHIELD_SCALE, UNIT_SCALE, colorKey, unitOriginY } from './assets';
+import type { Target } from '../ui/windows';
 import { toWorld } from './world';
 
 // Armies and scouts walking on the map: our own (we know their road) and the others the server lets
@@ -49,11 +50,17 @@ interface Track {
   heading: Vec;
   sprites: Phaser.GameObjects.Sprite[];
   extra: Phaser.GameObjects.Text | null;
+  /** Ours only: what a click on it opens, and the invisible area that catches the click. */
+  select: Target | null;
+  zone: Phaser.GameObjects.Zone | null;
 }
 
 export class Movers {
   private tracks = new Map<string, Track>();
   private gameSpeed = 1;
+
+  /** Set by the scene: a click on one of our armies or scouts. */
+  onSelect: (target: Target) => void = () => {};
 
   constructor(private readonly scene: Phaser.Scene, private readonly ownColor: PlayerColor) {}
 
@@ -77,6 +84,12 @@ export class Movers {
       t.speed = o.speed;
       t.vision = o.visionRadius;
       t.fighting = o.fighting;
+      t.select = o.kind === 'scout' ? { kind: 'scout', id: String(o.targetSeat) } : { kind: 'army', id: o.id };
+      if (!t.zone) {
+        const zone = this.scene.add.zone(0, 0, 84, 76).setDepth(20_000).setInteractive({ useHandCursor: true });
+        zone.on('pointerup', () => { if (t.select) this.onSelect(t.select); });
+        t.zone = zone;
+      }
       t.receivedAt = now;
       alive.add(t.key);
     }
@@ -93,6 +106,7 @@ export class Movers {
       // Out of sight (or home): it simply is not there any more.
       for (const s of t.sprites) s.destroy();
       t.extra?.destroy();
+      t.zone?.destroy();
       this.tracks.delete(key);
     }
   }
@@ -135,7 +149,7 @@ export class Movers {
     let t = this.tracks.get(key);
     const signature = scout ? 'scout' : units.map((u) => `${u.unitId}:${u.count}`).join(',');
     if (t && t.sprites.map((s) => s.getData('sig'))[0] === signature) return t;
-    if (t) { for (const s of t.sprites) s.destroy(); t.extra?.destroy(); }
+    if (t) { for (const s of t.sprites) s.destroy(); t.extra?.destroy(); t.zone?.destroy(); }
 
     const kinds = scout ? ['pawn'] : formation(units);
     const sprites = kinds.map((unit) => {
@@ -152,6 +166,7 @@ export class Movers {
     const fresh: Track = {
       key, color, scout, units, position, velocity: { x: 0, y: 0 }, route: null, cumulative: [], travelled: 0, speed: 0, vision: 0, fighting: false,
       receivedAt: performance.now(), shown: t?.shown ?? position, heading: t?.heading ?? { x: 1, y: 0 }, sprites, extra,
+      select: null, zone: null,
     };
     this.tracks.set(key, fresh);
     return fresh;
@@ -171,6 +186,15 @@ export class Movers {
       s.setPosition(x, y).setDepth(y).setFlipX(faceLeft);
     });
     t.extra?.setPosition(lead.x, lead.y - 44);
+    t.zone?.setPosition(lead.x - h.x * ROW_GAP, lead.y - h.y * ROW_GAP - 18);
+  }
+
+  /** Where one of our armies or scouts is drawn now (scene px), for the window that is about it. */
+  worldPosition(target: Target): { x: number; y: number } | null {
+    const key = JSON.stringify(target);
+    for (const t of this.tracks.values())
+      if (t.select && JSON.stringify(t.select) === key) return toWorld(t.shown);
+    return null;
   }
 }
 

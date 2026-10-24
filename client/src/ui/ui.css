@@ -265,3 +265,6 @@ html.ui-art .unit-row .btn { border-width: calc(12px * var(--u)); border-image-w
 .scout-report { background: rgba(90, 66, 34, .1); border-radius: 6px; padding: calc(6px * var(--u)) calc(8px * var(--u)); margin-top: calc(6px * var(--u)); }
 .win .btn-red { color: #fff; }
 .win .gbar { margin: calc(4px * var(--u)) 0; }
+
+.home-btn { position: absolute; right: calc(8px * var(--u)); bottom: calc(8px * var(--u) + min(22vw, 200px) + 14px); }
+.win .row.sub { flex-wrap: wrap; }

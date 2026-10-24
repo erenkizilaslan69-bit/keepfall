@@ -1,5 +1,5 @@
 import type { GameConnection } from '../net';
-import type { BuildingType, CastleView, RoomView } from '../types';
+import type { ArmyView, BuildingType, CastleView, RoomView } from '../types';
 
 // The contextual windows on the map. One is open at a time, next to the thing it is about: a
 // building, our castle, an enemy castle, one of our armies or scouts, the forest. Clicking another
@@ -24,6 +24,8 @@ export interface WinContext {
   say: (message: string) => void;
   /** Show a message for something that worked (a blue ribbon). */
   info: (message: string) => void;
+  /** One of our armies by the id the map gave it (null once it is gone). */
+  army?: (publicId: string) => ArmyView | undefined;
   /** Open a window for another target (e.g. from a button). */
   open: (target: Target) => void;
   close: () => void;
@@ -91,8 +93,8 @@ export class WindowManager {
 
   update(data: WinData): void {
     if (!this.win) return;
-    if (this.win.gone()) { this.close(); return; }
     this.win.update(data);
+    if (this.win.gone()) this.close();
   }
 
   /** Called every frame: the window follows its target over the map and stays on screen. */

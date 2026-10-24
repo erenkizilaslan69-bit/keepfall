@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
+import type { ArmyView, BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
 import type { Minimap } from '../minimap';
 import type { Anchor, Target } from '../ui/windows';
 import { createAnimations, preloadAssets } from './assets';
@@ -110,6 +110,7 @@ export class WorldScene extends Phaser.Scene {
     this.drawRoads();
     this.drawForest();
     this.drawOtherCastles();
+    this.makeForestClickable();
     this.castleSprite = this.add.image(CASTLE.x, CASTLE.y, 'castle').setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(CASTLE.y);
     this.castleSprite.setInteractive({ useHandCursor: true }).on('pointerup', () => this.select({ kind: 'castle' }));
     this.wallBar = this.add.graphics().setDepth(10_002);
@@ -119,6 +120,7 @@ export class WorldScene extends Phaser.Scene {
     this.workers = new Workers(this);
     this.soldiers = new Soldiers(this);
     this.movers = new Movers(this, this.color);
+    this.movers.onSelect = (t) => this.select(t);
     this.fog = new Fog(this, this.layout.size);
     this.battles = new BattlePlayer(this, this.color, () => this.gameNow(), (seat) => this.courtyardOf(seat));
     for (const b of this.pendingBattles) this.battles.start(b);
@@ -240,7 +242,31 @@ export class WorldScene extends Phaser.Scene {
         const p = toWorld(forest.center);
         return at(p.x, p.y, 120);
       }
-      default: return null; // armies and scouts: see step 5
+      default: {
+        // One of our armies or scouts on the road.
+        const p = this.movers.worldPosition(target);
+        return p ? at(p.x, p.y - 20, 50) : null;
+      }
+    }
+  }
+
+  /** Our army that a click on the map meant: the n-th army of the map state is the n-th of the castle state. */
+  resolveArmy(publicId: string): ArmyView | undefined {
+    const own = this.map?.own.filter((o) => o.kind === 'army') ?? [];
+    const i = own.findIndex((o) => o.id === publicId);
+    if (i < 0) return undefined;
+    const army = this.state?.war.armies[i];
+    return army && army.targetSeat === own[i].targetSeat && (army.state === 'returning') === own[i].returning ? army : undefined;
+  }
+
+  /** The forest answers a click (it is only a place for now), below everything else that can be clicked. */
+  private makeForestClickable(): void {
+    for (const f of this.layout.features.filter((x) => x.kind === 'forest')) {
+      const p = toWorld(f.center), r = f.radius * TILE;
+      const zone = this.add.zone(p.x, p.y, r * 2, r * 2).setDepth(-50_000)
+        .setInteractive(new Phaser.Geom.Circle(r, r, r), Phaser.Geom.Circle.Contains);
+      zone.input!.cursor = 'pointer';
+      zone.on('pointerup', () => this.select({ kind: 'forest', id: f.id }));
     }
   }
 

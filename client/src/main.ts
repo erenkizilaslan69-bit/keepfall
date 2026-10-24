@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import './style.css';
-import { Hud } from './hud';
 import { GameUi } from './ui/game-ui';
 import { loadName, saveName } from './identity';
 import { GameConnection, type ConnectionStatus } from './net';
@@ -13,7 +12,7 @@ import '@fontsource/pixelify-sans/latin-ext-400.css';
 import '@fontsource/pixelify-sans/latin-700.css';
 import '@fontsource/pixelify-sans/latin-ext-700.css';
 import { Minimap } from './minimap';
-import { EndScreen, HomeScreen, LobbyScreen, rosterHtml } from './screens';
+import { EndScreen, HomeScreen, LobbyScreen } from './screens';
 import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SummaryView } from './types';
 
 // Routes: "/" is the home screen, "/oda/ABCD" is a room. Inside a room the screen follows the
@@ -39,7 +38,6 @@ let status = '';
 
 let lobby: LobbyScreen | null = null;
 let end: EndScreen | null = null;
-let hud: Hud | null = null;
 let ui: GameUi | null = null;
 let game: Phaser.Game | null = null;
 let scene: WorldScene | null = null;
@@ -82,8 +80,6 @@ function onRoom(r: RoomView): void {
   }
   if (screen === 'lobby') lobby!.update(r);
   else if (screen === 'game') {
-    document.getElementById('roster')!.innerHTML = rosterHtml(r, net.seat);
-    hud?.setRoom(r);
     ui?.setRoom(r);
     scene?.setRoom(r);
   }
@@ -94,7 +90,6 @@ function onCastle(c: CastleView): void {
   lastCastle = c;
   if (c.summary) { summary = c.summary; end?.setSummary(c.summary); }
   if (screen === 'game') {
-    hud!.update(c);
     ui?.update(c);
     if (!scene && lastLayout) startScene(c.color, lastLayout);
     scene?.setState(c);
@@ -106,7 +101,7 @@ function onCastle(c: CastleView): void {
 function clear(): void {
   document.documentElement.classList.remove('in-game');
   game?.destroy(true);
-  game = null; scene = null; hud = null; lobby = null; end = null;
+  game = null; scene = null; lobby = null; end = null;
   ui?.destroy();
   ui = null;
   app.innerHTML = '';
@@ -150,19 +145,15 @@ function showGame(): void {
   clear();
   screen = 'game';
   document.documentElement.classList.add('in-game');
-  // The map fills the window and never scrolls; the UI layer sits on top of it. The old side panel
-  // stays as a temporary drawer until its parts have moved into windows on the map.
+  // The map fills the window and never scrolls; the UI layer (top bar, windows, ribbons) sits on top of it.
   app.innerHTML = `
     <main class="game">
-      <div id="stage"><button id="home-cam" class="stage-btn" title="Kamerayı kalene getirir (boşluk tuşu)">Kaleme dön</button></div>
+      <div id="stage"></div>
       <div id="ui" class="ui-root"></div>
-      <aside id="panel"><div id="roster"></div><div id="hud"><p class="muted">Kale hazırlanıyor…</p></div></aside>
     </main>`;
-  ui = new GameUi(document.getElementById('ui')!, net, net.seat);
+  ui = new GameUi(document.getElementById('ui')!, net, net.seat, () => scene?.centerOnCastle());
   ui.setStatus(status, status === statusText.connected);
   if (import.meta.env.DEV) (window as unknown as { keepfallUi: GameUi }).keepfallUi = ui;
-  hud = new Hud(document.getElementById('hud')!, net, (message) => ui?.error(message));
-  document.getElementById('home-cam')!.addEventListener('click', () => scene?.centerOnCastle());
   if (lastCastle) onCastle(lastCastle);
 }
 
