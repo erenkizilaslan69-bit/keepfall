@@ -286,7 +286,11 @@ public class WarTests
         Assert.True(game.Result!.ByElimination);
         Assert.Equal([A], game.Result.Winners);
         Assert.Equal(new[] { (A, 1, false), (B, 2, true) }, game.Result.Ranking.Select(r => (r.Player, r.Place, r.Eliminated)));
-        Assert.True(Assert.Single(game.BattlesOf(B)).DefenderEliminated);
+        var fall = Assert.Single(game.BattlesOf(B));
+        Assert.True(fall.DefenderEliminated);
+        Assert.Equal(500, fall.CastleDamage); // 850 possible, but only 500 was left
+        Assert.Equal(500, game.CastleOf(A)!.Stats.CastleDamageDealt);
+        Assert.Equal(500, game.CastleOf(B)!.Stats.CastleDamageTaken);
         Assert.Contains(game.TakeNotifications(A), n => n.Kind == NotificationKind.Eliminated && n.OtherPlayer == B);
         Assert.NotNull(game.SummaryOf(B));
         Assert.True(game.SummaryOf(B)!.War.Eliminated);

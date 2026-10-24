@@ -118,12 +118,13 @@ public sealed class Room
         bool attacking = report.Attacker == player.CastleKey;
         var other = PlayerOfCastle(attacking ? report.Defender : report.Attacker);
         string them = ColorName(other?.Color);
+        int damage = (int)Math.Floor(report.CastleDamage + 1e-9); // same rounding as the panel
         return (attacking, report.Winner) switch
         {
-            (true, BattleWinner.Attacker) => $"{them} kalesine saldırın kazandı: {report.CastleDamage:0} kale hasarı.",
+            (true, BattleWinner.Attacker) => $"{them} kalesine saldırın kazandı: {damage} kale hasarı.",
             (true, BattleWinner.Defender) => $"{them} kalesine saldırın püskürtüldü.",
             (true, _) => $"{them} kalesine saldırı berabere bitti.",
-            (false, BattleWinner.Attacker) => $"{them} saldırısı savunmanı yendi: kalen {report.CastleDamage:0} hasar aldı.",
+            (false, BattleWinner.Attacker) => $"{them} saldırısı savunmanı yendi: kalen {damage} hasar aldı.",
             (false, BattleWinner.Defender) => $"{them} saldırısını püskürttün!",
             _ => $"{them} saldırısı berabere bitti.",
         };

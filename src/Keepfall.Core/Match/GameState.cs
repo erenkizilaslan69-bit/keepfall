@@ -333,7 +333,8 @@ public sealed class GameState
         double damage = 0;
         if (winner == BattleWinner.Attacker)
         {
-            damage = SiegeDamage(attackSurvivors);
+            // A wall cannot lose more than it has left (keeps damage stats honest).
+            damage = Math.Min(SiegeDamage(attackSurvivors), defender.WallHp);
             defender.TakeWallDamage(damage);
             attacker.Stats.CastleDamageDealt += damage;
         }
