@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { BuildingType, BuildingView, CastleView, PlayerColor } from '../types';
 import { createAnimations, preloadAssets } from './assets';
 import { CASTLE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH, type Part } from './layout';
+import { Armies } from './Armies';
 import { Scouts } from './Scouts';
 import { Soldiers } from './Soldiers';
 import { Workers } from './Workers';
@@ -41,6 +42,11 @@ export class CastleScene extends Phaser.Scene {
   private workers!: Workers;
   private soldiers!: Soldiers;
   private scouts!: Scouts;
+  private armies!: Armies;
+  private castleSprite!: Phaser.GameObjects.Image;
+  private wallBar!: Phaser.GameObjects.Graphics;
+  private wallText!: Phaser.GameObjects.Text;
+  private lastWallHp: number | null = null;
 
   /** <paramref name="color"/>: the player's colour; units and buildings are drawn in it. */
   constructor(private readonly color: PlayerColor) {
@@ -61,11 +67,14 @@ export class CastleScene extends Phaser.Scene {
     }
     createAnimations(this, this.color);
     this.drawGround();
-    this.add.image(CASTLE.x, CASTLE.y, 'castle').setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(CASTLE.y);
+    this.castleSprite = this.add.image(CASTLE.x, CASTLE.y, 'castle').setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(CASTLE.y);
+    this.wallBar = this.add.graphics().setDepth(10_002);
+    this.wallText = this.add.text(CASTLE.x, CASTLE.y - 320 * CASTLE.scale - 26, '', LABEL_STYLE).setOrigin(0.5, 1).setDepth(10_002);
     for (const type of Object.keys(SITES) as BuildingType[]) this.createSite(type);
     this.workers = new Workers(this);
     this.soldiers = new Soldiers(this);
     this.scouts = new Scouts(this);
+    this.armies = new Armies(this);
     this.ready = true;
     if (this.state) this.apply(this.state);
   }
@@ -84,6 +93,26 @@ export class CastleScene extends Phaser.Scene {
     this.workers.sync(s.jobs);
     this.soldiers.sync(s.units);
     this.scouts.sync(s.scouting);
+    this.armies.sync(s.war.armies, s.scouting.targets.map((t) => t.seat));
+    this.updateWall(s);
+  }
+
+  /** Castle HP bar above the towers; the castle flashes red when it takes damage. */
+  private updateWall(s: CastleView): void {
+    const { wallHp, maxWallHp } = s.war;
+    const w = 200, h = 10, x = CASTLE.x - w / 2, y = CASTLE.y - 320 * CASTLE.scale - 18;
+    const p = Math.max(0, wallHp / maxWallHp);
+    this.wallBar.clear();
+    this.wallBar.fillStyle(0x1d1b18, 0.85).fillRoundedRect(x - 2, y - 2, w + 4, h + 4, 4);
+    this.wallBar.fillStyle(p < 0.35 ? 0xc2453a : 0x6fae4a).fillRoundedRect(x, y, w * p, h, 3);
+    this.wallText.setText(s.eliminated ? 'Kale düştü' : `Kale ${Math.ceil(wallHp)} / ${maxWallHp}`);
+    if (this.lastWallHp !== null && wallHp < this.lastWallHp - 1e-6) {
+      this.castleSprite.setTint(0xff6b5e);
+      this.cameras.main.shake(250, 0.004);
+      this.time.delayedCall(400, () => this.castleSprite.clearTint());
+    }
+    this.lastWallHp = wallHp;
+    this.castleSprite.setAlpha(s.eliminated ? 0.55 : 1);
   }
 
   // ---- ground ------------------------------------------------------------------------------

@@ -42,6 +42,9 @@ const units = (color: string): SheetDef[] => {
     { key: 'warrior-guard', path: `${u}Warrior/Warrior_Guard.png`, frame: 192 },
     { key: 'archer-idle', path: `${u}Archer/Archer_Idle.png`, frame: 192 },
     { key: 'lancer-idle', path: `${u}Lancer/Lancer_Idle.png`, frame: 320 },
+    { key: 'warrior-run', path: `${u}Warrior/Warrior_Run.png`, frame: 192 },
+    { key: 'archer-run', path: `${u}Archer/Archer_Run.png`, frame: 192 },
+    { key: 'lancer-run', path: `${u}Lancer/Lancer_Run.png`, frame: 320 },
   ];
 };
 

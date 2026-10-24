@@ -9,7 +9,7 @@ import { GATE, WORLD_HEIGHT, WORLD_WIDTH, type Point } from './layout';
 // leaves through the gate (Workers) and the returning one reappears there as idle.
 
 /** Each opponent gets a side of the map, in seat order: right, left, bottom. */
-const ROUTES: Point[][] = [
+export const ROUTES: Point[][] = [
   [GATE, { x: 728, y: 452 }, { x: WORLD_WIDTH + 30, y: 452 }],
   [GATE, { x: 296, y: 452 }, { x: -30, y: 452 }],
   [GATE, { x: GATE.x, y: WORLD_HEIGHT + 40 }],
@@ -25,12 +25,12 @@ export class Scouts {
   constructor(private readonly scene: Phaser.Scene) {}
 
   sync(scouting: ScoutingView): void {
-    const order = [...scouting.targets].sort((a, b) => a.seat - b.seat).map((t) => t.seat);
+    const seats = scouting.targets.map((t) => t.seat);
     const active = new Set<number>();
 
     for (const m of scouting.missions) {
       active.add(m.targetSeat);
-      const route = ROUTES[Math.max(0, order.indexOf(m.targetSeat)) % ROUTES.length];
+      const route = routeTo(m.targetSeat, seats);
       const away = m.progress >= OUT && m.progress < BACK;
       // Fraction of the way from the gate to the edge.
       const f = m.progress < OUT ? m.progress / OUT : m.progress >= BACK ? (1 - m.progress) / (1 - BACK) : 1;
@@ -61,8 +61,14 @@ export class Scouts {
   }
 }
 
+/** The route towards an opponent: opponents are ordered by seat and take the sides in turn. */
+export function routeTo(seat: number, opponentSeats: number[]): Point[] {
+  const order = [...opponentSeats].sort((a, b) => a - b);
+  return ROUTES[Math.max(0, order.indexOf(seat)) % ROUTES.length];
+}
+
 /** The point at fraction <paramref name="f"/> of the polyline's length. */
-function along(points: Point[], f: number): Point {
+export function along(points: Point[], f: number): Point {
   const lengths = points.slice(1).map((p, i) => Math.hypot(p.x - points[i].x, p.y - points[i].y));
   let d = f * lengths.reduce((a, b) => a + b, 0);
   for (let i = 0; i < lengths.length; i++) {
