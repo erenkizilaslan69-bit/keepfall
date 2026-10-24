@@ -97,18 +97,18 @@ html.ui-art .btn-round:not(:disabled):active { background-image: var(--round-blu
 html.ui-art .btn-round.btn-red:not(:disabled):active { background-image: var(--round-red-down); }
 
 /* ---- bars ------------------------------------------------------------------------------------- */
-.bar { position: relative; height: calc(16px * var(--u)); background: #1d1b18; border: 2px solid #5a4a30; border-radius: 4px; overflow: hidden; min-width: 60px; }
-.bar > .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: #6fae4a; transition: width .25s; }
-.bar.low > .fill { background: #c2453a; }
-html.ui-art .bar {
+.gbar { position: relative; height: calc(16px * var(--u)); background: #1d1b18; border: 2px solid #5a4a30; border-radius: 4px; overflow: hidden; min-width: 60px; }
+.gbar > .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: #6fae4a; transition: width .25s; }
+.gbar.low > .fill { background: #c2453a; }
+html.ui-art .gbar {
   height: calc(32px * var(--u)); background: transparent; border: solid transparent; border-width: 0 calc(32px * var(--u)); border-radius: 0; overflow: visible;
   border-image: var(--bar-base) 0 64 fill / 0 calc(32px * var(--u)) stretch;
 }
-html.ui-art .bar > .fill {
+html.ui-art .gbar > .fill {
   inset: calc(10px * var(--u)) auto calc(11px * var(--u)) calc(-26px * var(--u)); border-radius: 3px;
   background: linear-gradient(#9be062, #5da535 55%, #4a8a2a);
 }
-html.ui-art .bar.low > .fill { background: linear-gradient(#f08a7c, #c2453a 55%, #9a3027); }
+html.ui-art .gbar.low > .fill { background: linear-gradient(#f08a7c, #c2453a 55%, #9a3027); }
 
 /* ---- icons (4 meat, 2 wood, 1 hammer, 5 sword, 6 shield; iron is a grey ore stone) ------------ */
 .ico { display: inline-block; width: calc(26px * var(--u)); height: calc(26px * var(--u)); flex: none; background: center / contain no-repeat; vertical-align: middle; }
@@ -130,3 +130,86 @@ html.ui-art .bar.low > .fill { background: linear-gradient(#f08a7c, #c2453a 55%,
 html:not(.ui-art) .ico { background-color: rgba(0,0,0,.12); border-radius: 50%; }
 
 .muted-ink { color: var(--ink-soft); }
+
+/* ---- layout: the top column (bar + ribbons) --------------------------------------------------- */
+.hidden { display: none !important; }
+.ui-top { position: absolute; top: calc(6px * var(--u)); left: calc(8px * var(--u)); right: calc(8px * var(--u)); display: flex; flex-direction: column; gap: calc(6px * var(--u)); pointer-events: none; }
+.topbar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: calc(6px * var(--u)); }
+.tb-l, .tb-r { display: flex; gap: calc(6px * var(--u)); align-items: flex-start; flex-wrap: wrap; }
+.tb-l { justify-self: start; }
+.tb-r { justify-self: end; justify-content: flex-end; }
+.tb-c { display: flex; align-items: flex-start; margin-top: calc(-2px * var(--u)); justify-self: center; }
+/* On narrower windows the bar takes two rows: resources and clock above, health and players below. */
+@media (max-width: 1220px) {
+  .topbar { grid-template-columns: 1fr auto; }
+  .tb-r { grid-column: 1 / -1; grid-row: 2; justify-self: end; }
+}
+
+/* A strip: a slim piece of paper for a group of numbers. */
+.strip {
+  display: flex; align-items: center; gap: calc(12px * var(--u)); min-height: calc(36px * var(--u)); padding: 0 calc(10px * var(--u));
+  background: var(--parchment); border: 3px solid #8a6a3a; border-radius: 6px; color: var(--ink); white-space: nowrap;
+}
+html.ui-art .strip {
+  background: transparent; border: calc(14px * var(--u)) solid transparent; border-radius: 0; padding: 0 calc(6px * var(--u));
+  min-height: calc(46px * var(--u)); border-image: var(--paper) 64 fill / calc(14px * var(--u)) stretch;
+}
+.lbl { color: var(--ink-soft); margin-right: calc(4px * var(--u)); }
+.strip b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.res, .pop { display: inline-flex; align-items: center; gap: calc(4px * var(--u)); }
+.res small { font-size: .8em; min-width: 3.2em; }
+.res small.up { color: #2f7a2a; } .res small.down { color: #b23a2e; }
+.res.starving b { color: #b23a2e; animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: .35; } }
+.idle-warn { animation: blink 1.2s steps(2) infinite; }
+
+/* The clock sits at the middle of the top edge, over the bar. */
+.tb-clock { gap: calc(8px * var(--u)); padding-top: 0; }
+.tb-clock b { font-size: 1.5em; font-variant-numeric: tabular-nums; }
+.tb-clock small { font-size: .85em; opacity: .95; text-transform: capitalize; }
+
+.tb-hp .gbar { width: calc(150px * var(--u)); }
+.gbar-text { position: absolute; inset: 0; display: grid; place-items: center; font-size: .8em; color: #fff; text-shadow: 0 1px 0 #000, 1px 0 0 #000; z-index: 1; }
+html.ui-art .gbar-text { inset: calc(2px * var(--u)) calc(-24px * var(--u)); }
+
+.chip { display: inline-flex; align-items: center; gap: calc(4px * var(--u)); cursor: pointer; padding: 0 calc(4px * var(--u)); border-bottom: 3px solid transparent; }
+.chip[data-color="blue"] { border-color: #4a8fd9; } .chip[data-color="red"] { border-color: #d9534a; }
+.chip[data-color="yellow"] { border-color: #e2b93b; } .chip[data-color="purple"] { border-color: #9b6bd1; }
+.chip.me .chip-name { font-weight: 700; }
+.chip.out { opacity: .45; text-decoration: line-through; } .chip.away { opacity: .6; }
+.avatar { width: calc(28px * var(--u)); height: calc(28px * var(--u)); border-radius: 50%; background: #cfc0a0 center / cover no-repeat; border: 2px solid #8a6a3a; flex: none; }
+.tb-speed { gap: calc(4px * var(--u)); }
+.tb-speed .btn-round { font-size: .75em; width: calc(34px * var(--u)); height: calc(34px * var(--u)); }
+.tb-speed .btn-round.active { outline: 3px solid var(--gold); outline-offset: -2px; }
+
+/* ---- ribbons under the bar ---------------------------------------------------------------------- */
+.notes { display: flex; flex-direction: column; align-items: center; gap: calc(2px * var(--u)); pointer-events: none; }
+.note { animation: note-in .25s ease-out; transition: opacity .4s; max-width: 100%; }
+.note.out { opacity: 0; }
+@keyframes note-in { from { transform: translateY(-10px); opacity: 0; } }
+.note span { overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- report tags and the report window -------------------------------------------------------- */
+.report-tags { position: absolute; left: calc(8px * var(--u)); bottom: calc(8px * var(--u)); display: flex; flex-direction: column-reverse; gap: calc(4px * var(--u)); align-items: flex-start; }
+.report-tag { display: inline-flex; align-items: center; gap: calc(6px * var(--u)); cursor: pointer; color: var(--ink); text-align: left; font: inherit; }
+.report-tag.won b { color: #2f7a2a; } .report-tag.lost b { color: #b23a2e; }
+.report-tag.fresh { animation: tag-flash 1s ease-in-out 3; }
+@keyframes tag-flash { 50% { transform: scale(1.08); filter: brightness(1.25); } }
+html.ui-art .report-tag { background: transparent; border: calc(14px * var(--u)) solid transparent; border-image: var(--paper) 64 fill / calc(14px * var(--u)) stretch; padding: 0 calc(6px * var(--u)); min-height: calc(44px * var(--u)); }
+html:not(.ui-art) .report-tag { padding: 4px 8px; }
+.dot { display: inline-block; width: .7em; height: .7em; border-radius: 50%; margin-right: .3em; border: 1px solid rgba(0,0,0,.4); vertical-align: baseline; }
+
+.modal-shade { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(10, 14, 22, .45); }
+.win { position: relative; width: min(calc(420px * var(--u)), 94vw); max-height: 84vh; overflow-y: auto; overflow-x: hidden; pointer-events: auto; }
+.win-close { position: absolute; top: calc(2px * var(--u)); right: calc(2px * var(--u)); z-index: 2; }
+.win-close .ico { width: 70%; height: 70%; }
+.win-foot { display: flex; justify-content: center; margin-top: calc(10px * var(--u)); }
+.report-win { padding: calc(4px * var(--u)); }
+.rep-title { display: flex; margin: 0 auto calc(10px * var(--u)); max-width: 100%; white-space: normal; text-align: center; height: auto; }
+html.ui-art .rep-title { height: calc(64px * var(--u)); white-space: nowrap; }
+.rep-sides { display: grid; grid-template-columns: 1fr 1fr; gap: calc(12px * var(--u)); margin-bottom: calc(10px * var(--u)); }
+.rep-side h3 { margin: 0 0 4px; font-size: 1em; color: var(--gold); }
+.rep-none { margin: 0; opacity: .7; }
+.loss { color: #ff8f80; }
+.rep-castle { display: grid; grid-template-columns: auto 1fr auto; gap: calc(8px * var(--u)); align-items: center; }
+.rep-note { margin: calc(6px * var(--u)) 0 0; }

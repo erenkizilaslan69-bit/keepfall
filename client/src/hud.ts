@@ -1,4 +1,4 @@
-import { clock, COLOR_CSS, esc, fmt, rate } from './format';
+import { COLOR_CSS, esc, fmt } from './format';
 import type { GameConnection } from './net';
 import type { BuildingType, BuildingView, CastleView, CommandResult, Job, RoomView, ScoutingView } from './types';
 import { WarPanel } from './war';
@@ -9,16 +9,15 @@ import { WarPanel } from './war';
 export class Hud {
   private built = false;
   private state: CastleView | null = null;
-  private toastTimer = 0;
-  private status = '';
   private queueKey = '';
-  private noticeTimer = 0;
   private war: WarPanel | null = null;
   private room: RoomView | null = null;
 
+  /** <paramref name="say"/>: where a command's error message goes (a red ribbon on the map). */
   constructor(
     private readonly root: HTMLElement,
     private readonly net: GameConnection,
+    private readonly say: (message: string) => void,
   ) {
     root.addEventListener('click', (e) => this.onClick(e));
   }
@@ -43,11 +42,6 @@ export class Hud {
     row.classList.remove('flash');
     void row.offsetWidth; // restart the animation
     row.classList.add('flash');
-  }
-
-  setStatus(text: string): void {
-    this.status = text;
-    if (this.built) this.q('#status').textContent = text;
   }
 
   // ---- structure ---------------------------------------------------------------------------
@@ -89,28 +83,6 @@ export class Hud {
       </div>`).join('');
 
     this.root.innerHTML = `
-      <header>
-        <div><span class="timer" id="timer"></span> <span class="muted" id="phase-label">hazırlık</span></div>
-        <div id="speed" class="speed">${s.speedControl
-          ? [1, 5, 20].map((x) => `<button data-action="speed" data-n="${x}">×${x}</button>`).join('')
-          : ''}</div>
-        <div class="muted" id="status">${esc(this.status)}</div>
-      </header>
-      <div id="incoming-banner" class="hidden"></div>
-      <div id="spectator" class="banner spectator-banner hidden">Kalen düştü — elendin. Artık sadece izleyicisin.</div>
-      <div id="starving" class="banner danger">Açlık! Yemek bitti, tüm üretim yarıya indi.</div>
-      <section class="resources">
-        <div><span class="res-name">Yemek</span> <b id="food"></b> <span class="muted" id="food-rate"></span></div>
-        <div><span class="res-name">Odun</span> <b id="wood"></b> <span class="muted" id="wood-rate"></span></div>
-        <div><span class="res-name">Demir</span> <b id="iron"></b> <span class="muted" id="iron-rate"></span></div>
-        <div class="foodbar-wrap">
-          <div class="foodbar" title="Yemek: çizgi = rezerv, çubuğun sonu = yeni kişinin doğacağı miktar">
-            <div class="fill" id="food-fill"></div>
-            <div class="mark" id="food-mark"></div>
-          </div>
-          <div class="muted small" id="food-bar-label"></div>
-        </div>
-      </section>
       <section>
         <div class="row">
           <span class="label">Nüfus <b id="population"></b></span>
@@ -126,43 +98,16 @@ export class Hud {
         <div id="queue" class="queue"></div>
       </section>
       ${scoutSection(s, sources)}
-      <div id="toast" class="toast"></div>
-      <div id="notice" class="toast info"></div>
-      <div id="war-modal" class="modal hidden"></div>`;
+`;
     this.built = true;
-    this.war = new WarPanel(this.q('#war-section'), this.q('#incoming-banner'), this.q('#war-modal'), this.net, (m) => this.toast(m));
+    this.war = new WarPanel(this.q('#war-section'), this.net, (m) => this.say(m));
   }
 
   // ---- values ------------------------------------------------------------------------------
 
   private refresh(s: CastleView): void {
-    this.q('#timer').textContent = clock(s.remainingSeconds);
-    this.q('#phase-label').textContent = s.phase === 'war' ? (s.war.famine ? 'savaş · kıtlık' : 'savaş') : 'hazırlık';
-    this.q('#spectator').classList.toggle('hidden', !s.eliminated);
-    this.root.classList.toggle('spectator', s.eliminated);
-    for (const btn of this.root.querySelectorAll<HTMLButtonElement>('[data-action="speed"]'))
-      btn.classList.toggle('active', Number(btn.dataset.n) === s.speed);
-
-    this.q('#starving').classList.toggle('hidden', !s.starving);
-    this.q('#food').textContent = fmt(s.resources.food);
-    this.q('#food-rate').textContent = `${rate(s.rates.foodIn - s.rates.foodOut)}/dk (+${s.rates.foodIn.toFixed(1)} −${s.rates.foodOut.toFixed(1)})`;
-    // Food bar: the line is the reserve growth keeps; the end of the bar is where the next person is born.
-    const threshold = s.foodReserve + s.nextPersonCost;
-    const scale = Math.max(threshold, s.resources.food, 1);
-    const fill = this.q('#food-fill');
-    fill.style.width = `${Math.min(100, (100 * s.resources.food) / scale)}%`;
-    fill.classList.toggle('low', s.resources.food < s.foodReserve);
-    this.q('#food-mark').style.left = `${(100 * s.foodReserve) / scale}%`;
-    this.q('#food-bar-label').textContent = s.growthEnabled
-      ? `rezerv ${fmt(s.foodReserve)} · yeni kişi ${fmt(threshold)} yemekte doğar`
-      : `rezerv ${fmt(s.foodReserve)} · büyüme kapalı`;
-    this.q('#wood').textContent = fmt(s.resources.wood);
-    this.q('#wood-rate').textContent = `${rate(s.rates.wood)}/dk`;
-    this.q('#iron').textContent = fmt(s.resources.iron);
-    this.q('#iron-rate').textContent = `${rate(s.rates.iron)}/dk`;
-
     this.q('#population').textContent = `${s.population}` + (s.soldiers ? ` (${s.soldiers} asker)` : '');
-    this.q('#growth-detail').textContent = `yeni kişi: ${s.nextPersonCost} yemek`;
+    this.q('#growth-detail').textContent = `yeni kişi: ${s.nextPersonCost} yemek · rezerv ${fmt(s.foodReserve)}`;
     this.q('#growth').textContent = s.growthEnabled ? 'Büyüme: açık' : 'Büyüme: kapalı';
     this.q('#growth').classList.toggle('active', s.growthEnabled);
 
@@ -254,17 +199,7 @@ export class Hud {
       }
       default: return;
     }
-    if (!result.ok) this.toast(result.error ?? 'Olmadı.');
-  }
-
-  /** A message about something that happened to us (not an error), shown a little longer. */
-  notify(message: string): void {
-    if (!this.built) return;
-    const el = this.q('#notice');
-    el.textContent = message;
-    el.classList.add('show');
-    clearTimeout(this.noticeTimer);
-    this.noticeTimer = window.setTimeout(() => el.classList.remove('show'), 6000);
+    if (!result.ok) this.say(result.error ?? 'Olmadı.');
   }
 
   private refreshScouting(sc: ScoutingView, now: number): void {
@@ -304,14 +239,6 @@ export class Hud {
           <div class="small">${r.soldiers.map((u) => `${esc(u.name)} ${u.count === 0 ? '0' : `≈${u.count}`}`).join(' · ')}</div>
           <div class="small muted">${r.buildings.map((b) => `${esc(b.name)} Sv ${b.level}`).join(' · ')}</div>
         </div>`).join('');
-  }
-
-  toast(message: string): void {
-    const el = this.q('#toast');
-    el.textContent = message;
-    el.classList.add('show');
-    clearTimeout(this.toastTimer);
-    this.toastTimer = window.setTimeout(() => el.classList.remove('show'), 2500);
   }
 
   private q<T extends HTMLElement = HTMLElement>(selector: string): T {

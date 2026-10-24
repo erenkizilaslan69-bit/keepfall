@@ -1,0 +1,41 @@
+import { COLOR_CSS, esc, fmt } from '../format';
+import type { BattleReportView } from '../types';
+
+export const dot = (color?: string) => `<span class="dot" style="background:${COLOR_CSS[color ?? ''] ?? '#888'}"></span>`;
+
+export function resultWord(b: BattleReportView): string {
+  if (b.winner === 'draw') return 'berabere';
+  return b.youWon ? 'kazandın' : 'kaybettin';
+}
+
+/** "Kırmızı'dan" etc. for "an army is coming" lines. */
+export const ABLATIVE: Record<string, string> = { blue: "Mavi'den", red: "Kırmızı'dan", yellow: "Sarı'dan", purple: "Mor'dan" };
+
+/** A battle report: both armies side by side with losses, then the castle (for a battle at a castle). */
+export function reportHtml(b: BattleReportView): string {
+  const side = (title: string, lines: BattleReportView['attackerUnits']) => `
+    <div class="rep-side"><h3>${title}</h3>${lines.length === 0 ? '<p class="rep-none">Kalede asker yoktu.</p>'
+      : lines.map((l) => `<div>${l.count} ${esc(l.name)} <span class="loss">−${l.lost}</span></div>`).join('')}</div>`;
+  const them = `${dot(b.opponentColor)}${esc(b.opponentName)}`;
+  const color = b.winner === 'draw' ? 'yellow' : b.youWon ? 'blue' : 'red';
+  if (b.kind === 'field') {
+    return `
+      <div class="rep-title ribbon ribbon-${color}">Yolda ${them} ile çarpışma — ${resultWord(b)}</div>
+      <div class="rep-sides">
+        ${side(b.attacking ? 'Senin ordun' : 'Onların ordusu', b.attackerUnits)}
+        ${side(b.attacking ? 'Onların ordusu' : 'Senin ordun', b.defenderUnits)}
+      </div>`;
+  }
+  const title = b.attacking ? `${them} kalesine saldırı` : `${them} saldırdı`;
+  const low = b.castleHpAfter < b.castleHpMax * 0.35;
+  return `
+    <div class="rep-title ribbon ribbon-${color}">${title} — ${resultWord(b)}</div>
+    <div class="rep-sides">
+      ${side(b.attacking ? 'Senin ordun' : 'Saldıran', b.attackerUnits)}
+      ${side(b.attacking ? 'Savunan' : 'Senin savunman', b.defenderUnits)}
+    </div>
+    <div class="rep-castle"><span>${b.attacking ? 'Onların kalesi' : 'Kalen'}</span>
+      <div class="gbar${low ? ' low' : ''}"><div class="fill" style="width:${(100 * b.castleHpAfter) / b.castleHpMax}%"></div></div>
+      <span>${fmt(b.castleHpAfter)} / ${fmt(b.castleHpMax)}</span></div>
+    <p class="rep-note">${b.castleDamage > 0 ? `Kale ${fmt(b.castleDamage)} hasar aldı.` : 'Kale hasar almadı.'}${b.defenderEliminated ? ' <b>Kale düştü!</b>' : ''}</p>`;
+}

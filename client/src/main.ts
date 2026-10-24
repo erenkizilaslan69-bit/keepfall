@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import './style.css';
 import { Hud } from './hud';
+import { GameUi } from './ui/game-ui';
 import { loadName, saveName } from './identity';
 import { GameConnection, type ConnectionStatus } from './net';
 import { WorldScene } from './scene/WorldScene';
@@ -39,6 +40,7 @@ let status = '';
 let lobby: LobbyScreen | null = null;
 let end: EndScreen | null = null;
 let hud: Hud | null = null;
+let ui: GameUi | null = null;
 let game: Phaser.Game | null = null;
 let scene: WorldScene | null = null;
 
@@ -58,10 +60,10 @@ const net = new GameConnection({
     scene?.setMap(state);
   },
   matchEnded: (s) => { summary = s; end?.setSummary(s); },
-  notification: (text) => hud?.notify(text),
+  notification: (text) => ui?.notify(text),
   status: (s) => {
     status = statusText[s];
-    hud?.setStatus(status);
+    ui?.setStatus(status, s === 'connected');
     if (s === 'disconnected' && screen !== 'home') showBanner('Sunucuyla bağlantı yok. Sayfayı yenileyince kaldığın yere dönersin.');
   },
 });
@@ -82,6 +84,7 @@ function onRoom(r: RoomView): void {
   else if (screen === 'game') {
     document.getElementById('roster')!.innerHTML = rosterHtml(r, net.seat);
     hud?.setRoom(r);
+    ui?.setRoom(r);
     scene?.setRoom(r);
   }
   else if (screen === 'end') end!.update(r);
@@ -92,6 +95,7 @@ function onCastle(c: CastleView): void {
   if (c.summary) { summary = c.summary; end?.setSummary(c.summary); }
   if (screen === 'game') {
     hud!.update(c);
+    ui?.update(c);
     if (!scene && lastLayout) startScene(c.color, lastLayout);
     scene?.setState(c);
   }
@@ -103,6 +107,8 @@ function clear(): void {
   document.documentElement.classList.remove('in-game');
   game?.destroy(true);
   game = null; scene = null; hud = null; lobby = null; end = null;
+  ui?.destroy();
+  ui = null;
   app.innerHTML = '';
 }
 
@@ -152,9 +158,11 @@ function showGame(): void {
       <div id="ui" class="ui-root"></div>
       <aside id="panel"><div id="roster"></div><div id="hud"><p class="muted">Kale hazırlanıyor…</p></div></aside>
     </main>`;
-  hud = new Hud(document.getElementById('hud')!, net);
+  ui = new GameUi(document.getElementById('ui')!, net, net.seat);
+  ui.setStatus(status, status === statusText.connected);
+  if (import.meta.env.DEV) (window as unknown as { keepfallUi: GameUi }).keepfallUi = ui;
+  hud = new Hud(document.getElementById('hud')!, net, (message) => ui?.error(message));
   document.getElementById('home-cam')!.addEventListener('click', () => scene?.centerOnCastle());
-  hud.setStatus(status);
   if (lastCastle) onCastle(lastCastle);
 }
 

@@ -1,40 +1,27 @@
-import { COLOR_CSS, esc, fmt } from './format';
+import { COLOR_CSS, esc } from './format';
 import type { GameConnection } from './net';
-import type { ArmyMode, ArmyView, BattleReportView, CastleView, IncomingView, RoomView, Row } from './types';
+import type { ArmyMode, ArmyView, CastleView, RoomView, Row } from './types';
 
 // The war part of the panel: castle HP and famine, the "army approaching" warning with a live
 // countdown, the attack form, our armies, the defence line-up and battle reports (a new report
 // pops up once). Built once, then updated in place so inputs keep their values between ticks.
 
 const dot = (color?: string) => `<span class="dot small-dot" style="background:${COLOR_CSS[color ?? ''] ?? '#888'}"></span>`;
-const ABLATIVE: Record<string, string> = { blue: "Mavi'den", red: "Kırmızı'dan", yellow: "Sarı'dan", purple: "Mor'dan" };
 
 export class WarPanel {
   private built = false;
   private targetsKey = '';
-  private battlesKey = '';
   private armiesKey = '';
-  private seenBattles: Set<number> | null = null;
-  private incoming: IncomingView[] = [];
-  private incomingAt = 0;
-  private speed = 1;
   private state: CastleView | null = null;
   private room: RoomView | null = null;
 
   constructor(
     private readonly section: HTMLElement,
-    private readonly banner: HTMLElement,
-    private readonly modal: HTMLElement,
     private readonly net: GameConnection,
     private readonly toast: (message: string) => void,
   ) {
     section.addEventListener('click', (e) => void this.onClick(e));
     section.addEventListener('input', (e) => this.onInput(e));
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal || (e.target as HTMLElement).closest('[data-w-close]')) modal.classList.add('hidden');
-    });
-    // The countdown runs between server ticks too.
-    window.setInterval(() => this.renderBanner(), 250);
   }
 
   update(s: CastleView, room: RoomView | null): void {
@@ -53,13 +40,7 @@ export class WarPanel {
     const priorityOptions = `<option value="">ön sıra</option>${s.units.map((u) => `<option value="${u.id}">önce ${esc(u.name)}</option>`).join('')}`;
 
     this.section.innerHTML = `
-      <h2>Savaş <span class="muted" id="war-phase"></span></h2>
-      <div class="row wall-row">
-        <span class="label">Kale</span>
-        <div class="hpbar"><div id="wall-fill"></div></div>
-        <span class="count" id="wall-text"></span>
-      </div>
-      <p class="muted small" id="famine"></p>
+      <h2>Savaş</h2>
       <div id="attack">
         <p class="muted small" id="attack-locked"></p>
         <div id="attack-form">
@@ -91,8 +72,7 @@ export class WarPanel {
         <div class="row"><span class="label">Okçu hedefi</span><span></span><select data-d="priority">${priorityOptions}</select></div>
         <div class="row"><span></span><span></span><button data-war-action="defense">Kaydet</button></div>
       </details>
-      <h2>Savaş raporları</h2>
-      <div id="battles"><p class="muted small">Henüz savaş yok.</p></div>`;
+`;
     this.q<HTMLSelectElement>('[data-d="priority"]').value = s.war.defense.archerPriority ?? '';
     this.built = true;
   }
@@ -101,15 +81,6 @@ export class WarPanel {
 
   private refresh(s: CastleView, room: RoomView | null): void {
     const w = s.war;
-    this.speed = s.speed;
-    this.q('#war-phase').textContent = s.phase === 'war' ? '(savaş fazı)' : s.phase === 'preparation' ? '(hazırlık)' : '';
-    this.q('#wall-fill').style.width = `${(100 * w.wallHp) / w.maxWallHp}%`;
-    this.q('#wall-fill').classList.toggle('low', w.wallHp < w.maxWallHp * 0.35);
-    this.q('#wall-text').textContent = `${fmt(w.wallHp)} / ${fmt(w.maxWallHp)}`;
-    this.q('#famine').textContent = w.famine
-      ? 'Kıtlık: yemek üretimi yarıya indi.'
-      : s.phase === 'war' ? `Kıtlık ${Math.ceil(w.famineStartsIn)} sn sonra başlar (yemek üretimi yarıya iner).` : '';
-
     // Attack form: only in the war, only for the living.
     const canAttack = s.phase === 'war' && !s.eliminated;
     this.q('#attack-form').classList.toggle('hidden', !canAttack);
@@ -145,55 +116,7 @@ export class WarPanel {
     send.disabled = total === 0 || targets.length === 0;
     this.renderArmies(w.armies);
 
-    // Each state carries fresh "arrives in" values; count down locally from the moment it came.
-    this.incoming = w.incoming;
-    this.incomingAt = performance.now();
-    this.renderBanner();
-
-    // Rebuilt only when the list changes, so a click on a report is never lost to a refresh.
-    const battlesKey = w.battles.map((b) => b.id).join(',');
-    if (battlesKey !== this.battlesKey) {
-      this.battlesKey = battlesKey;
-      this.renderBattles(w.battles);
-    }
-
-    // Pop up battles that arrived since last time (not the ones we already had on joining).
-    const ids = new Set(w.battles.map((b) => b.id));
-    if (this.seenBattles === null) this.seenBattles = ids;
-    else {
-      const fresh = w.battles.find((b) => !this.seenBattles!.has(b.id));
-      this.seenBattles = new Set([...this.seenBattles, ...ids]);
-      // Reports come when a battle is over (it has played out on the map by then).
-      if (fresh) this.openReport(fresh);
-    }
   }
-
-  private renderBattles(battles: BattleReportView[]): void {
-    this.q('#battles').innerHTML = battles.length === 0
-      ? '<p class="muted small">Henüz savaş yok.</p>'
-      : battles.map((b) => `
-        <div class="report battle ${b.youWon ? 'won' : b.winner === 'draw' ? 'draw' : 'lost'}" data-war-action="open" data-id="${b.id}">
-          <div class="report-head">${dot(b.opponentColor)}<b>${esc(b.opponentName)}</b>
-            <span class="muted small">${b.attacking ? 'saldırın' : 'savunman'} · ${resultWord(b)}</span></div>
-          <div class="small">${b.castleDamage > 0 ? `Kale hasarı ${fmt(b.castleDamage)}` : 'Kale hasarı yok'}${b.defenderEliminated ? ' · kale düştü' : ''}</div>
-        </div>`).join('');
-  }
-
-  /** "Kırmızı'dan bir ordu yaklaşıyor! 7 sn" — big, red, counting down between ticks. */
-  private renderBanner(): void {
-    const elapsed = ((performance.now() - this.incomingAt) / 1000) * this.speed;
-    this.banner.classList.toggle('hidden', this.incoming.length === 0);
-    this.banner.innerHTML = this.incoming.map((w) => `
-      <div class="incoming">⚠ ${esc(ABLATIVE[w.fromColor] ?? 'Bir rakipten')} bir ordu yaklaşıyor!
-        <b>${Math.max(0, Math.ceil(w.arrivesInSeconds - elapsed))}</b> sn</div>`).join('');
-  }
-
-  private openReport(b: BattleReportView): void {
-    this.modal.innerHTML = `<div class="modal-box">${reportHtml(b)}<button class="primary" data-w-close>Tamam</button></div>`;
-    this.modal.classList.remove('hidden');
-  }
-
-  // ---- input -------------------------------------------------------------------------------
 
   /**
    * Our armies on the road. The rows are rebuilt only when something about them changes (not their
@@ -231,11 +154,6 @@ export class WarPanel {
     const el = (e.target as HTMLElement).closest<HTMLElement>('[data-war-action]');
     if (!el || !this.state) return;
     const action = el.dataset.warAction;
-    if (action === 'open') {
-      const b = this.state.war.battles.find((x) => x.id === Number(el.dataset.id));
-      if (b) this.openReport(b);
-      return;
-    }
     if ((el as HTMLButtonElement).disabled) return;
     if (action === 'send') {
       const units: Record<string, number> = {};
@@ -265,38 +183,4 @@ export class WarPanel {
   private q<T extends HTMLElement = HTMLElement>(selector: string): T {
     return this.section.querySelector<T>(selector)!;
   }
-}
-
-function resultWord(b: BattleReportView): string {
-  if (b.winner === 'draw') return 'berabere';
-  return b.youWon ? 'kazandın' : 'kaybettin';
-}
-
-/** Both armies side by side with losses, then the castle. */
-export function reportHtml(b: BattleReportView): string {
-  const side = (title: string, lines: BattleReportView['attackerUnits']) => `
-    <div class="side"><h3>${title}</h3>${lines.length === 0 ? '<p class="muted small">Kalede asker yoktu.</p>'
-      : lines.map((l) => `<div class="small">${l.count} ${esc(l.name)} <span class="loss">−${l.lost}</span></div>`).join('')}</div>`;
-  const them = `${dot(b.opponentColor)}${esc(b.opponentName)}`;
-  if (b.kind === 'field') {
-    // Two armies on the road: no castle in it.
-    return `
-    <h2>Yolda ${them} ile çarpışma — ${resultWord(b)}</h2>
-    <div class="battle-sides">
-      ${side(b.attacking ? 'Senin ordun' : 'Onların ordusu', b.attackerUnits)}
-      ${side(b.attacking ? 'Onların ordusu' : 'Senin ordun', b.defenderUnits)}
-    </div>`;
-  }
-  const title = b.attacking ? `${them} kalesine saldırı` : `${them} saldırdı`;
-  return `
-    <h2>${title} — ${resultWord(b)}</h2>
-    <div class="battle-sides">
-      ${side(b.attacking ? 'Senin ordun' : 'Saldıran', b.attackerUnits)}
-      ${side(b.attacking ? 'Savunan' : 'Senin savunman', b.defenderUnits)}
-    </div>
-    <div class="row wall-row"><span class="label">${b.attacking ? 'Onların kalesi' : 'Kalen'}</span>
-      <div class="hpbar"><div style="width:${(100 * b.castleHpAfter) / b.castleHpMax}%"></div></div>
-      <span class="count">${fmt(b.castleHpAfter)} / ${fmt(b.castleHpMax)}</span></div>
-    <p class="small">${b.castleDamage > 0 ? `Kale ${fmt(b.castleDamage)} hasar aldı.` : 'Kale hasar almadı.'}
-      ${b.defenderEliminated ? '<b>Kale düştü.</b>' : ''}</p>`;
 }
