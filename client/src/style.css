@@ -223,3 +223,13 @@ select { background: #3a352c; color: var(--text); border: 1px solid #4d473b; bor
 .battle-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
 .battle-sides h3 { font-size: 13px; color: var(--muted); margin: 0 0 4px; }
 .loss { color: #ff8a80; }
+
+/* ---- end of match ---------------------------------------------------------------------- */
+
+.ranking { list-style: none; padding: 0; margin: 16px 0; }
+.ranking li { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 6px; }
+.ranking li.winner { border-color: var(--accent); background: rgba(217, 164, 65, 0.12); }
+.ranking .place { font-weight: 700; width: 24px; }
+.ranking .pname { flex: 1; font-weight: 600; }
+.other-summary { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
+.other-summary summary { cursor: pointer; font-weight: 600; }

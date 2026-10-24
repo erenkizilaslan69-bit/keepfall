@@ -149,28 +149,31 @@ export class LobbyScreen {
 
 // ---- in-game player list -------------------------------------------------------------------
 
-/** Other players during the match: only name, colour and whether they are connected. */
+/** Other players during the match: only name, colour, connected and whether they are still in. */
 export function rosterHtml(room: RoomView, mySeat: number): string {
   return `<ul class="roster">${room.players.map((p) => `
-    <li class="${p.connected ? '' : 'offline'}" title="${esc(COLOR_NAMES[p.color] ?? '')}">
+    <li class="${p.connected && !p.eliminated ? '' : 'offline'}" title="${esc(COLOR_NAMES[p.color] ?? '')}">
       ${dot(p.color)}<span>${esc(p.name)}${p.seat === mySeat ? ' (sen)' : ''}</span>
-      ${p.connected ? '' : '<span class="tag warn">bağlantı yok</span>'}
+      ${p.eliminated ? '<span class="tag warn">elendi</span>' : p.connected ? '' : '<span class="tag warn">bağlantı yok</span>'}
     </li>`).join('')}</ul>`;
 }
 
-// ---- end of preparation --------------------------------------------------------------------
+// ---- end of the match ----------------------------------------------------------------------
 
+/** Winner, ranking and everyone's summary (the match is over, nothing is hidden any more). */
 export class EndScreen {
   private summary: SummaryView | null = null;
+  private resultShown = false;
   private readonly root: HTMLElement;
 
   constructor(parent: HTMLElement, private readonly net: GameConnection, private readonly mySeat: number) {
     const root = this.root = mount(parent, `
       <div class="screen end">
-        <h1>Savaş fazı yakında</h1>
-        <p class="muted">Hazırlık bitti. Ordular çarpışmadan önce: senin ekonomin.</p>
+        <h1 id="end-title">Maç bitti</h1>
+        <p class="muted" id="end-reason"></p>
+        <div id="ranking"></div>
         <div id="summary"><p class="muted">Özet hazırlanıyor…</p></div>
-        <div id="roster"></div>
+        <div id="others"></div>
         <div class="start">
           <button data-a="lobby" id="lobby" class="primary hidden">Lobiye dön</button>
           <p class="muted small" id="lobby-hint"></p>
@@ -189,11 +192,33 @@ export class EndScreen {
   setSummary(summary: SummaryView): void {
     if (this.summary) return;
     this.summary = summary;
-    this.root.querySelector('#summary')!.innerHTML = summaryHtml(summary);
+    this.root.querySelector('#summary')!.innerHTML = `<h2>Senin özetin</h2>${summaryHtml(summary)}`;
   }
 
   update(room: RoomView): void {
-    this.root.querySelector('#roster')!.innerHTML = rosterHtml(room, this.mySeat);
+    const r = room.result;
+    if (r && !this.resultShown) {
+      this.resultShown = true;
+      const won = r.winners.includes(this.mySeat);
+      const names = r.ranking.filter((x) => r.winners.includes(x.seat)).map((x) => `${dot(x.color)}${esc(x.name)}`).join(', ');
+      this.root.querySelector('#end-title')!.innerHTML = won
+        ? (r.winners.length > 1 ? 'Berabere — zaferi paylaştın!' : 'Kazandın!')
+        : `Kazanan: ${names || '—'}`;
+      this.root.querySelector('#end-reason')!.textContent = r.byElimination
+        ? 'Son ayakta kalan kale kazandı.'
+        : 'Süre bitti: en yüksek nüfus kazandı.';
+      this.root.querySelector('#ranking')!.innerHTML = `
+        <ol class="ranking">${r.ranking.map((x) => `
+          <li class="${r.winners.includes(x.seat) ? 'winner' : ''}">
+            <span class="place">${x.place}.</span>${dot(x.color)}
+            <span class="pname">${esc(x.name)}${x.seat === this.mySeat ? ' <span class="muted">(sen)</span>' : ''}</span>
+            <span class="muted small">${x.eliminated ? 'elendi' : `nüfus ${x.population}`}</span>
+          </li>`).join('')}</ol>`;
+      const mine = r.summaries.find((x) => x.seat === this.mySeat);
+      if (mine) this.setSummary(mine.summary);
+      this.root.querySelector('#others')!.innerHTML = r.summaries.filter((x) => x.seat !== this.mySeat).map((x) => `
+        <details class="other-summary"><summary>${dot(x.color)}${esc(x.name)} · özet</summary>${summaryHtml(x.summary)}</details>`).join('');
+    }
     const isHost = !!room.players.find((p) => p.seat === this.mySeat)?.isHost;
     this.root.querySelector('#lobby')!.classList.toggle('hidden', !isHost);
     this.root.querySelector('#lobby-hint')!.textContent = isHost
@@ -219,6 +244,8 @@ function summaryHtml(s: SummaryView): string {
       <div>Binalar</div><div>${buildings}</div>
       <div>Açlık</div><div>${Math.round(s.starvingSeconds)} sn</div>
       <div>Boşta</div><div>${(s.idleWorkerSeconds / 60).toFixed(1)} işçi-dakika (ortalama ${(s.idleWorkerSeconds / 60 / Math.max(minutes, 1e-9)).toFixed(1)} kişi boşta)</div>
+      <div>Savaş</div><div>${s.war.attacksLaunched} saldırı · ${s.war.enemiesKilled} düşman öldürüldü · ${s.war.soldiersLost} asker kaybı</div>
+      <div>Kale</div><div>${fmt(s.war.castleDamageDealt)} hasar verdin · ${fmt(s.war.castleDamageTaken)} hasar aldın · ${s.war.eliminated ? 'kale düştü' : `can ${fmt(s.war.wallHp)} / ${fmt(s.war.maxWallHp)}`}</div>
     </div>
     ${chart(s)}`;
 }
