@@ -244,3 +244,24 @@ html.ui-art .unit-row .btn { border-width: calc(12px * var(--u)); border-image-w
 .order { display: grid; grid-template-columns: auto 1fr auto; gap: calc(8px * var(--u)); align-items: center; padding: calc(2px * var(--u)) 0; }
 .order .gbar { min-width: calc(60px * var(--u)); }
 .order .btn-round { width: calc(26px * var(--u)); height: calc(26px * var(--u)); }
+
+.win.wide { width: calc(400px * var(--u)); }
+.win .row.center { justify-content: center; }
+.small { font-size: .88em; }
+.tabs { display: flex; gap: calc(6px * var(--u)); margin-bottom: calc(8px * var(--u)); }
+.tab { flex: 1; cursor: pointer; font: inherit; color: var(--ink); background: rgba(90, 66, 34, .14); border: 2px solid rgba(90, 66, 34, .4); border-radius: 6px; padding: calc(3px * var(--u)) calc(4px * var(--u)); }
+.tab.on { background: #3f86c7; color: #fff; border-color: #1b4a73; text-shadow: 0 1px 0 rgba(0,0,0,.4); }
+.win select, .win input[type="number"] {
+  color: var(--ink); background: #f6ecd0; border: 2px solid #8a6a3a; border-radius: 4px; padding: calc(2px * var(--u)) calc(4px * var(--u)); max-width: 100%;
+}
+.win input[type="number"] { width: 3.4em; text-align: center; -moz-appearance: textfield; }
+.win input[type="number"]::-webkit-outer-spin-button, .win input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.muted-ink { color: var(--ink-soft); }
+.who { display: flex; align-items: center; gap: calc(10px * var(--u)); margin-bottom: calc(2px * var(--u)); }
+.avatar.big { width: calc(44px * var(--u)); height: calc(44px * var(--u)); }
+.atk-head, .atk-row { display: grid; grid-template-columns: 1fr auto auto; gap: calc(8px * var(--u)); align-items: center; }
+.atk-head { color: var(--ink-soft); font-size: .85em; padding-bottom: 2px; }
+.atk-row { padding: calc(3px * var(--u)) 0; border-bottom: 1px solid rgba(90, 66, 34, .22); }
+.scout-report { background: rgba(90, 66, 34, .1); border-radius: 6px; padding: calc(6px * var(--u)) calc(8px * var(--u)); margin-top: calc(6px * var(--u)); }
+.win .btn-red { color: #fff; }
+.win .gbar { margin: calc(4px * var(--u)) 0; }

@@ -214,7 +214,9 @@ window.addEventListener('popstate', () => location.reload());
 
 async function main(): Promise<void> {
   watchUiScale();
-  await loadUiArt(); // the UI art is cut once; without it the UI falls back to plain boxes
+  // The UI art is cut once; without it the UI falls back to plain boxes. Never wait long for it: it
+  // can stall in a background tab, and it switches itself on whenever it is ready.
+  await Promise.race([loadUiArt(), new Promise((resolve) => setTimeout(resolve, 2500))]);
   try {
     await net.start();
   } catch (e) {

@@ -20,8 +20,10 @@ export interface Anchor { x: number; y: number; reach: number }
 
 export interface WinContext {
   net: GameConnection;
-  /** Show a message for something that did not work. */
+  /** Show a message for something that did not work (a red ribbon). */
   say: (message: string) => void;
+  /** Show a message for something that worked (a blue ribbon). */
+  info: (message: string) => void;
   /** Open a window for another target (e.g. from a button). */
   open: (target: Target) => void;
   close: () => void;

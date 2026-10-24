@@ -201,6 +201,17 @@ export class WorldScene extends Phaser.Scene {
     if (!this.dragged) this.onSelect(target);
   }
 
+  /** Look at the castle a window is about (an enemy's is far away; ours is where the camera starts). */
+  focus(target: Target): void {
+    if (target.kind === 'castle') { this.centerOnCastle(); return; }
+    if (target.kind !== 'enemy') return;
+    const region = this.layout.regions.find((r) => r.seat === target.seat);
+    if (!region) return;
+    const cam = this.cameras.main;
+    cam.setZoom(Phaser.Math.Clamp(Math.min(cam.width / 1100, cam.height / 830), this.minZoom(), MAX_ZOOM));
+    this.lookAt({ x: region.origin.x + CASTLE.x / TILE, y: region.origin.y + (CASTLE.y - 120) / TILE });
+  }
+
   /** Where a point of the scene (px) is on the screen (CSS px). The canvas fills the window. */
   screenOf(p: { x: number; y: number }): { x: number; y: number } {
     const cam = this.cameras.main, v = cam.worldView;

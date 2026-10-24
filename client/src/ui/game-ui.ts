@@ -2,6 +2,8 @@ import type { GameConnection } from '../net';
 import type { CastleView, RoomView } from '../types';
 import type { WorldScene } from '../scene/WorldScene';
 import { BuildingWin } from './building-window';
+import { CastleWin } from './castle-window';
+import { EnemyWin } from './enemy-window';
 import { WindowManager, sameTarget, type Target, type Win, type WinContext } from './windows';
 import { Notifications, type NoteKind } from './notifications';
 import { ReportTags } from './reports';
@@ -26,18 +28,23 @@ export class GameUi {
 
   constructor(root: HTMLElement, net: GameConnection, seat: number) {
     root.innerHTML = '';
+    const seat0 = seat;
     this.top = document.createElement('div');
     this.top.className = 'ui-top';
     root.appendChild(this.top);
     this.bar = new TopBar(this.top, {
       speed: (n) => void net.setSpeed(n).then((r) => { if (!r.ok) this.error(r.error ?? 'Hız değişmedi.'); }),
-      player: () => {},
+      player: (seat) => {
+        const target: Target = seat === seat0 ? { kind: 'castle' } : { kind: 'enemy', seat };
+        this.scene?.focus(target);
+        this.open(target);
+      },
     });
     this.bar.setSeat(seat);
     this.notes = new Notifications(this.top);
     this.reports = new ReportTags(root);
     this.windows = new WindowManager(root, () => this.top.getBoundingClientRect().bottom);
-    this.ctx = { net, say: (m) => this.error(m), open: (t) => this.open(t), close: () => this.windows.close() };
+    this.ctx = { net, say: (m) => this.error(m), info: (m) => this.notes.push(m, 'info', 3500), open: (t) => this.open(t), close: () => this.windows.close() };
     window.addEventListener('keydown', this.onKey);
   }
 
@@ -64,6 +71,8 @@ export class GameUi {
   private makeWindow(target: Target, s: CastleView): Win | null {
     switch (target.kind) {
       case 'building': return new BuildingWin(this.ctx, target.type, s);
+      case 'castle': return new CastleWin(this.ctx, s);
+      case 'enemy': return new EnemyWin(this.ctx, target.seat, s, this.room);
       default: return null; // the other windows come in the next steps
     }
   }
