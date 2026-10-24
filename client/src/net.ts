@@ -1,6 +1,6 @@
 import * as signalR from '@microsoft/signalr';
 import { loadIdentity, saveIdentity } from './identity';
-import type { ArmyMode, BattleStartedView, BuildingType, CastleView, CommandResult, Job, JoinView, MapLayoutView, MapStateView, RoomView, Row, SummaryView } from './types';
+import type { ArmyMode, BattleStartedView, BuildingType, CastleView, CommandResult, Job, JoinView, MapLayoutView, MapStateView, RoomView, Row, SpectatorStateView, SpectatorWaitView, SummaryView } from './types';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
 
@@ -13,6 +13,10 @@ export interface ConnectionEvents {
   mapState: (state: MapStateView) => void;
   /** A battle we fight in has started (or is going on, after a reconnect): the whole record to replay. */
   battleStarted: (battle: BattleStartedView) => void;
+  /** Only once our castle has fallen: the whole map, a fixed delay behind the game. */
+  spectatorState: (state: SpectatorStateView) => void;
+  /** Our castle has fallen and the view has not started yet. */
+  spectatorWait: (wait: SpectatorWaitView) => void;
   matchEnded: (summary: SummaryView) => void;
   /** Something that happened to us, e.g. "Kırmızı'nın gözcüsü kaleni gözetledi." */
   notification: (text: string) => void;
@@ -38,6 +42,8 @@ export class GameConnection {
     this.hub.on('MapLayout', (layout: MapLayoutView) => this.on.mapLayout(layout));
     this.hub.on('MapState', (state: MapStateView) => this.on.mapState(state));
     this.hub.on('BattleStarted', (battle: BattleStartedView) => this.on.battleStarted(battle));
+    this.hub.on('SpectatorState', (state: SpectatorStateView) => this.on.spectatorState(state));
+    this.hub.on('SpectatorWait', (wait: SpectatorWaitView) => this.on.spectatorWait(wait));
     this.hub.on('MatchEnded', (summary: SummaryView) => this.on.matchEnded(summary));
     this.hub.on('Notification', (text: string) => this.on.notification(text));
     this.hub.onreconnecting(() => this.on.status('reconnecting'));

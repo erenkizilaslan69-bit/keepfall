@@ -297,3 +297,17 @@ html.ui-art .wl-sign {
 .wl-warn .wl-sign b { color: #b23a2e; animation: blink 1.2s steps(2) infinite; }
 .wl-fight .wl-sign b { color: #b23a2e; }
 .wl-small { font-size: calc(12px * var(--u)); }
+
+/* ---- a fallen player's countdown before the spectator view starts ------------------------------- */
+.spec-wait {
+  position: absolute; inset: 0; display: grid; place-items: center; z-index: 5;
+  background: radial-gradient(ellipse at center, rgba(10, 20, 28, .55), rgba(5, 10, 16, .88));
+}
+.spec-wait .paper { width: min(calc(440px * var(--u)), 92vw); }
+.spec-wait .ribbon { display: flex; width: fit-content; margin: calc(-50px * var(--u)) auto calc(8px * var(--u)); font-size: 1.3em; }
+html:not(.ui-art) .spec-wait .ribbon { margin-top: 0; }
+.spec-body { padding: 0 calc(14px * var(--u)) calc(8px * var(--u)); text-align: center; }
+.spec-body p { margin: calc(8px * var(--u)) 0; }
+.spec-body p:first-child { font-size: 1.35em; }
+.spec-n { font-size: 1.6em; color: #b23a2e; font-variant-numeric: tabular-nums; }
+.spec-body .gbar { margin: calc(10px * var(--u)) auto; max-width: 90%; }

@@ -111,10 +111,39 @@ export function preloadAssets(scene: Phaser.Scene, color: PlayerColor, others: P
   for (const [c, folder] of Object.entries(COLOR_FOLDER)) scene.load.image(`castle-${c}`, url(`Buildings/${folder} Buildings/Castle.png`));
 }
 
+/** Building images that come in the owner colour (our own have plain keys, the others get "<colour>-<key>"). */
+export const COLORED_IMAGES = ['house1', 'house2', 'house3', 'tower', 'barracks', 'archery'];
+
+/**
+ * A spectator sees every castle inside, so the other colours buildings and every unit sheet are needed too
+ * ("<colour>-<key>"). Loaded only when a player falls; `done` runs when they are there.
+ */
+export function loadSpectatorAssets(scene: Phaser.Scene, others: PlayerColor[], done: () => void): void {
+  const missing: SheetDef[] = [];
+  for (const c of others) {
+    for (const s of units(COLOR_FOLDER[c])) {
+      const key = `${c}-${s.key}`;
+      if (!scene.textures.exists(key)) missing.push({ ...s, key });
+    }
+    const b = buildingImages(c);
+    for (const name of COLORED_IMAGES) scene.load.image(`${c}-${name}`, url(b[name]));
+  }
+  for (const s of missing) scene.load.spritesheet(s.key, url(s.path), { frameWidth: s.frame, frameHeight: s.frameHeight ?? s.frame });
+  scene.load.once('complete', () => {
+    createSheetAnimations(scene, missing);
+    done();
+  });
+  scene.load.start();
+}
+
 /** Looping animation per sheet, named after the sheet key. */
 export function createAnimations(scene: Phaser.Scene, color: PlayerColor, others: PlayerColor[] = []): void {
+  createSheetAnimations(scene, [...sheets(color), ...moverSheets(others)]);
+}
+
+function createSheetAnimations(scene: Phaser.Scene, list: SheetDef[]): void {
   const rates: Record<string, number> = { 'pawn-run': 12, dust: 14, explosion: 14 };
-  for (const s of [...sheets(color), ...moverSheets(others)]) {
+  for (const s of list) {
     if (scene.anims.exists(s.key)) continue;
     if (s.key === 'tiles') continue;
     const texture = scene.textures.get(s.key);

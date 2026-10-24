@@ -16,6 +16,8 @@ export class Minimap {
   private readonly fog: HTMLCanvasElement;
   private readonly k: number;
   private lastDraw = 0;
+  /** A spectator sees everything: no fog. */
+  fogless = false;
 
   constructor(parent: HTMLElement, private readonly layout: MapLayoutView, onJump: (tile: Vec) => void) {
     this.k = SIZE / layout.size;
@@ -61,7 +63,7 @@ export class Minimap {
       f.arc(c.center.x * k, c.center.y * k, c.radius * k, 0, Math.PI * 2);
       f.fill();
     }
-    ctx.drawImage(this.fog, 0, 0);
+    if (!this.fogless) ctx.drawImage(this.fog, 0, 0);
 
     for (const m of movers) {
       ctx.beginPath();

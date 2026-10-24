@@ -1,12 +1,14 @@
 import Phaser from 'phaser';
-import type { ArmyView, BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
+import type { ArmyView, SpectatorCastleView, SpectatorStateView, BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
 import type { Minimap } from '../minimap';
 import type { Anchor, Target } from '../ui/windows';
 import type { WorldLabels } from '../ui/world-labels';
 import { COLOR_CSS, esc } from '../format';
-import { createAnimations, preloadAssets } from './assets';
-import { CASTLE, COURTYARD, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH, type Part } from './layout';
+import { createAnimations, loadSpectatorAssets, preloadAssets } from './assets';
+import { CASTLE, COURTYARD, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH } from './layout';
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
+import { buildingSign, placePart, sign } from './parts';
+import { RegionDisplay } from './RegionDisplay';
 import { BattlePlayer } from './BattlePlayer';
 import { Fog } from './Fog';
 import { Movers } from './Movers';
@@ -44,7 +46,6 @@ interface BuildingSlot {
   dust: Phaser.GameObjects.Sprite;
 }
 
-const sign = (inner: string, cls = '') => `<div class="wl-sign ${cls}">${inner}</div>`;
 
 /**
  * The shared map with our own corner in full detail: everything here is cosmetic, driven by the
@@ -81,7 +82,12 @@ export class WorldScene extends Phaser.Scene {
   private trees: { sprite: Phaser.GameObjects.Sprite; tile: Vec }[] = [];
   /** The server's clock at the last castle state, and when that arrived (to run it on between ticks). */
   private clock = { elapsed: 0, at: performance.now(), speed: 1 };
-  private otherCastles = new Map<number, { image: Phaser.GameObjects.Image; name: string; color: PlayerColor }>();
+  private otherCastles = new Map<number, { image: Phaser.GameObjects.Image; name: string; color: PlayerColor; wall?: { hp: number; max: number } }>();
+  /** A fallen player sees every castle's inside, a fixed delay behind the game (see setSpectator). */
+  private spectating = false;
+  private pendingSpectator: SpectatorStateView | null = null;
+  private regions = new Map<number, RegionDisplay>();
+  private spectatorAssets: 'none' | 'loading' | 'ready' = 'none';
   private castleSprite!: Phaser.GameObjects.Image;
   private lastWallHp: number | null = null;
 
@@ -128,10 +134,12 @@ export class WorldScene extends Phaser.Scene {
     this.ready = true;
     if (this.state) this.apply(this.state);
     if (this.map) this.setMap(this.map);
+    if (this.pendingSpectator) this.setSpectator(this.pendingSpectator);
   }
 
   /** What we see on the map this tick. */
   setMap(state: MapStateView): void {
+    if (this.spectating) return; // the spectator pictures decide what is drawn
     this.map = state;
     if (!this.ready) return;
     this.movers.sync(state);
@@ -183,17 +191,85 @@ export class WorldScene extends Phaser.Scene {
       const c = this.otherCastles.get(p.seat);
       if (!c) continue;
       c.image.setAlpha(p.eliminated ? 0.45 : 1);
-      this.setEnemySign(p.seat, c, p.eliminated);
+      this.setEnemySign(p.seat, c, p.eliminated, c.wall);
     }
   }
 
-  private setEnemySign(seat: number, c: { name: string; color: PlayerColor }, fallen: boolean): void {
+  /** The sign under another player's castle: their name, and (to a spectator) the health of their walls. */
+  private setEnemySign(seat: number, c: { name: string; color: PlayerColor }, fallen: boolean, wall?: { hp: number; max: number }): void {
     const region = this.layout.regions.find((r) => r.seat === seat)!;
     const base = toWorld(region.origin);
+    const name = sign(`<i class="dot" style="background:${COLOR_CSS[c.color] ?? '#888'}"></i><b>${esc(c.name)}</b>${fallen ? ' <small>(düştü)</small>' : ''}`);
+    const p = wall ? Math.max(0, wall.hp / wall.max) : 0;
     this.labels.set(`castle:${seat}`, {
       x: base.x + CASTLE.x, y: base.y + CASTLE.y + 16, anchor: 'top',
-      html: sign(`<i class="dot" style="background:${COLOR_CSS[c.color] ?? '#888'}"></i><b>${esc(c.name)}</b>${fallen ? ' <small>(düştü)</small>' : ''}`),
+      html: wall
+        ? `<div class="wl-stack">${name}<div class="gbar wl-hp${p < 0.35 ? ' low' : ''}"><div class="fill" style="width:${100 * p}%"></div>
+            <span class="gbar-text">${fallen ? 'Kale düştü' : `${Math.ceil(wall.hp)} / ${wall.max}`}</span></div></div>`
+        : name,
     });
+  }
+
+  // ---- spectating ----------------------------------------------------------------------------
+
+  /**
+   * A picture of the whole world for a player whose castle has fallen (the server sends them a fixed time late):
+   * no fog, every castle's inside, every army and scout. Our own castle goes on being drawn by the normal code,
+   * fed from the picture instead of the live state.
+   */
+  setSpectator(frame: SpectatorStateView): void {
+    if (!this.ready) { this.pendingSpectator = frame; return; }
+    // The other colours sheets are loaded the first time (a moment); the newest picture waits for them.
+    if (this.spectatorAssets !== 'ready') {
+      this.pendingSpectator = frame;
+      if (this.spectatorAssets === 'none') {
+        this.spectatorAssets = 'loading';
+        loadSpectatorAssets(this, this.otherColors, () => {
+          this.spectatorAssets = 'ready';
+          if (this.pendingSpectator) this.setSpectator(this.pendingSpectator);
+        });
+      }
+      return;
+    }
+    this.pendingSpectator = null;
+    if (!this.spectating) this.enterSpectator();
+    for (const c of frame.castles) {
+      if (c.seat === this.mySeat) this.applyOwnPicture(c, frame.elapsedSeconds);
+      else this.applyOtherPicture(c);
+    }
+    // Armies, scouts and battles come as what others see of each other, but all of them; the clock is the picture's.
+    const map: MapStateView = { elapsedSeconds: frame.elapsedSeconds, vision: [], own: [], seen: frame.movers, battles: frame.battles };
+    this.map = map;
+    this.movers.sync(map);
+    this.syncMarkers(map);
+    this.clock = { elapsed: frame.elapsedSeconds, at: performance.now(), speed: this.state?.speed ?? 1 };
+  }
+
+  private enterSpectator(): void {
+    this.spectating = true;
+    this.fog.setVisible(false);
+    if (this.minimap) this.minimap.fogless = true;
+    for (const r of this.layout.regions) {
+      if (r.seat === null || r.seat === this.mySeat) continue;
+      if (r.color) this.regions.set(r.seat, new RegionDisplay(this, this.labels, r.seat, toWorld(r.origin), r.color, this.color));
+    }
+  }
+
+  private applyOwnPicture(c: SpectatorCastleView, elapsed: number): void {
+    if (!this.state) return;
+    this.apply({
+      ...this.state, buildings: c.buildings, jobs: c.jobs, units: c.units, elapsedSeconds: elapsed, eliminated: c.eliminated,
+      war: { ...this.state.war, wallHp: c.wallHp, maxWallHp: c.maxWallHp },
+    });
+  }
+
+  private applyOtherPicture(c: SpectatorCastleView): void {
+    this.regions.get(c.seat)?.sync(c);
+    const castle = this.otherCastles.get(c.seat);
+    if (!castle) return;
+    castle.image.setAlpha(c.eliminated ? 0.45 : 1);
+    castle.wall = { hp: c.wallHp, max: c.maxWallHp };
+    this.setEnemySign(c.seat, castle, c.eliminated, castle.wall);
   }
 
   /** Point the camera at a spot on the map (minimap clicks). */
@@ -208,7 +284,7 @@ export class WorldScene extends Phaser.Scene {
 
   /** A click on a thing on the map (not the end of a drag). */
   private select(target: Target): void {
-    if (!this.dragged) this.onSelect(target);
+    if (!this.dragged && !this.spectating) this.onSelect(target);
   }
 
   /** Look at the castle a window is about (an enemy's is far away; ours is where the camera starts). */
@@ -294,7 +370,7 @@ export class WorldScene extends Phaser.Scene {
 
   setState(state: CastleView): void {
     this.state = state;
-    if (this.ready) this.apply(state);
+    if (this.ready && !this.spectating) this.apply(state); // a spectator's castle is drawn from the delayed pictures
   }
 
   update(_time: number, delta: number): void {
@@ -304,6 +380,7 @@ export class WorldScene extends Phaser.Scene {
     if (this.scale.gameSize.width !== window.innerWidth || this.scale.gameSize.height !== window.innerHeight)
       this.scale.resize(window.innerWidth, window.innerHeight);
     this.workers.update(dt);
+    for (const r of this.regions.values()) r.update(dt);
     this.movers.update(dt);
     this.battles.update();
     this.onFrame();
@@ -313,7 +390,7 @@ export class WorldScene extends Phaser.Scene {
       // The castle's circle comes from the server; the walking circles follow the drawn armies and scouts.
       const fixed = this.map.vision.slice(0, 1);
       const moving = this.movers.ownVision();
-      this.fog.draw(fixed, moving);
+      if (!this.spectating) this.fog.draw(fixed, moving);
       const view = this.cameras.main.worldView;
       const tl = toTiles({ x: view.x, y: view.y });
       const battles = [...this.map.battles.map((b) => b.at), ...this.battles.active.map((b) => b.at)];
@@ -506,7 +583,7 @@ export class WorldScene extends Phaser.Scene {
     const site = SITES[b.type];
     if (slot.level !== b.level) {
       for (const sprite of slot.sprites) sprite.destroy();
-      slot.sprites = site.parts(b.level).map((p) => this.placePart(p));
+      slot.sprites = site.parts(b.level).map((p) => placePart(this, p));
       slot.level = b.level;
     }
 
@@ -514,26 +591,11 @@ export class WorldScene extends Phaser.Scene {
     const upgrading = b.upgradeRemaining !== null;
     slot.dust.setVisible(upgrading);
     if (upgrading && !slot.dust.anims.isPlaying) slot.dust.play('dust');
-    const progress = upgrading ? `<div class="wl-prog" title="Yükseltiliyor"><i style="width:${100 * (1 - b.upgradeRemaining! / b.upgradeTotal)}%"></i></div>` : '';
-    const state = b.capacity > 0 && workers >= b.capacity ? ' full' : workers === 0 ? ' empty' : '';
     this.labels.set(`building:${b.type}`, {
-      x: site.center.x, y: site.center.y + site.area.h / 2 - 6, anchor: 'bottom', minZoom: 0.5,
-      html: sign(`<span class="wl-lv" title="Seviye ${b.level}">${b.level}</span><b>${esc(b.name)}</b>
-        <span class="wl-workers${state}" title="İşçi"><i class="ico ico-hammer"></i><b>${workers}/${b.capacity}</b></span>${progress}`),
+      x: site.center.x, y: site.center.y + site.area.h / 2 - 6, anchor: 'bottom', minZoom: 0.5, html: buildingSign(b, workers),
     });
   }
 
-  private placePart(p: Part): Phaser.GameObjects.Sprite {
-    const flat = /^(sheep|stone|rock|wood-pile|bush|stump)/.test(p.key);
-    const sprite = this.add.sprite(p.x, p.y, p.key)
-      .setOrigin(0.5, flat ? 0.7 : 0.9)
-      .setScale(p.scale ?? 1)
-      .setFlipX(!!p.flip)
-      .setDepth(p.y);
-    if (p.grey) sprite.preFX?.addColorMatrix().grayscale(0.9).brightness(1.05, true);
-    if (p.anim) sprite.play({ key: p.key, startFrame: Phaser.Math.Between(0, 3) });
-    return sprite;
-  }
 }
 
 /** True while the player types in the side panel (keys then belong to the input, not the camera). */

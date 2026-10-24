@@ -17,6 +17,11 @@ import { WorldLabels } from './world-labels';
 export class GameUi {
   private readonly top: HTMLElement;
   private readonly labels: WorldLabels;
+  private readonly wait: HTMLElement;
+  private waitTimer = 0;
+  private waitEnds = 0;
+  private waitTotal = 1;
+  private spectating = false;
   private readonly bar: TopBar;
   private readonly notes: Notifications;
   private readonly reports: ReportTags;
@@ -32,6 +37,19 @@ export class GameUi {
   constructor(root: HTMLElement, net: GameConnection, seat: number, home: () => void) {
     root.innerHTML = '';
     this.labels = new WorldLabels(root); // first, so every window is drawn over the signs
+    this.wait = document.createElement('div');
+    this.wait.className = 'spec-wait hit hidden';
+    this.wait.innerHTML = `
+      <div class="paper">
+        <div class="ribbon ribbon-red">Kalen düştü</div>
+        <div class="spec-body">
+          <p>İzleme <b class="spec-n"></b> sn sonra başlıyor</p>
+          <div class="gbar"><div class="fill"></div></div>
+          <p class="muted-ink small">Artık izleyicisin: tüm haritayı sissiz görürsün, ama oyundan birkaç saniye geriden.
+            Oyuncular sana gerçeği o gecikmeyle gösterir.</p>
+        </div>
+      </div>`;
+    root.appendChild(this.wait);
     const seat0 = seat;
     this.top = document.createElement('div');
     this.top.className = 'ui-top';
@@ -76,7 +94,7 @@ export class GameUi {
   /** Open (or move) the window for a target; clicking the same thing again closes it. */
   open(target: Target): void {
     const s = this.castle;
-    if (!s || !this.scene) return;
+    if (!s || !this.scene || this.spectating) return; // a spectator only looks
     if (sameTarget(this.windows.current, target)) { this.windows.close(); return; }
     const win = this.makeWindow(target, s);
     if (!win) return;
@@ -99,6 +117,7 @@ export class GameUi {
 
   destroy(): void {
     window.removeEventListener('keydown', this.onKey);
+    window.clearInterval(this.waitTimer);
     this.labels.destroy();
   }
 
@@ -114,6 +133,37 @@ export class GameUi {
     if (!this.eliminated && s.eliminated) this.notes.push('Kalen düştü!', 'danger', 6000);
     this.phase = s.phase;
     this.eliminated = s.eliminated;
+  }
+
+  /** Our castle has fallen and the view starts in <paramref name="startsIn"/> game seconds: a countdown instead of an empty screen. */
+  setSpectatorWait(startsIn: number): void {
+    if (this.spectating) return;
+    this.windows.close();
+    const speed = Math.max(1, this.castle?.speed ?? 1);
+    this.waitEnds = performance.now() + (startsIn / speed) * 1000;
+    this.waitTotal = Math.max(this.waitTotal, startsIn / speed, 1);
+    this.wait.classList.remove('hidden');
+    if (!this.waitTimer) this.waitTimer = window.setInterval(() => this.tickWait(), 200);
+    this.tickWait();
+  }
+
+  private tickWait(): void {
+    const left = Math.max(0, (this.waitEnds - performance.now()) / 1000);
+    this.wait.querySelector('.spec-n')!.textContent = String(Math.ceil(left));
+    this.wait.querySelector<HTMLElement>('.fill')!.style.width = `${100 * (1 - left / this.waitTotal)}%`;
+  }
+
+  /** The first picture arrived (and every one after it): the countdown goes, the map is the whole world. */
+  setSpectating(lagSeconds: number): void {
+    if (!this.spectating) {
+      this.spectating = true;
+      this.windows.close();
+      window.clearInterval(this.waitTimer);
+      this.waitTimer = 0;
+      this.wait.classList.add('hidden');
+    }
+    const lag = Math.round(lagSeconds);
+    this.notes.setSticky('spectating', true, lag > 0 ? `İzleyici: tüm harita, oyundan ${lag} sn geride` : 'İzleyici: tüm harita', 'info');
   }
 
   setRoom(room: RoomView): void {

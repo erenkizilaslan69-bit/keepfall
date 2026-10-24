@@ -13,7 +13,7 @@ import '@fontsource/pixelify-sans/latin-700.css';
 import '@fontsource/pixelify-sans/latin-ext-700.css';
 import { Minimap } from './minimap';
 import { EndScreen, HomeScreen, LobbyScreen } from './screens';
-import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SummaryView } from './types';
+import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 
 // Routes: "/" is the home screen, "/oda/ABCD" is a room. Inside a room the screen follows the
 // room's phase: lobby → game (preparation and war) → end screen.
@@ -33,6 +33,7 @@ let lastCastle: CastleView | null = null;
 let lastLayout: MapLayoutView | null = null;
 let lastMap: MapStateView | null = null;
 let pendingBattles: BattleStartedView[] = [];
+let lastSpectator: SpectatorStateView | null = null;
 let summary: SummaryView | null = null;
 let status = '';
 
@@ -57,6 +58,16 @@ const net = new GameConnection({
     lastMap = state;
     scene?.setMap(state);
   },
+  spectatorState: (frame) => {
+    lastSpectator = frame;
+    for (const b of frame.started) {
+      if (scene) scene.playBattle(b);
+      else pendingBattles.push(b);
+    }
+    ui?.setSpectating(lastCastle ? Math.max(0, lastCastle.elapsedSeconds - frame.elapsedSeconds) : 0);
+    scene?.setSpectator(frame);
+  },
+  spectatorWait: (wait) => ui?.setSpectatorWait(wait.startsIn),
   matchEnded: (s) => { summary = s; end?.setSummary(s); },
   notification: (text) => ui?.notify(text),
   status: (s) => {
@@ -141,6 +152,7 @@ function showLobby(r: RoomView): void {
   lastCastle = null;
   lastLayout = null;
   lastMap = null;
+  lastSpectator = null;
   pendingBattles = [];
   summary = null;
   lobby = new LobbyScreen(app, net, net.seat, r, saveName);
@@ -171,6 +183,7 @@ function startScene(color: CastleView['color'], layout: MapLayoutView): void {
   if (lastMap) scene.setMap(lastMap);
   for (const b of pendingBattles) scene.playBattle(b);
   pendingBattles = [];
+  if (lastSpectator) scene.setSpectator(lastSpectator);
   // Dev only: lets the console preview other building levels / counts without playing up to them.
   if (import.meta.env.DEV) (window as unknown as { keepfallScene: WorldScene }).keepfallScene = scene;
   game = new Phaser.Game({

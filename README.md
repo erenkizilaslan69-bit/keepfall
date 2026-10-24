@@ -23,7 +23,7 @@ Tarayıcıda oynanır. Tüm oyun mantığı sunucudadır; istemci yalnızca komu
 - **Savaş sisi:** Yalnızca kalenin, kendi ordularının ve gözcülerinin gördüğü yeri görürsün. Sis sunucu tarafındadır: görüş dışındaki hiçbir şey istemciye gönderilmez. Düşman ordusu kalenin görüşüne girince uyarı çıkar ve askerleri görünür.
 - Yolda karşılaşan iki ordu (farklı oyunculara ait) durup savaşır. Yoldaki orduyu **geri çağırabilir** ya da ordu göndermek yerine **önünü kesme** emri verebilirsin.
 - Savaşlar görünürdür ve gerçek zamanlı oynar: askerler karşı karşıya gelir, okçular ok atar, düşenler kayıttaki anda düşer. Kale savaşında savunanlar kapıya iner; saldıran kazanırsa kapıya vurur.
-- Kale canı 500'dür; sıfırlanan oyuncu elenir ve izleyici olur. Savaşın son %30'unda kıtlık başlar (yemek üretimi yarıya iner).
+- Kale canı 500'dür; sıfırlanan oyuncu elenir ve izleyici olur: önce "izleme N sn sonra başlıyor" geri sayımını görür, sonra tüm haritayı sissiz izler (her kalenin içi, bütün ordular, gözcüler ve savaşlar). Bu görünüm oyundan `match.spectatorDelaySeconds` (varsayılan 30 oyun sn, `config/balance.json`; 0 = gecikmesiz) kadar geridedir ve yalnızca elenen oyuncuya gönderilir; hâlâ oynayan kimse bunu alamaz (duman testi bunu denetler). Savaşın son %30'unda kıtlık başlar (yemek üretimi yarıya iner).
 
 **Arayüz:** Oyun tam ekrandır, sayfa kaymaz; her şey haritanın üstünde Tiny Swords parçalarıyla (kağıt, ribbon, düğme, çubuk) çizilir.
 - Üstte hep görünen şerit: yemek / odun / demir ve dakikalık artış, nüfus ve asker, boştaki işçi uyarısı, süre ve faz, kale canı, oyuncular (birine tıklayınca kamera o kaleye gider).

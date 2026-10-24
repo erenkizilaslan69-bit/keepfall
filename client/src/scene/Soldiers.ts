@@ -3,7 +3,8 @@ import type { UnitView } from '../types';
 import { SHIELD_SCALE, UNIT_SCALE, unitOriginY } from './assets';
 import type { WorldLabels } from '../ui/world-labels';
 import { esc } from '../format';
-import { CASTLE, COURTYARD } from './layout';
+import { CASTLE, COURTYARD, type Point } from './layout';
+import { NO_OFFSET } from './parts';
 
 // Soldiers stand in the castle courtyard, one block per unit type from left to right
 // (archers, spearmen, swordsmen, shield bearers). Shield bearers always keep their shield raised
@@ -30,7 +31,16 @@ const DEPTH_BASE = CASTLE.y + 1;
 export class Soldiers {
   private blocks = new Map<string, Phaser.GameObjects.Sprite[]>();
 
-  constructor(private readonly scene: Phaser.Scene, private readonly labels: WorldLabels) {}
+  /** <paramref name="off"/>: where this castle's corner is; <paramref name="key"/> keeps the signs of several castles apart. */
+  constructor(private readonly scene: Phaser.Scene, private readonly labels: WorldLabels,
+    private readonly off: Point = NO_OFFSET, private readonly key = '',
+    private readonly k: (key: string) => string = (key) => key) {}
+
+  destroy(): void {
+    for (const sprites of this.blocks.values()) for (const s of sprites) s.destroy();
+    for (const id of this.blocks.keys()) this.labels.remove(`soldiers:${this.key}${id}`);
+    this.blocks.clear();
+  }
 
   sync(units: UnitView[]): void {
     const ids = [...BLOCK_ORDER.filter((id) => units.some((u) => u.id === id)),
@@ -49,11 +59,11 @@ export class Soldiers {
 
     while (sprites.length > shown) sprites.pop()!.destroy();
     while (sprites.length < shown) {
-      const sprite = this.scene.add.sprite(0, 0, look.anim)
+      const sprite = this.scene.add.sprite(0, 0, this.k(look.anim))
         .setScale(look.scale)
         .setOrigin(0.5, unitOriginY(look.anim))
         .setAlpha(0);
-      sprite.play({ key: look.anim, startFrame: Phaser.Math.Between(0, 4) });
+      sprite.play({ key: this.k(look.anim), startFrame: Phaser.Math.Between(0, 4) });
       this.scene.tweens.add({ targets: sprite, alpha: 1, duration: 400 });
       sprites.push(sprite);
     }
@@ -66,15 +76,15 @@ export class Soldiers {
       const y = COURTYARD.bottom - row * rowGap;
       // Stagger alternate rows a little so heads don't line up exactly.
       const x = centerX + (col - (COLS - 1) / 2) * COL_GAP + (row % 2) * 6;
-      s.setPosition(x, y).setDepth(DEPTH_BASE + y / 1000 + 0.00001 * col);
+      s.setPosition(x + this.off.x, y + this.off.y).setDepth(DEPTH_BASE + this.off.y + y / 1000 + 0.00001 * col);
     });
 
     // Name and the real count on the wall below the block (a block shows at most PER_BLOCK).
     if (count > 0)
-      this.labels.set(`soldiers:${id}`, {
-        x: centerX, y: COURTYARD.bottom + 14, anchor: 'top', minZoom: 0.6, cls: 'wl-small',
+      this.labels.set(`soldiers:${this.key}${id}`, {
+        x: centerX + this.off.x, y: COURTYARD.bottom + 14 + this.off.y, anchor: 'top', minZoom: 0.6, cls: 'wl-small',
         html: `<div class="wl-sign"><b>${esc(name)}</b> ${count}</div>`,
       });
-    else this.labels.remove(`soldiers:${id}`);
+    else this.labels.remove(`soldiers:${this.key}${id}`);
   }
 }

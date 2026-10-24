@@ -3,6 +3,7 @@ import type { BuildingType, Job, JobView } from '../types';
 import type { WorldLabels } from '../ui/world-labels';
 import { UNIT_SCALE, unitOriginY } from './assets';
 import { GATE, IDLE_AREA, JOB_LOOK, SITES, type Point } from './layout';
+import { NO_OFFSET } from './parts';
 
 // Animated pawns. The server only sends how many people each job has; this keeps the same number
 // of pawns per job and invents the walking around it. Nothing here affects the economy.
@@ -36,7 +37,20 @@ export class Workers {
   private pawns: Pawn[] = [];
   private placed = false;
 
-  constructor(private readonly scene: Phaser.Scene, private readonly labels: WorldLabels) {
+  /**
+   * <paramref name="off"/>: where this castle's corner is (a spectator sees the other castles too);
+   * <paramref name="warnIdle"/>: whether idle people get the "boşta" sign (only our own castle).
+   */
+  constructor(private readonly scene: Phaser.Scene, private readonly labels: WorldLabels,
+    private readonly off: Point = NO_OFFSET, private readonly warnIdle = true,
+    /** Another colour has sheets with other keys (see colorKey). */
+    private readonly k: (key: string) => string = (key) => key) {
+  }
+
+  destroy(): void {
+    for (const p of this.pawns) p.sprite.destroy();
+    this.pawns = [];
+    this.labels.remove('idle');
   }
 
   /** Match the number of pawns per job to the server's counts. */
@@ -60,7 +74,7 @@ export class Workers {
     for (const pawn of surplus) this.leave(pawn);
     this.placed = true;
 
-    const idle = target.get('idle') ?? 0;
+    const idle = this.warnIdle ? target.get('idle') ?? 0 : 0;
     if (idle > 0)
       this.labels.set('idle', { x: GATE.x, y: IDLE_AREA.bottom + 6, anchor: 'top', minZoom: 0.5, cls: 'wl-warn', html: `<div class="wl-sign"><b>${idle} kişi boşta!</b></div>` });
     else this.labels.remove('idle');
@@ -79,8 +93,8 @@ export class Workers {
   // ---- lifecycle ---------------------------------------------------------------------------
 
   private spawn(): Pawn {
-    const sprite = this.scene.add.sprite(GATE.x, GATE.y, 'pawn-idle')
-      .setScale(UNIT_SCALE).setOrigin(0.5, unitOriginY('pawn')).setDepth(GATE.y);
+    const sprite = this.scene.add.sprite(GATE.x + this.off.x, GATE.y + this.off.y, this.k('pawn-idle'))
+      .setScale(UNIT_SCALE).setOrigin(0.5, unitOriginY('pawn')).setDepth(GATE.y + this.off.y);
     const pawn: Pawn = { sprite, job: 'idle', slot: -1, state: 'waiting', path: [], arrive: () => {}, timer: 0, carrying: false };
     this.pawns.push(pawn);
     return pawn;
@@ -95,7 +109,7 @@ export class Workers {
     const to = JOB_LOOK[job].building;
 
     if (instant) {
-      pawn.sprite.setPosition(spot.x, spot.y).setDepth(spot.y);
+      pawn.sprite.setPosition(spot.x + this.off.x, spot.y + this.off.y).setDepth(spot.y + this.off.y);
       this.arriveAtSpot(pawn);
       // Spread the first carry trips so not everyone leaves at once.
       pawn.timer = Phaser.Math.FloatBetween(0.5, 7);
@@ -133,12 +147,12 @@ export class Workers {
     const spot = this.spotOf(pawn.job, pawn.slot);
     if (!site || !look.work) {
       pawn.state = 'waiting';
-      pawn.sprite.setFlipX(Math.random() < 0.5).play({ key: look.idle, startFrame: Phaser.Math.Between(0, 5) });
+      pawn.sprite.setFlipX(Math.random() < 0.5).play({ key: this.k(look.idle), startFrame: Phaser.Math.Between(0, 5) });
       return;
     }
     pawn.state = 'working';
     pawn.timer = Phaser.Math.FloatBetween(4, 7);
-    pawn.sprite.setFlipX(site.faceLeft(spot)).play({ key: look.work, startFrame: Phaser.Math.Between(0, 2) });
+    pawn.sprite.setFlipX(site.faceLeft(spot)).play({ key: this.k(look.work), startFrame: Phaser.Math.Between(0, 2) });
   }
 
   /** After a work stint: carriers take the load home; blacksmiths keep hammering. */
@@ -155,15 +169,15 @@ export class Workers {
     this.go(pawn, [ROAD[look.building!], drop], look.carry, () => {
       pawn.state = 'dropping';
       pawn.timer = 0.6;
-      pawn.sprite.play(look.idle);
+      pawn.sprite.play(this.k(look.idle));
     });
   }
 
   private go(pawn: Pawn, path: Point[], anim: string, arrive: () => void): void {
     if (pawn.state !== 'leaving') pawn.state = 'walking';
-    pawn.path = path.map((p) => ({ ...p }));
+    pawn.path = path.map((p) => ({ x: p.x + this.off.x, y: p.y + this.off.y }));
     pawn.arrive = arrive;
-    if (pawn.sprite.anims.currentAnim?.key !== anim) pawn.sprite.play(anim);
+    if (pawn.sprite.anims.currentAnim?.key !== this.k(anim)) pawn.sprite.play(this.k(anim));
   }
 
   private walk(pawn: Pawn, dt: number): void {

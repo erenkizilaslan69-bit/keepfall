@@ -1,5 +1,7 @@
 import { defineConfig } from 'vite';
 
+declare const process: { env: Record<string, string | undefined> }; // Node's, without pulling in its type package
+
 // In development the ASP.NET server runs on 5080; Vite forwards the SignalR hub to it.
 // KEEPFALL_SERVER / KEEPFALL_CLIENT_PORT point a second dev setup at other ports (e.g. next to a running Production server).
 export default defineConfig({

@@ -221,3 +221,14 @@ export interface BattleStartedView {
   /** [tick, soldier] … */ advances: number[];
   winner: 'attacker' | 'defender' | 'draw'; castleDamage: number;
 }
+
+// What a fallen player watches (see the server's SpectatorViews): the whole map without fog, a fixed delay behind the game.
+export interface SpectatorCastleView {
+  seat: number; eliminated: boolean; wallHp: number; maxWallHp: number;
+  buildings: BuildingView[]; jobs: JobView[]; units: UnitView[];
+}
+export interface SpectatorStateView {
+  elapsedSeconds: number; castles: SpectatorCastleView[]; movers: SeenMoverView[]; battles: BattleMarkerView[]; started: BattleStartedView[];
+}
+/** Before the first picture: how many game seconds until the view starts. */
+export interface SpectatorWaitView { startsIn: number }

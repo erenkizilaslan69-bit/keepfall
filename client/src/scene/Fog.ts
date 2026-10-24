@@ -25,6 +25,10 @@ export class Fog {
     this.hole = scene.make.image({ key: Fog.holeTexture(scene), add: false });
   }
 
+  setVisible(visible: boolean): void {
+    this.rt.setVisible(visible);
+  }
+
   /** <paramref name="fixed"/>: the castle's sight; <paramref name="moving"/>: armies and scouts where they are now. */
   draw(fixed: VisionView[], moving: { center: Vec; radius: number }[], force = false): void {
     const now = performance.now();
