@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { BuildingType, BuildingView, CastleView, PlayerColor } from '../types';
 import { createAnimations, preloadAssets } from './assets';
 import { CASTLE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH, type Part } from './layout';
+import { Scouts } from './Scouts';
 import { Soldiers } from './Soldiers';
 import { Workers } from './Workers';
 
@@ -39,6 +40,7 @@ export class CastleScene extends Phaser.Scene {
   private buildings = new Map<BuildingType, BuildingSlot>();
   private workers!: Workers;
   private soldiers!: Soldiers;
+  private scouts!: Scouts;
 
   /** <paramref name="color"/>: the player's colour; units and buildings are drawn in it. */
   constructor(private readonly color: PlayerColor) {
@@ -63,6 +65,7 @@ export class CastleScene extends Phaser.Scene {
     for (const type of Object.keys(SITES) as BuildingType[]) this.createSite(type);
     this.workers = new Workers(this);
     this.soldiers = new Soldiers(this);
+    this.scouts = new Scouts(this);
     this.ready = true;
     if (this.state) this.apply(this.state);
   }
@@ -80,6 +83,7 @@ export class CastleScene extends Phaser.Scene {
     for (const b of s.buildings) this.updateBuilding(b, s);
     this.workers.sync(s.jobs);
     this.soldiers.sync(s.units);
+    this.scouts.sync(s.scouting);
   }
 
   // ---- ground ------------------------------------------------------------------------------
