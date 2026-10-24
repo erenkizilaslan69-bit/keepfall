@@ -17,6 +17,11 @@ export function toWorld(v: Vec): Point {
   return { x: (v.x - origin.x) * TILE, y: (v.y - origin.y) * TILE };
 }
 
+/** Scene pixels → map tiles. */
+export function toTiles(p: Point): Vec {
+  return { x: p.x / TILE + origin.x, y: p.y / TILE + origin.y };
+}
+
 /** Small deterministic random numbers, so every client draws the same forest. */
 export function seeded(seed: number): () => number {
   let a = seed >>> 0;

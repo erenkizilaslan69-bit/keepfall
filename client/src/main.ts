@@ -4,8 +4,9 @@ import { Hud } from './hud';
 import { loadName, saveName } from './identity';
 import { GameConnection, type ConnectionStatus } from './net';
 import { SCENE_HEIGHT, SCENE_WIDTH, WorldScene } from './scene/WorldScene';
+import { Minimap } from './minimap';
 import { EndScreen, HomeScreen, LobbyScreen, rosterHtml } from './screens';
-import type { CastleView, MapLayoutView, RoomView, SummaryView } from './types';
+import type { CastleView, MapLayoutView, MapStateView, RoomView, SummaryView } from './types';
 
 // Routes: "/" is the home screen, "/oda/ABCD" is a room. Inside a room the screen follows the
 // room's phase: lobby → game (preparation and war) → end screen.
@@ -23,6 +24,7 @@ type Screen = 'none' | 'home' | 'lobby' | 'game' | 'end';
 let screen: Screen = 'none';
 let lastCastle: CastleView | null = null;
 let lastLayout: MapLayoutView | null = null;
+let lastMap: MapStateView | null = null;
 let summary: SummaryView | null = null;
 let status = '';
 
@@ -39,7 +41,10 @@ const net = new GameConnection({
     lastLayout = layout;
     if (screen === 'game' && !scene && lastCastle) onCastle(lastCastle);
   },
-  mapState: () => {},
+  mapState: (state) => {
+    lastMap = state;
+    scene?.setMap(state);
+  },
   matchEnded: (s) => { summary = s; end?.setSummary(s); },
   notification: (text) => hud?.notify(text),
   status: (s) => {
@@ -48,6 +53,9 @@ const net = new GameConnection({
     if (s === 'disconnected' && screen !== 'home') showBanner('Sunucuyla bağlantı yok. Sayfayı yenileyince kaldığın yere dönersin.');
   },
 });
+
+// Dev only: lets the console (and browser tests) send commands as this tab's player.
+if (import.meta.env.DEV) (window as unknown as { keepfallNet: GameConnection }).keepfallNet = net;
 
 // ---- room events ---------------------------------------------------------------------------
 
@@ -112,6 +120,7 @@ function showLobby(r: RoomView): void {
   screen = 'lobby';
   lastCastle = null;
   lastLayout = null;
+  lastMap = null;
   summary = null;
   lobby = new LobbyScreen(app, net, net.seat, r, saveName);
 }
@@ -134,6 +143,9 @@ function showGame(): void {
 function startScene(color: CastleView['color'], layout: MapLayoutView): void {
   scene = new WorldScene(color, layout, net.seat);
   scene.onBuildingClick = (type) => hud?.focusBuilding(type);
+  const world = scene;
+  world.minimap = new Minimap(document.getElementById('stage')!, layout, (tile) => world.lookAt(tile));
+  if (lastMap) scene.setMap(lastMap);
   // Dev only: lets the console preview other building levels / counts without playing up to them.
   if (import.meta.env.DEV) (window as unknown as { keepfallScene: WorldScene }).keepfallScene = scene;
   game = new Phaser.Game({

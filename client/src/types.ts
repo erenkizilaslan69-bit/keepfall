@@ -194,7 +194,7 @@ export interface VisionView { center: Vec; radius: number }
 /** One of our own armies or scouts, with its road. */
 export interface OwnMoverView {
   id: string; kind: MoverKind; targetSeat: number; returning: boolean;
-  position: Vec; velocity: Vec; units: MoverUnit[]; route: Vec[]; travelled: number; speed: number;
+  position: Vec; velocity: Vec; units: MoverUnit[]; route: Vec[]; travelled: number; speed: number; visionRadius: number;
 }
 /** Someone else's army or scout inside our vision: never its target, road or arrival time. */
 export interface SeenMoverView { id: string; kind: MoverKind; ownerSeat: number; ownerColor: PlayerColor; position: Vec; velocity: Vec; units: MoverUnit[] }

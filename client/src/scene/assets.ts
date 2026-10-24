@@ -87,9 +87,19 @@ const IMAGES: Record<string, string> = {
   ...Object.fromEntries([1, 2, 3, 4, 5, 6].map((i) => [`stone${i}`, `Terrain/Resources/Gold/Gold Stones/Gold Stone ${i}.png`])),
 };
 
-/** Loads the pack in the player's colour (units and buildings); terrain is shared. */
-export function preloadAssets(scene: Phaser.Scene, color: PlayerColor): void {
-  for (const s of sheets(color))
+/** Sheets other players' armies and scouts need on the map, loaded in their colours as "<colour>-<key>". */
+const MOVER_KEYS = ['pawn-run', 'warrior-run', 'archer-run', 'lancer-run', 'warrior-guard'];
+const moverSheets = (others: PlayerColor[]): SheetDef[] =>
+  others.flatMap((c) => units(COLOR_FOLDER[c]).filter((s) => MOVER_KEYS.includes(s.key)).map((s) => ({ ...s, key: `${c}-${s.key}` })));
+
+/** The key of a sheet in <paramref name="color"/>: our own colour's sheets have plain keys. */
+export function colorKey(color: PlayerColor, own: PlayerColor, key: string): string {
+  return color === own ? key : `${color}-${key}`;
+}
+
+/** Loads the pack in the player's colour (units and buildings) and the others' marching units; terrain is shared. */
+export function preloadAssets(scene: Phaser.Scene, color: PlayerColor, others: PlayerColor[] = []): void {
+  for (const s of [...sheets(color), ...moverSheets(others)])
     scene.load.spritesheet(s.key, url(s.path), { frameWidth: s.frame, frameHeight: s.frameHeight ?? s.frame });
   for (const [key, path] of Object.entries({ ...buildingImages(color), ...IMAGES })) scene.load.image(key, url(path));
   // Everyone's castle, for the other corners of the map.
@@ -97,16 +107,17 @@ export function preloadAssets(scene: Phaser.Scene, color: PlayerColor): void {
 }
 
 /** Looping animation per sheet, named after the sheet key. */
-export function createAnimations(scene: Phaser.Scene, color: PlayerColor): void {
+export function createAnimations(scene: Phaser.Scene, color: PlayerColor, others: PlayerColor[] = []): void {
   const rates: Record<string, number> = { 'pawn-run': 12, dust: 14 };
-  for (const s of sheets(color)) {
+  for (const s of [...sheets(color), ...moverSheets(others)]) {
+    if (scene.anims.exists(s.key)) continue;
     if (s.key === 'tiles') continue;
     const texture = scene.textures.get(s.key);
     const frames = texture.frameTotal - 1; // minus the __BASE frame
     scene.anims.create({
       key: s.key,
       frames: scene.anims.generateFrameNumbers(s.key, { start: 0, end: frames - 1 }),
-      frameRate: rates[s.key] ?? (s.key.startsWith('pawn-run') || s.key.startsWith('pawn-work') ? 10 : 8),
+      frameRate: rates[s.key] ?? (/(^|-)pawn-(run|work)/.test(s.key) ? 10 : 8),
       repeat: -1,
     });
   }

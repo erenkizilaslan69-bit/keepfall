@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
-import type { BuildingType, BuildingView, CastleView, MapLayoutView, PlayerColor, RegionView } from '../types';
+import type { BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, Vec } from '../types';
+import type { Minimap } from '../minimap';
 import { createAnimations, preloadAssets } from './assets';
 import { CASTLE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH, type Part } from './layout';
-import { distanceToSegment, seeded, setWorldOrigin, toWorld } from './world';
-import { Armies } from './Armies';
-import { Scouts } from './Scouts';
+import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
+import { Fog } from './Fog';
+import { Movers } from './Movers';
 import { Soldiers } from './Soldiers';
 import { Workers } from './Workers';
 
@@ -50,7 +51,10 @@ interface BuildingSlot {
 export class WorldScene extends Phaser.Scene {
   /** Set by main.ts: called when the player clicks a building. */
   onBuildingClick: (type: BuildingType) => void = () => {};
+  /** Set by main.ts: the minimap is drawn from the scene's own frame loop. */
+  minimap: Minimap | null = null;
   private dragged = false;
+  private map: MapStateView | null = null;
   private keys: Record<string, Phaser.Input.Keyboard.Key> = {};
 
   private state: CastleView | null = null;
@@ -59,8 +63,8 @@ export class WorldScene extends Phaser.Scene {
   private buildings = new Map<BuildingType, BuildingSlot>();
   private workers!: Workers;
   private soldiers!: Soldiers;
-  private scouts!: Scouts;
-  private armies!: Armies;
+  private movers!: Movers;
+  private fog!: Fog;
   private castleSprite!: Phaser.GameObjects.Image;
   private wallBar!: Phaser.GameObjects.Graphics;
   private wallText!: Phaser.GameObjects.Text;
@@ -78,7 +82,7 @@ export class WorldScene extends Phaser.Scene {
 
   preload(): void {
     this.load.on('loaderror', () => { this.loadFailed = true; });
-    preloadAssets(this, this.color);
+    preloadAssets(this, this.color, this.otherColors);
   }
 
   create(): void {
@@ -88,7 +92,7 @@ export class WorldScene extends Phaser.Scene {
         { ...LABEL_STYLE, fontSize: '22px' }).setOrigin(0.5);
       return;
     }
-    createAnimations(this, this.color);
+    createAnimations(this, this.color, this.otherColors);
     this.drawGround();
     this.drawRoads();
     this.drawForest();
@@ -100,11 +104,28 @@ export class WorldScene extends Phaser.Scene {
     for (const type of Object.keys(SITES) as BuildingType[]) this.createSite(type);
     this.workers = new Workers(this);
     this.soldiers = new Soldiers(this);
-    this.scouts = new Scouts(this);
-    this.armies = new Armies(this);
+    this.movers = new Movers(this, this.color);
+    this.fog = new Fog(this, this.layout.size);
     this.setupCamera();
     this.ready = true;
     if (this.state) this.apply(this.state);
+    if (this.map) this.setMap(this.map);
+  }
+
+  /** What we see on the map this tick. */
+  setMap(state: MapStateView): void {
+    this.map = state;
+    if (this.ready) this.movers.sync(state);
+  }
+
+  /** Point the camera at a spot on the map (minimap clicks). */
+  lookAt(tile: Vec): void {
+    const p = toWorld(tile);
+    this.cameras.main.centerOn(p.x, p.y);
+  }
+
+  private get otherColors(): PlayerColor[] {
+    return this.layout.regions.map((r) => r.color).filter((c): c is PlayerColor => !!c && c !== this.color);
   }
 
   /** Back to our own castle (button and space bar). */
@@ -123,15 +144,24 @@ export class WorldScene extends Phaser.Scene {
     if (!this.ready) return;
     const dt = Math.min(delta, 100) / 1000;
     this.workers.update(dt);
+    this.movers.update(dt);
     this.panWithKeys(dt);
+    if (this.map) {
+      // The castle's circle comes from the server; the walking circles follow the drawn armies and scouts.
+      const fixed = this.map.vision.slice(0, 1);
+      const moving = this.movers.ownVision();
+      this.fog.draw(fixed, moving);
+      const view = this.cameras.main.worldView;
+      const tl = toTiles({ x: view.x, y: view.y });
+      this.minimap?.draw([...fixed, ...moving], this.movers.all(), { x: tl.x, y: tl.y, w: view.width / TILE, h: view.height / TILE });
+    }
   }
 
   private apply(s: CastleView): void {
     for (const b of s.buildings) this.updateBuilding(b, s);
     this.workers.sync(s.jobs);
     this.soldiers.sync(s.units);
-    this.scouts.sync(s.scouting);
-    this.armies.sync(s.war.armies, s.scouting.targets.map((t) => t.seat));
+    this.movers.setGameSpeed(s.speed);
     this.updateWall(s);
   }
 

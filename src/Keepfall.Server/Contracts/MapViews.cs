@@ -23,10 +23,10 @@ public sealed record MapLayoutView(double Size, IReadOnlyList<RegionView> Region
 
 public sealed record VisionView(VecView Center, double Radius);
 
-/// <summary>One of the player's own armies or scouts, with its whole road so the client can walk it smoothly.</summary>
+/// <summary>One of the player's own armies or scouts, with its whole road (so the client can walk it smoothly) and how far it sees.</summary>
 public sealed record OwnMoverView(
     string Id, MoverKind Kind, int TargetSeat, bool Returning, VecView Position, VecView Velocity,
-    IReadOnlyList<ArmyUnitView> Units, IReadOnlyList<VecView> Route, double Travelled, double Speed);
+    IReadOnlyList<ArmyUnitView> Units, IReadOnlyList<VecView> Route, double Travelled, double Speed, double VisionRadius);
 
 /// <summary>Someone else's army or scout inside the player's vision. Nothing more than this.</summary>
 public sealed record SeenMoverView(
@@ -62,11 +62,11 @@ public static class MapViewMapper
         foreach (var a in game.ArmiesOf(key))
             own.Add(new OwnMoverView(a.PublicId, MoverKind.Army, SeatOf(a.Target), a.State == ArmyState.Returning,
                 VecView.Of(a.Position), VecView.Of(a.Velocity), Units(a.Walking),
-                a.Leg.Route.Points.Select(VecView.Of).ToList(), a.Leg.Travelled, a.Leg.Speed));
+                a.Leg.Route.Points.Select(VecView.Of).ToList(), a.Leg.Travelled, a.Leg.Speed, game.Rules.Map.ArmyVision));
         foreach (var m in game.MissionsOf(key))
             own.Add(new OwnMoverView(m.PublicId, MoverKind.Scout, SeatOf(m.Target), m.Back is not null,
                 VecView.Of(m.Position), VecView.Of(m.Velocity), [],
-                m.Leg.Route.Points.Select(VecView.Of).ToList(), m.Leg.Travelled, m.Leg.Speed));
+                m.Leg.Route.Points.Select(VecView.Of).ToList(), m.Leg.Travelled, m.Leg.Speed, game.Rules.Map.ScoutVision));
 
         var seen = game.SeenBy(key).Select(s =>
         {
