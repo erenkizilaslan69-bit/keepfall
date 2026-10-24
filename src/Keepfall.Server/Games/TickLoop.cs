@@ -54,7 +54,11 @@ public sealed class TickLoop(
             if (preparing) ended = room.Tick(tickSeconds);
         }
 
-        if (preparing) await GameHub.PushCastles(hub.Clients, session);
+        if (preparing)
+        {
+            await GameHub.PushCastles(hub.Clients, session);
+            await SendNotifications(session);
+        }
         // During preparation the room view carries the shared clock, so it goes out every tick.
         if (roomChanged || preparing)
         {
@@ -63,6 +67,18 @@ public sealed class TickLoop(
             await hub.Clients.Group(GameHub.RoomGroup(session.Room.Code)).SendAsync("RoomState", view);
         }
         if (ended) await SendSummaries(session);
+    }
+
+    /// <summary>E.g. "Kırmızı'nın gözcüsü kaleni gözetledi." — only to the player it is about.</summary>
+    private async Task SendNotifications(RoomSession session)
+    {
+        List<(int Seat, string Text)> notes;
+        lock (session.Lock)
+            notes = session.Room.Players
+                .SelectMany(p => session.Room.TakeNotifications(p).Select(text => (p.Seat, text)))
+                .ToList();
+        foreach (var (seat, text) in notes)
+            await hub.Clients.Group(GameHub.PlayerGroup(session.Room.Code, seat)).SendAsync("Notification", text);
     }
 
     /// <summary>Each player gets only their own summary.</summary>

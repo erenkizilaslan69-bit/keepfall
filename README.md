@@ -54,6 +54,12 @@ Testler:
 dotnet test
 ```
 
+Gizli bilgi duman testi (geliştirme modunda çalışan sunucuya karşı; iki bağlantıyla kısa bir maç oynar):
+
+```bash
+node tools/smoke-test.mjs
+```
+
 ## Çalıştırma
 
 ```bash

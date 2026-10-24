@@ -94,6 +94,8 @@ public sealed class GameHub(RoomRegistry registry) : Hub
     public Task<CommandResultView> DisarmSoldiers(string unitId, int count) => Economy(new DisarmSoldiers(unitId, count));
     public Task<CommandResultView> UpgradeBuilding(BuildingType building) => Economy(new UpgradeBuilding(building));
     public Task<CommandResultView> SetGrowth(bool enabled) => Economy(new SetGrowth(enabled));
+    /// <summary>The target is named by public seat; the castle itself is never addressed by the client.</summary>
+    public Task<CommandResultView> SendScout(int targetSeat, Job from) => Economy(new SendScout(Room.CastleKeyOf(targetSeat), from));
 
     private async Task<CommandResultView> Economy(GameCommand command)
     {

@@ -32,6 +32,19 @@ public sealed record SummaryView(
     ResourcesView Produced, ResourcesView Final, double StarvingSeconds, double IdleWorkerSeconds,
     IReadOnlyList<BuildingView> Buildings, IReadOnlyList<EconomySample> Samples);
 
+// Scouting. A report is all the client ever learns about another castle: approximate soldier
+// counts and building levels. Targets carry only public facts (seat, name, colour).
+public sealed record ScoutTargetView(int Seat, string Name, PlayerColor Color, bool Busy);
+public sealed record ScoutMissionView(int TargetSeat, double Progress, bool Arrived, double RemainingSeconds);
+public sealed record ScoutedUnitView(string UnitId, string Name, int Count);
+public sealed record ScoutBuildingView(BuildingType Type, string Name, int Level);
+public sealed record ScoutReportView(
+    int TargetSeat, string TargetName, PlayerColor TargetColor, double ObservedAt, double DeliveredAt,
+    IReadOnlyList<ScoutedUnitView> Soldiers, IReadOnlyList<ScoutBuildingView> Buildings);
+public sealed record ScoutingView(
+    double MissionSeconds, int ScoutsAway, IReadOnlyList<ScoutTargetView> Targets,
+    IReadOnlyList<ScoutMissionView> Missions, IReadOnlyList<ScoutReportView> Reports);
+
 public sealed record CastleView(
     MatchPhase Phase, PlayerColor Color, double ElapsedSeconds, double RemainingSeconds, double PrepSeconds,
     int Speed, bool SpeedControl,
@@ -39,6 +52,7 @@ public sealed record CastleView(
     int Population, int Soldiers, double NextPersonCost, double FoodReserve, bool GrowthEnabled, bool Starving,
     IReadOnlyList<JobView> Jobs, IReadOnlyList<BuildingView> Buildings,
     IReadOnlyList<UnitView> Units, IReadOnlyList<OrderView> Queue,
+    ScoutingView Scouting,
     SummaryView? Summary);
 
 public sealed record CommandResultView(bool Ok, string? Error);
@@ -73,7 +87,30 @@ public static class ViewMapper
             c.Population, c.SoldierCount, c.NextPersonCost, c.GrowthReserve, c.GrowthEnabled, c.Starving,
             JobsOf(c), BuildingsOf(c), UnitsOf(c),
             c.Queue.Select(o => new OrderView(o.Type.Id, o.Type.Name, o.Remaining, o.Progress, o.Type.BuildSeconds)).ToList(),
+            ScoutingOf(room, game, player, c),
             game.SummaryOf(player.CastleKey) is { } s ? ToView(s, c) : null);
+    }
+
+    private static ScoutingView ScoutingOf(Room room, GameState game, RoomPlayer player, Castle c)
+    {
+        var missions = game.MissionsOf(player.CastleKey);
+        int SeatOf(string key) => room.PlayerOfCastle(key)?.Seat ?? 0;
+        return new ScoutingView(
+            game.Rules.Scouting.MissionSeconds,
+            c.ScoutsAway,
+            room.Players.Where(p => p.Seat != player.Seat)
+                .Select(p => new ScoutTargetView(p.Seat, p.Name, p.Color, missions.Any(m => m.Target == p.CastleKey)))
+                .ToList(),
+            missions.Select(m => new ScoutMissionView(
+                SeatOf(m.Target), m.Progress(game.ElapsedSeconds), m.Arrived, Math.Max(0, m.ReturnsAt - game.ElapsedSeconds))).ToList(),
+            game.ReportsOf(player.CastleKey).Select(r =>
+            {
+                var target = room.PlayerOfCastle(r.Target);
+                return new ScoutReportView(
+                    target?.Seat ?? 0, target?.Name ?? "?", target?.Color ?? PlayerColor.Blue, r.ObservedAt, r.DeliveredAt,
+                    r.Soldiers.Select(u => new ScoutedUnitView(u.UnitId, u.Name, u.Count)).ToList(),
+                    r.BuildingLevels.Select(kv => new ScoutBuildingView(kv.Key, Jobs.Name(kv.Key), kv.Value)).ToList());
+            }).ToList());
     }
 
     private static List<JobView> JobsOf(Castle c) =>
