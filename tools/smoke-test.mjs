@@ -88,7 +88,9 @@ if (report) {
   check('report soldiers have only id, name and count',
     report.soldiers.every((s) => JSON.stringify(Object.keys(s).sort()) === '["count","name","unitId"]'));
   const seen = report.soldiers.find((s) => s.unitId === 'mizrakci').count;
-  check(`spearmen within ±20 % (real ${realSpears}, seen ${seen})`, seen >= Math.round(realSpears * 0.8) && seen <= Math.round(realSpears * 1.2));
+  const spread = Math.max(realSpears * 0.2, 1);
+  check(`spearmen within ±max(20 %, 1) (real ${realSpears}, seen ${seen})`,
+    seen >= Math.max(1, Math.round(realSpears - spread)) && seen <= Math.round(realSpears + spread));
   check('bows in storage are not reported', report.soldiers.find((s) => s.unitId === 'okcu').count === 0);
   check('building levels are exact', report.buildings.every((b) => b.level === realB.buildings.find((x) => x.type === b.type).level));
   check('report mentions no weapons, workers or resources', !/weapon|job|worker|food|wood|iron|queue|resource/i.test(JSON.stringify(report)));

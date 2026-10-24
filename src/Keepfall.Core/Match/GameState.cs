@@ -145,8 +145,9 @@ public sealed class GameState
     }
 
     /// <summary>
-    /// What a scout sees: every soldier type with its count off by up to ±ReportError (rounded,
-    /// never below 0, and exactly 0 when there are none), and exact building levels. Nothing else.
+    /// What a scout sees: every soldier type with its count off by up to ±max(ReportError × count, 1),
+    /// rounded. The type is always right: 0 when there are none, at least 1 when there are any.
+    /// Building levels are exact. Nothing else.
     /// </summary>
     private ScoutReport Observe(string target, double now)
     {
@@ -155,8 +156,9 @@ public sealed class GameState
         var soldiers = Rules.Units.Select(u =>
         {
             int real = castle.Soldiers[u];
+            double spread = Math.Max(real * error, 1);
             int seen = real == 0 ? 0
-                : Math.Max(0, (int)Math.Round(real * (1 + (_rng.NextDouble() * 2 - 1) * error), MidpointRounding.AwayFromZero));
+                : Math.Max(1, (int)Math.Round(real + (_rng.NextDouble() * 2 - 1) * spread, MidpointRounding.AwayFromZero));
             return new ScoutedUnit(u.Id, u.Name, seen);
         }).ToList();
         var levels = Jobs.Buildings.ToDictionary(b => b, b => castle.Building(b).Level);

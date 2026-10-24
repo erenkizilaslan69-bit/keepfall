@@ -164,21 +164,27 @@ public class ScoutingTests
         Assert.Contains(seen, n => n != 10);
     }
 
+    /// <summary>Small armies are off by at least ±1 (20 % of 3 would round to nothing), never shown as 0.</summary>
     [Theory]
-    [InlineData(1, 1, 1)]
-    [InlineData(3, 2, 4)]
-    [InlineData(5, 4, 6)]
-    public void Small_counts_round_within_bounds_and_never_go_below_zero(int real, int min, int max)
+    [InlineData(1, 1, 2)]  // ±1, but a type that exists is never reported as 0
+    [InlineData(3, 2, 4)]  // ±1 (20 % would be 0.6)
+    [InlineData(5, 4, 6)]  // ±1 (20 % is exactly 1)
+    [InlineData(8, 6, 10)] // ±1.6
+    public void Small_counts_are_off_by_at_least_one_but_never_zero(int real, int min, int max)
     {
-        for (int seed = 0; seed < 60; seed++)
+        var seen = new HashSet<int>();
+        for (int seed = 0; seed < 80; seed++)
         {
             var game = GameWithGrowthOff(seed: seed);
             Arm(game, B, real);
             Ok(game.Execute(A, new SendScout(B)));
             Run(game, 45);
-            int seen = game.ReportsOf(A)[0].Soldiers.Single(s => s.UnitId == "mizrakci").Count;
-            Assert.InRange(seen, min, max);
+            int count = game.ReportsOf(A)[0].Soldiers.Single(s => s.UnitId == "mizrakci").Count;
+            Assert.InRange(count, min, max);
+            seen.Add(count);
         }
+        Assert.True(seen.Count >= 2, $"{real} soldiers were always reported as {string.Join(",", seen)}");
+        Assert.Contains(seen, n => n != real);
     }
 
     [Fact]

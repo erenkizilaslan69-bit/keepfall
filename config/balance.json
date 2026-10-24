@@ -38,7 +38,8 @@
     "missionSeconds": 45,
     // Gözcü hedefe görevin bu kesrinde varır; rapor o an hesaplanır, dönüşte teslim edilir.
     "arrivalFraction": 0.5,
-    // Asker sayıları bu oranda (±) hatalı görünür; türler ve bina seviyeleri kesin.
+    // Asker sayıları bu oranda (±), ama en az ±1 asker hatalı görünür; türler ve bina seviyeleri kesin
+    // (asker yoksa 0, varsa en az 1 görünür).
     "reportError": 0.2
   },
 
