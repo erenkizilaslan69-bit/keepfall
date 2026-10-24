@@ -41,6 +41,7 @@ const net = new GameConnection({
     lastLayout = layout;
     if (screen === 'game' && !scene && lastCastle) onCastle(lastCastle);
   },
+  battleStarted: () => {},
   mapState: (state) => {
     lastMap = state;
     scene?.setMap(state);

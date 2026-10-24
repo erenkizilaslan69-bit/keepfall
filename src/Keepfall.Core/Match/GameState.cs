@@ -194,6 +194,16 @@ public sealed class GameState
     /// <summary>Battles being fought right now that this player is part of (a fallen castle keeps watching its own).</summary>
     public IReadOnlyList<ActiveBattle> ActiveBattlesOf(string playerKey) => _active.Where(b => b.Involves(playerKey)).ToList();
 
+    /// <summary>
+    /// Battles going on right now that this player can see: inside their vision, or their own. For
+    /// anyone not in it, that a battle is there is all they learn (never who or how it goes).
+    /// </summary>
+    public IReadOnlyList<ActiveBattle> BattlesSeenBy(string playerKey)
+    {
+        var vision = VisionOf(playerKey);
+        return _active.Where(b => b.Involves(playerKey) || vision.Any(c => c.Contains(b.Position))).ToList();
+    }
+
     /// <summary>Every battle being fought right now.</summary>
     public IReadOnlyList<ActiveBattle> ActiveBattles => _active;
 

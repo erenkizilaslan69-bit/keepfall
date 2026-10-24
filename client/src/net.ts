@@ -1,6 +1,6 @@
 import * as signalR from '@microsoft/signalr';
 import { loadIdentity, saveIdentity } from './identity';
-import type { BuildingType, CastleView, CommandResult, Job, JoinView, MapLayoutView, MapStateView, RoomView, Row, SummaryView } from './types';
+import type { ArmyMode, BattleStartedView, BuildingType, CastleView, CommandResult, Job, JoinView, MapLayoutView, MapStateView, RoomView, Row, SummaryView } from './types';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
 
@@ -11,6 +11,8 @@ export interface ConnectionEvents {
   mapLayout: (layout: MapLayoutView) => void;
   /** What we see on the map, every tick. */
   mapState: (state: MapStateView) => void;
+  /** A battle we fight in has started (or is going on, after a reconnect): the whole record to replay. */
+  battleStarted: (battle: BattleStartedView) => void;
   matchEnded: (summary: SummaryView) => void;
   /** Something that happened to us, e.g. "Kırmızı'nın gözcüsü kaleni gözetledi." */
   notification: (text: string) => void;
@@ -35,6 +37,7 @@ export class GameConnection {
     this.hub.on('CastleState', (castle: CastleView) => this.on.castle(castle));
     this.hub.on('MapLayout', (layout: MapLayoutView) => this.on.mapLayout(layout));
     this.hub.on('MapState', (state: MapStateView) => this.on.mapState(state));
+    this.hub.on('BattleStarted', (battle: BattleStartedView) => this.on.battleStarted(battle));
     this.hub.on('MatchEnded', (summary: SummaryView) => this.on.matchEnded(summary));
     this.hub.on('Notification', (text: string) => this.on.notification(text));
     this.hub.onreconnecting(() => this.on.status('reconnecting'));
@@ -87,8 +90,9 @@ export class GameConnection {
   upgradeBuilding = (building: BuildingType) => this.call('UpgradeBuilding', building);
   setGrowth = (enabled: boolean) => this.call('SetGrowth', enabled);
   sendScout = (targetSeat: number, from: Job) => this.call('SendScout', targetSeat, from);
-  sendArmy = (targetSeat: number, units: Record<string, number>, rows: Record<string, Row>, archerPriority: string | null) =>
-    this.call('SendArmy', targetSeat, units, rows, archerPriority);
+  sendArmy = (targetSeat: number, units: Record<string, number>, rows: Record<string, Row>, archerPriority: string | null,
+    mode: ArmyMode = 'attack') => this.call('SendArmy', targetSeat, units, rows, archerPriority, mode);
+  recallArmy = (armyId: number) => this.call('RecallArmy', armyId);
   setDefense = (rows: Record<string, Row>, archerPriority: string | null) => this.call('SetDefense', rows, archerPriority);
   setSpeed = (speed: number) => this.call('SetSpeed', speed);
 

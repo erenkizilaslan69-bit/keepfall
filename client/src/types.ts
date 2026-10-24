@@ -86,7 +86,12 @@ export interface ArmyView {
   units: { unitId: string; name: string; count: number }[];
   distance: number;
   remainingSeconds: number;
+  mode: ArmyMode;
+  /** In a battle: cannot be recalled until it is over. */
+  fighting: boolean;
 }
+export type ArmyMode = 'attack' | 'intercept';
+export type BattleKind = 'siege' | 'field';
 export interface IncomingView { fromSeat: number; fromName: string; fromColor: PlayerColor; arrivesInSeconds: number }
 export interface BattleLineView { unitId: string; name: string; count: number; lost: number }
 export interface BattleReportView {
@@ -104,6 +109,7 @@ export interface BattleReportView {
   castleHpAfter: number;
   castleHpMax: number;
   defenderEliminated: boolean;
+  kind: BattleKind;
 }
 export interface WarView {
   wallHp: number;
@@ -200,5 +206,18 @@ export interface OwnMoverView {
 }
 /** Someone else's army or scout inside our vision: never its target, road or arrival time. */
 export interface SeenMoverView { id: string; kind: MoverKind; ownerSeat: number; ownerColor: PlayerColor; position: Vec; velocity: Vec; units: MoverUnit[] }
+/** A battle we can see but are not in: only where it is. */
+export interface BattleMarkerView { id: string; at: Vec }
 /** What we see right now (fog of war applied by the server). */
-export interface MapStateView { elapsedSeconds: number; vision: VisionView[]; own: OwnMoverView[]; seen: SeenMoverView[] }
+export interface MapStateView { elapsedSeconds: number; vision: VisionView[]; own: OwnMoverView[]; seen: SeenMoverView[]; battles: BattleMarkerView[] }
+
+/** A battle we fight in, to replay: soldiers numbered side A first; times in simulation ticks. */
+export interface BattleSideView { seat: number; color: PlayerColor; name: string; attacker: boolean; soldiers: { unitId: string; row: Row }[] }
+export interface BattleStartedView {
+  id: string; kind: BattleKind; at: Vec; facing: Vec; startedAt: number; playback: number; tickSeconds: number; ticks: number;
+  fightSeconds: number; siegeSeconds: number; sides: BattleSideView[];
+  /** [tick, attacker, target] … */ hits: number[];
+  /** [tick, soldier] … */ deaths: number[];
+  /** [tick, soldier] … */ advances: number[];
+  winner: 'attacker' | 'defender' | 'draw'; castleDamage: number;
+}

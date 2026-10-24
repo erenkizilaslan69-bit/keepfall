@@ -60,17 +60,20 @@ public sealed class GameHub(RoomRegistry registry) : Hub
         CastleView? castle;
         MapLayoutView? layout;
         MapStateView? map;
+        List<BattleStartedView> battles;
         lock (session.Lock)
         {
             room = ViewMapper.ToView(session.Room);
             castle = ViewMapper.CastleOf(session.Room, player);
             layout = MapViewMapper.LayoutOf(session.Room);
             map = MapViewMapper.StateOf(session.Room, player);
+            battles = MapViewMapper.ActiveBattlesOf(session.Room, player); // a reconnect picks the battle up where it is
         }
         await Clients.OthersInGroup(RoomGroup(code)).SendAsync("RoomState", room);
         if (layout is not null) await Clients.Caller.SendAsync("MapLayout", layout);
         if (castle is not null) await Clients.Caller.SendAsync("CastleState", castle);
         if (map is not null) await Clients.Caller.SendAsync("MapState", map);
+        foreach (var b in battles) await Clients.Caller.SendAsync("BattleStarted", b);
         return new JoinView(true, null, code, player.Token, player.Seat, room);
     }
 
@@ -107,8 +110,13 @@ public sealed class GameHub(RoomRegistry registry) : Hub
     /// <param name="units">Unit id → how many soldiers to send.</param>
     /// <param name="rows">Optional row per unit id ("front" / "back").</param>
     /// <param name="archerPriority">Optional unit id the archers aim at first.</param>
-    public Task<CommandResultView> SendArmy(int targetSeat, Dictionary<string, int> units, Dictionary<string, Row>? rows, string? archerPriority) =>
-        Economy(new SendArmy(Room.CastleKeyOf(targetSeat), units ?? [], rows, archerPriority));
+    /// <param name="mode">Attack the castle, or cut off the road (home after the first battle on it, or from half way).</param>
+    public Task<CommandResultView> SendArmy(int targetSeat, Dictionary<string, int> units, Dictionary<string, Row>? rows, string? archerPriority,
+        ArmyMode mode = ArmyMode.Attack) =>
+        Economy(new SendArmy(Room.CastleKeyOf(targetSeat), units ?? [], rows, archerPriority, mode));
+
+    /// <summary>Call one of our own armies home (the id is from our own castle view).</summary>
+    public Task<CommandResultView> RecallArmy(int armyId) => Economy(new RecallArmy(armyId));
 
     public Task<CommandResultView> SetDefense(Dictionary<string, Row>? rows, string? archerPriority) =>
         Economy(new SetDefense(rows, archerPriority));
@@ -170,19 +178,24 @@ public sealed class GameHub(RoomRegistry registry) : Hub
         return layout is null ? Task.CompletedTask : Clients.Group(RoomGroup(session.Room.Code)).SendAsync("MapLayout", layout);
     }
 
-    /// <summary>Each player's own castle and what they see on the map, to that player's group only.</summary>
+    /// <summary>
+    /// Each player's own castle, what they see on the map and the battles they just started fighting,
+    /// to that player's group only.
+    /// </summary>
     public static async Task PushCastles(IHubClients<IClientProxy> clients, RoomSession session)
     {
-        List<(int Seat, CastleView View, MapStateView? Map)> views;
+        List<(int Seat, CastleView View, MapStateView? Map, List<BattleStartedView> Battles)> views;
         lock (session.Lock)
             views = session.Room.Players
-                .Select(p => (p.Seat, View: ViewMapper.CastleOf(session.Room, p), Map: MapViewMapper.StateOf(session.Room, p)))
+                .Select(p => (p.Seat, View: ViewMapper.CastleOf(session.Room, p), Map: MapViewMapper.StateOf(session.Room, p),
+                    Battles: MapViewMapper.StartedBattlesOf(session.Room, p)))
                 .Where(x => x.View is not null)
-                .Select(x => (x.Seat, x.View!, x.Map))
+                .Select(x => (x.Seat, x.View!, x.Map, x.Battles))
                 .ToList();
-        foreach (var (seat, view, map) in views)
+        foreach (var (seat, view, map, battles) in views)
         {
             var group = clients.Group(PlayerGroup(session.Room.Code, seat));
+            foreach (var b in battles) await group.SendAsync("BattleStarted", b);
             await group.SendAsync("CastleState", view);
             if (map is not null) await group.SendAsync("MapState", map);
         }

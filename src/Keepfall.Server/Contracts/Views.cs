@@ -36,15 +36,17 @@ public sealed record SummaryView(
 // War. A player sees their own armies, the warnings about armies coming at them (who and when,
 // nothing more) and the reports of battles they fought in. Never another player's army on the road.
 public sealed record ArmyUnitView(string UnitId, string Name, int Count);
+/// <param name="Fighting">In a battle right now (then it cannot be recalled).</param>
 public sealed record ArmyView(
     int Id, int TargetSeat, string TargetName, PlayerColor TargetColor, ArmyState State,
-    IReadOnlyList<ArmyUnitView> Units, double Distance, double RemainingSeconds);
+    IReadOnlyList<ArmyUnitView> Units, double Distance, double RemainingSeconds, ArmyMode Mode, bool Fighting);
 public sealed record IncomingView(int FromSeat, string FromName, PlayerColor FromColor, double ArrivesInSeconds);
 public sealed record BattleLineView(string UnitId, string Name, int Count, int Lost);
 public sealed record BattleReportView(
     int Id, double At, bool Attacking, int OpponentSeat, string OpponentName, PlayerColor OpponentColor,
     IReadOnlyList<BattleLineView> AttackerUnits, IReadOnlyList<BattleLineView> DefenderUnits,
-    BattleWinner Winner, bool YouWon, double CastleDamage, double CastleHpAfter, double CastleHpMax, bool DefenderEliminated);
+    BattleWinner Winner, bool YouWon, double CastleDamage, double CastleHpAfter, double CastleHpMax, bool DefenderEliminated,
+    BattleKind Kind);
 public sealed record DefenseView(IReadOnlyDictionary<string, Row> Rows, string? ArcherPriority);
 public sealed record WarView(
     double WallHp, double MaxWallHp, bool Famine, double FamineStartsIn,
@@ -156,7 +158,7 @@ public static class ViewMapper
             {
                 var target = Other(a.Target);
                 return new ArmyView(a.Id, target?.Seat ?? 0, target?.Name ?? "?", target?.Color ?? PlayerColor.Blue, a.State,
-                    Units(a.State == ArmyState.Marching ? a.Units : a.Survivors), a.Distance, a.SecondsLeft);
+                    Units(a.State == ArmyState.Marching ? a.Units : a.Survivors), a.Distance, a.SecondsLeft, a.Mode, a.Battle is not null);
             }).ToList(),
             // Only who and when: an incoming army's size and units are never part of this.
             game.IncomingWarningsOf(player.CastleKey).Select(w =>
@@ -171,7 +173,7 @@ public static class ViewMapper
                 bool youWon = attacking ? b.Winner == BattleWinner.Attacker : b.Winner == BattleWinner.Defender;
                 return new BattleReportView(b.Id, b.At, attacking, opponent?.Seat ?? 0, opponent?.Name ?? "?",
                     opponent?.Color ?? PlayerColor.Blue, Lines(b.AttackerUnits), Lines(b.DefenderUnits), b.Winner, youWon,
-                    b.CastleDamage, b.CastleHpAfter, b.CastleHpMax, b.DefenderEliminated);
+                    b.CastleDamage, b.CastleHpAfter, b.CastleHpMax, b.DefenderEliminated, b.Kind);
             }).ToList(),
             new DefenseView(c.DefenseRows.ToDictionary(kv => kv.Key.Id, kv => kv.Value), c.DefensePriority?.Id));
     }

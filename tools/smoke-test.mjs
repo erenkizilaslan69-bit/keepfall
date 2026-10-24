@@ -77,14 +77,14 @@ check('host sets ×20', (await A.call('SetSpeed', 20)).ok);
 
 // ---- B builds an army and keeps bows in storage; A forges swords; A scouts B -----------------
 await A.call('MoveWorkers', 'idle', 'blacksmith', 4);
-await A.call('QueueWeapon', 'kilicli', 3);
+await A.call('QueueWeapon', 'kilicli', 4);
 await B.call('MoveWorkers', 'idle', 'blacksmith', 4);
 await B.call('QueueWeapon', 'mizrakci', 6);
 await B.call('QueueWeapon', 'okcu', 2);
 await sleep(3500);
 check('B arms 6 spearmen', (await B.call('ArmWorkers', 'mizrakci', 6, 'idle')).ok);
-check('A arms 3 swordsmen', (await A.call('ArmWorkers', 'kilicli', 3, 'idle')).ok);
-check('attacks refused in preparation', !(await A.call('SendArmy', 2, { kilicli: 1 }, null, null)).ok);
+check('A arms 4 swordsmen', (await A.call('ArmWorkers', 'kilicli', 4, 'idle')).ok);
+check('attacks refused in preparation', !(await A.call('SendArmy', 2, { kilicli: 1 }, null, null, 'attack')).ok);
 check('cannot scout yourself', !(await A.call('SendScout', 1, 'idle')).ok);
 check('A sends a scout to B', (await A.call('SendScout', 2, 'idle')).ok);
 check('only one scout per target', !(await A.call('SendScout', 2, 'idle')).ok);
@@ -125,7 +125,12 @@ check('the war phase begins', await waitFor(() => A.of('RoomState').some((r) => 
 await A.call('SetSpeed', 5); // 5 game seconds per tick, so the 10 s warning is seen before the battle
 const notesBefore = { A: A.of('Notification').length, B: B.of('Notification').length, C: C.of('Notification').length };
 const bMsgsBefore = B.msgs.length;
-check('A sends 3 swordsmen at B', (await A.call('SendArmy', 2, { kilicli: 3 }, { kilicli: 'front' }, null)).ok);
+// C's scout is timed to reach B's gate a few seconds into the battle there: C sees that a battle is
+// going on, and nothing else.
+const tA = A.of('CastleState').at(-1).scouting.targets.find((t) => t.seat === 2).marchSeconds;
+const sC = C.of('CastleState').at(-1).scouting.targets.find((t) => t.seat === 2).scoutSeconds;
+check('A sends 3 swordsmen at B', (await A.call('SendArmy', 2, { kilicli: 3 }, { kilicli: 'front' }, null, 'attack')).ok);
+setTimeout(() => { void C.call('SendScout', 2, 'idle'); }, Math.max(0, (tA + 4 - sC) / 5) * 1000);
 check('A sees its own army', await waitFor(() => (A.of('CastleState').at(-1)?.war.armies.length ?? 0) === 1, 3000));
 check('the battle happens', await waitFor(() => (B.of('CastleState').at(-1)?.war.battles.length ?? 0) === 1, 15000));
 await sleep(1200);
@@ -143,7 +148,7 @@ check("B's castle showed the countdown", incoming.length > 0);
 check('an incoming warning carries only who and when',
   incoming.every((w) => JSON.stringify(Object.keys(w).sort()) === '["arrivesInSeconds","fromColor","fromName","fromSeat"]'));
 check("B's castle never lists A's army", castlesBWar.every((c) => c.war.armies.length === 0)
-  && !B.msgs.slice(bMsgsBefore).some((m) => !['CastleState', 'MapState', 'RoomState', 'Notification'].includes(m.target)));
+  && !B.msgs.slice(bMsgsBefore).some((m) => !['CastleState', 'MapState', 'RoomState', 'Notification', 'BattleStarted'].includes(m.target)));
 
 // ---- fog of war ------------------------------------------------------------------------------
 const mapsA = A.of('MapState'), mapsB = B.of('MapState'), mapsC = C.of('MapState');
@@ -175,8 +180,7 @@ for (const [name, maps] of [['B', mapsB], ['C', mapsC]]) {
 check(`others see A's army exactly when it is in their vision (${compared} ticks compared)`, compared > 5 && mismatches.length === 0, mismatches.join(', '));
 const bSaw = mapsB.flatMap((m) => m.seen).filter((s) => s.ownerSeat === 1 && s.kind === 'army');
 check("B saw A's army coming, with its soldiers", bSaw.length > 0 && bSaw.every((s) => s.units.length === 1 && s.units[0].unitId === 'kilicli' && s.units[0].count === 3));
-check("C never saw A's army (no road between A and B comes near C's corner)",
-  mapsC.every((m) => !m.seen.some((s) => s.ownerSeat === 1 && s.kind === 'army')));
+// (C may see A's army near B's gate through its scout; the tick-by-tick vision check above covers that.)
 check('C never sees a warning, an army or a battle',
   C.of('CastleState').every((c) => c.war.incoming.length === 0 && c.war.armies.length === 0 && c.war.battles.length === 0));
 check('C only ever got its own (yellow) castle', C.of('CastleState').every((c) => c.color === 'yellow'));
@@ -193,6 +197,40 @@ check('A was told about the battle, B too',
   && B.of('Notification').slice(notesBefore.B).some((t) => t.includes('saldır')));
 check('no CastleState ever went to the wrong player',
   A.of('CastleState').every((c) => c.color === 'blue') && B.of('CastleState').every((c) => c.color === 'red'));
+
+// ---- the battle itself: the record goes to the two sides only ----------------------------------
+const startedA = A.of('BattleStarted'), startedB = B.of('BattleStarted');
+check('both sides got the battle record', startedA.length === 1 && startedB.length === 1 && startedA[0].id === startedB[0].id);
+if (startedA[0]) {
+  const b = startedA[0];
+  check('the record has both armies soldier by soldier', b.sides.length === 2
+    && b.sides[0].soldiers.length === 3 && b.sides[1].soldiers.length === 6 && b.sides[0].attacker && !b.sides[1].attacker);
+  check('the record has hits and deaths', b.hits.length > 0 && b.hits.length % 3 === 0 && b.deaths.length % 2 === 0);
+  check('the battle takes its time', b.fightSeconds > 1 && b.kind === 'siege');
+}
+check('C never gets a battle record', C.of('BattleStarted').length === 0);
+const markersC = C.of('MapState').flatMap((m) => m.battles);
+check('C saw that a battle was going on at B (its scout was there)', markersC.length > 0, 'scout timing missed the battle');
+check('a battle C sees is only where it is', markersC.every((x) => JSON.stringify(Object.keys(x).sort()) === '["at","id"]')
+  && (!startedA[0] || markersC.every((x) => x.id === startedA[0].id)));
+check('C only sees the battle inside its vision',
+  C.of('MapState').every((m) => m.battles.every((x) => inVision(x.at, m))));
+
+// ---- recall ------------------------------------------------------------------------------------
+await A.call('SetSpeed', 1);
+const armyCount = () => A.of('CastleState').at(-1).war.armies.length;
+const sent = await A.call('SendArmy', 3, { kilicli: 1 }, null, null, 'intercept'); // the swordsman kept at home
+if (sent.ok) {
+  await waitFor(() => armyCount() > 0, 3000);
+  const army = A.of('CastleState').at(-1).war.armies.at(-1);
+  check('the army is sent in intercept mode', army.mode === 'intercept');
+  check('B cannot recall A\'s army', !(await B.call('RecallArmy', army.id)).ok);
+  check('A recalls its army', (await A.call('RecallArmy', army.id)).ok);
+  check('the recalled army is on its way home', await waitFor(() => A.of('CastleState').at(-1).war.armies.find((x) => x.id === army.id)?.state === 'returning', 3000));
+  check('C never learns the mode', !C.msgs.some((m) => m.raw.includes('intercept')));
+} else {
+  check('A had soldiers left for the recall test', false, sent.error);
+}
 
 A.ws.close();
 B.ws.close();
