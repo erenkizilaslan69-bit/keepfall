@@ -1,6 +1,7 @@
 import { clock, COLOR_CSS, esc, fmt, rate } from './format';
 import type { GameConnection } from './net';
-import type { BuildingType, BuildingView, CastleView, CommandResult, Job, ScoutingView } from './types';
+import type { BuildingType, BuildingView, CastleView, CommandResult, Job, RoomView, ScoutingView } from './types';
+import { WarPanel } from './war';
 
 // Plain-HTML panel for the player's own castle. The structure is built once from the first state
 // and then updated in place, so dropdowns and hover states survive the once-per-second refresh.
@@ -12,6 +13,8 @@ export class Hud {
   private status = '';
   private queueKey = '';
   private noticeTimer = 0;
+  private war: WarPanel | null = null;
+  private room: RoomView | null = null;
 
   constructor(
     private readonly root: HTMLElement,
@@ -24,6 +27,12 @@ export class Hud {
     this.state = state;
     if (!this.built) this.build(state);
     this.refresh(state);
+    this.war!.update(state, this.room);
+  }
+
+  /** Public room facts (who is still in) for the attack target list. */
+  setRoom(room: RoomView): void {
+    this.room = room;
   }
 
   /** Scroll the panel to a building's row and flash it (from a click in the scene). */
@@ -81,12 +90,14 @@ export class Hud {
 
     this.root.innerHTML = `
       <header>
-        <div><span class="timer" id="timer"></span> <span class="muted">hazırlık</span></div>
+        <div><span class="timer" id="timer"></span> <span class="muted" id="phase-label">hazırlık</span></div>
         <div id="speed" class="speed">${s.speedControl
           ? [1, 5, 20].map((x) => `<button data-action="speed" data-n="${x}">×${x}</button>`).join('')
           : ''}</div>
         <div class="muted" id="status">${esc(this.status)}</div>
       </header>
+      <div id="incoming-banner" class="hidden"></div>
+      <div id="spectator" class="banner spectator-banner hidden">Kalen düştü — elendin. Artık sadece izleyicisin.</div>
       <div id="starving" class="banner danger">Açlık! Yemek bitti, tüm üretim yarıya indi.</div>
       <section class="resources">
         <div><span class="res-name">Yemek</span> <b id="food"></b> <span class="muted" id="food-rate"></span></div>
@@ -107,6 +118,7 @@ export class Hud {
           <span class="buttons"><button data-action="growth" id="growth"></button></span>
         </div>
       </section>
+      <section id="war-section"></section>
       <section><h2>Meslekler</h2>${jobs}</section>
       <section><h2>Binalar</h2>${buildings}</section>
       <section><h2>Demirhane <span class="muted" id="forge-speed"></span></h2>
@@ -115,14 +127,19 @@ export class Hud {
       </section>
       ${scoutSection(s, sources)}
       <div id="toast" class="toast"></div>
-      <div id="notice" class="toast info"></div>`;
+      <div id="notice" class="toast info"></div>
+      <div id="war-modal" class="modal hidden"></div>`;
     this.built = true;
+    this.war = new WarPanel(this.q('#war-section'), this.q('#incoming-banner'), this.q('#war-modal'), this.net, (m) => this.toast(m));
   }
 
   // ---- values ------------------------------------------------------------------------------
 
   private refresh(s: CastleView): void {
     this.q('#timer').textContent = clock(s.remainingSeconds);
+    this.q('#phase-label').textContent = s.phase === 'war' ? (s.war.famine ? 'savaş · kıtlık' : 'savaş') : 'hazırlık';
+    this.q('#spectator').classList.toggle('hidden', !s.eliminated);
+    this.root.classList.toggle('spectator', s.eliminated);
     for (const btn of this.root.querySelectorAll<HTMLButtonElement>('[data-action="speed"]'))
       btn.classList.toggle('active', Number(btn.dataset.n) === s.speed);
 

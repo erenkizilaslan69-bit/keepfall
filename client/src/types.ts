@@ -2,7 +2,7 @@
 
 export type Job = 'idle' | 'farmer' | 'lumberjack' | 'miner' | 'blacksmith';
 export type BuildingType = 'farm' | 'lumberCamp' | 'mine' | 'forge';
-export type MatchPhase = 'preparation' | 'ended';
+export type MatchPhase = 'preparation' | 'war' | 'ended';
 
 export interface Resources { food: number; wood: number; iron: number }
 export interface Rates { foodIn: number; foodOut: number; wood: number; iron: number; forgeSpeed: number }
@@ -46,13 +46,14 @@ export interface SummaryView {
   idleWorkerSeconds: number;
   buildings: BuildingView[];
   samples: EconomySample[];
+  war: WarStats;
 }
 
 export type PlayerColor = 'blue' | 'red' | 'yellow' | 'purple';
-export type RoomPhase = 'lobby' | 'preparation' | 'ended';
+export type RoomPhase = 'lobby' | 'preparation' | 'war' | 'ended';
 
 /** Public facts about a player; the server never sends anyone else's token or castle. */
-export interface PlayerView { seat: number; name: string; color: PlayerColor; ready: boolean; connected: boolean; isHost: boolean }
+export interface PlayerView { seat: number; name: string; color: PlayerColor; ready: boolean; connected: boolean; isHost: boolean; eliminated: boolean }
 
 export interface RoomView {
   code: string;
@@ -62,6 +63,70 @@ export interface RoomView {
   maxPlayers: number;
   canStart: boolean;
   remainingSeconds: number | null;
+  /** Only once the match is over; then everyone sees everyone's summary. */
+  result: ResultView | null;
+}
+
+export interface RankView { seat: number; name: string; color: PlayerColor; place: number; population: number; eliminated: boolean }
+export interface ResultView {
+  winners: number[];
+  byElimination: boolean;
+  ranking: RankView[];
+  summaries: { seat: number; name: string; color: PlayerColor; summary: SummaryView }[];
+}
+
+// War: our own armies, warnings about armies coming at us (who and when only), our battles.
+export type Row = 'front' | 'back';
+export interface ArmyView {
+  id: number;
+  targetSeat: number;
+  targetName: string;
+  targetColor: PlayerColor;
+  state: 'marching' | 'returning';
+  units: { unitId: string; name: string; count: number }[];
+  distance: number;
+  remainingSeconds: number;
+}
+export interface IncomingView { fromSeat: number; fromName: string; fromColor: PlayerColor; arrivesInSeconds: number }
+export interface BattleLineView { unitId: string; name: string; count: number; lost: number }
+export interface BattleReportView {
+  id: number;
+  at: number;
+  attacking: boolean;
+  opponentSeat: number;
+  opponentName: string;
+  opponentColor: PlayerColor;
+  attackerUnits: BattleLineView[];
+  defenderUnits: BattleLineView[];
+  winner: 'attacker' | 'defender' | 'draw';
+  youWon: boolean;
+  castleDamage: number;
+  castleHpAfter: number;
+  castleHpMax: number;
+  defenderEliminated: boolean;
+}
+export interface WarView {
+  marchSeconds: number;
+  warningSeconds: number;
+  wallHp: number;
+  maxWallHp: number;
+  famine: boolean;
+  famineStartsIn: number;
+  soldiersAway: number;
+  armies: ArmyView[];
+  incoming: IncomingView[];
+  battles: BattleReportView[];
+  defense: { rows: Record<string, Row>; archerPriority: string | null };
+}
+export interface WarStats {
+  attacksLaunched: number;
+  soldiersLost: number;
+  enemiesKilled: number;
+  castleDamageDealt: number;
+  castleDamageTaken: number;
+  wallHp: number;
+  maxWallHp: number;
+  eliminated: boolean;
 }
 
 export interface JoinView { ok: boolean; error: string | null; code: string | null; token: string | null; seat: number; room: RoomView | null }
@@ -108,6 +173,9 @@ export interface CastleView {
   units: UnitView[];
   queue: OrderView[];
   scouting: ScoutingView;
+  war: WarView;
+  /** Our castle has fallen: we only watch. */
+  eliminated: boolean;
   summary: SummaryView | null;
 }
 

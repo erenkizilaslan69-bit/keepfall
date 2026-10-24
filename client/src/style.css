@@ -193,3 +193,33 @@ select { background: #3a352c; color: var(--text); border: 1px solid #4d473b; bor
 .report-head { display: flex; align-items: center; gap: 4px; }
 .report-head .muted { margin-left: auto; }
 .toast.info { background: #2f4f7a; bottom: 70px; }
+
+/* ---- war ------------------------------------------------------------------------------- */
+
+.incoming {
+  background: #b3261e; color: white; font-weight: 700; font-size: 16px; padding: 10px 12px;
+  border-radius: 6px; margin-top: 8px; animation: alarm 1s ease-in-out infinite; box-shadow: 0 0 0 2px #ff8a80;
+}
+.incoming b { font-size: 22px; font-variant-numeric: tabular-nums; }
+@keyframes alarm { 50% { background: #7d1a14; } }
+.spectator-banner { background: #4a4438; color: var(--text); font-weight: 600; }
+#panel .spectator button, #panel .spectator select, #panel .spectator input { pointer-events: none; opacity: 0.45; }
+#panel .spectator .modal button { pointer-events: auto; opacity: 1; }
+
+.wall-row { grid-template-columns: auto 1fr auto; }
+.hpbar { height: 10px; background: #15130f; border-radius: 5px; overflow: hidden; }
+.hpbar > div { height: 100%; background: #6fae4a; }
+.hpbar > div.low { background: #c2453a; }
+
+.army-grid { display: grid; grid-template-columns: 1fr auto 64px auto; gap: 4px 8px; align-items: center; padding: 4px 6px; }
+.army-grid input { width: 64px; background: #15130f; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; font: inherit; }
+.defense-grid { grid-template-columns: 1fr auto; }
+.defense summary { cursor: pointer; color: var(--muted); padding: 6px; }
+.order .army-units { grid-column: 1 / -1; color: var(--muted); }
+
+.report.battle { cursor: pointer; }
+.report.battle.won { border-color: #4f8a3a; }
+.report.battle.lost { border-color: #8a3a32; }
+.battle-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+.battle-sides h3 { font-size: 13px; color: var(--muted); margin: 0 0 4px; }
+.loss { color: #ff8a80; }

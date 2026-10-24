@@ -8,7 +8,7 @@ import { EndScreen, HomeScreen, LobbyScreen, rosterHtml } from './screens';
 import type { CastleView, RoomView, SummaryView } from './types';
 
 // Routes: "/" is the home screen, "/oda/ABCD" is a room. Inside a room the screen follows the
-// room's phase: lobby → game (preparation) → end screen.
+// room's phase: lobby → game (preparation and war) → end screen.
 
 const app = document.getElementById('app')!;
 
@@ -46,14 +46,17 @@ const net = new GameConnection({
 // ---- room events ---------------------------------------------------------------------------
 
 function onRoom(r: RoomView): void {
-  const wanted: Screen = r.phase === 'lobby' ? 'lobby' : r.phase === 'preparation' ? 'game' : 'end';
+  const wanted: Screen = r.phase === 'lobby' ? 'lobby' : r.phase === 'ended' ? 'end' : 'game';
   if (wanted !== screen) {
     if (wanted === 'lobby') showLobby(r);
     else if (wanted === 'game') showGame();
     else showEnd(r);
   }
   if (screen === 'lobby') lobby!.update(r);
-  else if (screen === 'game') document.getElementById('roster')!.innerHTML = rosterHtml(r, net.seat);
+  else if (screen === 'game') {
+    document.getElementById('roster')!.innerHTML = rosterHtml(r, net.seat);
+    hud?.setRoom(r);
+  }
   else if (screen === 'end') end!.update(r);
 }
 

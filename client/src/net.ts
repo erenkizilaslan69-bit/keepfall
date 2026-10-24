@@ -1,6 +1,6 @@
 import * as signalR from '@microsoft/signalr';
 import { loadIdentity, saveIdentity } from './identity';
-import type { BuildingType, CastleView, CommandResult, Job, JoinView, RoomView, SummaryView } from './types';
+import type { BuildingType, CastleView, CommandResult, Job, JoinView, RoomView, Row, SummaryView } from './types';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
 
@@ -81,6 +81,9 @@ export class GameConnection {
   upgradeBuilding = (building: BuildingType) => this.call('UpgradeBuilding', building);
   setGrowth = (enabled: boolean) => this.call('SetGrowth', enabled);
   sendScout = (targetSeat: number, from: Job) => this.call('SendScout', targetSeat, from);
+  sendArmy = (targetSeat: number, units: Record<string, number>, rows: Record<string, Row>, archerPriority: string | null) =>
+    this.call('SendArmy', targetSeat, units, rows, archerPriority);
+  setDefense = (rows: Record<string, Row>, archerPriority: string | null) => this.call('SetDefense', rows, archerPriority);
   setSpeed = (speed: number) => this.call('SetSpeed', speed);
 
   private async call(method: string, ...args: unknown[]): Promise<CommandResult> {
