@@ -99,7 +99,7 @@ function onCastle(c: CastleView): void {
 // ---- screens -------------------------------------------------------------------------------
 
 function clear(): void {
-  document.documentElement.classList.remove('in-game');
+  document.documentElement.classList.remove('in-game', 'in-menu');
   game?.destroy(true);
   game = null; scene = null; lobby = null; end = null;
   ui?.destroy();
@@ -109,6 +109,7 @@ function clear(): void {
 
 function showHome(defaults: { code?: string; error?: string } = {}): void {
   clear();
+  document.documentElement.classList.add('in-menu');
   screen = 'home';
   new HomeScreen(app, { name: loadName(), code: defaults.code ?? '', error: defaults.error }, {
     create: async (name) => {
@@ -132,6 +133,7 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
 
 function showLobby(r: RoomView): void {
   clear();
+  document.documentElement.classList.add('in-menu');
   screen = 'lobby';
   lastCastle = null;
   lastLayout = null;
@@ -182,6 +184,7 @@ function startScene(color: CastleView['color'], layout: MapLayoutView): void {
 
 function showEnd(r: RoomView): void {
   clear();
+  document.documentElement.classList.add('in-menu');
   screen = 'end';
   end = new EndScreen(app, net, net.seat);
   if (summary) end.setSummary(summary);

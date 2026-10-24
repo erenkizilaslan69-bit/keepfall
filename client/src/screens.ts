@@ -1,8 +1,9 @@
-import { clock, COLOR_CSS, COLOR_NAMES, esc, fmt } from './format';
+import { clock, COLOR_CSS, esc, fmt } from './format';
 import type { GameConnection } from './net';
 import type { RoomView, SummaryView } from './types';
 
-// Plain-HTML screens around the game: home, lobby, the in-game player list and the end screen.
+// Plain-HTML screens around the game: home, lobby and the end screen, in the same parchment-and-ribbon
+// look as the in-game UI (ui/ui.css).
 // Each builds its structure once and updates in place, so typing in an input is never interrupted.
 // Each screen renders into its own element (and listens there), so when the app clears the page
 // the screen and its listeners go away together.
@@ -16,6 +17,10 @@ function mount(parent: HTMLElement, html: string): HTMLElement {
 
 const dot = (color: string) => `<span class="dot" style="background:${COLOR_CSS[color] ?? '#888'}"></span>`;
 
+const ART = '/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/';
+const avatar = (seat: number) =>
+  `${ART}UI%20Elements/UI%20Elements/Human%20Avatars/Avatars_${String(((seat - 1) % 25) + 1).padStart(2, '0')}.png`;
+
 // ---- home ----------------------------------------------------------------------------------
 
 export class HomeScreen {
@@ -25,15 +30,16 @@ export class HomeScreen {
     actions: { create: (name: string) => Promise<string | null>; join: (name: string, code: string) => Promise<string | null> },
   ) {
     const root = mount(parent, `
-      <div class="screen home">
-        <h1>Keepfall</h1>
-        <p class="muted">2–4 kişilik kale savunma ve fetih oyunu</p>
+      <div class="screen menu paper home">
+        <img class="hero" src="${ART}Buildings/Blue%20Buildings/Castle.png" alt="" onerror="this.remove()">
+        <div class="title-ribbon ribbon ribbon-blue">Keepfall</div>
+        <p class="muted center">2–4 kişilik kale savunma ve fetih oyunu</p>
         <label class="field">Adın <input id="name" maxlength="16" autocomplete="nickname" value="${esc(defaults.name)}" placeholder="Oyuncu"></label>
-        <button id="create" class="primary">Oda kur</button>
+        <button id="create" class="btn wide">Oda kur</button>
         <div class="or">ya da</div>
         <div class="join-row">
           <label class="field">Oda kodu <input id="code" maxlength="4" value="${esc(defaults.code)}" placeholder="ABCD" autocapitalize="characters"></label>
-          <button id="join">Odaya katıl</button>
+          <button id="join" class="btn btn-red">Odaya katıl</button>
         </div>
         <p class="error" id="error">${esc(defaults.error ?? '')}</p>
       </div>`);
@@ -62,20 +68,20 @@ export class LobbyScreen {
     onName: (name: string) => void) {
     const link = `${location.origin}/oda/${room.code}`;
     const root = this.root = mount(parent, `
-      <div class="screen lobby">
-        <h1>Oda <span class="code">${esc(room.code)}</span></h1>
+      <div class="screen menu paper lobby">
+        <div class="title-ribbon ribbon ribbon-blue">Oda <span class="code">${esc(room.code)}</span></div>
         <div class="share">
           <input readonly value="${esc(link)}" aria-label="Oda linki">
-          <button data-a="copy">Linki kopyala</button>
+          <button class="btn" data-a="copy">Linki kopyala</button>
         </div>
         <ul class="players" id="players"></ul>
         <div class="me">
           <label class="field">Adın <input id="myname" maxlength="16"></label>
-          <button data-a="ready" id="ready"></button>
+          <button class="btn" data-a="ready" id="ready"></button>
         </div>
         <div class="start">
-          <button data-a="start" id="start" class="primary">Maçı başlat</button>
-          <p class="muted small" id="start-hint"></p>
+          <button data-a="start" id="start" class="btn btn-red wide">Maçı başlat</button>
+          <p class="muted small center" id="start-hint"></p>
         </div>
         <p class="error" id="error"></p>
       </div>`);
@@ -107,20 +113,20 @@ export class LobbyScreen {
     const me = this.me(room);
     const seats = Array.from({ length: room.maxPlayers }, (_, i) => room.players.find((p) => p.seat === i + 1));
     this.q('#players').innerHTML = seats.map((p, i) => p ? `
-      <li class="${p.connected ? '' : 'offline'}">
-        ${dot(p.color)}
+      <li class="${p.connected ? '' : 'offline'}" data-color="${p.color}">
+        <i class="avatar" style="background-image:url('${avatar(p.seat)}')"></i>
         <span class="pname">${esc(p.name)}${p.seat === this.mySeat ? ' <span class="muted">(sen)</span>' : ''}</span>
         <span class="tags">
           ${p.isHost ? '<span class="tag">oda sahibi</span>' : ''}
           ${!p.connected ? '<span class="tag warn">bağlantı yok</span>' : p.ready ? '<span class="tag ok">hazır</span>' : '<span class="tag">bekliyor</span>'}
         </span>
-      </li>` : `<li class="empty">${dot('')}<span class="pname muted">Boş yer ${i + 1}</span></li>`).join('');
+      </li>` : `<li class="empty"><i class="avatar"></i><span class="pname muted">Boş yer ${i + 1}</span></li>`).join('');
 
     const nameInput = this.q<HTMLInputElement>('#myname');
     if (me && document.activeElement !== nameInput) nameInput.value = me.name;
     const ready = this.q<HTMLButtonElement>('#ready');
     ready.textContent = me?.ready ? 'Hazırım ✓' : 'Hazırım';
-    ready.classList.toggle('active', !!me?.ready);
+    ready.classList.toggle('btn-red', !!me?.ready);
 
     const isHost = !!me?.isHost;
     const start = this.q<HTMLButtonElement>('#start');
@@ -147,17 +153,6 @@ export class LobbyScreen {
   }
 }
 
-// ---- in-game player list -------------------------------------------------------------------
-
-/** Other players during the match: only name, colour, connected and whether they are still in. */
-export function rosterHtml(room: RoomView, mySeat: number): string {
-  return `<ul class="roster">${room.players.map((p) => `
-    <li class="${p.connected && !p.eliminated ? '' : 'offline'}" title="${esc(COLOR_NAMES[p.color] ?? '')}">
-      ${dot(p.color)}<span>${esc(p.name)}${p.seat === mySeat ? ' (sen)' : ''}</span>
-      ${p.eliminated ? '<span class="tag warn">elendi</span>' : p.connected ? '' : '<span class="tag warn">bağlantı yok</span>'}
-    </li>`).join('')}</ul>`;
-}
-
 // ---- end of the match ----------------------------------------------------------------------
 
 /** Winner, ranking and everyone's summary (the match is over, nothing is hidden any more). */
@@ -168,15 +163,15 @@ export class EndScreen {
 
   constructor(parent: HTMLElement, private readonly net: GameConnection, private readonly mySeat: number) {
     const root = this.root = mount(parent, `
-      <div class="screen end">
-        <h1 id="end-title">Maç bitti</h1>
-        <p class="muted" id="end-reason"></p>
+      <div class="screen menu paper end">
+        <div class="title-ribbon ribbon ribbon-blue" id="end-title">Maç bitti</div>
+        <p class="muted center" id="end-reason"></p>
         <div id="ranking"></div>
         <div id="summary"><p class="muted">Özet hazırlanıyor…</p></div>
         <div id="others"></div>
         <div class="start">
-          <button data-a="lobby" id="lobby" class="primary hidden">Lobiye dön</button>
-          <p class="muted small" id="lobby-hint"></p>
+          <button data-a="lobby" id="lobby" class="btn wide hidden">Lobiye dön</button>
+          <p class="muted small center" id="lobby-hint"></p>
         </div>
         <p class="error" id="error"></p>
       </div>`);
@@ -201,16 +196,19 @@ export class EndScreen {
       this.resultShown = true;
       const won = r.winners.includes(this.mySeat);
       const names = r.ranking.filter((x) => r.winners.includes(x.seat)).map((x) => `${dot(x.color)}${esc(x.name)}`).join(', ');
-      this.root.querySelector('#end-title')!.innerHTML = won
+      const title = this.root.querySelector<HTMLElement>('#end-title')!;
+      title.innerHTML = won
         ? (r.winners.length > 1 ? 'Berabere — zaferi paylaştın!' : 'Kazandın!')
         : `Kazanan: ${names || '—'}`;
+      title.classList.remove('ribbon-blue');
+      title.classList.add(won ? (r.winners.length > 1 ? 'ribbon-yellow' : 'ribbon-blue') : 'ribbon-red');
       this.root.querySelector('#end-reason')!.textContent = r.byElimination
         ? 'Son ayakta kalan kale kazandı.'
         : 'Süre bitti: en yüksek nüfus kazandı.';
       this.root.querySelector('#ranking')!.innerHTML = `
         <ol class="ranking">${r.ranking.map((x) => `
-          <li class="${r.winners.includes(x.seat) ? 'winner' : ''}">
-            <span class="place">${x.place}.</span>${dot(x.color)}
+          <li class="${r.winners.includes(x.seat) ? 'winner' : ''}" data-color="${x.color}">
+            <span class="place">${x.place}.</span><i class="avatar" style="background-image:url('${avatar(x.seat)}')"></i>
             <span class="pname">${esc(x.name)}${x.seat === this.mySeat ? ' <span class="muted">(sen)</span>' : ''}</span>
             <span class="muted small">${x.eliminated ? 'elendi' : `nüfus ${x.population}`}</span>
           </li>`).join('')}</ol>`;
