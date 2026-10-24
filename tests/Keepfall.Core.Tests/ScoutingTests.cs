@@ -56,7 +56,7 @@ public class ScoutingTests
         Ok(game.Execute(A, new SendScout(B, Job.Farmer)));
         Assert.Equal(1, castle.Workers[Job.Farmer]);        // taken from the chosen job
         Assert.Equal(1, castle.ScoutsAway);
-        Assert.Equal(10, castle.Population);                  // still counted
+        Assert.Equal(12, castle.Population);                  // still counted
         Assert.Equal(consumption, castle.FoodConsumptionPerMinute); // and still eats
 
         Run(game, 44);
@@ -66,7 +66,7 @@ public class ScoutingTests
         game.Tick(1);
         Assert.Empty(game.MissionsOf(A));
         Assert.Equal(0, castle.ScoutsAway);
-        Assert.Equal(9, castle.Workers[Job.Idle]);            // 8 idle + the returning scout
+        Assert.Equal(11, castle.Workers[Job.Idle]);           // 10 idle + the returning scout
         var report = Assert.Single(game.ReportsOf(A));
         Assert.Equal(B, report.Target);
         Assert.Equal(22.5, report.ObservedAt, 0.51);          // taken on arrival (half way, on a tick)

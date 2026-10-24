@@ -4,13 +4,14 @@
 {
   // Excel "Maç" sekmesi.
   "match": {
-    // Maç süresinin hazırlığa ayrılan payı. Hazırlık = round(mod dakikası × oran) dakika (15 dk → 5 dk).
-    "prepRatio": 0.33,
+    // Mod süresi ve bunun hazırlığa ayrılan kısmı (dk). Savaş = mod − hazırlık (15 dk → 7 + 8, 30 dk → 12 + 18).
     "shortModeMinutes": 15,
+    "shortModePrepMinutes": 7,
     "longModeMinutes": 30,
+    "longModePrepMinutes": 12,
     // Sunucu bu aralıkla tick atar (sn); üretim ve tüketim her tick'te hesaplanır.
     "serverTickSeconds": 1,
-    "startingPopulation": 10,
+    "startingPopulation": 12,
     "startingResources": { "food": 30, "wood": 40, "iron": 20 }
   },
 
@@ -25,14 +26,14 @@
     "starvationMultiplier": 0.5,
     // Yeni kişi maliyeti = newPersonBaseCost × (1 + newPersonCostGrowth) ^ (nüfus − newPersonBasePopulation), yuvarlanır.
     "newPersonBaseCost": 15,
-    "newPersonCostGrowth": 0.12,
+    "newPersonCostGrowth": 0.08,
     "newPersonBasePopulation": 10,
     // Otomatik büyüme bu kadar saniyelik yemek tüketimini rezerv olarak bırakır:
     // yeni kişi, maliyeti düşüldükten sonra elde en az (dakikalık tüketim × süre / 60) yemek kalıyorsa doğar.
     "growthReserveSeconds": 60
   },
 
-  // Excel "Maç" ve "Binalar" sekmeleri: savaş fazı. Savaş süresi = mod süresi − hazırlık (15 dk → 10 dk).
+  // Excel "Maç" ve "Binalar" sekmeleri: savaş fazı. Savaş süresi = mod süresi − hazırlık (15 dk → 8 dk).
   "war": {
     // Ordunun hedefe yolculuğu (sn); hayatta kalanlar aynı sürede geri döner.
     "marchSeconds": 30,

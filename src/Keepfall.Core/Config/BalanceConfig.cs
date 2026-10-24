@@ -22,9 +22,10 @@ public sealed class BalanceConfig
 
 public sealed class MatchConfig
 {
-    public double PrepRatio { get; set; } = 0.33;
     public double ShortModeMinutes { get; set; } = 15;
+    public double ShortModePrepMinutes { get; set; } = 7;
     public double LongModeMinutes { get; set; } = 30;
+    public double LongModePrepMinutes { get; set; } = 12;
     public double ServerTickSeconds { get; set; } = 1;
     public int StartingPopulation { get; set; } = 10;
     public ProductionConfig StartingResources { get; set; } = new();
@@ -169,8 +170,11 @@ public static class BalanceConfigLoader
         if (c.ApproachTime < 0) errors.Add("combat.approachTime negatif olamaz.");
 
         var mc = config.Match;
-        if (mc.PrepRatio <= 0 || mc.PrepRatio >= 1) errors.Add("match.prepRatio 0 ile 1 arasında olmalı.");
         if (mc.ShortModeMinutes <= 0 || mc.LongModeMinutes <= 0) errors.Add("match: mod süreleri sıfırdan büyük olmalı.");
+        if (mc.ShortModePrepMinutes <= 0 || mc.ShortModePrepMinutes >= mc.ShortModeMinutes)
+            errors.Add("match.shortModePrepMinutes 0 ile shortModeMinutes arasında olmalı.");
+        if (mc.LongModePrepMinutes <= 0 || mc.LongModePrepMinutes >= mc.LongModeMinutes)
+            errors.Add("match.longModePrepMinutes 0 ile longModeMinutes arasında olmalı.");
         if (mc.ServerTickSeconds <= 0) errors.Add("match.serverTickSeconds sıfırdan büyük olmalı.");
         if (mc.StartingPopulation < 0) errors.Add("match.startingPopulation negatif olamaz.");
         var sr = mc.StartingResources;
@@ -267,9 +271,9 @@ public static class BalanceConfigLoader
             new CombatSettings(c.TickSeconds, c.MaxBattleSeconds, c.RandomizeFirstAttack, c.ApproachTime),
             new ProductionRates(p.Food, p.Wood, p.Iron),
             new MatchRules(
-                PrepSeconds(mc.ShortModeMinutes, mc.PrepRatio), PrepSeconds(mc.LongModeMinutes, mc.PrepRatio),
-                mc.ShortModeMinutes * 60 - PrepSeconds(mc.ShortModeMinutes, mc.PrepRatio),
-                mc.LongModeMinutes * 60 - PrepSeconds(mc.LongModeMinutes, mc.PrepRatio),
+                mc.ShortModePrepMinutes * 60, mc.LongModePrepMinutes * 60,
+                (mc.ShortModeMinutes - mc.ShortModePrepMinutes) * 60,
+                (mc.LongModeMinutes - mc.LongModePrepMinutes) * 60,
                 mc.ServerTickSeconds, mc.StartingPopulation, sr.Food, sr.Wood, sr.Iron),
             new EconomyRules(
                 e.WorkerFoodPerMinute, e.SoldierFoodPerMinute, e.StarvationMultiplier,
@@ -280,9 +284,6 @@ public static class BalanceConfigLoader
             new WarRules(w.MarchSeconds, w.WarningSeconds, w.FamineStart, w.FamineFoodMultiplier,
                 w.CastleHp, w.SiegeSeconds, w.ArcherSiegeMultiplier));
     }
-
-    // Same rounding as the spreadsheet: whole minutes of the mode, times the prep share.
-    private static double PrepSeconds(double modeMinutes, double ratio) => Math.Round(modeMinutes * ratio) * 60;
 
     private static double? ParseMultiplier(JsonElement value, CombatConfig c)
     {
