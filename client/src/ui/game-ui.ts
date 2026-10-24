@@ -1,5 +1,8 @@
 import type { GameConnection } from '../net';
 import type { CastleView, RoomView } from '../types';
+import type { WorldScene } from '../scene/WorldScene';
+import { BuildingWin } from './building-window';
+import { WindowManager, sameTarget, type Target, type Win, type WinContext } from './windows';
 import { Notifications, type NoteKind } from './notifications';
 import { ReportTags } from './reports';
 import { TopBar } from './topbar';
@@ -12,6 +15,11 @@ export class GameUi {
   private readonly bar: TopBar;
   private readonly notes: Notifications;
   private readonly reports: ReportTags;
+  private readonly windows: WindowManager;
+  private readonly ctx: WinContext;
+  private scene: WorldScene | null = null;
+  private castle: CastleView | null = null;
+  private room: RoomView | null = null;
   private phase: CastleView['phase'] | null = null;
   private eliminated = false;
   private readonly onKey = (e: KeyboardEvent) => this.keydown(e);
@@ -28,7 +36,36 @@ export class GameUi {
     this.bar.setSeat(seat);
     this.notes = new Notifications(this.top);
     this.reports = new ReportTags(root);
+    this.windows = new WindowManager(root, () => this.top.getBoundingClientRect().bottom);
+    this.ctx = { net, say: (m) => this.error(m), open: (t) => this.open(t), close: () => this.windows.close() };
     window.addEventListener('keydown', this.onKey);
+  }
+
+  /** The map the windows are anchored on. */
+  attach(scene: WorldScene): void {
+    this.scene = scene;
+    scene.onSelect = (t) => this.open(t);
+    scene.onDeselect = () => this.windows.close();
+    scene.onFrame = () => this.windows.reposition();
+  }
+
+  /** Open (or move) the window for a target; clicking the same thing again closes it. */
+  open(target: Target): void {
+    const s = this.castle;
+    if (!s || !this.scene) return;
+    if (sameTarget(this.windows.current, target)) { this.windows.close(); return; }
+    const win = this.makeWindow(target, s);
+    if (!win) return;
+    const scene = this.scene;
+    this.windows.open(target, win, () => scene.anchorOf(target));
+    win.update({ castle: s, room: this.room });
+  }
+
+  private makeWindow(target: Target, s: CastleView): Win | null {
+    switch (target.kind) {
+      case 'building': return new BuildingWin(this.ctx, target.type, s);
+      default: return null; // the other windows come in the next steps
+    }
   }
 
   destroy(): void {
@@ -36,6 +73,8 @@ export class GameUi {
   }
 
   update(s: CastleView): void {
+    this.castle = s;
+    this.windows.update({ castle: s, room: this.room });
     this.bar.update(s);
     this.reports.update(s.war.battles);
     this.notes.setIncoming(s.eliminated ? [] : s.war.incoming, s.speed);
@@ -48,6 +87,7 @@ export class GameUi {
   }
 
   setRoom(room: RoomView): void {
+    this.room = room;
     this.bar.setRoom(room);
   }
 
@@ -71,5 +111,6 @@ export class GameUi {
   private keydown(e: KeyboardEvent): void {
     if (e.key !== 'Escape') return;
     if (this.reports.isOpen) this.reports.close();
+    else this.windows.close();
   }
 }

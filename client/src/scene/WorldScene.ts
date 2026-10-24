@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
 import type { Minimap } from '../minimap';
+import type { Anchor, Target } from '../ui/windows';
 import { createAnimations, preloadAssets } from './assets';
 import { CASTLE, COURTYARD, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH, type Part } from './layout';
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
@@ -49,8 +50,12 @@ interface BuildingSlot {
  * the other corners only show their castle, since that is all anyone knows about them.
  */
 export class WorldScene extends Phaser.Scene {
-  /** Set by main.ts: called when the player clicks a building. */
-  onBuildingClick: (type: BuildingType) => void = () => {};
+  /** Set by main.ts: the player clicked something on the map (a window opens for it). */
+  onSelect: (target: Target) => void = () => {};
+  /** Set by main.ts: the player clicked empty ground. */
+  onDeselect: () => void = () => {};
+  /** Set by main.ts: once per frame, so the open window can follow its target. */
+  onFrame: () => void = () => {};
   /** Set by main.ts: the minimap is drawn from the scene's own frame loop. */
   minimap: Minimap | null = null;
   private dragged = false;
@@ -106,6 +111,7 @@ export class WorldScene extends Phaser.Scene {
     this.drawForest();
     this.drawOtherCastles();
     this.castleSprite = this.add.image(CASTLE.x, CASTLE.y, 'castle').setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(CASTLE.y);
+    this.castleSprite.setInteractive({ useHandCursor: true }).on('pointerup', () => this.select({ kind: 'castle' }));
     this.wallBar = this.add.graphics().setDepth(10_002);
     this.wallText = this.add.text(CASTLE.x, WALL_BAR.y + WALL_BAR.h / 2, '', { ...LABEL_STYLE, fontSize: '13px' })
       .setOrigin(0.5).setDepth(10_003);
@@ -190,6 +196,43 @@ export class WorldScene extends Phaser.Scene {
     return this.layout.regions.map((r) => r.color).filter((c): c is PlayerColor => !!c && c !== this.color);
   }
 
+  /** A click on a thing on the map (not the end of a drag). */
+  private select(target: Target): void {
+    if (!this.dragged) this.onSelect(target);
+  }
+
+  /** Where a point of the scene (px) is on the screen (CSS px). The canvas fills the window. */
+  screenOf(p: { x: number; y: number }): { x: number; y: number } {
+    const cam = this.cameras.main, v = cam.worldView;
+    return { x: (p.x - v.x) * cam.zoom, y: (p.y - v.y) * cam.zoom };
+  }
+
+  /** The screen position (and rough half-width) of what a window is about; null if it has no place. */
+  anchorOf(target: Target): Anchor | null {
+    const zoom = this.cameras.main.zoom;
+    const at = (x: number, y: number, reach: number): Anchor => ({ ...this.screenOf({ x, y }), reach: reach * zoom });
+    switch (target.kind) {
+      case 'building': {
+        const site = SITES[target.type];
+        return at(site.center.x, site.center.y, site.area.w / 2);
+      }
+      case 'castle': return at(CASTLE.x, CASTLE.y - 150, 190);
+      case 'enemy': {
+        const region = this.layout.regions.find((r) => r.seat === target.seat);
+        if (!region) return null;
+        const base = toWorld(region.origin);
+        return at(base.x + CASTLE.x, base.y + CASTLE.y - 150, 190);
+      }
+      case 'forest': {
+        const forest = this.layout.features.find((f) => f.id === target.id);
+        if (!forest) return null;
+        const p = toWorld(forest.center);
+        return at(p.x, p.y, 120);
+      }
+      default: return null; // armies and scouts: see step 5
+    }
+  }
+
   /** Back to our own castle (button and space bar). */
   centerOnCastle(): void {
     const cam = this.cameras.main;
@@ -215,6 +258,7 @@ export class WorldScene extends Phaser.Scene {
     this.workers.update(dt);
     this.movers.update(dt);
     this.battles.update();
+    this.onFrame();
     this.clearTreesAroundBattles(dt);
     this.panWithKeys(dt);
     if (this.map) {
@@ -328,6 +372,8 @@ export class WorldScene extends Phaser.Scene {
       const base = toWorld(r.origin);
       const x = base.x + CASTLE.x, y = base.y + CASTLE.y;
       const image = this.add.image(x, y, `castle-${r.color}`).setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(y);
+      const seat = r.seat;
+      image.setInteractive({ useHandCursor: true }).on('pointerup', () => this.select({ kind: 'enemy', seat }));
       const label = this.add.text(x, y + 16, r.name ?? '', LABEL_STYLE).setOrigin(0.5, 0).setDepth(10_000);
       this.otherCastles.set(r.seat, { image, label, name: r.name ?? '' });
     }
@@ -344,6 +390,11 @@ export class WorldScene extends Phaser.Scene {
     this.centerOnCastle();
     // The canvas is the whole window: when it changes size, keep the map filling it.
     this.scale.on('resize', () => cam.setZoom(Math.max(cam.zoom, this.minZoom())));
+
+    // A click on empty ground (nothing under the pointer, not a drag) closes the open window.
+    this.input.on('pointerup', (p: Phaser.Input.Pointer, over: unknown[]) => {
+      if (!this.dragged && over.length === 0 && Math.hypot(p.x - p.downX, p.y - p.downY) < 6) this.onDeselect();
+    });
 
     let drag: { x: number; y: number; scrollX: number; scrollY: number } | null = null;
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
@@ -390,7 +441,7 @@ export class WorldScene extends Phaser.Scene {
     const site = SITES[type];
     const { x, y } = site.center;
     const zone = this.add.zone(x, y, site.area.w, site.area.h).setInteractive({ useHandCursor: true });
-    zone.on('pointerup', () => { if (!this.dragged) this.onBuildingClick(type); });
+    zone.on('pointerup', () => this.select({ kind: 'building', type }));
     const label = this.add.text(x, y + site.area.h / 2 - 10, '', LABEL_STYLE).setOrigin(0.5, 1).setDepth(10_000);
     const bar = this.add.graphics().setDepth(10_001);
     const dust = this.add.sprite(x, y, 'dust').setScale(2).setDepth(9_000).setVisible(false);

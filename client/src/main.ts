@@ -169,7 +169,7 @@ function showGame(): void {
 /** The scene is drawn in the player's colour on the shared map, so it starts once both have arrived. */
 function startScene(color: CastleView['color'], layout: MapLayoutView): void {
   scene = new WorldScene(color, layout, net.seat);
-  scene.onBuildingClick = (type) => hud?.focusBuilding(type);
+  ui?.attach(scene);
   const world = scene;
   world.minimap = new Minimap(document.getElementById('stage')!, layout, (tile) => world.lookAt(tile));
   if (lastMap) scene.setMap(lastMap);
