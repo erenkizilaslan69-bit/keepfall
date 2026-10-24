@@ -57,9 +57,9 @@ public sealed class TickLoop(
                 ended = room.Tick(tickSeconds);
                 if (!ended)
                 {
-                    // Fallen players watch the whole map, a little late; nobody else ever gets this.
-                    session.Spectators.Capture(room, rules.Match.SpectatorDelaySeconds);
-                    spectating = session.Spectators.TakeDue(room, rules.Match.SpectatorDelaySeconds);
+                    // Fallen players watch the whole map (live, or as late as match.spectatorDelaySeconds says); nobody else ever gets this.
+                    session.Spectators.Capture(room, rules.Match.SpectatorDelaySeconds, rules.Match.SpectatorWaitSeconds);
+                    spectating = session.Spectators.TakeDue(room, rules.Match.SpectatorDelaySeconds, rules.Match.SpectatorWaitSeconds);
                 }
             }
         }

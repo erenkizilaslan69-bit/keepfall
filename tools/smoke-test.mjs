@@ -11,8 +11,7 @@
 // MapState exactly when it is inside that player's vision — checked against the owner's own (true)
 // positions tick by tick — and then only with position, heading, owner and soldiers, never its
 // target, road or arrival time. Finally a second match checks the spectator view: a fallen player gets a
-// countdown and then the whole map a fixed delay behind the live game, exactly, and nobody still playing
-// ever gets one. Exits with code 1 if any check failed.
+// countdown and then the whole live map, exactly, and nobody still playing ever gets one. Exits with code 1 if any check failed.
 
 const near = (p, c) => Math.hypot(p.x - c.center.x, p.y - c.center.y) <= c.radius + 1e-6;
 const inVision = (p, state) => state.vision.some((c) => near(p, c));
@@ -242,8 +241,8 @@ B.ws.close();
 C.ws.close();
 
 // A second match: X forges swords and besieges Y (an empty castle) until it falls; Z stays out of it.
-// Y then watches: first a countdown, then the whole world a fixed delay behind the live game.
-const DELAY = 30; // match.spectatorDelaySeconds in config/balance.json
+// Y then watches: first a countdown, then the whole world live.
+const WAIT = 5, DELAY = 0; // match.spectatorWaitSeconds and match.spectatorDelaySeconds in config/balance.json
 const X = client(), Y = client(), Z = client();
 await Promise.all([X.ready, Y.ready, Z.ready]);
 const jx = await X.call('CreateRoom', 'Xaver');
@@ -268,12 +267,14 @@ check("Y's castle falls", fallen());
 await X.call('SetSpeed', 5);
 const fellAt = Y.of('CastleState').find((c) => c.eliminated).elapsedSeconds;
 check('a countdown comes before the first picture', await waitFor(() => Y.of('SpectatorWait').length > 0, 8000));
-check('the countdown is at most the delay', Y.of('SpectatorWait').every((w) => w.startsIn >= 0 && w.startsIn <= DELAY + 1e-6));
-check('the picture arrives', await waitFor(() => Y.of('SpectatorState').length >= 2, 30000), 'delay is 30 game seconds, ×5 → ~6 s');
+check('the countdown is at most the wait', Y.of('SpectatorWait').every((w) => w.startsIn >= 0 && w.startsIn <= WAIT + DELAY + 1e-6));
+check('the picture arrives', await waitFor(() => Y.of('SpectatorState').length >= 2, 30000), 'wait is 5 game seconds');
 const frames = Y.of('SpectatorState');
 const live = Math.max(...X.of('CastleState').map((c) => c.elapsedSeconds));
-check('Y watches from the moment the castle fell', frames[0].elapsedSeconds >= fellAt - 1e-6);
-check(`every picture is at least ${DELAY} s behind the live game`, frames.every((f) => f.elapsedSeconds <= live - DELAY + 1e-6));
+check('the view starts after the wait, not before', frames[0].elapsedSeconds >= fellAt + WAIT - 1e-6);
+check('every picture is of the live game (no delay)', frames.every((f) => f.elapsedSeconds <= live + 1e-6)
+  && frames.every((f) => X.of('CastleState').some((c) => Math.abs(c.elapsedSeconds - f.elapsedSeconds) < 1e-6)),
+  'a picture with a time X never had');
 check('pictures arrive in order', frames.every((f, i) => i === 0 || f.elapsedSeconds > frames[i - 1].elapsedSeconds));
 check('a picture has every castle, inside', frames.every((f) => f.castles.length === 3
   && f.castles.every((c) => c.buildings.length > 0 && c.jobs.length > 0 && c.units.length > 0)));

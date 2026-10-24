@@ -6,7 +6,7 @@ namespace Keepfall.Server.Contracts;
 
 // What a fallen player watches: the whole map with no fog, every castle's inside, every army and scout, every
 // battle with its record. It is the one view that breaks the hidden-information rule, so it goes ONLY to
-// players whose castle has fallen, and only after match.spectatorDelaySeconds (see Games/SpectatorFeed).
+// players whose castle has fallen, and only after match.spectatorWaitSeconds (and, if set, match.spectatorDelaySeconds late; see Games/SpectatorFeed).
 // A player still in the match never gets one of these.
 
 /// <summary>One castle as a spectator sees it: what its owner would see of the inside (buildings, workers, soldiers) and its walls.</summary>
@@ -14,7 +14,7 @@ public sealed record SpectatorCastleView(
     int Seat, bool Eliminated, double WallHp, double MaxWallHp,
     IReadOnlyList<BuildingView> Buildings, IReadOnlyList<JobView> Jobs, IReadOnlyList<UnitView> Units);
 
-/// <param name="ElapsedSeconds">The game time this picture is of (it is the delay behind the live game).</param>
+/// <param name="ElapsedSeconds">The game time this picture is of (the live game, or match.spectatorDelaySeconds behind it).</param>
 /// <param name="Movers">Every army and scout; they carry no route, like what a player sees of others.</param>
 /// <param name="Battles">Every battle going on.</param>
 /// <param name="Started">Battles that began since the previous picture, with their records, to be replayed.</param>

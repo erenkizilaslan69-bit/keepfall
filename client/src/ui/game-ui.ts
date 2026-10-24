@@ -45,8 +45,7 @@ export class GameUi {
         <div class="spec-body">
           <p>İzleme <b class="spec-n"></b> sn sonra başlıyor</p>
           <div class="gbar"><div class="fill"></div></div>
-          <p class="muted-ink small">Artık izleyicisin: tüm haritayı sissiz görürsün, ama oyundan birkaç saniye geriden.
-            Oyuncular sana gerçeği o gecikmeyle gösterir.</p>
+          <p class="muted-ink small">Artık izleyicisin: tüm haritayı sissiz, kalelerin içiyle birlikte izlersin.</p>
         </div>
       </div>`;
     root.appendChild(this.wait);
@@ -162,8 +161,9 @@ export class GameUi {
       this.waitTimer = 0;
       this.wait.classList.add('hidden');
     }
+    // A few seconds is just the tick (or the dev speed); only a real delay (match.spectatorDelaySeconds) is worth saying.
     const lag = Math.round(lagSeconds);
-    this.notes.setSticky('spectating', true, lag > 0 ? `İzleyici: tüm harita, oyundan ${lag} sn geride` : 'İzleyici: tüm harita', 'info');
+    this.notes.setSticky('spectating', true, lag >= 10 ? `İzleyici: tüm harita, oyundan ${lag} sn geride` : 'İzleyici: tüm harita, canlı', 'info');
   }
 
   setRoom(room: RoomView): void {

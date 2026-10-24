@@ -5,9 +5,9 @@ using Keepfall.Server.Contracts;
 namespace Keepfall.Server.Games;
 
 /// <summary>
-/// Pictures of the whole world, kept for the fallen players to watch <c>delay</c> game seconds late. A fallen
-/// player's view starts at the moment their castle fell and runs that far behind the live game; until the
-/// first picture is due they only get a countdown. Everything here runs under the room's lock.
+/// Pictures of the whole world for the fallen players to watch, <c>delay</c> game seconds late (0 = live). After
+/// their castle falls they get a countdown for <c>wait</c> game seconds; their view then starts, from that moment
+/// on. Everything here runs under the room's lock.
 /// </summary>
 public sealed class SpectatorFeed
 {
@@ -21,7 +21,7 @@ public sealed class SpectatorFeed
     private double _now;
 
     /// <summary>Take this tick's picture (call after the game ticked) and forget the ones nobody needs any more.</summary>
-    public void Capture(Room room, double delay)
+    public void Capture(Room room, double delay, double wait)
     {
         if (room.Game is not { } game) { Reset(null); return; }
         if (!ReferenceEquals(game, _game)) Reset(game);
@@ -29,7 +29,7 @@ public sealed class SpectatorFeed
         _now = frame.ElapsedSeconds;
         foreach (var castle in frame.Castles)
             if (castle.Eliminated && _fellAt.TryAdd(castle.Seat, frame.ElapsedSeconds))
-                _next[castle.Seat] = frame.ElapsedSeconds;
+                _next[castle.Seat] = frame.ElapsedSeconds + wait;
         _frames.Add(frame);
         var keepFrom = _now - delay;
         foreach (var next in _next.Values) keepFrom = Math.Min(keepFrom, next);
@@ -40,7 +40,7 @@ public sealed class SpectatorFeed
     /// What to send now, per fallen player: the pictures that are due (in order), or how long until the
     /// first one. Players still in the match are never in the result.
     /// </summary>
-    public List<(int Seat, List<SpectatorStateView> Frames, SpectatorWaitView? Wait)> TakeDue(Room room, double delay)
+    public List<(int Seat, List<SpectatorStateView> Frames, SpectatorWaitView? Wait)> TakeDue(Room room, double delay, double wait)
     {
         var result = new List<(int, List<SpectatorStateView>, SpectatorWaitView?)>();
         if (room.Game is not { } game || !ReferenceEquals(game, _game)) return result;
@@ -57,7 +57,7 @@ public sealed class SpectatorFeed
                 result.Add((p.Seat, due, null));
             }
             else if (!_last.ContainsKey(p.Seat))
-                result.Add((p.Seat, [], new SpectatorWaitView(Math.Max(0, fell + delay - _now))));
+                result.Add((p.Seat, [], new SpectatorWaitView(Math.Max(0, fell + wait + delay - _now))));
         }
         return result;
     }
