@@ -92,6 +92,8 @@ export function preloadAssets(scene: Phaser.Scene, color: PlayerColor): void {
   for (const s of sheets(color))
     scene.load.spritesheet(s.key, url(s.path), { frameWidth: s.frame, frameHeight: s.frameHeight ?? s.frame });
   for (const [key, path] of Object.entries({ ...buildingImages(color), ...IMAGES })) scene.load.image(key, url(path));
+  // Everyone's castle, for the other corners of the map.
+  for (const [c, folder] of Object.entries(COLOR_FOLDER)) scene.load.image(`castle-${c}`, url(`Buildings/${folder} Buildings/Castle.png`));
 }
 
 /** Looping animation per sheet, named after the sheet key. */

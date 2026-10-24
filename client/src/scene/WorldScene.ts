@@ -1,14 +1,23 @@
 import Phaser from 'phaser';
-import type { BuildingType, BuildingView, CastleView, PlayerColor } from '../types';
+import type { BuildingType, BuildingView, CastleView, MapLayoutView, PlayerColor, RegionView } from '../types';
 import { createAnimations, preloadAssets } from './assets';
 import { CASTLE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH, type Part } from './layout';
+import { distanceToSegment, seeded, setWorldOrigin, toWorld } from './world';
 import { Armies } from './Armies';
 import { Scouts } from './Scouts';
 import { Soldiers } from './Soldiers';
 import { Workers } from './Workers';
 
+/** The canvas: one region's worth of view; the camera moves over the whole map. */
 export const SCENE_WIDTH = WORLD_WIDTH;
 export const SCENE_HEIGHT = WORLD_HEIGHT;
+
+const MAX_ZOOM = 1.5;
+const PAN_SPEED = 900; // px per second at zoom 1 (keyboard)
+const ROAD_COLOR = 0xd8b779, ROAD_EDGE = 0xa98b57;
+// Things stand in front of each other by their y; parts of the map lie at negative y, so the ground
+// layers sit far below anything that can stand on them.
+const DEPTH_WATER = -100_000, DEPTH_GROUND = -90_000, DEPTH_ROAD = -80_000;
 
 // Tilemap_color1: the flat grass island is the 3×3 block in the top-left of the sheet (9 tiles per row).
 const GRASS = { tl: 0, t: 1, tr: 2, l: 9, c: 10, r: 11, bl: 18, b: 19, br: 20 };
@@ -33,10 +42,16 @@ interface BuildingSlot {
   dust: Phaser.GameObjects.Sprite;
 }
 
-/** Castle view: everything here is cosmetic, driven by the latest state from the server. */
-export class CastleScene extends Phaser.Scene {
+/**
+ * The shared map with our own corner in full detail: everything here is cosmetic, driven by the
+ * latest state from the server. Our region keeps the old castle scene's coordinates (see world.ts);
+ * the other corners only show their castle, since that is all anyone knows about them.
+ */
+export class WorldScene extends Phaser.Scene {
   /** Set by main.ts: called when the player clicks a building. */
   onBuildingClick: (type: BuildingType) => void = () => {};
+  private dragged = false;
+  private keys: Record<string, Phaser.Input.Keyboard.Key> = {};
 
   private state: CastleView | null = null;
   private ready = false;
@@ -52,8 +67,13 @@ export class CastleScene extends Phaser.Scene {
   private lastWallHp: number | null = null;
 
   /** <paramref name="color"/>: the player's colour; units and buildings are drawn in it. */
-  constructor(private readonly color: PlayerColor) {
-    super('castle');
+  constructor(private readonly color: PlayerColor, private readonly layout: MapLayoutView, private readonly mySeat: number) {
+    super('world');
+    setWorldOrigin(this.ownRegion.origin);
+  }
+
+  private get ownRegion(): RegionView {
+    return this.layout.regions.find((r) => r.seat === this.mySeat) ?? this.layout.regions[0];
   }
 
   preload(): void {
@@ -70,6 +90,9 @@ export class CastleScene extends Phaser.Scene {
     }
     createAnimations(this, this.color);
     this.drawGround();
+    this.drawRoads();
+    this.drawForest();
+    this.drawOtherCastles();
     this.castleSprite = this.add.image(CASTLE.x, CASTLE.y, 'castle').setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(CASTLE.y);
     this.wallBar = this.add.graphics().setDepth(10_002);
     this.wallText = this.add.text(CASTLE.x, WALL_BAR.y + WALL_BAR.h / 2, '', { ...LABEL_STYLE, fontSize: '13px' })
@@ -79,8 +102,16 @@ export class CastleScene extends Phaser.Scene {
     this.soldiers = new Soldiers(this);
     this.scouts = new Scouts(this);
     this.armies = new Armies(this);
+    this.setupCamera();
     this.ready = true;
     if (this.state) this.apply(this.state);
+  }
+
+  /** Back to our own castle (button and space bar). */
+  centerOnCastle(): void {
+    const cam = this.cameras.main;
+    cam.setZoom(1);
+    cam.centerOn(CASTLE.x, CASTLE.y - 120);
   }
 
   setState(state: CastleView): void {
@@ -89,7 +120,10 @@ export class CastleScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
-    if (this.ready) this.workers.update(Math.min(delta, 100) / 1000);
+    if (!this.ready) return;
+    const dt = Math.min(delta, 100) / 1000;
+    this.workers.update(dt);
+    this.panWithKeys(dt);
   }
 
   private apply(s: CastleView): void {
@@ -121,10 +155,11 @@ export class CastleScene extends Phaser.Scene {
 
   // ---- ground ------------------------------------------------------------------------------
 
+  /** The whole map: one grass island inside a one-tile water border. */
   private drawGround(): void {
-    this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'water').setOrigin(0).setDepth(-20);
-    const cols = WORLD_WIDTH / TILE, rows = WORLD_HEIGHT / TILE;
-    // A one-tile water border around a single grass island.
+    const topLeft = toWorld({ x: 0, y: 0 });
+    const cols = this.layout.size, rows = this.layout.size;
+    this.add.tileSprite(topLeft.x, topLeft.y, cols * TILE, rows * TILE, 'water').setOrigin(0).setDepth(DEPTH_WATER);
     const data = Array.from({ length: rows }, (_, y) => Array.from({ length: cols }, (_, x) => {
       if (x === 0 || y === 0 || x === cols - 1 || y === rows - 1) return -1;
       const top = y === 1, bottom = y === rows - 2, left = x === 1, right = x === cols - 2;
@@ -134,7 +169,102 @@ export class CastleScene extends Phaser.Scene {
     }));
     const map = this.make.tilemap({ data, tileWidth: TILE, tileHeight: TILE });
     const tiles = map.addTilesetImage('tiles', 'tiles', TILE, TILE, 0, 0)!;
-    map.createLayer(0, tiles, 0, 0)!.setDepth(-10);
+    map.createLayer(0, tiles, topLeft.x, topLeft.y)!.setDepth(DEPTH_GROUND);
+  }
+
+  /** Dirt roads between the gates, round the forest and through it. */
+  private drawRoads(): void {
+    const g = this.add.graphics().setDepth(DEPTH_ROAD);
+    for (const [width, color] of [[54, ROAD_EDGE], [42, ROAD_COLOR]] as const) {
+      g.lineStyle(width, color, 1);
+      for (const road of this.layout.roads) {
+        const pts = road.points.map(toWorld);
+        g.strokePoints(pts.map((p) => new Phaser.Math.Vector2(p.x, p.y)), false, false);
+        g.fillStyle(color, 1);
+        for (const p of pts) g.fillCircle(p.x, p.y, width / 2); // round corners
+      }
+    }
+  }
+
+  /** Trees fill the forest, leaving the roads through it clear. Seeded, so everyone sees the same forest. */
+  private drawForest(): void {
+    const rnd = seeded(7);
+    for (const forest of this.layout.features.filter((f) => f.kind === 'forest')) {
+      const count = Math.round(forest.radius * forest.radius * 1.7);
+      for (let i = 0, placed = 0; i < count * 4 && placed < count; i++) {
+        const angle = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * forest.radius;
+        const p = { x: forest.center.x + Math.cos(angle) * r, y: forest.center.y + Math.sin(angle) * r };
+        const clearOfRoads = this.layout.roads.every((road) =>
+          road.points.slice(1).every((b, j) => distanceToSegment(p, road.points[j], b) > 1.1));
+        if (!clearOfRoads) continue;
+        placed++;
+        const w = toWorld(p);
+        const key = rnd() < 0.5 ? 'tree1' : 'tree2';
+        this.add.sprite(w.x, w.y, key).setOrigin(0.5, 0.9).setScale(0.75 + rnd() * 0.25).setDepth(w.y)
+          .play({ key, startFrame: Math.floor(rnd() * 4) });
+      }
+    }
+  }
+
+  /** The other players' castles in their colour: where they are is public, what is inside is not. */
+  private drawOtherCastles(): void {
+    for (const r of this.layout.regions) {
+      if (r.seat === null || r.seat === this.mySeat || !r.color) continue;
+      const base = toWorld(r.origin);
+      const x = base.x + CASTLE.x, y = base.y + CASTLE.y;
+      this.add.image(x, y, `castle-${r.color}`).setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(y);
+      this.add.text(x, y + 16, r.name ?? '', LABEL_STYLE).setOrigin(0.5, 0).setDepth(10_000);
+    }
+  }
+
+  // ---- camera ------------------------------------------------------------------------------
+
+  /** Drag (or WASD / arrows) to look around, wheel to zoom; starts on our own castle. */
+  private setupCamera(): void {
+    const cam = this.cameras.main;
+    const topLeft = toWorld({ x: 0, y: 0 });
+    const size = this.layout.size * TILE;
+    cam.setBounds(topLeft.x, topLeft.y, size, size);
+    const minZoom = Math.max(cam.width / size, cam.height / size); // the map always fills the view
+    this.centerOnCastle();
+
+    let drag: { x: number; y: number; scrollX: number; scrollY: number } | null = null;
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      drag = { x: p.x, y: p.y, scrollX: cam.scrollX, scrollY: cam.scrollY };
+      this.dragged = false;
+    });
+    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+      if (!drag || !p.isDown) return;
+      const dx = p.x - drag.x, dy = p.y - drag.y;
+      if (!this.dragged && Math.hypot(dx, dy) < 6) return; // a click, not a drag
+      this.dragged = true;
+      cam.setScroll(drag.scrollX - dx / cam.zoom, drag.scrollY - dy / cam.zoom);
+    });
+    this.input.on('pointerup', () => { drag = null; });
+    this.input.on('wheel', (p: Phaser.Input.Pointer, _over: unknown, _dx: number, dy: number) => {
+      const before = cam.getWorldPoint(p.x, p.y);
+      cam.setZoom(Phaser.Math.Clamp(cam.zoom * (dy > 0 ? 0.88 : 1.14), minZoom, MAX_ZOOM));
+      cam.preRender(); // update the view matrix before measuring again
+      const after = cam.getWorldPoint(p.x, p.y);
+      cam.setScroll(cam.scrollX + before.x - after.x, cam.scrollY + before.y - after.y);
+    });
+
+    // No key capture: the panel's inputs keep their keys.
+    const kb = this.input.keyboard;
+    if (kb) {
+      this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT', false) as Record<string, Phaser.Input.Keyboard.Key>;
+      kb.on('keydown-SPACE', () => { if (!typingInPanel()) this.centerOnCastle(); });
+    }
+  }
+
+  private panWithKeys(dt: number): void {
+    if (typingInPanel()) return;
+    const k = this.keys;
+    const x = (k.D?.isDown || k.RIGHT?.isDown ? 1 : 0) - (k.A?.isDown || k.LEFT?.isDown ? 1 : 0);
+    const y = (k.S?.isDown || k.DOWN?.isDown ? 1 : 0) - (k.W?.isDown || k.UP?.isDown ? 1 : 0);
+    if (x === 0 && y === 0) return;
+    const cam = this.cameras.main;
+    cam.setScroll(cam.scrollX + (x * PAN_SPEED * dt) / cam.zoom, cam.scrollY + (y * PAN_SPEED * dt) / cam.zoom);
   }
 
   // ---- buildings ---------------------------------------------------------------------------
@@ -143,7 +273,7 @@ export class CastleScene extends Phaser.Scene {
     const site = SITES[type];
     const { x, y } = site.center;
     const zone = this.add.zone(x, y, site.area.w, site.area.h).setInteractive({ useHandCursor: true });
-    zone.on('pointerdown', () => this.onBuildingClick(type));
+    zone.on('pointerup', () => { if (!this.dragged) this.onBuildingClick(type); });
     const label = this.add.text(x, y + site.area.h / 2 - 10, '', LABEL_STYLE).setOrigin(0.5, 1).setDepth(10_000);
     const bar = this.add.graphics().setDepth(10_001);
     const dust = this.add.sprite(x, y, 'dust').setScale(2).setDepth(9_000).setVisible(false);
@@ -185,4 +315,10 @@ export class CastleScene extends Phaser.Scene {
     if (p.anim) sprite.play({ key: p.key, startFrame: Phaser.Math.Between(0, 3) });
     return sprite;
   }
+}
+
+/** True while the player types in the side panel (keys then belong to the input, not the camera). */
+function typingInPanel(): boolean {
+  const el = document.activeElement;
+  return !!el && /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName);
 }

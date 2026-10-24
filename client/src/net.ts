@@ -1,12 +1,16 @@
 import * as signalR from '@microsoft/signalr';
 import { loadIdentity, saveIdentity } from './identity';
-import type { BuildingType, CastleView, CommandResult, Job, JoinView, RoomView, Row, SummaryView } from './types';
+import type { BuildingType, CastleView, CommandResult, Job, JoinView, MapLayoutView, MapStateView, RoomView, Row, SummaryView } from './types';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
 
 export interface ConnectionEvents {
   room: (room: RoomView) => void;
   castle: (castle: CastleView) => void;
+  /** The shared map, once per match (and again after a reconnect). */
+  mapLayout: (layout: MapLayoutView) => void;
+  /** What we see on the map, every tick. */
+  mapState: (state: MapStateView) => void;
   matchEnded: (summary: SummaryView) => void;
   /** Something that happened to us, e.g. "Kırmızı'nın gözcüsü kaleni gözetledi." */
   notification: (text: string) => void;
@@ -29,6 +33,8 @@ export class GameConnection {
       .build();
     this.hub.on('RoomState', (room: RoomView) => this.on.room(room));
     this.hub.on('CastleState', (castle: CastleView) => this.on.castle(castle));
+    this.hub.on('MapLayout', (layout: MapLayoutView) => this.on.mapLayout(layout));
+    this.hub.on('MapState', (state: MapStateView) => this.on.mapState(state));
     this.hub.on('MatchEnded', (summary: SummaryView) => this.on.matchEnded(summary));
     this.hub.on('Notification', (text: string) => this.on.notification(text));
     this.hub.onreconnecting(() => this.on.status('reconnecting'));

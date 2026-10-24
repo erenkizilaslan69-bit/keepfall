@@ -3,9 +3,9 @@ import './style.css';
 import { Hud } from './hud';
 import { loadName, saveName } from './identity';
 import { GameConnection, type ConnectionStatus } from './net';
-import { CastleScene, SCENE_HEIGHT, SCENE_WIDTH } from './scene/CastleScene';
+import { SCENE_HEIGHT, SCENE_WIDTH, WorldScene } from './scene/WorldScene';
 import { EndScreen, HomeScreen, LobbyScreen, rosterHtml } from './screens';
-import type { CastleView, RoomView, SummaryView } from './types';
+import type { CastleView, MapLayoutView, RoomView, SummaryView } from './types';
 
 // Routes: "/" is the home screen, "/oda/ABCD" is a room. Inside a room the screen follows the
 // room's phase: lobby → game (preparation and war) → end screen.
@@ -22,6 +22,7 @@ const statusText: Record<ConnectionStatus, string> = {
 type Screen = 'none' | 'home' | 'lobby' | 'game' | 'end';
 let screen: Screen = 'none';
 let lastCastle: CastleView | null = null;
+let lastLayout: MapLayoutView | null = null;
 let summary: SummaryView | null = null;
 let status = '';
 
@@ -29,11 +30,16 @@ let lobby: LobbyScreen | null = null;
 let end: EndScreen | null = null;
 let hud: Hud | null = null;
 let game: Phaser.Game | null = null;
-let scene: CastleScene | null = null;
+let scene: WorldScene | null = null;
 
 const net = new GameConnection({
   room: onRoom,
   castle: onCastle,
+  mapLayout: (layout) => {
+    lastLayout = layout;
+    if (screen === 'game' && !scene && lastCastle) onCastle(lastCastle);
+  },
+  mapState: () => {},
   matchEnded: (s) => { summary = s; end?.setSummary(s); },
   notification: (text) => hud?.notify(text),
   status: (s) => {
@@ -65,8 +71,8 @@ function onCastle(c: CastleView): void {
   if (c.summary) { summary = c.summary; end?.setSummary(c.summary); }
   if (screen === 'game') {
     hud!.update(c);
-    if (!scene) startScene(c.color);
-    scene!.setState(c);
+    if (!scene && lastLayout) startScene(c.color, lastLayout);
+    scene?.setState(c);
   }
 }
 
@@ -105,6 +111,7 @@ function showLobby(r: RoomView): void {
   clear();
   screen = 'lobby';
   lastCastle = null;
+  lastLayout = null;
   summary = null;
   lobby = new LobbyScreen(app, net, net.seat, r, saveName);
 }
@@ -114,20 +121,21 @@ function showGame(): void {
   screen = 'game';
   app.innerHTML = `
     <main class="game">
-      <div id="stage"></div>
+      <div id="stage"><button id="home-cam" class="stage-btn" title="Kamerayı kalene getirir (boşluk tuşu)">Kaleme dön</button></div>
       <aside id="panel"><div id="roster"></div><div id="hud"><p class="muted">Kale hazırlanıyor…</p></div></aside>
     </main>`;
   hud = new Hud(document.getElementById('hud')!, net);
+  document.getElementById('home-cam')!.addEventListener('click', () => scene?.centerOnCastle());
   hud.setStatus(status);
   if (lastCastle) onCastle(lastCastle);
 }
 
-/** The scene is drawn in the player's colour, so it starts with the first castle state. */
-function startScene(color: CastleView['color']): void {
-  scene = new CastleScene(color);
+/** The scene is drawn in the player's colour on the shared map, so it starts once both have arrived. */
+function startScene(color: CastleView['color'], layout: MapLayoutView): void {
+  scene = new WorldScene(color, layout, net.seat);
   scene.onBuildingClick = (type) => hud?.focusBuilding(type);
   // Dev only: lets the console preview other building levels / counts without playing up to them.
-  if (import.meta.env.DEV) (window as unknown as { keepfallScene: CastleScene }).keepfallScene = scene;
+  if (import.meta.env.DEV) (window as unknown as { keepfallScene: WorldScene }).keepfallScene = scene;
   game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'stage',

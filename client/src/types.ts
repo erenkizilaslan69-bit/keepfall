@@ -178,3 +178,25 @@ export interface CastleView {
 }
 
 export interface CommandResult { ok: boolean; error: string | null }
+
+// The shared map (Contracts/MapViews.cs). Coordinates are in tiles; the scene draws a tile as 64 px.
+export interface Vec { x: number; y: number }
+export type Corner = 'northWest' | 'northEast' | 'southWest' | 'southEast';
+export interface RegionView { corner: Corner; origin: Vec; width: number; height: number; gate: Vec; seat: number | null; color: PlayerColor | null; name: string | null }
+export interface RoadView { id: number; points: Vec[] }
+export interface FeatureView { id: string; kind: 'forest'; center: Vec; radius: number }
+/** Public and the same for everyone: terrain, roads and whose castle is in which corner. */
+export interface MapLayoutView { size: number; regions: RegionView[]; roads: RoadView[]; features: FeatureView[] }
+
+export type MoverKind = 'army' | 'scout';
+export interface MoverUnit { unitId: string; name: string; count: number }
+export interface VisionView { center: Vec; radius: number }
+/** One of our own armies or scouts, with its road. */
+export interface OwnMoverView {
+  id: string; kind: MoverKind; targetSeat: number; returning: boolean;
+  position: Vec; velocity: Vec; units: MoverUnit[]; route: Vec[]; travelled: number; speed: number;
+}
+/** Someone else's army or scout inside our vision: never its target, road or arrival time. */
+export interface SeenMoverView { id: string; kind: MoverKind; ownerSeat: number; ownerColor: PlayerColor; position: Vec; velocity: Vec; units: MoverUnit[] }
+/** What we see right now (fog of war applied by the server). */
+export interface MapStateView { elapsedSeconds: number; vision: VisionView[]; own: OwnMoverView[]; seen: SeenMoverView[] }

@@ -26,7 +26,8 @@ main.game {
   align-items: flex-start;
 }
 
-#stage { flex: 1 1 640px; max-width: 960px; aspect-ratio: 4 / 3; }
+#stage { flex: 1 1 640px; max-width: 960px; aspect-ratio: 4 / 3; position: relative; }
+.stage-btn { position: absolute; top: 8px; left: 8px; z-index: 2; opacity: 0.92; }
 #stage canvas { border-radius: 6px; display: block; }
 
 #panel {
