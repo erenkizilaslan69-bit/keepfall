@@ -18,6 +18,7 @@ public sealed class BalanceConfig
     public WarConfig War { get; set; } = new();
     public MapConfig Map { get; set; } = new();
     public CombatConfig Combat { get; set; } = new();
+    public ForestConfig Forest { get; set; } = new();
     /// <summary>Gold price of hiring one soldier of each unit type (by unit id).</summary>
     public Dictionary<string, double> Mercenary { get; set; } = [];
     public List<UnitConfig> Units { get; set; } = [];
@@ -49,6 +50,48 @@ public sealed class EconomyConfig
     public double NewPersonCostGrowth { get; set; }
     public int NewPersonBasePopulation { get; set; } = 10;
     public double GrowthReserveSeconds { get; set; }
+}
+
+public sealed class ForestConfig
+{
+    public int ChestsPerCorner { get; set; }
+    public int VillagesPerCorner { get; set; }
+    public int CampsPerCorner { get; set; }
+    public double MinSpacing { get; set; } = 3.5;
+    public double HubClearing { get; set; } = 2.5;
+    public double FootMin { get; set; } = 2;
+    public double FootMax { get; set; } = 11.5;
+    public double SpurMin { get; set; } = 1.5;
+    public double SpurMax { get; set; } = 4.5;
+    public double EdgeMargin { get; set; } = 1.5;
+    public double DiscoverRadius { get; set; } = 5;
+    public ChestConfig Chest { get; set; } = new();
+    public VillageConfig Village { get; set; } = new();
+    public CampConfig Camp { get; set; } = new();
+    public CampConfig BigCamp { get; set; } = new();
+}
+
+public sealed class ChestConfig
+{
+    public int GoldMin { get; set; }
+    public int GoldMax { get; set; }
+}
+
+public sealed class VillageConfig
+{
+    public int GoldMin { get; set; }
+    public int GoldMax { get; set; }
+    public int PeopleMin { get; set; }
+    public int PeopleMax { get; set; }
+    public int MinSoldiers { get; set; } = 3;
+}
+
+public sealed class CampConfig
+{
+    public Dictionary<string, int> Bandits { get; set; } = [];
+    public int GoldMin { get; set; }
+    public int GoldMax { get; set; }
+    public Dictionary<string, int> Weapons { get; set; } = [];
 }
 
 public sealed class MapConfig
@@ -204,6 +247,22 @@ public static class BalanceConfigLoader
         var sr = mc.StartingResources;
         if (sr.Food < 0 || sr.Wood < 0 || sr.Iron < 0) errors.Add("match.startingResources negatif olamaz.");
 
+        var fo = config.Forest;
+        if (fo.ChestsPerCorner < 0 || fo.VillagesPerCorner < 0 || fo.CampsPerCorner < 0) errors.Add("forest: nokta sayıları negatif olamaz.");
+        if (fo.FootMin < 0 || fo.FootMax <= fo.FootMin || fo.FootMax > 14) errors.Add("forest.footMin/footMax: 0 ≤ min < max ≤ 14 olmalı.");
+        if (fo.SpurMin <= 0 || fo.SpurMax < fo.SpurMin) errors.Add("forest.spurMin/spurMax geçersiz.");
+        if (fo.DiscoverRadius < fo.SpurMax) errors.Add("forest.discoverRadius, spurMax'tan küçük olamaz (keşif yolu noktaları kaçırır).");
+        if (fo.Chest.GoldMin < 0 || fo.Chest.GoldMax < fo.Chest.GoldMin) errors.Add("forest.chest: altın aralığı geçersiz.");
+        if (fo.Village.GoldMax < fo.Village.GoldMin || fo.Village.PeopleMax < fo.Village.PeopleMin || fo.Village.MinSoldiers < 1) errors.Add("forest.village: aralıklar geçersiz.");
+        foreach (var (name, camp) in new[] { ("camp", fo.Camp), ("bigCamp", fo.BigCamp) })
+        {
+            if (camp.GoldMax < camp.GoldMin) errors.Add($"forest.{name}: altın aralığı geçersiz.");
+            foreach (var id in camp.Bandits.Keys.Concat(camp.Weapons.Keys))
+                if (!config.Units.Any(u => u.Id == id)) errors.Add($"forest.{name}: bilinmeyen birim \"{id}\".");
+        }
+        if (fo.CampsPerCorner > 0 && fo.Camp.Bandits.Values.Sum() == 0) errors.Add("forest.camp: en az bir haydut olmalı.");
+        if (fo.BigCamp.Bandits.Values.Sum() == 0 && fo.BigCamp.GoldMax > 0) errors.Add("forest.bigCamp: en az bir haydut olmalı.");
+
         foreach (var (id, price) in config.Mercenary)
         {
             if (!config.Units.Any(u => u.Id == id)) errors.Add($"mercenary.{id}: bilinmeyen birim.");
@@ -316,7 +375,13 @@ public static class BalanceConfigLoader
             new WarRules(w.FamineStart, w.FamineFoodMultiplier,
                 w.CastleHp, w.SiegeSeconds, w.ArcherSiegeMultiplier, w.BattlePlayback, w.EncounterRadius),
             new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout, mp.ScoutTrailSeconds),
-            config.Mercenary);
+            config.Mercenary,
+            new ForestRules(fo.ChestsPerCorner, fo.VillagesPerCorner, fo.CampsPerCorner, fo.MinSpacing, fo.HubClearing, fo.FootMin, fo.FootMax,
+                fo.SpurMin, fo.SpurMax, fo.EdgeMargin, fo.DiscoverRadius,
+                new ChestRules(fo.Chest.GoldMin, fo.Chest.GoldMax),
+                new VillageRules(fo.Village.GoldMin, fo.Village.GoldMax, fo.Village.PeopleMin, fo.Village.PeopleMax, fo.Village.MinSoldiers),
+                new CampRules(fo.Camp.Bandits, fo.Camp.GoldMin, fo.Camp.GoldMax, fo.Camp.Weapons),
+                new CampRules(fo.BigCamp.Bandits, fo.BigCamp.GoldMin, fo.BigCamp.GoldMax, fo.BigCamp.Weapons)));
     }
 
     private static double? ParseMultiplier(JsonElement value, CombatConfig c)

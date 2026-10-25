@@ -40,6 +40,22 @@ public sealed class Route
         return new Route(points, legs);
     }
 
+    /// <summary>Routes walked one after the other (each starts where the one before ended).</summary>
+    internal static Route Join(params Route[] parts)
+    {
+        var points = new List<Vec> { parts[0].Start };
+        var legs = new List<RouteLeg>();
+        double at = 0;
+        foreach (var part in parts)
+        {
+            if (part.Points.Count < 2) continue;
+            points.AddRange(part.Points.Skip(1));
+            foreach (var l in part.Legs) legs.Add(l with { Start = at + l.Start });
+            at += part.Length;
+        }
+        return new Route(points, legs);
+    }
+
     /// <summary>The same road walked the other way.</summary>
     public Route Reversed()
     {

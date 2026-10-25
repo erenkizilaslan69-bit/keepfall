@@ -61,16 +61,68 @@ public sealed class WorldMap
 
     private readonly Dictionary<string, RoadNode> _nodes;
     private readonly Dictionary<Corner, Region> _regions;
+    /// <summary>What armies and scouts route over: the public roads, cut where a forest trail leaves them, plus the trails.</summary>
+    private readonly Dictionary<string, RoadNode> _routingNodes;
+    private readonly List<RoadEdge> _routingEdges;
 
     private WorldMap(double size, IEnumerable<Region> regions, IEnumerable<RoadNode> nodes, IEnumerable<RoadEdge> edges,
-        IEnumerable<MapFeature> features)
+        IEnumerable<MapFeature> features, IEnumerable<RoadNode>? routingNodes = null, IEnumerable<RoadEdge>? routingEdges = null)
     {
         Size = size;
         _regions = regions.ToDictionary(r => r.Corner);
         _nodes = nodes.ToDictionary(n => n.Id);
         Edges = edges.ToList();
         Features = features.ToList();
+        _routingNodes = routingNodes?.ToDictionary(n => n.Id) ?? _nodes;
+        _routingEdges = routingEdges?.ToList() ?? Edges.ToList();
     }
+
+    /// <summary>
+    /// The same map with the forest's places reachable: a trail from the forest road to each place. The public
+    /// roads and nodes are unchanged (the trails say where the places are, so they are never part of what
+    /// everyone is told); only routing knows them.
+    /// </summary>
+    public WorldMap WithSites(IEnumerable<ForestSite> sites)
+    {
+        var nodes = _nodes.Values.ToDictionary(n => n.Id);
+        var edges = new List<RoadEdge>();
+        int next = Edges.Max(e => e.Id) + 1;
+        var byRoad = sites.Where(s => s.RoadEdgeId >= 0).GroupBy(s => s.RoadEdgeId).ToDictionary(g => g.Key, g => g.ToList());
+        foreach (var e in Edges)
+        {
+            if (!byRoad.TryGetValue(e.Id, out var onRoad)) { edges.Add(e); continue; }
+            if (e.Points.Count != 2) throw new InvalidOperationException("Only a straight road can have trails.");
+            string prev = e.From;
+            var prevAt = e.Points[0];
+            foreach (var s in onRoad.OrderBy(s => e.Points[0].DistanceTo(s.Foot)))
+            {
+                nodes[FootNode(s)] = new RoadNode(FootNode(s), s.Foot);
+                nodes[SiteNode(s)] = new RoadNode(SiteNode(s), s.Position);
+                edges.Add(new RoadEdge(next++, prev, FootNode(s), [prevAt, s.Foot]));
+                edges.Add(new RoadEdge(next++, FootNode(s), SiteNode(s), s.Spur));
+                prev = FootNode(s);
+                prevAt = s.Foot;
+            }
+            edges.Add(new RoadEdge(next++, prev, e.To, [prevAt, e.Points[^1]]));
+        }
+        return new WorldMap(Size, _regions.Values, _nodes.Values, Edges, Features, nodes.Values, edges);
+    }
+
+    private static string FootNode(ForestSite s) => $"foot:{s.Id}";
+    /// <summary>The road node a place is reached at (the big camp stands on the hub).</summary>
+    public static string SiteNode(ForestSite s) => s.Kind == SiteKind.BigCamp ? "hub" : $"site:{s.Id}";
+
+    /// <summary>The road from a castle gate to a place in the forest (over its trail).</summary>
+    public Route RouteToSite(Corner from, ForestSite site) => ShortestRoute(GateNode(from), SiteNode(site));
+
+    /// <summary>
+    /// A scout's tour of one quarter of the forest: to that corner's junction, down its forest road to the
+    /// middle, and home. The own quarter is the shortest, the opposite one the longest.
+    /// </summary>
+    public Route ExploreRoute(Corner from, Corner quarter) => Route.Join(
+        ShortestRoute(GateNode(from), JunctionNode(quarter)),
+        ShortestRoute(JunctionNode(quarter), "hub"),
+        ShortestRoute("hub", GateNode(from)));
 
     public double Size { get; }
     public IReadOnlyCollection<Region> Regions => _regions.Values;
@@ -131,7 +183,7 @@ public sealed class WorldMap
     private static Region NewRegion(Corner corner, double x, double y) =>
         new(corner, new Vec(x, y), RegionWidth, RegionHeight, new Vec(x, y) + LocalGate);
 
-    private static string JunctionNode(Corner corner) => $"junction-{corner}";
+    public static string JunctionNode(Corner corner) => $"junction-{corner}";
 
     /// <summary>The shortest road from one castle gate to another.</summary>
     public Route RouteBetween(Corner from, Corner to) => ShortestRoute(GateNode(from), GateNode(to));
@@ -139,18 +191,18 @@ public sealed class WorldMap
     /// <summary>Dijkstra over the road graph (a handful of nodes).</summary>
     public Route ShortestRoute(string fromNode, string toNode)
     {
-        if (!_nodes.ContainsKey(fromNode) || !_nodes.ContainsKey(toNode))
+        if (!_routingNodes.ContainsKey(fromNode) || !_routingNodes.ContainsKey(toNode))
             throw new ArgumentException($"Unknown road node: {fromNode} → {toNode}.");
-        var dist = _nodes.Keys.ToDictionary(k => k, _ => double.PositiveInfinity);
+        var dist = _routingNodes.Keys.ToDictionary(k => k, _ => double.PositiveInfinity);
         var via = new Dictionary<string, (RoadEdge Edge, string Prev)>();
-        var open = new HashSet<string>(_nodes.Keys);
+        var open = new HashSet<string>(_routingNodes.Keys);
         dist[fromNode] = 0;
         while (open.Count > 0)
         {
             var node = open.MinBy(n => dist[n])!;
             open.Remove(node);
             if (node == toNode || double.IsPositiveInfinity(dist[node])) break;
-            foreach (var e in Edges.Where(e => e.From == node || e.To == node))
+            foreach (var e in _routingEdges.Where(e => e.From == node || e.To == node))
             {
                 var next = e.From == node ? e.To : e.From;
                 double d = dist[node] + e.Length;
@@ -167,6 +219,6 @@ public sealed class WorldMap
         for (var n = toNode; n != fromNode; n = via[n].Prev)
             legs.Add((via[n].Edge, via[n].Edge.To == n));
         legs.Reverse();
-        return Route.FromEdges(_nodes[fromNode].Position, legs);
+        return Route.FromEdges(_routingNodes[fromNode].Position, legs);
     }
 }

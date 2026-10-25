@@ -72,9 +72,12 @@ public sealed class GameState
     /// <param name="rng">Randomness for scout errors and battles; tests pass a seeded one.</param>
     /// <param name="corners">Which corner of the map each player gets; default: <see cref="AssignCorners"/>.</param>
     public GameState(GameRules rules, IEnumerable<string> playerKeys, double? prepSeconds = null,
-        double? warSeconds = null, Random? rng = null, IReadOnlyDictionary<string, Corner>? corners = null)
+        double? warSeconds = null, Random? rng = null, IReadOnlyDictionary<string, Corner>? corners = null, int? forestSeed = null)
     {
         Rules = rules;
+        // Its own randomness, so seeded matches play their battles the same whatever the forest looks like.
+        ForestSites = ForestLayout.Generate(WorldMap.Standard, rules.Forest, new Random(forestSeed ?? RandomNumberGenerator.GetInt32(int.MaxValue)));
+        Map = WorldMap.Standard.WithSites(ForestSites);
         _rng = rng ?? new Random(RandomNumberGenerator.GetInt32(int.MaxValue));
         _simulator = new BattleSimulator(rules);
         PrepSeconds = prepSeconds ?? rules.Match.ShortModePrepSeconds;
@@ -104,7 +107,10 @@ public sealed class GameState
     }
 
     public GameRules Rules { get; }
-    public WorldMap Map { get; } = WorldMap.Standard;
+    /// <summary>The shared map, with trails to the forest's places for routing (the public roads are the standard ones).</summary>
+    public WorldMap Map { get; }
+    /// <summary>The forest's places and what they hold. The truth: players learn of them only by finding them.</summary>
+    public IReadOnlyList<ForestSite> ForestSites { get; }
     public MatchPhase Phase { get; private set; } = MatchPhase.Preparation;
     public double PrepSeconds { get; }
     public double WarSeconds { get; }

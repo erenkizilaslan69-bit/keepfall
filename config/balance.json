@@ -79,6 +79,29 @@
     "kalkanli": 30
   },
 
+  // Orman: her köşe kendi çeyreğinde aynı sayıda ve türde nokta alır (her maç rastgele ama adil: her yuva için tek bir
+  // yol uzaklığı çekilir, her köşe aynı uzaklığı kullanır, yalnız patikanın yolun hangi yanına döneceği köşeye göre değişir);
+  // ormanın tam ortasında büyük kamp durur. Noktalar yoldan patikalarla ayrılır; patikalar keşfedilene kadar kimseye bildirilmez.
+  "forest": {
+    "chestsPerCorner": 2,
+    "villagesPerCorner": 1,
+    "campsPerCorner": 1,
+    // Noktalar arası en az karo; ortadaki büyük kampa en az karo; orman yolunda patikanın ayrıldığı yer (kavşaktan karo);
+    // patika uzunluğu; ring yoluna bırakılan boşluk.
+    "minSpacing": 3.5,
+    "hubClearing": 2.5,
+    "footMin": 2, "footMax": 11.5,
+    "spurMin": 1.5, "spurMax": 4.5,
+    "edgeMargin": 1.5,
+    // Bir çeyreği keşfeden gözcü, o çeyreğin noktalarına bu kadar karo yaklaşınca onları bulur (patika uzunluğundan büyük olmalı).
+    "discoverRadius": 5,
+    "chest": { "goldMin": 20, "goldMax": 40 },
+    "village": { "goldMin": 30, "goldMax": 50, "peopleMin": 2, "peopleMax": 4, "minSoldiers": 3 },
+    // Haydutlar birim istatistikleriyle savaşır (id: sayı). Silahlar kazanana hazır silah olarak depoya gider.
+    "camp": { "bandits": { "kilicli": 6 }, "goldMin": 60, "goldMax": 90, "weapons": { "kilicli": 2, "okcu": 1 } },
+    "bigCamp": { "bandits": { "kilicli": 8, "kalkanli": 4, "okcu": 4 }, "goldMin": 220, "goldMax": 300, "weapons": { "kilicli": 3, "mizrakci": 2, "okcu": 1 } }
+  },
+
   // Excel "Maç" sekmesi: gözcü.
   // Gözcü hedefin kapısına yürür, raporu orada alır ve eve dönünce teslim eder.
   // Görevdeki gözcü çalışmaz ama yemek yer; dönünce boşta olur.
