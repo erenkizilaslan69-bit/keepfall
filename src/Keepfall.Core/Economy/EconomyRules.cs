@@ -12,7 +12,8 @@ public sealed record MatchRules(
     double StartingWood,
     double StartingIron,
     double SpectatorDelaySeconds,
-    double SpectatorWaitSeconds);
+    double SpectatorWaitSeconds,
+    double SpectatorMinSeconds = 0);
 
 /// <summary>War phase ("Maç" and "Binalar" sheets): famine, castle and siege.</summary>
 public sealed record WarRules(

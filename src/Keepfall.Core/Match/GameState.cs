@@ -133,7 +133,14 @@ public sealed class GameState
     public IReadOnlyCollection<string> PlayerKeys => _players.Keys;
     public MatchResult? Result { get; private set; }
 
-    private double PhaseEndsAt => Phase == MatchPhase.Preparation ? PrepSeconds : PrepSeconds + WarSeconds;
+    private double PhaseEndsAt => Phase == MatchPhase.Preparation ? PrepSeconds : PrepSeconds + WarSeconds + _extraWarSeconds;
+    private double _extraWarSeconds;
+
+    /// <summary>The war lasts at least <paramref name="seconds"/> more (the match is not cut short; the famine keeps its place in the planned war).</summary>
+    public void EnsureWarRemaining(double seconds)
+    {
+        if (Phase == MatchPhase.War && RemainingSeconds < seconds) _extraWarSeconds += seconds - RemainingSeconds;
+    }
 
     public Castle? CastleOf(string playerKey) => _players.GetValueOrDefault(playerKey)?.Castle;
     public Corner CornerOf(string playerKey) => _corners[playerKey];

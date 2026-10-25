@@ -14,6 +14,8 @@
     // Elenen oyuncu önce spectatorWaitSeconds oyun saniyesi süren bir geçiş ekranı görür, sonra tüm haritayı (sissiz)
     // spectatorDelaySeconds oyun saniyesi gecikmeyle izler; 0 = canlı.
     "spectatorWaitSeconds": 5,
+    // Son insan elenip botlar oynamaya devam ediyorsa maç en az bu kadar oyun saniyesi daha sürer; oda sahibi bu sürede "İzlemeye devam" ya da "Maçı bitir" seçer.
+    "spectatorMinSeconds": 120,
     "spectatorDelaySeconds": 0,
     "startingPopulation": 12,
     "startingResources": { "food": 30, "wood": 40, "iron": 20 }

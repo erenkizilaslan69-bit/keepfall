@@ -96,7 +96,7 @@ public sealed class TickLoop(
     private static string DescribeEnd(Room room)
     {
         var game = room.Game!;
-        var who = string.Join(", ", room.Players.Select(p => $"{p.Name}{(p.IsBot ? " (bot)" : "")}: {(room.IsEliminated(p) ? "elendi" : "ayakta")}"));
+        var who = string.Join(", ", room.Players.Select(p => $"{p.Name}{(p.IsBot ? " (bot)" : "")}: {(game.Eliminated.TryGetValue(p.CastleKey, out var fell) ? $"elendi ({fell:0}. sn)" : "ayakta")}"));
         return $"{game.ElapsedSeconds:0} sn geçti, {game.RemainingSeconds:0} sn kalmıştı; {who}";
     }
 }

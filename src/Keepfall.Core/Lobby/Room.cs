@@ -82,6 +82,7 @@ public sealed class Room
 {
     private readonly List<RoomPlayer> _players = [];
     private readonly GameRules _rules;
+    private bool _humansOutSeen;
 
     public Room(string code, GameRules rules, RoomOptions? options = null)
     {
@@ -367,6 +368,12 @@ public sealed class Room
         {
             beforeTick?.Invoke(dt);
             Game.Tick(dt);
+            // The last human has just fallen: whatever time was left, the host gets a while to choose between watching and ending it.
+            if (!_humansOutSeen && AllHumansOut && _players.Any(p => !p.IsBot))
+            {
+                _humansOutSeen = true;
+                Game.EnsureWarRemaining(_rules.Match.SpectatorMinSeconds);
+            }
         }
         Phase = Game!.Phase switch
         {

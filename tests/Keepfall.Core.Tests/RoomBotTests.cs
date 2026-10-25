@@ -1,4 +1,4 @@
-using Keepfall.Core.Config;
+﻿using Keepfall.Core.Config;
 using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
 
@@ -134,6 +134,24 @@ public class RoomBotTests
         Assert.NotNull(room.Game!.Result);
         Assert.False(room.AllHumansOut); // over
         Assert.False(room.FinishMatch(host.Token, 1, _ => { }).Ok);
+    }
+
+    [Fact]
+    public void The_war_runs_at_least_a_while_longer_when_asked_so_the_host_can_choose()
+    {
+        var (room, _) = WarWithTwoBots();
+        var game = room.Game!;
+        for (int t = 0; t < 270; t++) room.Tick(1);
+        Assert.InRange(game.RemainingSeconds, 29, 31);
+
+        game.EnsureWarRemaining(120);
+        Assert.Equal(120, game.RemainingSeconds, 3);
+        game.EnsureWarRemaining(60); // never shortens
+        Assert.Equal(120, game.RemainingSeconds, 3);
+        for (int t = 0; t < 119; t++) room.Tick(1);
+        Assert.Equal(RoomPhase.War, room.Phase);
+        for (int t = 0; t < 3; t++) room.Tick(1);
+        Assert.Equal(RoomPhase.Ended, room.Phase);
     }
 
     [Fact]
