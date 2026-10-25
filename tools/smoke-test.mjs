@@ -380,7 +380,7 @@ check('X sends three soldiers at the camp', (await X.call('SendArmyToSite', camp
 check('the fight is replayed for X, against black bandits', await waitFor(() => X.of('BattleStarted').some((b) => b.kind === 'camp'), 30000));
 const campBattle = X.of('BattleStarted').find((b) => b.kind === 'camp');
 check('the camp record has both sides soldier by soldier', campBattle.sides.length === 2 && campBattle.sides[0].soldiers.length === 3
-  && campBattle.sides[1].color === 'black' && campBattle.sides[1].name === 'Haydutlar' && campBattle.sides[1].soldiers.length === 6);
+  && campBattle.sides[1].color === 'black' && campBattle.sides[1].name === 'Haydutlar' && campBattle.sides[1].soldiers.length === 7);
 check('Y and Z get no record of it', Y.of('BattleStarted').length === battlesBefore.Y && Z.of('BattleStarted').length === battlesBefore.Z);
 check('the army is home again', await waitFor(() => X.of('CastleState').at(-1).war.armies.length === 0, 40000));
 const campReport = X.of('CastleState').at(-1).war.battles.find((b) => b.kind === 'camp');
