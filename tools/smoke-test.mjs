@@ -344,7 +344,7 @@ check('Z (who never found it) cannot', !(await Z.call('SendChestScout', chest.id
 check('the gold arrives with the scout', await waitFor(() => X.of('CastleState').at(-1).resources.gold >= 10, 25000));
 const chestGold = X.of('CastleState').at(-1).resources.gold;
 check('a chest holds 10 to 20 gold', chestGold >= 10 && chestGold <= 20, String(chestGold));
-check('the chest's iron (4 to 8) came with the gold', X.of('CastleState').at(-1).resources.iron >= ironBefore + 4);
+check('the iron of the chest (4 to 8) came with the gold', X.of('CastleState').at(-1).resources.iron >= ironBefore + 4);
 check('a found place tells nothing about what it holds',
   !['gold', 'iron', 'food', 'wood', 'people', 'weapons'].some((k) => k in siteOf(X, chest.id)));
 check('X knows the chest is empty', siteOf(X, chest.id).gone === true);
