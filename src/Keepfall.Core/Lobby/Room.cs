@@ -99,6 +99,20 @@ public sealed class Room
     public GameState? Game { get; private set; }
     public int Speed { get; private set; } = 1;
 
+    /// <summary>
+    /// Simulation only: a room of nothing but bots, started at once. There is no host and nobody is connected;
+    /// the caller plays it with <see cref="Tick"/>.
+    /// </summary>
+    public static Room StartBotMatch(string code, GameRules rules, RoomOptions options, IReadOnlyList<BotDifficulty> levels)
+    {
+        var room = new Room(code, rules, options);
+        for (int i = 0; i < levels.Count; i++)
+            room._players.Add(new RoomPlayer(i + 1, Tokens.NewPlayerToken(), $"Bot {ColorName((PlayerColor)i)}", levels[i]));
+        room.HostSeat = 0;
+        room.StartGame();
+        return room;
+    }
+
     public RoomPlayer? Find(string? token) =>
         token is null ? null : _players.FirstOrDefault(p => FixedTimeEquals(p.Token, token));
 
@@ -274,6 +288,12 @@ public sealed class Room
         if (p.Seat != HostSeat) return CommandResult.Fail("Maçı sadece odayı kuran başlatabilir.");
         if (_players.Count < Options.MinPlayers) return CommandResult.Fail($"En az {Options.MinPlayers} oyuncu gerekiyor (botlar da sayılır).");
         if (!_players.All(x => x.Ready && x.Connected)) return CommandResult.Fail("Herkes hazır değil.");
+        StartGame();
+        return CommandResult.Success;
+    });
+
+    private void StartGame()
+    {
         var keys = _players.Select(x => x.CastleKey).ToList();
         if (Options.Seed is { } seed)
             Game = new GameState(_rules, keys, Options.PrepSeconds, Options.WarSeconds, new Random(seed),
@@ -281,8 +301,7 @@ public sealed class Room
         else
             Game = new GameState(_rules, keys, Options.PrepSeconds, Options.WarSeconds, forestSeed: Options.ForestSeed);
         Phase = RoomPhase.Preparation;
-        return CommandResult.Success;
-    });
+    }
 
     /// <summary>The host seats a bot in the first empty seat. It gets its colour's name ("Bot Kırmızı") and is ready at once.</summary>
     public CommandResult AddBot(string token, BotDifficulty difficulty) => InLobby(token, p =>

@@ -4,6 +4,7 @@ using Keepfall.BattleSim;
 using Keepfall.Core;
 using Keepfall.Core.Combat;
 using Keepfall.Core.Config;
+using Keepfall.Core.Lobby;
 
 Console.OutputEncoding = Encoding.UTF8;
 
@@ -12,6 +13,7 @@ const string Usage = """
       BattleSim denge  [--mac 5000] [--min 10] [--max 30] [--butce kisi|kaynak] [--duello 10]
                        [--havuz 60] [--esik 0.55] [--seed 12345]
       BattleSim savas  <ordu A> <ordu B> [--hedef-a X] [--hedef-b X] [--tekrar N] [--seed N]
+      BattleSim bot --izle [--oyuncu 2] [--zorluk orta|kolay] [--mod 15|30] [--seed 1] [--aralik 60]
       BattleSim kontrol
 
     Ortak:   --config <yol>   (varsayılan: yukarı klasörlerde config/balance.json)
@@ -71,6 +73,32 @@ try
             if (flags.TryGetValue("hedef-a", out var ta)) a.Targeting = ArmyParser.ParseTargeting(rules, ta);
             if (flags.TryGetValue("hedef-b", out var tb)) b.Targeting = ArmyParser.ParseTargeting(rules, tb);
             RunBattle(rules, a, b, Int(flags, "seed", 1), Int(flags, "tekrar", 1));
+            return 0;
+        }
+
+        case "bot":
+        {
+            int players = Int(flags, "oyuncu", 2);
+            int minutes = Int(flags, "mod", 15);
+            var level = (flags.GetValueOrDefault("zorluk", "orta").ToLowerInvariant()) switch
+            {
+                "kolay" => BotDifficulty.Easy, "orta" => BotDifficulty.Medium,
+                var z => throw new FormatException($"Geçersiz zorluk \"{z}\" (kolay | orta)."),
+            };
+            int seed = Int(flags, "seed", 1);
+            int every = Int(flags, "aralik", 60);
+            double prep = minutes == 30 ? rules.Match.LongModePrepSeconds : rules.Match.ShortModePrepSeconds;
+            double war = (minutes == 30 ? rules.Match.LongModeWarSeconds : rules.Match.ShortModeWarSeconds);
+            var room = BotMatch.Create(rules, Enumerable.Repeat(level, players).ToList(), prep, war, seed);
+            BotMatch.Play(rules, room, seed, (r, host) =>
+            {
+                double t = r.Game!.ElapsedSeconds;
+                if (t % every < 1e-6 || r.Phase == RoomPhase.Ended)
+                {
+                    Console.WriteLine($"{(int)t / 60}:{(int)t % 60:00}  ({r.Game.Phase})");
+                    Console.WriteLine(BotMatch.Describe(r, host));
+                }
+            });
             return 0;
         }
 

@@ -105,9 +105,17 @@
   // Botlar (oda sahibi lobide ekler). Süreler OYUN saniyesidir (hız ×N olunca botlar da aynı oranda hızlanır).
   // think: bot bu aralıkta bir süre bekleyip yeniden düşünür. react: yeni bir olayı (ordu uyarısı, rapor) bu kadar gecikmeyle fark eder.
   // commands: bir düşünmede en fazla bu kadar komut verir.
+  // mistake: her düşünmede aklının bir kısmının şaşırma ihtimali (işi atlar ya da yanlış yapar). slack: kaç kişinin yanlış meslekte durmasına izin verir.
+  // mix: botun kurduğu ordunun birim payları. weaponsFrom: hazırlığın bu oranından sonra silah dövmeye başlar.
+  // armFrom: hazırlığın bu oranından sonra depodaki silahları askere çevirir (savaşta hepsini).
+  // armyShare: nüfusunun en çok bu kadarını asker yapar (gerisi yemek ve silah üretiminde çalışır).
   "bots": {
-    "easy":   { "thinkMin": 6, "thinkMax": 10, "reactMin": 8, "reactMax": 15, "commands": 2 },
-    "medium": { "thinkMin": 2, "thinkMax": 3,  "reactMin": 3, "reactMax": 6,  "commands": 4 }
+    "easy":   { "thinkMin": 6, "thinkMax": 10, "reactMin": 8, "reactMax": 15, "commands": 2, "mistake": 0.25, "slack": 2 },
+    "medium": { "thinkMin": 2, "thinkMax": 3,  "reactMin": 3, "reactMax": 6,  "commands": 4, "mistake": 0.05, "slack": 1 },
+    "mix": { "kilicli": 0.35, "kalkanli": 0.25, "okcu": 0.25, "mizrakci": 0.15 },
+    "weaponsFrom": 0.3,
+    "armFrom": 0.75,
+    "armyShare": 0.5
   },
 
   // Excel "Maç" sekmesi: gözcü.

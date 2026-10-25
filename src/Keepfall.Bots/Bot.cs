@@ -1,4 +1,4 @@
-using Keepfall.Core;
+﻿using Keepfall.Core;
 using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
 
@@ -26,7 +26,7 @@ public sealed class Bot
         _level = rules.Bots.Of(difficulty);
         _rng = new Random(seed);
         _memory = new BotMemory(_level);
-        _modules = [new EconomyModule()];
+        _modules = [new EconomyModule(), new BuildModule(), new ProductionModule()];
         // Bots do not all wake up on the same second.
         _nextThink = _rng.NextDouble() * _level.ThinkMax;
     }
@@ -42,7 +42,7 @@ public sealed class Bot
     public IReadOnlyList<GameCommand> Think(BotInput input)
     {
         _memory.Observe(input, _rng);
-        var ctx = new BotContext(_rules, input, _memory, Difficulty, Stats, _rng);
+        var ctx = new BotContext(_rules, input, _memory, Difficulty, _level, Stats, _rng);
         foreach (var module in _modules) module.Think(ctx);
         var commands = ctx.Decide(_level.Commands);
         _nextThink = input.Now + _level.ThinkMin + _rng.NextDouble() * (_level.ThinkMax - _level.ThinkMin);

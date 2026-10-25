@@ -58,6 +58,10 @@ public sealed class BotsConfig
 {
     public BotLevelConfig Easy { get; set; } = new();
     public BotLevelConfig Medium { get; set; } = new();
+    public Dictionary<string, double> Mix { get; set; } = [];
+    public double WeaponsFrom { get; set; } = 0.3;
+    public double ArmFrom { get; set; } = 0.75;
+    public double ArmyShare { get; set; } = 0.5;
 }
 
 public sealed class BotLevelConfig
@@ -67,6 +71,8 @@ public sealed class BotLevelConfig
     public double ReactMin { get; set; } = 5;
     public double ReactMax { get; set; } = 10;
     public int Commands { get; set; } = 3;
+    public double Mistake { get; set; }
+    public int Slack { get; set; } = 1;
 }
 
 public sealed class ForestConfig
@@ -269,7 +275,14 @@ public static class BalanceConfigLoader
             if (level.ThinkMin <= 0 || level.ThinkMax < level.ThinkMin) errors.Add($"bots.{name}: thinkMin/thinkMax geçersiz.");
             if (level.ReactMin < 0 || level.ReactMax < level.ReactMin) errors.Add($"bots.{name}: reactMin/reactMax geçersiz.");
             if (level.Commands < 1) errors.Add($"bots.{name}: commands en az 1 olmalı.");
+            if (level.Mistake < 0 || level.Mistake > 1) errors.Add($"bots.{name}: mistake 0 ile 1 arasında olmalı.");
+            if (level.Slack < 0) errors.Add($"bots.{name}: slack negatif olamaz.");
         }
+        foreach (var id in config.Bots.Mix.Keys)
+            if (!config.Units.Any(u => u.Id == id)) errors.Add($"bots.mix: bilinmeyen birim \"{id}\".");
+        if (config.Bots.Mix.Count == 0 || config.Bots.Mix.Values.Any(v => v < 0) || config.Bots.Mix.Values.Sum() <= 0) errors.Add("bots.mix: en az bir pozitif pay olmalı.");
+        if (config.Bots.WeaponsFrom is < 0 or > 1 || config.Bots.ArmFrom is < 0 or > 1) errors.Add("bots.weaponsFrom/armFrom 0 ile 1 arasında olmalı.");
+        if (config.Bots.ArmyShare is <= 0 or > 1) errors.Add("bots.armyShare 0 ile 1 arasında olmalı.");
 
         var fo = config.Forest;
         if (fo.ChestsPerCorner < 0 || fo.VillagesPerCorner < 0 || fo.CampsPerCorner < 0) errors.Add("forest: nokta sayıları negatif olamaz.");
@@ -406,10 +419,10 @@ public static class BalanceConfigLoader
                 new VillageRules(fo.Village.GoldMin, fo.Village.GoldMax, fo.Village.PeopleMin, fo.Village.PeopleMax, fo.Village.MinSoldiers),
                 new CampRules(fo.Camp.Bandits, fo.Camp.GoldMin, fo.Camp.GoldMax, fo.Camp.Weapons),
                 new CampRules(fo.BigCamp.Bandits, fo.BigCamp.GoldMin, fo.BigCamp.GoldMax, fo.BigCamp.Weapons)),
-            new BotRules(
-                new BotLevelRules(config.Bots.Easy.ThinkMin, config.Bots.Easy.ThinkMax, config.Bots.Easy.ReactMin, config.Bots.Easy.ReactMax, config.Bots.Easy.Commands),
-                new BotLevelRules(config.Bots.Medium.ThinkMin, config.Bots.Medium.ThinkMax, config.Bots.Medium.ReactMin, config.Bots.Medium.ReactMax, config.Bots.Medium.Commands)));
+            new BotRules(BotLevel(config.Bots.Easy), BotLevel(config.Bots.Medium), config.Bots.Mix, config.Bots.WeaponsFrom, config.Bots.ArmFrom, config.Bots.ArmyShare));
     }
+
+    private static BotLevelRules BotLevel(BotLevelConfig c) => new(c.ThinkMin, c.ThinkMax, c.ReactMin, c.ReactMax, c.Commands, c.Mistake, c.Slack);
 
     private static double? ParseMultiplier(JsonElement value, CombatConfig c)
     {
