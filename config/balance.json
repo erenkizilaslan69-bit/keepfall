@@ -43,7 +43,7 @@
   // Standart haritada komşu kaleye yol 56 karo, çapraz kaleye (ormanın içinden) yaklaşık 64 karo.
   "map": {
     "armySpeed": 1.5,
-    "scoutSpeed": 2.5,
+    "scoutSpeed": 1.8,
     // Gözcünün yürüdüğü yolun çevresi (görüş yarıçapı kadar) geçtikten sonra bu kadar saniye canlı görüşte kalır
     // (son 10 sn soluklaşır); 0 = maç sonuna kadar. Rakibin kale bölgesinin içini açmaz.
     "scoutTrailSeconds": 120,

@@ -172,8 +172,8 @@ public class VisionTests
             if (game.TrailOf(A).Any(c => c.Fade < 1)) fading++;
         }
         Assert.Empty(game.TrailOf(A));
-        Assert.InRange(fading, GameState.TrailFadeSeconds, 65); // points close one after the other, each fading for its last seconds
-        Assert.True(game.ElapsedSeconds < 1 + 2 * 22 + 120 + 30, "closed far too late");
+        Assert.InRange(fading, GameState.TrailFadeSeconds, 95); // points close one after the other, each fading for its last seconds
+        Assert.True(game.ElapsedSeconds < 1 + 2 * 31 + 120 + 30, "closed far too late");
     }
 
     [Fact]
