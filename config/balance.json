@@ -98,7 +98,7 @@
     "chest": { "goldMin": 20, "goldMax": 40 },
     "village": { "goldMin": 30, "goldMax": 50, "peopleMin": 2, "peopleMax": 4, "minSoldiers": 3 },
     // Haydutlar birim istatistikleriyle savaşır (id: sayı). Silahlar kazanana hazır silah olarak depoya gider.
-    "camp": { "bandits": { "kilicli": 6 }, "goldMin": 60, "goldMax": 90, "weapons": { "kilicli": 2, "okcu": 1 } },
+    "camp": { "bandits": { "kilicli": 7 }, "goldMin": 60, "goldMax": 90, "weapons": { "kilicli": 2, "okcu": 1 } },
     "bigCamp": { "bandits": { "kilicli": 8, "kalkanli": 4, "okcu": 4 }, "goldMin": 220, "goldMax": 300, "weapons": { "kilicli": 3, "mizrakci": 2, "okcu": 1 } }
   },
 
