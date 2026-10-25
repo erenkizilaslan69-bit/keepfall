@@ -19,7 +19,7 @@ const ageText = (s: SiteView, now: number) => {
 const stateText = (s: SiteView): string => {
   const bandits = s.bandits.reduce((n, b) => n + b.count, 0);
   switch (s.kind) {
-    case 'chest': return s.gone ? 'boşalmış' : 'altın var';
+    case 'chest': return s.gone ? 'boşalmış' : 'altın ve demir var';
     case 'village': return s.gone ? 'yağmalanmış' : 'yağmalanabilir';
     default: return s.gone ? 'temizlenmiş' : `≈${bandits} haydut`;
   }
@@ -167,9 +167,9 @@ export class SiteWin extends Win {
       .map((b) => `<span class="unit-count" title="${esc(b.name)}"><i class="unit-ico unit-${esc(b.unitId)}"></i><b>≈${b.count}</b></span>`).join('');
     if (bandits.dataset.html !== html) { bandits.innerHTML = html; bandits.dataset.html = html; }
 
-    this.q('[data-f="note"]').textContent = site.kind === 'chest' ? 'Sandık bir kez alınır; ilk gelen alır. Altın, gözcü eve dönünce kasaya girer.'
-      : site.kind === 'village' ? `Savaşsız yağmalanır: altın ve birkaç kişi, ordu eve dönünce gelir. En az ${site.minSoldiers} asker gerekir; yağmalanınca köy yok olur.`
-      : 'Görünür bir savaş olur. Kazanırsan altın ve hazır silahlar ordu eve dönünce gelir; kaybedersen kamp kalan haydutlarla kalır.';
+    this.q('[data-f="note"]').textContent = site.kind === 'chest' ? 'Sandık bir kez alınır; ilk gelen alır. Altın ve demir, gözcü eve dönünce kasaya girer.'
+      : site.kind === 'village' ? `Savaşsız yağmalanır: altın, yemek ve birkaç kişi, ordu eve dönünce gelir. En az ${site.minSoldiers} asker gerekir; yağmalanınca köy yok olur.`
+      : 'Görünür bir savaş olur. Kazanırsan altın, odun ve hazır silahlar ordu eve dönünce gelir; kaybedersen kamp kalan haydutlarla kalır.';
 
     if (site.kind === 'chest') {
       fillSources(this.body, s);

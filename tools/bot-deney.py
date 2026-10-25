@@ -10,7 +10,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MATCHES = int(sys.argv[1]) if len(sys.argv) > 1 else 200
 OUT = sys.argv[2] if len(sys.argv) > 2 else None
 OLD = len(sys.argv) > 3 and sys.argv[3] == 'eski'
-BASE = open(os.path.join(ROOT, 'config', 'balance.json'), encoding='utf-8-sig').read()
+# KEEPFALL_BASE: başka bir balance.json ile (ör. eski ayar) ölç; verilmezse config/balance.json.
+BASE = open(os.environ.get('KEEPFALL_BASE') or os.path.join(ROOT, 'config', 'balance.json'), encoding='utf-8-sig').read()
 TMP = tempfile.mkdtemp(prefix='keepfall-bot-')
 
 

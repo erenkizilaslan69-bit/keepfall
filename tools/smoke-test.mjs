@@ -338,11 +338,15 @@ check('Y tours X quarter and sees the chest full', (await Y.call('SendExplore', 
   && await waitFor(() => siteOf(Y, chest.id) !== undefined, 15000) && siteOf(Y, chest.id).gone === false);
 check('Y is back and its trail closed', await waitFor(() => Y.of('CastleState').at(-1).scouting.missions.length === 0
   && Y.of('MapState').at(-1).trail.length === 0, 40000));
+const ironBefore = X.of('CastleState').at(-1).resources.iron;
 check('X sends a scout for the chest', (await X.call('SendChestScout', chest.id, 'idle')).ok);
 check('Z (who never found it) cannot', !(await Z.call('SendChestScout', chest.id, 'idle')).ok);
-check('the gold arrives with the scout', await waitFor(() => X.of('CastleState').at(-1).resources.gold >= 14, 25000));
+check('the gold arrives with the scout', await waitFor(() => X.of('CastleState').at(-1).resources.gold >= 10, 25000));
 const chestGold = X.of('CastleState').at(-1).resources.gold;
-check('a chest holds 14 to 28 gold', chestGold >= 14 && chestGold <= 28, String(chestGold));
+check('a chest holds 10 to 20 gold', chestGold >= 10 && chestGold <= 20, String(chestGold));
+check('the chest's iron (4 to 8) came with the gold', X.of('CastleState').at(-1).resources.iron >= ironBefore + 4);
+check('a found place tells nothing about what it holds',
+  !['gold', 'iron', 'food', 'wood', 'people', 'weapons'].some((k) => k in siteOf(X, chest.id)));
 check('X knows the chest is empty', siteOf(X, chest.id).gone === true);
 check('Y, who has not looked since, still thinks it is full', siteOf(Y, chest.id).gone === false);
 check('nobody else got any gold', [Y, Z].every((c) => c.of('CastleState').at(-1).resources.gold === 0));
@@ -355,7 +359,7 @@ check('the army is home with the loot', await waitFor(() => {
 }, 30000));
 const afterVillage = X.of('CastleState').at(-1);
 const villageGold = afterVillage.resources.gold - chestGold;
-check('a village gives 21 to 35 gold', villageGold >= 21 && villageGold <= 35, String(villageGold));
+check('a village gives 12 to 20 gold', villageGold >= 12 && villageGold <= 20, String(villageGold));
 check('the village is gone for X, all soldiers came home', siteOf(X, village.id).gone === true
   && afterVillage.units.find((u) => u.id === 'kilicli').soldiers === 6);
 check('the raid shows in nobody elses castle state, and Z never hears of the village at all',
@@ -368,11 +372,11 @@ check('Z knows nothing of all this', Z.of('MapState').every((m) => m.sites.lengt
 
 // ---- gold buys soldiers; a camp is fought in full view of its attackers only ------------------------------------
 const goldNow = X.of('CastleState').at(-1).resources.gold;
-const mercs = Math.floor(goldNow / 32);
+const mercs = Math.floor(goldNow / 29);
 check('X hires mercenaries with the loot', mercs >= 1 && (await X.call('HireMercenary', 'kilicli', mercs)).ok);
 const hiredView = X.of('CastleState').at(-1);
 check('the hired are soldiers on top of the people, and cost gold', hiredView.units.find((u) => u.id === 'kilicli').hired === mercs
-  && Math.abs(hiredView.resources.gold - (goldNow - 32 * mercs)) < 1e-6);
+  && Math.abs(hiredView.resources.gold - (goldNow - 29 * mercs)) < 1e-6);
 check('hired soldiers cannot be turned into workers', !(await X.call('DisarmSoldiers', 'kilicli', 6 + mercs)).ok);
 check('nobody else can hire without gold', !(await Y.call('HireMercenary', 'kilicli', 1)).ok);
 const camp = found.find((x) => x.kind === 'camp');
