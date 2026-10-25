@@ -41,6 +41,7 @@ public sealed class TickLoop(
     {
         var now = DateTime.UtcNow;
         bool roomChanged, ended = false, preparing;
+        string? endNote = null;
         List<(int Seat, List<SpectatorStateView> Frames, SpectatorWaitView? Wait)> spectating = [];
         lock (session.Lock)
         {
@@ -55,6 +56,7 @@ public sealed class TickLoop(
             if (preparing)
             {
                 ended = room.Tick(tickSeconds, dt => session.Bots.Step(room, dt));
+                if (ended) endNote = DescribeEnd(room);
                 if (!ended)
                 {
                     // Fallen players watch the whole map (live, or as late as match.spectatorDelaySeconds says); nobody else ever gets this.
@@ -63,6 +65,7 @@ public sealed class TickLoop(
                 }
             }
         }
+        if (endNote is not null) logger.LogInformation("Maç bitti, oda {Code}: {Note}", session.Room.Code, endNote);
         foreach (var (seat, frames, wait) in spectating)
         {
             var group = hub.Clients.Group(GameHub.PlayerGroup(session.Room.Code, seat));
@@ -87,5 +90,13 @@ public sealed class TickLoop(
             // Final castle states (with summaries) and the room view with the result.
             await MatchPush.End(hub.Clients, session);
         }
+    }
+
+    /// <summary>One line on how a match ended (time left, who was still standing), so "it ended too early" can be checked in the log afterwards.</summary>
+    private static string DescribeEnd(Room room)
+    {
+        var game = room.Game!;
+        var who = string.Join(", ", room.Players.Select(p => $"{p.Name}{(p.IsBot ? " (bot)" : "")}: {(room.IsEliminated(p) ? "elendi" : "ayakta")}"));
+        return $"{game.ElapsedSeconds:0} sn geçti, {game.RemainingSeconds:0} sn kalmıştı; {who}";
     }
 }
