@@ -318,6 +318,13 @@ export class WorldScene extends Phaser.Scene {
     this.lookAt({ x: region.origin.x + CASTLE.x / TILE, y: region.origin.y + (CASTLE.y - 120) / TILE });
   }
 
+  /** The middle of the map: the forest with the big camp, far enough out to see most of it. */
+  focusForest(): void {
+    const cam = this.cameras.main, size = this.layout.size;
+    cam.setZoom(Phaser.Math.Clamp(Math.min(cam.width, cam.height) / (size * TILE * 0.45), this.minZoom(), MAX_ZOOM));
+    this.lookAt({ x: size / 2, y: size / 2 });
+  }
+
   /** Where a point of the scene (px) is on the screen (CSS px). The canvas fills the window. */
   screenOf(p: { x: number; y: number }): { x: number; y: number } {
     const cam = this.cameras.main, v = cam.worldView;

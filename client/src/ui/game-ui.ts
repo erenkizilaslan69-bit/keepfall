@@ -1,3 +1,4 @@
+import { botMark, esc } from '../format';
 import type { GameConnection } from '../net';
 import type { CastleView, Corner, RoomView, SiteView } from '../types';
 import type { WorldScene } from '../scene/WorldScene';
@@ -44,6 +45,8 @@ export class GameUi {
 
   /** The "every human is out" box for the host, and whether they already chose to keep watching. */
   private readonly finish: HTMLElement;
+  private readonly cam: HTMLElement;
+  private camKey = '';
   private finishDismissed = false;
   private readonly mySeat: number;
 
@@ -105,14 +108,23 @@ export class GameUi {
     this.bar.setSeat(seat);
     this.notes = new Notifications(this.top);
     this.reports = new ReportTags(root);
-    const homeButton = document.createElement('button');
-    homeButton.className = 'btn home-btn hit';
-    homeButton.title = 'Kamerayı kalene getirir (boşluk tuşu)';
-    homeButton.innerHTML = '<i class="ico ico-shield"></i> Kaleme dön';
-    homeButton.addEventListener('click', home);
-    root.appendChild(homeButton);
+    // Quick camera buttons next to the minimap: our castle, each rival's castle (in their colour) and the forest in the middle.
+    this.cam = document.createElement('div');
+    this.cam.className = 'cam-btns';
+    this.cam.innerHTML = `
+      <button class="btn hit" data-cam="home" title="Kamerayı kalene getirir (boşluk tuşu)"><i class="ico ico-shield"></i> Kaleme dön</button>
+      <span data-f="rivals"></span>
+      <button class="btn hit" data-cam="forest" title="Kamerayı ormanın ortasına getirir">Orman</button>`;
+    this.cam.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-cam]');
+      if (!b) return;
+      if (b.dataset.cam === 'home') home();
+      else if (b.dataset.cam === 'forest') this.scene?.focusForest();
+      else if (b.dataset.cam === 'rival') this.scene?.focus({ kind: 'enemy', seat: Number(b.dataset.seat) });
+    });
+    root.appendChild(this.cam);
     this.windows = new WindowManager(root, () => this.top.getBoundingClientRect().bottom, () =>
-      [homeButton, document.querySelector('.minimap'), root.querySelector('.report-tags')].filter((e): e is Element => !!e)
+      [this.cam, document.querySelector('.minimap'), root.querySelector('.report-tags')].filter((e): e is Element => !!e)
         .map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0));
     this.ctx = { net, say: (m) => this.error(m), info: (m) => this.notes.push(m, 'info', 3500), open: (t) => this.open(t), close: () => this.windows.close(),
       army: (id) => this.scene?.resolveArmy(id), seat, sites: () => this.sites };
@@ -234,6 +246,14 @@ export class GameUi {
   setRoom(room: RoomView): void {
     this.room = room;
     this.bar.setRoom(room);
+    // One camera button per rival castle, in that player's colour.
+    const rivals = room.players.filter((p) => p.seat !== this.mySeat);
+    const key = rivals.map((p) => `${p.seat}:${p.color}:${p.name}`).join(',');
+    if (key !== this.camKey) {
+      this.camKey = key;
+      this.cam.querySelector('[data-f="rivals"]')!.innerHTML = rivals.map((p) =>
+        `<button class="btn hit cam-rival" data-cam="rival" data-seat="${p.seat}" data-color="${p.color}" title="Kamerayı ${esc(p.name)} kalesine götürür"><i class="dot"></i>${botMark(p.seat)}${esc(p.name)}</button>`).join('');
+    }
     this.updateFinish();
   }
 

@@ -279,7 +279,15 @@ html.ui-art .unit-row .btn { border-width: calc(12px * var(--u)); border-image-w
 .win .btn-red { color: #fff; }
 .win .gbar { margin: calc(4px * var(--u)) 0; }
 
-.home-btn { position: absolute; right: calc(8px * var(--u)); bottom: calc(8px * var(--u) + min(22vw, 200px) + 14px); }
+.cam-btns {
+  position: absolute; right: calc(8px * var(--u)); bottom: calc(8px * var(--u) + min(22vw, 200px) + 14px); display: flex; flex-wrap: wrap; justify-content: flex-end;
+  gap: calc(4px * var(--u)); max-width: min(60vw, calc(520px * var(--u))); pointer-events: none;
+}
+.cam-btns [data-f="rivals"] { display: contents; }
+.cam-rival { display: inline-flex; align-items: center; gap: calc(4px * var(--u)); }
+.cam-rival .dot { width: calc(10px * var(--u)); height: calc(10px * var(--u)); border-radius: 50%; background: var(--c, #888); border: 2px solid rgba(0, 0, 0, .35); }
+.cam-rival[data-color="blue"] { --c: #4a8fd9; } .cam-rival[data-color="red"] { --c: #d9534a; }
+.cam-rival[data-color="yellow"] { --c: #e2b93b; } .cam-rival[data-color="purple"] { --c: #9b6bd1; }
 .win .row.sub { flex-wrap: wrap; }
 
 /* ---- narrow windows ---------------------------------------------------------------------------- */
@@ -287,7 +295,7 @@ html.ui-art .unit-row .btn { border-width: calc(12px * var(--u)); border-image-w
   .chip-name { display: none; }
   .tb-hp .gbar { width: calc(150px * var(--u)); }
   .strip { gap: calc(8px * var(--u)); }
-  .home-btn { font-size: .9em; }
+  .cam-btns { font-size: .9em; }
 }
 
 /* ---- signs on the map: building names, castle health, army sizes (world-labels.ts) --------------- */
