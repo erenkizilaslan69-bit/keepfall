@@ -1,4 +1,4 @@
-using Keepfall.Core.Config;
+﻿using Keepfall.Core.Config;
 using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
 using Keepfall.Core.World;
@@ -8,9 +8,10 @@ namespace Keepfall.Core.Tests;
 /// <summary>What the bots do with the forest: scouts, chests, villages, bandit camps and the gold.</summary>
 public class BotForestTests
 {
-    private static readonly GameRules Rules = BalanceConfigLoader.LoadFromFile(
+    // Easy is pinned to the plain poor bot (see PoorBotRules); Medium is whatever balance.json says.
+    private static readonly GameRules Rules = PoorBotRules.From(BalanceConfigLoader.LoadFromFile(
         BalanceConfigLoader.FindDefaultPath(AppContext.BaseDirectory)
-        ?? throw new InvalidOperationException("config/balance.json bulunamadı."));
+        ?? throw new InvalidOperationException("config/balance.json bulunamadı.")));
 
     /// <summary>A preparation of the given length played by two bots of one difficulty; returns the room and the host (for their counters).</summary>
     private static (Room Room, BotHost.BotHost Host) Play(BotDifficulty level, int seed, double prep = 600, double war = 0.0, double seconds = 600)

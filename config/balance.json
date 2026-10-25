@@ -73,10 +73,10 @@
   // Paralı asker işçiden düşmez, nüfusa sayılır ve yemek yer (askerlik yemeği); işçiye dönüştürülemez.
   // Fiyat ~ silahın odun karşılığı (demir ≈ 1,25 odun) + yeni bir kişinin yemek bedeli (~12 odun), altın ≈ 1,4 odun.
   "mercenary": {
-    "okcu": 24,
-    "mizrakci": 22,
-    "kilicli": 26,
-    "kalkanli": 30
+    "okcu": 30,
+    "mizrakci": 28,
+    "kilicli": 32,
+    "kalkanli": 38
   },
 
   // Orman: her köşe kendi çeyreğinde aynı sayıda ve türde nokta alır (her maç rastgele ama adil: her yuva için tek bir
@@ -95,11 +95,11 @@
     "edgeMargin": 1.5,
     // Bir çeyreği keşfeden gözcü, o çeyreğin noktalarına bu kadar karo yaklaşınca onları bulur (patika uzunluğundan büyük olmalı).
     "discoverRadius": 5,
-    "chest": { "goldMin": 20, "goldMax": 40 },
-    "village": { "goldMin": 30, "goldMax": 50, "peopleMin": 2, "peopleMax": 4, "minSoldiers": 3 },
+    "chest": { "goldMin": 14, "goldMax": 28 },
+    "village": { "goldMin": 21, "goldMax": 35, "peopleMin": 2, "peopleMax": 4, "minSoldiers": 3 },
     // Haydutlar birim istatistikleriyle savaşır (id: sayı). Silahlar kazanana hazır silah olarak depoya gider.
-    "camp": { "bandits": { "kilicli": 6, "okcu": 1 }, "goldMin": 60, "goldMax": 90, "weapons": { "kilicli": 2, "okcu": 1 } },
-    "bigCamp": { "bandits": { "kilicli": 8, "kalkanli": 4, "okcu": 4 }, "goldMin": 220, "goldMax": 300, "weapons": { "kilicli": 3, "mizrakci": 2, "okcu": 1 } }
+    "camp": { "bandits": { "kilicli": 6, "okcu": 1 }, "goldMin": 42, "goldMax": 63, "weapons": { "kilicli": 2, "okcu": 1 } },
+    "bigCamp": { "bandits": { "kilicli": 8, "kalkanli": 4, "okcu": 4 }, "goldMin": 154, "goldMax": 210, "weapons": { "kilicli": 3, "mizrakci": 2, "okcu": 1 } }
   },
 
   // Botlar (oda sahibi lobide ekler). Süreler OYUN saniyesidir (hız ×N olunca botlar da aynı oranda hızlanır).
@@ -110,7 +110,11 @@
   // armFrom: hazırlığın bu oranından sonra depodaki silahları askere çevirir (savaşta hepsini).
   // armyShare: nüfusunun en çok bu kadarını asker yapar (gerisi yemek ve silah üretiminde çalışır).
   "bots": {
-    "easy":   { "thinkMin": 6, "thinkMax": 10, "reactMin": 8, "reactMax": 15, "commands": 2, "mistake": 0.25, "slack": 2 },
+    // Kolay: ekonomide neredeyse Orta kadar düzgün (ecoMistake, slack, orman/üretim yetenekleri), hesaplı saldırı/kamp kararı açık;
+    // zayıflığı hızı (düşünme 4–8 sn, tepki 8–15 sn) ve taktik hata oranı (mistake). Ölçüm: karışık maçta Orta ≈%80 kazanır.
+    "easy":   { "thinkMin": 4, "thinkMax": 8, "reactMin": 8, "reactMax": 15, "commands": 2, "mistake": 0.25, "slack": 1,
+                "ecoMistake": 0.08, "exploreAll": true, "chestsAnywhere": true, "scouts": 2, "mercBatch": 3, "mercThreatBatch": 6,
+                "saves": true, "queueDepth": 3, "calculates": true },
     "medium": { "thinkMin": 2, "thinkMax": 3,  "reactMin": 3, "reactMax": 6,  "commands": 4, "mistake": 0.05, "slack": 1 },
     "mix": { "kilicli": 0.35, "kalkanli": 0.25, "okcu": 0.25, "mizrakci": 0.15 },
     "weaponsFrom": 0.3,

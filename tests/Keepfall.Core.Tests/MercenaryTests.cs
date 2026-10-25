@@ -1,4 +1,4 @@
-using Keepfall.Core.Config;
+﻿using Keepfall.Core.Config;
 using Keepfall.Core.Economy;
 using Keepfall.Core.Match;
 using Keepfall.Core.Units;
@@ -31,7 +31,7 @@ public class MercenaryTests
     {
         Assert.Equal(new[] { "kalkanli", "kilicli", "mizrakci", "okcu" }, Rules.MercenaryPrices.Keys.Order());
         Assert.All(Rules.MercenaryPrices.Values, p => Assert.True(p > 0));
-        Assert.Equal(26, Rules.MercenaryPrices["kilicli"]);
+        Assert.Equal(32, Rules.MercenaryPrices["kilicli"]);
     }
 
     [Fact]
@@ -41,12 +41,12 @@ public class MercenaryTests
         int workers = castle.WorkerCount, population = castle.Population;
         Ok(castle.Execute(new HireMercenary("kilicli", 3)));
 
-        Assert.Equal(100 - 3 * 26, castle.Gold);
+        Assert.Equal(100 - 3 * 32, castle.Gold);
         Assert.Equal(3, castle.Soldiers[Sword]);
         Assert.Equal(3, castle.Mercenaries[Sword]);
         Assert.Equal(workers, castle.WorkerCount); // nobody was taken from the workers
         Assert.Equal(population + 3, castle.Population);
-        Assert.Equal((3, 78.0, 3), (castle.Stats.MercenariesHired, castle.Stats.GoldSpent, castle.Soldiers[Sword]));
+        Assert.Equal((3, 96.0, 3), (castle.Stats.MercenariesHired, castle.Stats.GoldSpent, castle.Soldiers[Sword]));
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public class MercenaryTests
     public void Hiring_needs_the_gold_and_a_known_unit()
     {
         var castle = Rich(30);
-        Assert.False(castle.Execute(new HireMercenary("kilicli", 2)).Ok); // 52 > 30
+        Assert.False(castle.Execute(new HireMercenary("kilicli", 2)).Ok); // 64 > 30
         Assert.False(castle.Execute(new HireMercenary("kilicli", 0)).Ok);
         Assert.False(castle.Execute(new HireMercenary("ejderha", 1)).Ok);
         Assert.Equal(30, castle.Gold);
@@ -88,7 +88,7 @@ public class MercenaryTests
     {
         var castle = Rich(60);
         Ok(castle.Execute(new HireMercenary("okcu", 1)));
-        Assert.Equal((60.0, 24.0, 1), (castle.Stats.GoldGained, castle.Stats.GoldSpent, castle.Stats.MercenariesHired));
+        Assert.Equal((60.0, 30.0, 1), (castle.Stats.GoldGained, castle.Stats.GoldSpent, castle.Stats.MercenariesHired));
     }
 
     [Fact]

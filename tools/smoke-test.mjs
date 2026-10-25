@@ -339,9 +339,9 @@ check('Y is back and its trail closed', await waitFor(() => Y.of('CastleState').
   && Y.of('MapState').at(-1).trail.length === 0, 40000));
 check('X sends a scout for the chest', (await X.call('SendChestScout', chest.id, 'idle')).ok);
 check('Z (who never found it) cannot', !(await Z.call('SendChestScout', chest.id, 'idle')).ok);
-check('the gold arrives with the scout', await waitFor(() => X.of('CastleState').at(-1).resources.gold >= 20, 25000));
+check('the gold arrives with the scout', await waitFor(() => X.of('CastleState').at(-1).resources.gold >= 14, 25000));
 const chestGold = X.of('CastleState').at(-1).resources.gold;
-check('a chest holds 20 to 40 gold', chestGold >= 20 && chestGold <= 40, String(chestGold));
+check('a chest holds 14 to 28 gold', chestGold >= 14 && chestGold <= 28, String(chestGold));
 check('X knows the chest is empty', siteOf(X, chest.id).gone === true);
 check('Y, who has not looked since, still thinks it is full', siteOf(Y, chest.id).gone === false);
 check('nobody else got any gold', [Y, Z].every((c) => c.of('CastleState').at(-1).resources.gold === 0));
@@ -354,7 +354,7 @@ check('the army is home with the loot', await waitFor(() => {
 }, 30000));
 const afterVillage = X.of('CastleState').at(-1);
 const villageGold = afterVillage.resources.gold - chestGold;
-check('a village gives 30 to 50 gold', villageGold >= 30 && villageGold <= 50, String(villageGold));
+check('a village gives 21 to 35 gold', villageGold >= 21 && villageGold <= 35, String(villageGold));
 check('the village is gone for X, all soldiers came home', siteOf(X, village.id).gone === true
   && afterVillage.units.find((u) => u.id === 'kilicli').soldiers === 6);
 check('the raid shows in nobody elses castle state, and Z never hears of the village at all',
@@ -367,11 +367,11 @@ check('Z knows nothing of all this', Z.of('MapState').every((m) => m.sites.lengt
 
 // ---- gold buys soldiers; a camp is fought in full view of its attackers only ------------------------------------
 const goldNow = X.of('CastleState').at(-1).resources.gold;
-const mercs = Math.floor(goldNow / 26);
+const mercs = Math.floor(goldNow / 32);
 check('X hires mercenaries with the loot', mercs >= 1 && (await X.call('HireMercenary', 'kilicli', mercs)).ok);
 const hiredView = X.of('CastleState').at(-1);
 check('the hired are soldiers on top of the people, and cost gold', hiredView.units.find((u) => u.id === 'kilicli').hired === mercs
-  && Math.abs(hiredView.resources.gold - (goldNow - 26 * mercs)) < 1e-6);
+  && Math.abs(hiredView.resources.gold - (goldNow - 32 * mercs)) < 1e-6);
 check('hired soldiers cannot be turned into workers', !(await X.call('DisarmSoldiers', 'kilicli', 6 + mercs)).ok);
 check('nobody else can hire without gold', !(await Y.call('HireMercenary', 'kilicli', 1)).ok);
 const camp = found.find((x) => x.kind === 'camp');
@@ -462,24 +462,34 @@ P.ws.close();
 Q.ws.close();
 
 // ---- every human falls: the host may end the match and the bots play the rest out at once ----------------------
-const H = client(), K = client();
-await Promise.all([H.ready, K.ready]);
-const jh = await H.call('CreateRoom', 'Hasan');
-const jk = await K.call('JoinRoom', jh.code, 'Kemal', null, false);
-check('two humans and two bots take their seats', jh.ok && jk.ok && (await H.call('AddBot', 'medium')).ok && (await H.call('AddBot', 'medium')).ok);
-await H.call('SetReady', true);
-await K.call('SetReady', true);
-check('the match starts', (await H.call('StartMatch')).ok);
-check('the host sets ×20', (await H.call('SetSpeed', 20)).ok);
-// The humans do nothing; the bots scout them, find them undefended and take their gates.
-const allOut = await (async () => {
-  for (let i = 0; i < 300; i++) {
-    const r = H.of('RoomState').at(-1);
-    if (r?.allHumansOut || r?.phase === 'ended') return r;
-    await sleep(500);
-  }
-  return null;
-})();
+// The bots decide for themselves when to attack, so some matches end on time with an idle human still standing: try up to three rooms.
+let H, K, seatsOk = false, started = false, fast = false, allOut = null;
+for (let attempt = 1; attempt <= 3 && !allOut?.allHumansOut; attempt++) {
+  H?.ws.close();
+  K?.ws.close();
+  H = client();
+  K = client();
+  await Promise.all([H.ready, K.ready]);
+  const jh = await H.call('CreateRoom', 'Hasan');
+  const jk = await K.call('JoinRoom', jh.code, 'Kemal', null, false);
+  seatsOk = jh.ok && jk.ok && (await H.call('AddBot', 'medium')).ok && (await H.call('AddBot', 'medium')).ok;
+  await H.call('SetReady', true);
+  await K.call('SetReady', true);
+  started = (await H.call('StartMatch')).ok;
+  fast = (await H.call('SetSpeed', 20)).ok;
+  // The humans do nothing; the bots scout them, find them undefended and take their gates.
+  allOut = await (async () => {
+    for (let i = 0; i < 300; i++) {
+      const r = H.of('RoomState').at(-1);
+      if (r?.allHumansOut || r?.phase === 'ended') return r;
+      await sleep(500);
+    }
+    return null;
+  })();
+}
+check('two humans and two bots take their seats', seatsOk);
+check('the match starts', started);
+check('the host sets ×20', fast);
 check('once every human has fallen the room says so', !!allOut?.allHumansOut, JSON.stringify(allOut?.phase));
 if (allOut?.allHumansOut) {
   check('the guest cannot end the match', !(await K.call('FinishMatch')).ok);

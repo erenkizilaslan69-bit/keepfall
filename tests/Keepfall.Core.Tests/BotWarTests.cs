@@ -11,9 +11,10 @@ namespace Keepfall.Core.Tests;
 /// <summary>Attack and defence: what the bot does in the war, and when.</summary>
 public class BotWarTests
 {
-    private static readonly GameRules Rules = BalanceConfigLoader.LoadFromFile(
+    // Easy is pinned to the plain poor bot (see PoorBotRules); Medium is whatever balance.json says.
+    private static readonly GameRules Rules = PoorBotRules.From(BalanceConfigLoader.LoadFromFile(
         BalanceConfigLoader.FindDefaultPath(AppContext.BaseDirectory)
-        ?? throw new InvalidOperationException("config/balance.json bulunamadı."));
+        ?? throw new InvalidOperationException("config/balance.json bulunamadı.")));
 
     private static UnitType U(string id) => Rules.FindUnit(id)!;
 
