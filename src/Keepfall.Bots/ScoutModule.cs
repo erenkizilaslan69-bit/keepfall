@@ -42,7 +42,7 @@ public sealed class ScoutModule : IBotModule
         }
 
         // 3. spy on the rivals once the army is being built; the one we know least about first.
-        double interval = ctx.AtWar ? (medium ? 70 : 300) : medium ? 150 : 400;
+        double interval = ctx.AtWar ? (medium ? 50 : 300) : medium ? 150 : 400;
         double from_ = medium ? 0.35 : 0.6;
         if (ctx.AtWar || ctx.PrepProgress >= from_)
         {

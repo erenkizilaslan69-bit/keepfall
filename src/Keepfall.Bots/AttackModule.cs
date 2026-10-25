@@ -19,7 +19,9 @@ public sealed class AttackModule : IBotModule
         bool medium = ctx.Level.Calculates;
         if (c.War.Armies.Any(a => a.SiteId is null && a.Mode == ArmyMode.Attack && a.State == ArmyState.Marching)) return; // one assault at a time
 
-        double maxAge = medium ? 120 : 400;
+        var botRules = ctx.Rules.Bots;
+        double maxAge = medium ? botRules.StaleReportSeconds : 400;
+        bool mayGoBlind = medium && botRules.BlindMargin > 0;
         double keep = ctx.Level.KeepHome;
         var home = c.Units.ToDictionary(u => u.Id, u => ctx.HomeSoldiers(u.Id));
         int homeTotal = home.Values.Sum();
@@ -31,8 +33,24 @@ public sealed class AttackModule : IBotModule
         int wanted = 0;
         foreach (var target in c.Scouting.Targets.Where(t => ctx.Rivals.Any(r => r.Seat == t.Seat)))
         {
-            if (ctx.EstimateOf(target.Seat) is not { } est) { ctx.Stats.Count("attackNoReport"); continue; }
-            if (ctx.Now - est.At > maxAge) { ctx.Stats.Count("attackStaleReport"); continue; }
+            // No fresh report: a good bot goes on what it last knew (or on its own army's size) but expects more of the rival.
+            double doubt = 0;
+            var est = ctx.EstimateOf(target.Seat);
+            if (est is null)
+            {
+                ctx.Stats.Count("attackNoReport");
+                if (!mayGoBlind) continue;
+                est = new RivalEstimate(OwnShare(ctx, botRules.BlindRivalShare), ctx.Now, false);
+                doubt = botRules.BlindMargin;
+                ctx.Stats.Count("attackBlind");
+            }
+            else if (ctx.Now - est.At > maxAge)
+            {
+                ctx.Stats.Count("attackStaleReport");
+                if (!mayGoBlind) continue;
+                doubt = botRules.BlindMargin;
+                ctx.Stats.Count("attackBlind");
+            }
             var guess = Grow(est, ctx.Now, medium);
             int needed;
             if (medium)
@@ -40,7 +58,7 @@ public sealed class AttackModule : IBotModule
                 // The longer the war has gone on without a result the more it is willing to risk (the winner is whoever has the most people).
                 var rules = ctx.Rules.Bots;
                 double bold = ctx.Level.ScoreAware ? 1 : Math.Max(0, ctx.WarProgress - 0.3) / 0.7;
-                var enemy = Tactics.Setup(ctx, "Savunma", Scale(guess, rules.AttackMargin - (rules.AttackMargin - 1.0) * bold));
+                var enemy = Tactics.Setup(ctx, "Savunma", Scale(guess, (rules.AttackMargin - (rules.AttackMargin - 1.0) * bold) * (1 + doubt)));
                 needed = Tactics.SmallestWinning(ctx, spare, enemy, rules.AttackRate - 0.25 * bold).Needed;
                 if (needed == 0) wanted = wanted == 0 ? guess.Values.Sum() : Math.Min(wanted, guess.Values.Sum());
             }
@@ -99,6 +117,13 @@ public sealed class AttackModule : IBotModule
             if (damage * 0.7 >= hp) return n; // about 70 % of them are still standing at the gate
         }
         return total;
+    }
+
+    /// <summary>With nothing known of a rival: this share of the soldiers we have ourselves (at home and out), in our own mix.</summary>
+    private static Dictionary<string, int> OwnShare(BotContext ctx, double share)
+    {
+        var away = ctx.Castle.War.Armies.SelectMany(a => a.Units).GroupBy(u => u.UnitId).ToDictionary(g => g.Key, g => g.Sum(u => u.Count));
+        return ctx.Castle.Units.ToDictionary(u => u.Id, u => (int)Math.Round((u.Soldiers + away.GetValueOrDefault(u.Id)) * share));
     }
 
     /// <summary>A rival has been making soldiers since we looked: about one more every 45 seconds, in the proportion it had (a good bot allows for it).</summary>

@@ -67,6 +67,9 @@ public sealed class BotsConfig
     public double AttackMargin { get; set; } = 1.2;
     public double AttackRate { get; set; } = 0.85;
     public double OtherQuartersFrom { get; set; } = 0.5;
+    public double StaleReportSeconds { get; set; } = 120;
+    public double BlindMargin { get; set; }
+    public double BlindRivalShare { get; set; } = 0.8;
 }
 
 public sealed class BotLevelConfig
@@ -460,7 +463,8 @@ public static class BalanceConfigLoader
                 new CampRules(fo.Camp.Bandits, fo.Camp.GoldMin, fo.Camp.GoldMax, fo.Camp.Weapons, fo.Camp.WoodMin, fo.Camp.WoodMax),
                 new CampRules(fo.BigCamp.Bandits, fo.BigCamp.GoldMin, fo.BigCamp.GoldMax, fo.BigCamp.Weapons, fo.BigCamp.WoodMin, fo.BigCamp.WoodMax)),
             new BotRules(BotLevel(config.Bots.Easy, false), BotLevel(config.Bots.Medium, true), config.Bots.Mix, config.Bots.WeaponsFrom, config.Bots.ArmFrom, config.Bots.ArmyShare,
-                config.Bots.AttackMargin, config.Bots.AttackRate, config.Bots.OtherQuartersFrom));
+                config.Bots.AttackMargin, config.Bots.AttackRate, config.Bots.OtherQuartersFrom,
+                config.Bots.StaleReportSeconds, config.Bots.BlindMargin, config.Bots.BlindRivalShare));
     }
 
     private static BotLevelRules BotLevel(BotLevelConfig c, bool good) => new(c.ThinkMin, c.ThinkMax, c.ReactMin, c.ReactMax, c.Commands, c.Mistake, c.Slack, c.EcoMistake < 0 ? c.Mistake : c.EcoMistake,

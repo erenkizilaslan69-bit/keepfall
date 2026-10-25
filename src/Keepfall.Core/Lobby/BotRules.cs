@@ -30,9 +30,13 @@ public sealed record BotLevelRules(double ThinkMin, double ThinkMax, double Reac
 /// <param name="ArmyShare">The most of its people it lets become soldiers (the rest keep the castle fed and forging).</param>
 /// <param name="AttackMargin">A good bot expects this many times what the last report says (reports are approximate and out of date).</param>
 /// <param name="AttackRate">…and goes only if its army wins at least this share of the fights it calculates.</param>
+/// <param name="StaleReportSeconds">A good bot trusts a report (or a siege it fought) no longer than this.</param>
+/// <param name="BlindMargin">…after that, or with no report at all, it may still attack on its last knowledge (or, with none, on its own army's size) if it demands this much more (0 = it waits for a fresh report).</param>
+/// <param name="BlindRivalShare">With no report at all it guesses a rival has this share of its own army.</param>
 /// <param name="OtherQuartersFrom">Share of the preparation after which a bot may tour and raid other players' quarters of the forest (before that: only its own; the big camp in the middle waits too).</param>
 public sealed record BotRules(BotLevelRules Easy, BotLevelRules Medium, IReadOnlyDictionary<string, double> Mix, double WeaponsFrom, double ArmFrom, double ArmyShare,
-    double AttackMargin = 1.2, double AttackRate = 0.85, double OtherQuartersFrom = 0.5)
+    double AttackMargin = 1.2, double AttackRate = 0.85, double OtherQuartersFrom = 0.5,
+    double StaleReportSeconds = 120, double BlindMargin = 0, double BlindRivalShare = 0.8)
 {
     public static readonly BotRules Default = new(
         new BotLevelRules(6, 10, 8, 15, 2, 0.25, 2, 0.25, false, false, 1, 1, 1, false, 2, 0.1, 1.0, false, false), new BotLevelRules(2, 3, 3, 6, 4, 0.05, 1, 0.05),

@@ -132,7 +132,13 @@
     "attackMargin": 1.2,
     "attackRate": 0.85,
     // Hazırlığın bu oranına kadar botlar yalnız kendi orman çeyreklerinde gezer ve yağmalar (ortadaki büyük kamp ve başka çeyrekler sonra).
-    "otherQuartersFrom": 0.5
+    "otherQuartersFrom": 0.5,
+    // Orta bot bir rapora (ya da kapıda dövüştüğü son kuşatmaya) en çok staleReportSeconds saniye güvenir. Eskiyse ya da hiç yoksa,
+    // son bildiğiyle (hiç yoksa kendi ordusunun blindRivalShare katını rakip sanarak) yine saldırabilir, ama beklediği düşman
+    // (1 + blindMargin) kat büyük sayılır.
+    "staleReportSeconds": 180,
+    "blindMargin": 0.3,
+    "blindRivalShare": 0.8
   },
 
   // Excel "Maç" sekmesi: gözcü.
