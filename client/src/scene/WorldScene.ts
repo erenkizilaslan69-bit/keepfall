@@ -250,10 +250,11 @@ export class WorldScene extends Phaser.Scene {
       else this.applyOtherPicture(c);
     }
     // Armies, scouts and battles come as what others see of each other, but all of them; the clock is the picture's.
-    const map: MapStateView = { elapsedSeconds: frame.elapsedSeconds, vision: [], own: [], seen: frame.movers, battles: frame.battles, trail: [], sites: [] };
+    const map: MapStateView = { elapsedSeconds: frame.elapsedSeconds, vision: [], own: [], seen: frame.movers, battles: frame.battles, trail: [], sites: frame.sites };
     this.map = map;
     this.movers.sync(map);
     this.syncMarkers(map);
+    this.sites.sync(frame.sites, frame.elapsedSeconds);
     this.clock = { elapsed: frame.elapsedSeconds, at: performance.now(), speed: this.state?.speed ?? 1 };
   }
 

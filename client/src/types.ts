@@ -261,6 +261,8 @@ export interface SpectatorCastleView {
 }
 export interface SpectatorStateView {
   elapsedSeconds: number; castles: SpectatorCastleView[]; movers: SeenMoverView[]; battles: BattleMarkerView[]; started: BattleStartedView[];
+  /** Every place of the forest with its true state. */
+  sites: SiteView[];
 }
 /** Before the first picture: how many game seconds until the view starts. */
 export interface SpectatorWaitView { startsIn: number }

@@ -411,6 +411,8 @@ check('every picture is of the live game (no delay)', frames.every((f) => f.elap
 check('pictures arrive in order', frames.every((f, i) => i === 0 || f.elapsedSeconds > frames[i - 1].elapsedSeconds));
 check('a picture has every castle, inside', frames.every((f) => f.castles.length === 3
   && f.castles.every((c) => c.buildings.length > 0 && c.jobs.length > 0 && c.units.length > 0)));
+check('a picture shows every place of the forest with its true state', frames.every((f) => f.sites.length === 17)
+  && frames.at(-1).sites.find((x) => x.id === chest.id)?.gone === true && frames.at(-1).sites.find((x) => x.id === village.id)?.gone === true);
 check('a picture says who has fallen', frames.at(-1).castles.find((c) => c.seat === 2).eliminated
   && !frames.at(-1).castles.find((c) => c.seat === 1).eliminated);
 const exact = frames.filter((f) => X.of('CastleState').some((c) => c.elapsedSeconds === f.elapsedSeconds));

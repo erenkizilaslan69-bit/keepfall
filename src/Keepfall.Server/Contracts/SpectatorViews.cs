@@ -1,6 +1,7 @@
 using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
 using Keepfall.Core.Units;
+using Keepfall.Core.World;
 
 namespace Keepfall.Server.Contracts;
 
@@ -18,9 +19,10 @@ public sealed record SpectatorCastleView(
 /// <param name="Movers">Every army and scout; they carry no route, like what a player sees of others.</param>
 /// <param name="Battles">Every battle going on.</param>
 /// <param name="Started">Battles that began since the previous picture, with their records, to be replayed.</param>
+/// <param name="Sites">Every place of the forest with its true state (a spectator needs no scout).</param>
 public sealed record SpectatorStateView(
     double ElapsedSeconds, IReadOnlyList<SpectatorCastleView> Castles, IReadOnlyList<SeenMoverView> Movers,
-    IReadOnlyList<BattleMarkerView> Battles, IReadOnlyList<BattleStartedView> Started);
+    IReadOnlyList<BattleMarkerView> Battles, IReadOnlyList<BattleStartedView> Started, IReadOnlyList<SiteView> Sites);
 
 /// <summary>"The view starts in this many (game) seconds": all a fallen player gets before the first picture.</summary>
 public sealed record SpectatorWaitView(double StartsIn);
@@ -47,7 +49,10 @@ public static class SpectatorMapper
         return new SpectatorStateView(
             game.ElapsedSeconds, castles, movers,
             game.ActiveBattles.Select(b => new BattleMarkerView(b.PublicId, VecView.Of(b.Position))).ToList(),
-            game.TakeAllStartedBattles().Select(b => MapViewMapper.BattleOf(room, game, b)).ToList());
+            game.TakeAllStartedBattles().Select(b => MapViewMapper.BattleOf(room, game, b)).ToList(),
+            game.AllSites.Select(s => new SiteView(s.Site.Id, s.Site.Kind, VecView.Of(s.Site.Position), s.Site.Spur.Select(VecView.Of).ToList(),
+                s.Site.Quadrant, s.Gone, Units(s.Bandits), 0, game.ElapsedSeconds,
+                s.Site.Kind == SiteKind.Village ? game.Rules.Forest.Village.MinSoldiers : 0)).ToList());
     }
 
     private static List<ArmyUnitView> Units(IReadOnlyDictionary<UnitType, int> units) =>

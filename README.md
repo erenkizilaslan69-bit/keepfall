@@ -16,6 +16,12 @@ Tarayıcıda oynanır. Tüm oyun mantığı sunucudadır; istemci yalnızca komu
 - Demirhane silah üretir; silah verilen işçi asker olur: okçu, kılıçlı, mızrakçı, kalkanlı.
 - Nüfus otomatik büyür; her yeni kişi bir öncekinden pahalıdır ve yemek rezervi korunur.
 - Gözcü gönderip rakibin askerlerini ve bina seviyelerini öğrenebilirsin; rapor yaklaşıktır (±%20, en az ±1). Gözcü dönünce üstte "Gözcün döndü" şeridi çıkar (tıklayınca rapor açılır); son rapor rakibin kalesinin altındaki tabelada (asker simgeleri, yaklaşık sayılar, "N dk önce") ve sol alttaki rapor etiketlerinde kalır.
+- **Orman:** Haritanın ortasındaki orman dört çeyreğe bölünür; her köşe kendi çeyreğinde aynı sayıda ve türde yer alır (köşe başına 2 sandık, 1 köy, 1 haydut kampı; ortada büyük kamp). Yerleşim her maç rastgele ama adildir: her yuva için tek bir yol uzaklığı çekilir, her köşe aynısını kullanır (testle denetlenir). Yerler yoldan patikalarla ayrılır; **kimseye bildirilmez**, ancak bir gözcü o çeyreği keşfederse (ormana tıkla → "Bu bölgeyi keşfet"; kendi çeyreğin yakın, rakip çeyrekleri uzak, ortadaki büyük kamp her keşifte görünür) o oyuncuya gider ve haritada kalır. Başkası bir yeri boşaltırsa, onu tekrar canlı görene kadar eski haliyle görürsün.
+  - **Sandık:** gözcü gider, altını alır ve eve dönünce kasaya girer (20–40 altın; ilk gelen alır).
+  - **Köy:** en az 3 askerle savaşsız yağmalanır (altın + 2–4 kişi, ordu eve dönünce gelir); yağmalanınca yok olur.
+  - **Haydut kampı:** görünür bir savaş (hazırlıkta da): kazanırsan altın ve hazır silahlar eve dönünce gelir, kaybedersen kamp kalan haydutlarla kalır. Ortadaki büyük kamp en zengin ödülü ve en güçlü haydutları taşır.
+  - **Altın ve paralı asker:** kale penceresindeki "Kirala" sekmesinde altınla anında asker kiralanır (fiyatlar `balance.json` → `mercenary`); işçiden eksilmez, nüfusa sayılır, yemek yer ve bir daha işçi olamaz.
+  - Hazırlık fazında orman akınları yapılabilir; kalelere saldırı yalnız savaşta, ve hazırlıkta farklı oyuncuların orduları yolda karşılaşmaz. Sayılar `config/balance.json` → `forest`.
 - **Gözcü izi:** Gözcünün yürüdüğü yolun çevresi (gözcü görüşü kadar) geçtikten sonra `map.scoutTrailSeconds` (120 sn; 0 = maç sonuna kadar) canlı görüşte kalır, son 10 sn'de soluklaşarak kapanır; bu alandan geçen ordular, gözcüler ve savaşlar görünür. Rakibin kale bölgesinin içini açmaz: kalenin içi yalnızca raporla öğrenilir.
 
 **Savaş: harita**
