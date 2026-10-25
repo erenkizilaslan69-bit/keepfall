@@ -1,5 +1,6 @@
 import { botMark, clock, esc, fmt, rate } from '../format';
 import type { CastleView, PlayerView, RoomView } from '../types';
+import { ago, soldiersHtml } from './scout-report';
 
 // The strip along the top that is always there: resources with their rates, population, the clock and
 // phase, the castle's health and who is playing. Built once and updated in place.
@@ -11,12 +12,15 @@ export interface TopBarEvents {
   speed: (n: number) => void;
   /** A player chip was clicked (opens that castle's window). */
   player: (seat: number) => void;
+  /** The summary of a rival's last scout report was clicked (opens the whole report). */
+  report: (seat: number) => void;
 }
 
 export class TopBar {
   private readonly el: HTMLElement;
   private playersKey = '';
   private room: RoomView | null = null;
+  private castle: CastleView | null = null;
   private mySeat = 0;
 
   constructor(parent: HTMLElement, private readonly events: TopBarEvents) {
@@ -50,6 +54,8 @@ export class TopBar {
       if (speed) this.events.speed(Number(speed.dataset.speed));
       const player = t.closest<HTMLElement>('[data-seat]');
       if (player) this.events.player(Number(player.dataset.seat));
+      const report = t.closest<HTMLElement>('[data-report-seat]');
+      if (report) this.events.report(Number(report.dataset.reportSeat));
     });
   }
 
@@ -66,6 +72,8 @@ export class TopBar {
   }
 
   update(s: CastleView): void {
+    this.castle = s;
+    this.renderReports(s);
     const set = (key: string, value: string, hint: string, cls = '') => {
       const r = this.q(`[data-r="${key}"]`);
       r.querySelector('b')!.textContent = value;
@@ -117,7 +125,25 @@ export class TopBar {
     const key = players.map((p) => `${p.seat}:${p.name}:${p.color}:${p.connected}:${p.eliminated}:${p.isBot}`).join(',');
     if (key === this.playersKey) return;
     this.playersKey = key;
-    this.q('[data-f="players"]').innerHTML = players.map((p) => chip(p, p.seat === this.mySeat)).join('');
+    this.q('[data-f="players"]').innerHTML = players.map((p) => `<span class="pcol" data-pcol="${p.seat}">${chip(p, p.seat === this.mySeat)}<span class="prep hidden"></span></span>`).join('');
+    if (this.castle) this.renderReports(this.castle);
+  }
+
+  /** Under each rival: what their last scout report said, in short (soldier icons, rough counts, how old); a click opens the report. */
+  private renderReports(s: CastleView): void {
+    for (const col of this.el.querySelectorAll<HTMLElement>('[data-pcol]')) {
+      const seat = Number(col.dataset.pcol);
+      const slot = col.querySelector<HTMLElement>('.prep')!;
+      const report = s.scouting.reports.find((r) => r.targetSeat === seat);
+      const html = report ? `${soldiersHtml(report)}<small class="muted-ink">${ago(report, s.elapsedSeconds)}</small>` : '';
+      if (slot.dataset.html !== html) {
+        slot.dataset.html = html;
+        slot.innerHTML = html;
+        if (report) slot.dataset.reportSeat = String(seat); else delete slot.dataset.reportSeat;
+        slot.title = report ? 'Son gözcü raporu — ayrıntı için tıkla' : '';
+      }
+      slot.classList.toggle('hidden', !report);
+    }
   }
 
   private q<T extends HTMLElement = HTMLElement>(selector: string): T {

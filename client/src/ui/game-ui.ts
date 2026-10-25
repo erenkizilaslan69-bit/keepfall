@@ -97,6 +97,10 @@ export class GameUi {
         this.scene?.focus(target);
         this.open(target);
       },
+      report: (seat) => {
+        const report = this.castle?.scouting.reports.find((r) => r.targetSeat === seat);
+        if (report) this.reports.showScout(report);
+      },
     });
     this.bar.setSeat(seat);
     this.notes = new Notifications(this.top);
@@ -162,7 +166,7 @@ export class GameUi {
     this.castle = s;
     this.windows.update({ castle: s, room: this.room });
     this.bar.update(s);
-    this.reports.update(s.war.battles, s.scouting.reports, s.elapsedSeconds);
+    this.reports.update(s.war.battles, s.elapsedSeconds);
     const reports = s.scouting.reports;
     if (this.scoutsSeen) {
       for (const r of reports.filter((x) => !this.scoutsSeen!.has(scoutKey(x))))

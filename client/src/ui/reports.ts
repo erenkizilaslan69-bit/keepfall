@@ -1,15 +1,16 @@
 import { botMark, esc } from '../format';
 import type { BattleReportView, ScoutReportView } from '../types';
 import { dot, reportHtml, resultWord } from './report-html';
-import { scoutKey, scoutReportHtml } from './scout-report';
+import { scoutReportHtml } from './scout-report';
 
-// Battle and scout reports as small tags in the bottom-left corner (the four latest); a click opens the whole
-// report in the middle of the screen. A new report is never opened for you, its tag just flashes, so
-// the fight you are watching is not covered.
+// Battle reports as small tags in the bottom-left corner (the four latest); a click opens the whole report in the
+// middle of the screen. A new report is never opened for you, its tag just flashes, so the fight you are watching
+// is not covered. Scout reports are not tags: each rival's last one is summarised in the top bar, and this window
+// shows one in full (from there or from the "scout is back" ribbon).
 
 const MAX_TAGS = 4;
 
-type Item = { key: string; at: number; battle?: BattleReportView; scout?: ScoutReportView };
+type Item = { key: string; at: number; battle: BattleReportView };
 
 export class ReportTags {
   private readonly tags: HTMLElement;
@@ -28,8 +29,7 @@ export class ReportTags {
     this.tags.addEventListener('click', (e) => {
       const key = (e.target as HTMLElement).closest<HTMLElement>('[data-report]')?.dataset.report;
       const item = this.items.find((i) => i.key === key);
-      if (item?.battle) this.open(reportHtml(item.battle));
-      else if (item?.scout) this.showScout(item.scout);
+      if (item) this.open(reportHtml(item.battle));
     });
     this.modal.addEventListener('click', (e) => {
       if (e.target === this.modal || (e.target as HTMLElement).closest('[data-close]')) this.close();
@@ -42,13 +42,10 @@ export class ReportTags {
     this.modal.classList.add('hidden');
   }
 
-  /** The latest battle reports (newest first, as the server sends them) and the scouts' latest report per rival. */
-  update(battles: BattleReportView[], scouts: ScoutReportView[] = [], now = 0): void {
+  /** The latest battle reports (newest first, as the server sends them); <paramref name="now"/> ages the scout report shown by <see cref="showScout"/>. */
+  update(battles: BattleReportView[], now = 0): void {
     this.now = now;
-    this.items = [
-      ...battles.map((b): Item => ({ key: `b${b.id}`, at: b.at, battle: b })),
-      ...scouts.map((r): Item => ({ key: `s${scoutKey(r)}`, at: r.deliveredAt, scout: r })),
-    ].sort((a, b) => b.at - a.at);
+    this.items = battles.map((b): Item => ({ key: `b${b.id}`, at: b.at, battle: b })).sort((a, b) => b.at - a.at);
     const keys = new Set(this.items.map((i) => i.key));
     const fresh = this.seen === null ? new Set<string>() : new Set([...keys].filter((k) => !this.seen!.has(k)));
     this.seen = new Set([...(this.seen ?? []), ...keys]);
@@ -58,22 +55,15 @@ export class ReportTags {
     this.key = key;
     this.tags.innerHTML = shown.map((i) => {
       const f = fresh.has(i.key) ? 'fresh' : '';
-      if (i.battle) {
-        const b = i.battle;
-        return `<button class="report-tag paper hit ${b.winner === 'draw' ? 'draw' : b.youWon ? 'won' : 'lost'} ${f}" data-report="${i.key}" title="Savaş raporunu aç">
-          <i class="ico ico-sword"></i>
-          <span>${dot(b.opponentColor)}${botMark(b.opponentSeat)}${esc(b.opponentName)} · <b>${resultWord(b)}</b></span>
-        </button>`;
-      }
-      const r = i.scout!;
-      return `<button class="report-tag paper hit scout ${f}" data-report="${i.key}" title="Gözcü raporunu aç">
-        <i class="ico ico-info"></i>
-        <span>${dot(r.targetColor)}${botMark(r.targetSeat)}${esc(r.targetName)} · <b>gözcü raporu</b></span>
+      const b = i.battle;
+      return `<button class="report-tag paper hit ${b.winner === 'draw' ? 'draw' : b.youWon ? 'won' : 'lost'} ${f}" data-report="${i.key}" title="Savaş raporunu aç">
+        <i class="ico ico-sword"></i>
+        <span>${dot(b.opponentColor)}${botMark(b.opponentSeat)}${esc(b.opponentName)} · <b>${resultWord(b)}</b></span>
       </button>`;
     }).join('');
   }
 
-  /** A scout's report in the middle of the screen (from its tag, or from the "scout is back" ribbon). */
+  /** A scout's report in the middle of the screen (from the top bar, or from the "scout is back" ribbon). */
   showScout(r: ScoutReportView): void {
     this.open(scoutReportHtml(r, this.now));
   }
