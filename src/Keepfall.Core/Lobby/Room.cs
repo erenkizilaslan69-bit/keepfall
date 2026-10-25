@@ -25,6 +25,10 @@ public sealed record RoomOptions
     public bool AllowSpeedControl { get; init; }
     public double? PrepSeconds { get; init; }
     public double? WarSeconds { get; init; }
+    /// <summary>Tests and the bot simulator: makes the whole match (corners, battles, forest) follow from this number. Null: random.</summary>
+    public int? Seed { get; init; }
+    /// <summary>Tests: a different forest with everything else (corners, battles) as <see cref="Seed"/> makes it.</summary>
+    public int? ForestSeed { get; init; }
 }
 
 /// <summary>
@@ -103,7 +107,7 @@ public sealed class Room
     public RoomPlayer? PlayerOfCastle(string castleKey) => _players.FirstOrDefault(p => p.CastleKey == castleKey);
 
     /// <summary>Castle key of the player in <paramref name="seat"/> (for commands that name another player).</summary>
-    public static string CastleKeyOf(int seat) => $"o{seat}";
+    public static string CastleKeyOf(int seat) => CastleKeys.Of(seat);
 
     /// <summary>The player's new notifications as text, e.g. "Kırmızı'nın gözcüsü kaleni gözetledi."</summary>
     public IReadOnlyList<string> TakeNotifications(RoomPlayer player)
@@ -270,7 +274,12 @@ public sealed class Room
         if (p.Seat != HostSeat) return CommandResult.Fail("Maçı sadece odayı kuran başlatabilir.");
         if (_players.Count < Options.MinPlayers) return CommandResult.Fail($"En az {Options.MinPlayers} oyuncu gerekiyor (botlar da sayılır).");
         if (!_players.All(x => x.Ready && x.Connected)) return CommandResult.Fail("Herkes hazır değil.");
-        Game = new GameState(_rules, _players.Select(x => x.CastleKey), Options.PrepSeconds, Options.WarSeconds);
+        var keys = _players.Select(x => x.CastleKey).ToList();
+        if (Options.Seed is { } seed)
+            Game = new GameState(_rules, keys, Options.PrepSeconds, Options.WarSeconds, new Random(seed),
+                GameState.AssignCorners(keys, new Random(seed + 17)), Options.ForestSeed ?? new Random(seed + 31).Next());
+        else
+            Game = new GameState(_rules, keys, Options.PrepSeconds, Options.WarSeconds, forestSeed: Options.ForestSeed);
         Phase = RoomPhase.Preparation;
         return CommandResult.Success;
     });
@@ -328,11 +337,18 @@ public sealed class Room
         return CommandResult.Success;
     }
 
-    /// <summary>Advances the shared clock; returns true on the tick the match ends.</summary>
-    public bool Tick(double dt)
+    /// <summary>
+    /// Advances the shared clock; returns true on the tick the match ends. <paramref name="beforeTick"/> runs
+    /// before every simulated step (the bots play there).
+    /// </summary>
+    public bool Tick(double dt, Action<double>? beforeTick = null)
     {
         if (Phase is not (RoomPhase.Preparation or RoomPhase.War)) return false;
-        for (int i = 0; i < Speed && Game!.Phase != MatchPhase.Ended; i++) Game.Tick(dt);
+        for (int i = 0; i < Speed && Game!.Phase != MatchPhase.Ended; i++)
+        {
+            beforeTick?.Invoke(dt);
+            Game.Tick(dt);
+        }
         Phase = Game!.Phase switch
         {
             MatchPhase.Preparation => RoomPhase.Preparation,

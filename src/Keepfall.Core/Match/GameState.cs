@@ -105,9 +105,9 @@ public sealed class GameState
     /// always the one between two neighbours); four fill the map. Who gets which is random too.
     /// Uses its own randomness, so a seeded match plays its battles the same whatever the corners.
     /// </summary>
-    public static Dictionary<string, Corner> AssignCorners(IReadOnlyList<string> players)
+    public static Dictionary<string, Corner> AssignCorners(IReadOnlyList<string> players, Random? random = null)
     {
-        var rng = new Random(RandomNumberGenerator.GetInt32(int.MaxValue));
+        var rng = random ?? new Random(RandomNumberGenerator.GetInt32(int.MaxValue));
         Corner[] pool = players.Count == 2
             ? rng.Next(2) == 0 ? [Corner.NorthWest, Corner.SouthEast] : [Corner.NorthEast, Corner.SouthWest]
             : [Corner.NorthWest, Corner.NorthEast, Corner.SouthWest, Corner.SouthEast];

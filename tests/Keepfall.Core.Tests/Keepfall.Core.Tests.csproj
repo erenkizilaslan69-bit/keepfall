@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -20,6 +20,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Keepfall.Core\Keepfall.Core.csproj" />
+    <ProjectReference Include="..\..\src\Keepfall.Views\Keepfall.Views.csproj" />
+    <ProjectReference Include="..\..\src\Keepfall.Bots\Keepfall.Bots.csproj" />
+    <ProjectReference Include="..\..\src\Keepfall.BotHost\Keepfall.BotHost.csproj" />
   </ItemGroup>
 
 </Project>

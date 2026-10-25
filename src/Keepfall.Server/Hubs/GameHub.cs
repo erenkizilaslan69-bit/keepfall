@@ -109,7 +109,7 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
         if (Bound() is not { } bound) return NotJoined;
         CommandResult result;
         lock (bound.Session.Lock)
-            result = bound.Session.Room.FinishMatch(bound.Token, rules.Match.ServerTickSeconds, _ => { });
+            result = bound.Session.Room.FinishMatch(bound.Token, rules.Match.ServerTickSeconds, dt => bound.Session.Bots.Step(bound.Session.Room, dt));
         if (result.Ok) await MatchPush.End(Clients, bound.Session);
         return new CommandResultView(result.Ok, result.Error);
     }

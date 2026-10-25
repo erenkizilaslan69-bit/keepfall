@@ -17,12 +17,14 @@ public sealed class KeepfallOptions
 }
 
 /// <summary>A room plus the lock that guards it. Every read or write of <see cref="Room"/> happens under <see cref="Lock"/>.</summary>
-public sealed class RoomSession(Room room)
+public sealed class RoomSession(Room room, GameRules rules)
 {
     public Room Room { get; } = room;
     public Lock Lock { get; } = new();
     /// <summary>The delayed pictures of the whole world that fallen players watch (guarded by <see cref="Lock"/>).</summary>
     public SpectatorFeed Spectators { get; } = new();
+    /// <summary>The room's computer players; run before every simulated step (guarded by <see cref="Lock"/>).</summary>
+    public Keepfall.BotHost.BotHost Bots { get; } = new(rules, Random.Shared.Next());
 }
 
 /// <summary>Room code → room.</summary>
@@ -44,7 +46,7 @@ public sealed class RoomRegistry(GameRules rules, Microsoft.Extensions.Options.I
         while (true)
         {
             var code = Tokens.NewRoomCode();
-            var session = new RoomSession(new Room(code, rules, roomOptions));
+            var session = new RoomSession(new Room(code, rules, roomOptions), rules);
             if (_rooms.TryAdd(code, session)) return session;
         }
     }

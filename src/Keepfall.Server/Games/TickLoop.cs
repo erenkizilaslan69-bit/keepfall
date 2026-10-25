@@ -54,7 +54,7 @@ public sealed class TickLoop(
             preparing = room.Phase is RoomPhase.Preparation or RoomPhase.War;
             if (preparing)
             {
-                ended = room.Tick(tickSeconds);
+                ended = room.Tick(tickSeconds, dt => session.Bots.Step(room, dt));
                 if (!ended)
                 {
                     // Fallen players watch the whole map (live, or as late as match.spectatorDelaySeconds says); nobody else ever gets this.

@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Keepfall.Core\Keepfall.Core.csproj" />
     <ProjectReference Include="..\Keepfall.Views\Keepfall.Views.csproj" />
+    <ProjectReference Include="..\Keepfall.BotHost\Keepfall.BotHost.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

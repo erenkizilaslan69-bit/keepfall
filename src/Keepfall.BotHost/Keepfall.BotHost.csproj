@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Seats the bots in a room: builds each bot's views like a player's, gives it to the bot and runs its commands
+       through Room.Execute (the same door as a human's). The server and the simulator both use this. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Keepfall.Core\Keepfall.Core.csproj" />
+    <ProjectReference Include="..\Keepfall.Views\Keepfall.Views.csproj" />
+    <ProjectReference Include="..\Keepfall.Bots\Keepfall.Bots.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

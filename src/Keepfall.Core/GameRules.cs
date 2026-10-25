@@ -1,3 +1,4 @@
+using Keepfall.Core.Lobby;
 using Keepfall.Core.Economy;
 using Keepfall.Core.Units;
 using Keepfall.Core.World;
@@ -17,8 +18,9 @@ public sealed class GameRules
 {
     public GameRules(IReadOnlyList<UnitType> units, CounterMatrix counters, CombatSettings combat, ProductionRates production,
         MatchRules match, EconomyRules economy, ScoutingRules scouting, WarRules war, MapRules map,
-        IReadOnlyDictionary<string, double>? mercenaryPrices = null, ForestRules? forest = null)
+        IReadOnlyDictionary<string, double>? mercenaryPrices = null, ForestRules? forest = null, BotRules? bots = null)
     {
+        Bots = bots ?? BotRules.Default;
         Forest = forest ?? ForestRules.None;
         MercenaryPrices = mercenaryPrices ?? new Dictionary<string, double>();
         Units = units;
@@ -42,6 +44,7 @@ public sealed class GameRules
     public WarRules War { get; }
     public MapRules Map { get; }
     public ForestRules Forest { get; }
+    public BotRules Bots { get; }
     /// <summary>Gold per soldier when hiring (by unit id); a unit without a price cannot be hired.</summary>
     public IReadOnlyDictionary<string, double> MercenaryPrices { get; }
 

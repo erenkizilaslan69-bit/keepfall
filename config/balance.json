@@ -102,6 +102,14 @@
     "bigCamp": { "bandits": { "kilicli": 8, "kalkanli": 4, "okcu": 4 }, "goldMin": 220, "goldMax": 300, "weapons": { "kilicli": 3, "mizrakci": 2, "okcu": 1 } }
   },
 
+  // Botlar (oda sahibi lobide ekler). Süreler OYUN saniyesidir (hız ×N olunca botlar da aynı oranda hızlanır).
+  // think: bot bu aralıkta bir süre bekleyip yeniden düşünür. react: yeni bir olayı (ordu uyarısı, rapor) bu kadar gecikmeyle fark eder.
+  // commands: bir düşünmede en fazla bu kadar komut verir.
+  "bots": {
+    "easy":   { "thinkMin": 6, "thinkMax": 10, "reactMin": 8, "reactMax": 15, "commands": 2 },
+    "medium": { "thinkMin": 2, "thinkMax": 3,  "reactMin": 3, "reactMax": 6,  "commands": 4 }
+  },
+
   // Excel "Maç" sekmesi: gözcü.
   // Gözcü hedefin kapısına yürür, raporu orada alır ve eve dönünce teslim eder.
   // Görevdeki gözcü çalışmaz ama yemek yer; dönünce boşta olur.

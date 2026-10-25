@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Keepfall.Core.Economy;
+using Keepfall.Core.Lobby;
 using Keepfall.Core.Units;
 using Keepfall.Core.World;
 
@@ -19,6 +20,7 @@ public sealed class BalanceConfig
     public MapConfig Map { get; set; } = new();
     public CombatConfig Combat { get; set; } = new();
     public ForestConfig Forest { get; set; } = new();
+    public BotsConfig Bots { get; set; } = new();
     /// <summary>Gold price of hiring one soldier of each unit type (by unit id).</summary>
     public Dictionary<string, double> Mercenary { get; set; } = [];
     public List<UnitConfig> Units { get; set; } = [];
@@ -50,6 +52,21 @@ public sealed class EconomyConfig
     public double NewPersonCostGrowth { get; set; }
     public int NewPersonBasePopulation { get; set; } = 10;
     public double GrowthReserveSeconds { get; set; }
+}
+
+public sealed class BotsConfig
+{
+    public BotLevelConfig Easy { get; set; } = new();
+    public BotLevelConfig Medium { get; set; } = new();
+}
+
+public sealed class BotLevelConfig
+{
+    public double ThinkMin { get; set; } = 3;
+    public double ThinkMax { get; set; } = 5;
+    public double ReactMin { get; set; } = 5;
+    public double ReactMax { get; set; } = 10;
+    public int Commands { get; set; } = 3;
 }
 
 public sealed class ForestConfig
@@ -247,6 +264,13 @@ public static class BalanceConfigLoader
         var sr = mc.StartingResources;
         if (sr.Food < 0 || sr.Wood < 0 || sr.Iron < 0) errors.Add("match.startingResources negatif olamaz.");
 
+        foreach (var (name, level) in new[] { ("easy", config.Bots.Easy), ("medium", config.Bots.Medium) })
+        {
+            if (level.ThinkMin <= 0 || level.ThinkMax < level.ThinkMin) errors.Add($"bots.{name}: thinkMin/thinkMax geçersiz.");
+            if (level.ReactMin < 0 || level.ReactMax < level.ReactMin) errors.Add($"bots.{name}: reactMin/reactMax geçersiz.");
+            if (level.Commands < 1) errors.Add($"bots.{name}: commands en az 1 olmalı.");
+        }
+
         var fo = config.Forest;
         if (fo.ChestsPerCorner < 0 || fo.VillagesPerCorner < 0 || fo.CampsPerCorner < 0) errors.Add("forest: nokta sayıları negatif olamaz.");
         if (fo.FootMin < 0 || fo.FootMax <= fo.FootMin || fo.FootMax > 14) errors.Add("forest.footMin/footMax: 0 ≤ min < max ≤ 14 olmalı.");
@@ -381,7 +405,10 @@ public static class BalanceConfigLoader
                 new ChestRules(fo.Chest.GoldMin, fo.Chest.GoldMax),
                 new VillageRules(fo.Village.GoldMin, fo.Village.GoldMax, fo.Village.PeopleMin, fo.Village.PeopleMax, fo.Village.MinSoldiers),
                 new CampRules(fo.Camp.Bandits, fo.Camp.GoldMin, fo.Camp.GoldMax, fo.Camp.Weapons),
-                new CampRules(fo.BigCamp.Bandits, fo.BigCamp.GoldMin, fo.BigCamp.GoldMax, fo.BigCamp.Weapons)));
+                new CampRules(fo.BigCamp.Bandits, fo.BigCamp.GoldMin, fo.BigCamp.GoldMax, fo.BigCamp.Weapons)),
+            new BotRules(
+                new BotLevelRules(config.Bots.Easy.ThinkMin, config.Bots.Easy.ThinkMax, config.Bots.Easy.ReactMin, config.Bots.Easy.ReactMax, config.Bots.Easy.Commands),
+                new BotLevelRules(config.Bots.Medium.ThinkMin, config.Bots.Medium.ThinkMax, config.Bots.Medium.ReactMin, config.Bots.Medium.ReactMax, config.Bots.Medium.Commands)));
     }
 
     private static double? ParseMultiplier(JsonElement value, CombatConfig c)

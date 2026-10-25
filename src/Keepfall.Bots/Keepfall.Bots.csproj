@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The bots' brains. They are given what a player is shown (Keepfall.Views records) and answer with the
+       commands a player can give. They must never touch the match itself: BotIsolationTests checks which
+       types this assembly refers to. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Keepfall.Core\Keepfall.Core.csproj" />
+    <ProjectReference Include="..\Keepfall.Views\Keepfall.Views.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

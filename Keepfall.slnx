@@ -4,6 +4,8 @@
     <Project Path="src/Keepfall.Core/Keepfall.Core.csproj" />
     <Project Path="src/Keepfall.Server/Keepfall.Server.csproj" />
     <Project Path="src/Keepfall.Views/Keepfall.Views.csproj" />
+    <Project Path="src/Keepfall.Bots/Keepfall.Bots.csproj" />
+    <Project Path="src/Keepfall.BotHost/Keepfall.BotHost.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Keepfall.Core.Tests/Keepfall.Core.Tests.csproj" />
