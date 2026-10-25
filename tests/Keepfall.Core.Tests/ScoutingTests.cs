@@ -95,10 +95,10 @@ public class ScoutingTests
         Ok(game.Execute(A, new SendScout(B)));
         var again = game.Execute(A, new SendScout(B));
         Assert.False(again.Ok);
-        Ok(game.Execute(A, new SendScout(C)));               // another target is fine
-        Ok(game.Execute(C, new SendScout(B)));               // and so is another player's scout
+        Assert.False(game.Execute(A, new SendScout(C)).Ok);  // one scout at a time: the first is not home yet
+        Ok(game.Execute(C, new SendScout(B)));               // another player's scout is fine
         Run(game, RoundTrip(game, A, B));
-        Ok(game.Execute(A, new SendScout(B)));               // after it is back: allowed again
+        Ok(game.Execute(A, new SendScout(C)));               // after it is back: the next may go
     }
 
     [Fact]

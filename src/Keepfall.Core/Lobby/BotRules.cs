@@ -30,8 +30,9 @@ public sealed record BotLevelRules(double ThinkMin, double ThinkMax, double Reac
 /// <param name="ArmyShare">The most of its people it lets become soldiers (the rest keep the castle fed and forging).</param>
 /// <param name="AttackMargin">A good bot expects this many times what the last report says (reports are approximate and out of date).</param>
 /// <param name="AttackRate">…and goes only if its army wins at least this share of the fights it calculates.</param>
+/// <param name="OtherQuartersFrom">Share of the preparation after which a bot may tour and raid other players' quarters of the forest (before that: only its own; the big camp in the middle waits too).</param>
 public sealed record BotRules(BotLevelRules Easy, BotLevelRules Medium, IReadOnlyDictionary<string, double> Mix, double WeaponsFrom, double ArmFrom, double ArmyShare,
-    double AttackMargin = 1.2, double AttackRate = 0.85)
+    double AttackMargin = 1.2, double AttackRate = 0.85, double OtherQuartersFrom = 0.5)
 {
     public static readonly BotRules Default = new(
         new BotLevelRules(6, 10, 8, 15, 2, 0.25, 2, 0.25, false, false, 1, 1, 1, false, 2, 0.1, 1.0, false, false), new BotLevelRules(2, 3, 3, 6, 4, 0.05, 1, 0.05),

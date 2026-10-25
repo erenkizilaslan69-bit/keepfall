@@ -169,6 +169,8 @@ export interface ScoutingView {
   missions: ScoutMissionView[];
   reports: ScoutReportView[];
   quarters: QuarterView[];
+  /** Most scouts out at once (one: a new one cannot leave before the one out is home). */
+  maxScouts: number;
 }
 
 export interface CastleView {

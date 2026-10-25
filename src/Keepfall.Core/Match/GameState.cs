@@ -351,6 +351,14 @@ public sealed class GameState
 
     // ---- scouting ----------------------------------------------------------------------------
 
+    /// <summary>One scout at a time (scouting.maxScouts): a new one cannot leave until the one out is home again.</summary>
+    private CommandResult ScoutsAvailable(string from)
+    {
+        var away = _missions.Where(m => m.From == from).ToList();
+        if (away.Count < Rules.Scouting.MaxScouts) return CommandResult.Success;
+        return CommandResult.Fail($"Gözcün henüz dönmedi (yaklaşık {Math.Ceiling(away.Min(m => m.SecondsLeft))} sn).");
+    }
+
     private CommandResult LaunchScout(string from, PlayerEconomy player, SendScout c)
     {
         if (c.TargetKey == from) return CommandResult.Fail("Kendi kaleni gözetleyemezsin.");
@@ -358,6 +366,7 @@ public sealed class GameState
         if (_eliminated.ContainsKey(c.TargetKey)) return CommandResult.Fail("Bu oyuncu elendi.");
         if (_missions.Any(m => m.From == from && m.Target == c.TargetKey))
             return CommandResult.Fail("Bu rakibe zaten bir gözcün gidiyor.");
+        if (ScoutsAvailable(from) is { Ok: false } busy) return busy;
         var sent = player.Castle.SendScout(c.From);
         if (!sent.Ok) return sent;
         _missions.Add(new ScoutMission(NewPublicId(), from, c.TargetKey, ElapsedSeconds, RouteBetween(from, c.TargetKey), Rules.Map.ScoutSpeed));
@@ -371,6 +380,7 @@ public sealed class GameState
         if (_knowledge[from][c.SiteId].Gone) return CommandResult.Fail("Bu sandık boşalmış görünüyor.");
         string target = $"site:{c.SiteId}";
         if (_missions.Any(m => m.From == from && m.Target == target)) return CommandResult.Fail("Bu sandığa zaten bir gözcün gidiyor.");
+        if (ScoutsAvailable(from) is { Ok: false } busy) return busy;
         var sent = player.Castle.SendScout(c.From);
         if (!sent.Ok) return sent;
         _missions.Add(new ScoutMission(NewPublicId(), from, target, ElapsedSeconds, Map.RouteToSite(_corners[from], site.Site),
@@ -384,6 +394,7 @@ public sealed class GameState
     {
         string target = $"quarter:{c.Quarter}";
         if (_missions.Any(m => m.From == from && m.Target == target)) return CommandResult.Fail("Bu bölgeye zaten bir gözcün gidiyor.");
+        if (ScoutsAvailable(from) is { Ok: false } busy) return busy;
         var sent = player.Castle.SendScout(c.From);
         if (!sent.Ok) return sent;
         _missions.Add(new ScoutMission(NewPublicId(), from, target, ElapsedSeconds, Map.ExploreRoute(_corners[from], c.Quarter),

@@ -74,7 +74,7 @@ public sealed record ScoutReportView(
     IReadOnlyList<ScoutedUnitView> Soldiers, IReadOnlyList<ScoutBuildingView> Buildings);
 public sealed record ScoutingView(
     int ScoutsAway, IReadOnlyList<ScoutTargetView> Targets,
-    IReadOnlyList<ScoutMissionView> Missions, IReadOnlyList<ScoutReportView> Reports, IReadOnlyList<QuarterView> Quarters);
+    IReadOnlyList<ScoutMissionView> Missions, IReadOnlyList<ScoutReportView> Reports, IReadOnlyList<QuarterView> Quarters, int MaxScouts = 1);
 
 public sealed record CastleView(
     MatchPhase Phase, PlayerColor Color, double ElapsedSeconds, double RemainingSeconds, double PrepSeconds,
@@ -226,7 +226,8 @@ public static class ViewMapper
                 var owner = room.Players.FirstOrDefault(p => game.Corners.TryGetValue(p.CastleKey, out var corner) && corner == q);
                 return new QuarterView(q, owner?.Seat, owner?.Name, owner?.Color, game.ExploredBy(player.CastleKey).Contains(q),
                     game.IsExploring(player.CastleKey, q), game.ExploreSeconds(player.CastleKey, q));
-            }).ToList());
+            }).ToList(),
+            game.Rules.Scouting.MaxScouts);
     }
 
     public static List<JobView> JobsOf(Castle c) =>

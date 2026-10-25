@@ -2,6 +2,7 @@ import { COLOR_NAMES, esc } from '../format';
 import type { CastleView, Corner, Job, QuarterView, Row, SiteView } from '../types';
 import { SITE_NAME } from '../scene/Sites';
 import { dot } from './report-html';
+import { scoutButton } from './scout-report';
 import { Win, type WinContext, type WinData } from './windows';
 
 // The forest: a quarter of it to send a scout to tour (it finds the places of that quarter), and the places
@@ -75,8 +76,7 @@ export class ForestWin extends Win {
     bar.classList.toggle('hidden', !mission);
     if (mission) bar.querySelector<HTMLElement>('.fill')!.style.width = `${100 * mission.progress}%`;
     const button = this.q2<HTMLButtonElement>('[data-act="explore"]');
-    button.disabled = !!mission || s.eliminated;
-    button.textContent = quarter?.explored ? 'Yeniden keşfet' : 'Bu bölgeyi keşfet';
+    scoutButton(button, quarter?.explored ? 'Yeniden keşfet' : 'Bu bölgeyi keşfet', s, s.eliminated, !!mission);
 
     const sites = (this.ctx.sites?.() ?? []).filter((x) => x.quarter === this.corner || x.kind === 'bigCamp');
     const html = sites.length === 0 ? '<p class="muted-ink small">Henüz bir şey bulunmadı.</p>'
@@ -175,7 +175,7 @@ export class SiteWin extends Win {
       fillSources(this.body, s);
       const mission = s.scouting.missions.find((m) => m.kind === 'chest' && m.siteId === site.id);
       const send = this.q<HTMLButtonElement>('[data-act="chest"]');
-      send.disabled = !!mission || site.gone || s.eliminated;
+      scoutButton(send, 'Gözcü gönder', s, site.gone || s.eliminated, !!mission);
       const bar = this.q('[data-f="bar"]');
       bar.classList.toggle('hidden', !mission);
       if (mission) bar.querySelector<HTMLElement>('.fill')!.style.width = `${100 * mission.progress}%`;

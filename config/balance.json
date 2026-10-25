@@ -126,7 +126,9 @@
     // Saldırı kararı: iyi bot rakibin son rapordaki gücünün attackMargin katını bekler ve ordusu hesaplanan savaşların en az attackRate kadarını kazanıyorsa gider
     // (savaş ilerledikçe ikisi de gevşer).
     "attackMargin": 1.2,
-    "attackRate": 0.85
+    "attackRate": 0.85,
+    // Hazırlığın bu oranına kadar botlar yalnız kendi orman çeyreklerinde gezer ve yağmalar (ortadaki büyük kamp ve başka çeyrekler sonra).
+    "otherQuartersFrom": 0.5
   },
 
   // Excel "Maç" sekmesi: gözcü.
@@ -135,7 +137,9 @@
   "scouting": {
     // Asker sayıları bu oranda (±), ama en az ±1 asker hatalı görünür; türler ve bina seviyeleri kesin
     // (asker yoksa 0, varsa en az 1 görünür).
-    "reportError": 0.2
+    "reportError": 0.2,
+    // Bir oyuncunun aynı anda en fazla bu kadar gözcüsü olur (kale gözetleme, çeyrek keşfi ve sandık gözcüsü hepsi sayılır); gözcü dönmeden yenisi çıkamaz.
+    "maxScouts": 1
   },
 
   // Excel "Binalar" sekmesi: tarla, oduncu kampı, maden ve demirhane aynı tabloyu kullanır.

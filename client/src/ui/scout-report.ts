@@ -1,5 +1,5 @@
 import { botMark, esc } from '../format';
-import type { ScoutReportView } from '../types';
+import type { CastleView, ScoutReportView } from '../types';
 import { dot } from './report-html';
 
 // A scout's report, in the three places it shows: the window that opens from the "scout is back" ribbon or the
@@ -10,6 +10,18 @@ import { dot } from './report-html';
 export const GENITIVE: Record<string, string> = { blue: "Mavi'nin", red: "Kırmızı'nın", yellow: "Sarı'nın", purple: "Mor'un" };
 
 export const scoutKey = (r: ScoutReportView) => `${r.targetSeat}:${r.deliveredAt}`;
+
+/**
+ * A "send a scout" button: while the scout we are allowed is out it is disabled and says how long until it is home, whatever it is out for.
+ * <paramref name="blocked"/> is any other reason the button must stay off (the label stays as it is then); <paramref name="taken"/>: a scout is already out for this very target.
+ */
+export function scoutButton(button: HTMLButtonElement, label: string, s: CastleView, blocked: boolean, taken = false): void {
+  const away = s.scouting.missions;
+  const busy = away.length >= s.scouting.maxScouts;
+  const text = busy && !blocked ? `Gözcü dönüyor · ${Math.ceil(Math.min(...away.map((m) => m.remainingSeconds)))} sn` : label;
+  if (button.textContent !== text) button.textContent = text;
+  button.disabled = blocked || busy || taken;
+}
 
 /** How old the report is, in minutes of game time ("az önce" below the first). */
 export function ago(r: ScoutReportView, now: number): string {

@@ -1,6 +1,6 @@
 import { COLOR_NAMES, botMark, clock, esc } from '../format';
 import type { ArmyMode, CastleView, Job, PlayerView, RoomView, Row, ScoutReportView, ScoutTargetView } from '../types';
-import { ago, scoutReportHtml } from './scout-report';
+import { ago, scoutButton, scoutReportHtml } from './scout-report';
 import { Win, type WinContext, type WinData } from './windows';
 
 // A rival's castle: send a scout, read the latest report, send an army. What is inside the castle is
@@ -82,7 +82,7 @@ export class EnemyWin extends Win {
     }
     const mission = s.scouting.missions.find((m) => m.targetSeat === this.seat);
     const send = this.q<HTMLButtonElement>('[data-act="scout"]');
-    send.disabled = !t || t.busy || out || s.eliminated;
+    scoutButton(send, 'Gözcü gönder', s, !t || out || s.eliminated, !!t?.busy);
     const bar = this.q('[data-f="scout-bar"]');
     bar.classList.toggle('hidden', !mission);
     if (mission) bar.querySelector<HTMLElement>('.fill')!.style.width = `${100 * mission.progress}%`;

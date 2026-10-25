@@ -270,6 +270,7 @@ check('X arms 6 swordsmen', (await X.call('ArmWorkers', 'kilicli', 6, 'idle')).o
 
 // ---- the scout's trail (in preparation, while nothing else is going on) -------------------------------------
 check('X sends a scout to Z', (await X.call('SendScout', 3, 'idle')).ok);
+check('one scout at a time: a second one cannot leave yet', !(await X.call('SendScout', 2, 'idle')).ok && X.of('CastleState').at(-1).scouting.maxScouts === 1);
 check('the scout leaves a trail', await waitFor(() => X.of('MapState').some((m) => m.trail.length > 0), 10000));
 check('the scout comes home', await waitFor(() => X.of('MapState').at(-1).own.length === 0, 20000));
 const trailNow = X.of('MapState').at(-1).trail;

@@ -26,7 +26,8 @@ public sealed record WarRules(
     double EncounterRadius);
 
 /// <summary>Scout reports ("Maç" sheet): how wrong the soldier counts are. How long a mission takes depends on the map.</summary>
-public sealed record ScoutingRules(double ReportError);
+/// <param name="MaxScouts">Most scouts one player can have out at once (a spy, a tour of a quarter and a chest run all count).</param>
+public sealed record ScoutingRules(double ReportError, int MaxScouts = 1);
 
 /// <summary>One row of the shared building table. Upgrade cost and time are what it takes to reach this level.</summary>
 public sealed record BuildingLevel(

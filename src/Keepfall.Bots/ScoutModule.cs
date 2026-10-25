@@ -17,7 +17,7 @@ public sealed class ScoutModule : IBotModule
     {
         var sc = ctx.Castle.Scouting;
         bool medium = ctx.Difficulty == BotDifficulty.Medium;
-        if (sc.Missions.Count >= ctx.Level.Scouts) return;
+        if (sc.Missions.Count >= Math.Min(ctx.Level.Scouts, sc.MaxScouts)) return;
         if (ctx.Now < 15 || ctx.SlipEco()) return;
         if (ctx.Castle.Eliminated) return;
         if (ctx.ScoutSource() is not { } from) return;
@@ -60,7 +60,7 @@ public sealed class ScoutModule : IBotModule
         }
 
         // 4. the other quarters of the forest, nearest first (more places to raid).
-        if (ctx.Level.ExploreAll && own is { Explored: true } && ctx.Now >= 60 && !sc.Missions.Any(m => m.Kind == MissionKind.Explore))
+        if (ctx.Level.ExploreAll && own is { Explored: true } && ctx.Now >= 60 && (ctx.AtWar || ctx.PrepProgress >= ctx.Rules.Bots.OtherQuartersFrom) && !sc.Missions.Any(m => m.Kind == MissionKind.Explore))
         {
             var quarter = sc.Quarters.Where(q => q.Seat != ctx.Seat && !q.Explored && !q.Busy).OrderBy(q => q.Seconds).FirstOrDefault();
             if (quarter is not null) ctx.Wish(50, new SendExplore(quarter.Corner, from));

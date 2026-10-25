@@ -66,6 +66,7 @@ public sealed class BotsConfig
     public double ArmyShare { get; set; } = 0.5;
     public double AttackMargin { get; set; } = 1.2;
     public double AttackRate { get; set; } = 0.85;
+    public double OtherQuartersFrom { get; set; } = 0.5;
 }
 
 public sealed class BotLevelConfig
@@ -166,6 +167,7 @@ public sealed class WarConfig
 public sealed class ScoutingConfig
 {
     public double ReportError { get; set; } = 0.2;
+    public int MaxScouts { get; set; } = 1;
 }
 
 public sealed class BuildingLevelConfig
@@ -285,9 +287,9 @@ public static class BalanceConfigLoader
         if (mc.ServerTickSeconds <= 0) errors.Add("match.serverTickSeconds sıfırdan büyük olmalı.");
         if (mc.SpectatorDelaySeconds < 0) errors.Add("match.spectatorDelaySeconds negatif olamaz.");
         if (mc.SpectatorWaitSeconds < 0) errors.Add("match.spectatorWaitSeconds negatif olamaz.");
+        if (mc.SpectatorMinSeconds < 0) errors.Add("match.spectatorMinSeconds negatif olamaz.");
         if (mc.StartingPopulation < 0) errors.Add("match.startingPopulation negatif olamaz.");
         var sr = mc.StartingResources;
-        if (mc.SpectatorMinSeconds < 0) errors.Add("match.spectatorMinSeconds negatif olamaz.");
         if (sr.Food < 0 || sr.Wood < 0 || sr.Iron < 0) errors.Add("match.startingResources negatif olamaz.");
 
         foreach (var (name, level) in new[] { ("easy", config.Bots.Easy), ("medium", config.Bots.Medium) })
@@ -306,6 +308,7 @@ public static class BalanceConfigLoader
         if (config.Bots.Mix.Count == 0 || config.Bots.Mix.Values.Any(v => v < 0) || config.Bots.Mix.Values.Sum() <= 0) errors.Add("bots.mix: en az bir pozitif pay olmalı.");
         if (config.Bots.WeaponsFrom is < 0 or > 1 || config.Bots.ArmFrom is < 0 or > 1) errors.Add("bots.weaponsFrom/armFrom 0 ile 1 arasında olmalı.");
         if (config.Bots.ArmyShare is <= 0 or > 1) errors.Add("bots.armyShare 0 ile 1 arasında olmalı.");
+        if (config.Bots.OtherQuartersFrom is < 0 or > 1) errors.Add("bots.otherQuartersFrom 0 ile 1 arasında olmalı.");
         if (config.Bots.AttackMargin < 0.5 || config.Bots.AttackMargin > 3) errors.Add("bots.attackMargin 0,5 ile 3 arasında olmalı.");
         if (config.Bots.AttackRate is <= 0 or > 1) errors.Add("bots.attackRate 0 ile 1 arasında olmalı.");
 
@@ -352,6 +355,7 @@ public static class BalanceConfigLoader
         if (mp.ScoutTrailSeconds < 0) errors.Add("map.scoutTrailSeconds negatif olamaz.");
         if (mp.Vision.Castle < 0 || mp.Vision.Army < 0 || mp.Vision.Scout < 0) errors.Add("map.vision: görüş yarıçapları negatif olamaz.");
         if (sc.ReportError < 0 || sc.ReportError >= 1) errors.Add("scouting.reportError 0 ile 1 arasında olmalı.");
+        if (sc.MaxScouts < 1) errors.Add("scouting.maxScouts en az 1 olmalı.");
 
         if (config.BuildingLevels.Count == 0) errors.Add("buildingLevels: en az bir seviye tanımlanmalı.");
         for (int i = 0; i < config.BuildingLevels.Count; i++)
@@ -433,7 +437,7 @@ public static class BalanceConfigLoader
                 e.NewPersonBaseCost, e.NewPersonCostGrowth, e.NewPersonBasePopulation, e.GrowthReserveSeconds,
                 config.BuildingLevels.Select((l, i) => new BuildingLevel(
                     i + 1, l.Capacity, l.Multiplier, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList()),
-            new ScoutingRules(sc.ReportError),
+            new ScoutingRules(sc.ReportError, sc.MaxScouts),
             new WarRules(w.FamineStart, w.FamineFoodMultiplier,
                 w.CastleHp, w.SiegeSeconds, w.ArcherSiegeMultiplier, w.BattlePlayback, w.EncounterRadius),
             new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout, mp.ScoutTrailSeconds),
@@ -445,7 +449,7 @@ public static class BalanceConfigLoader
                 new CampRules(fo.Camp.Bandits, fo.Camp.GoldMin, fo.Camp.GoldMax, fo.Camp.Weapons),
                 new CampRules(fo.BigCamp.Bandits, fo.BigCamp.GoldMin, fo.BigCamp.GoldMax, fo.BigCamp.Weapons)),
             new BotRules(BotLevel(config.Bots.Easy, false), BotLevel(config.Bots.Medium, true), config.Bots.Mix, config.Bots.WeaponsFrom, config.Bots.ArmFrom, config.Bots.ArmyShare,
-                config.Bots.AttackMargin, config.Bots.AttackRate));
+                config.Bots.AttackMargin, config.Bots.AttackRate, config.Bots.OtherQuartersFrom));
     }
 
     private static BotLevelRules BotLevel(BotLevelConfig c, bool good) => new(c.ThinkMin, c.ThinkMax, c.ReactMin, c.ReactMax, c.Commands, c.Mistake, c.Slack, c.EcoMistake < 0 ? c.Mistake : c.EcoMistake,

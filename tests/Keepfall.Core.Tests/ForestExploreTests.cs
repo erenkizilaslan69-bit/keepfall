@@ -115,11 +115,23 @@ public class ForestExploreTests
     public void One_scout_per_quarter_and_the_scout_comes_out_of_a_job()
     {
         var game = Game();
+        Assert.False(game.Execute(A, new SendExplore(Corner.SouthWest, Job.Farmer)).Ok); // nobody works the farm yet
         Ok(game.Execute(A, new SendExplore(Corner.NorthWest)));
         Assert.False(game.Execute(A, new SendExplore(Corner.NorthWest)).Ok);
-        Ok(game.Execute(A, new SendExplore(Corner.NorthEast)));
-        Assert.Equal(2, game.CastleOf(A)!.ScoutsAway);
-        Assert.False(game.Execute(A, new SendExplore(Corner.SouthWest, Job.Farmer)).Ok); // nobody works the farm yet
+        Assert.Equal(1, game.CastleOf(A)!.ScoutsAway);
+    }
+
+    [Fact]
+    public void A_player_has_one_scout_out_at_a_time_whatever_it_is_out_for()
+    {
+        var game = Game();
+        Ok(game.Execute(A, new SendExplore(Corner.NorthWest)));
+        var second = game.Execute(A, new SendExplore(Corner.NorthEast));
+        Assert.False(second.Ok);
+        Assert.Contains("dönmedi", second.Error);
+        Assert.Equal(1, game.CastleOf(A)!.ScoutsAway);
+        RunUntilHome(game, A);
+        Ok(game.Execute(A, new SendExplore(Corner.NorthEast))); // the first is home: the next may go
     }
 
     [Fact]
