@@ -6,7 +6,8 @@ namespace Keepfall.Core.Lobby;
 public enum RoomPhase { Lobby, Preparation, War, Ended }
 
 /// <summary>Player colours in seat order; Tiny Swords also has Black, kept spare.</summary>
-public enum PlayerColor { Blue, Red, Yellow, Purple }
+/// <summary>The four player colours (a seat's colour is its number − 1) and black, which belongs to the bandits of the forest.</summary>
+public enum PlayerColor { Blue, Red, Yellow, Purple, Black }
 
 public sealed record RoomOptions
 {
@@ -115,6 +116,9 @@ public sealed class Room
     {
         var report = Game!.BattlesOf(player.CastleKey).FirstOrDefault(b => b.Id == battleId);
         if (report is null) return "Savaş oldu.";
+        if (report.Kind == BattleKind.Camp)
+            return report.Winner == BattleWinner.Attacker ? "Haydut kampını temizledin! Ödül ordun eve dönünce gelir."
+                : report.Winner == BattleWinner.Draw ? "Haydut kampıyla savaş berabere bitti." : "Haydut kampına yenildin.";
         bool attacking = report.Attacker == player.CastleKey;
         var other = PlayerOfCastle(attacking ? report.Defender : report.Attacker);
         string them = ColorName(other?.Color);
@@ -142,6 +146,7 @@ public sealed class Room
         PlayerColor.Red => "Kırmızı",
         PlayerColor.Yellow => "Sarı",
         PlayerColor.Purple => "Mor",
+        PlayerColor.Black => "Siyah",
         _ => "?",
     };
 
@@ -152,6 +157,7 @@ public sealed class Room
         PlayerColor.Red => "Kırmızı'dan",
         PlayerColor.Yellow => "Sarı'dan",
         PlayerColor.Purple => "Mor'dan",
+        PlayerColor.Black => "Siyah'tan",
         _ => "Bir rakipten",
     };
 
@@ -162,6 +168,7 @@ public sealed class Room
         PlayerColor.Red => "Kırmızı'nın",
         PlayerColor.Yellow => "Sarı'nın",
         PlayerColor.Purple => "Mor'un",
+        PlayerColor.Black => "Siyah'ın",
         _ => "Bir rakibin",
     };
 

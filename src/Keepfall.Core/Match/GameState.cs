@@ -594,8 +594,8 @@ public sealed class GameState
     {
         if (!_sites.TryGetValue(c.SiteId, out var state) || !Knows(from, c.SiteId)) return CommandResult.Fail("Böyle bir yer bilmiyorsun.");
         var known = _knowledge[from][c.SiteId];
-        if (state.Site.Kind != SiteKind.Village) return CommandResult.Fail("Ordu buraya gönderilemez.");
-        if (known.Gone) return CommandResult.Fail("Bu köy yağmalanmış görünüyor.");
+        if (state.Site.Kind == SiteKind.Chest) return CommandResult.Fail("Sandık için gözcü gönderilir, ordu değil.");
+        if (known.Gone) return CommandResult.Fail(state.Site.Kind == SiteKind.Village ? "Bu köy yağmalanmış görünüyor." : "Bu kamp temizlenmiş görünüyor.");
 
         var parsed = ParseArmy(c.Units, c.Rows, c.ArcherPriority, out var units, out var rows, out var priority);
         if (!parsed.Ok) return parsed;
@@ -671,6 +671,13 @@ public sealed class GameState
     private void ArriveAtSite(ArmyMarch a)
     {
         var site = a.Site!;
+        if (site.Site.Kind is SiteKind.Camp or SiteKind.BigCamp)
+        {
+            if (site.Gone) { SendHome(a, a.Units); return; } // somebody has cleared it already
+            if (_active.Any(b => b.Kind == BattleKind.Camp && b.Defender == a.Target)) return; // one fight at a camp at a time; the rest wait
+            StartCampBattle(a, site);
+            return;
+        }
         if (site.Site.Kind == SiteKind.Village && !site.Gone)
         {
             site.Gone = true;
@@ -718,6 +725,17 @@ public sealed class GameState
                     StartFieldBattle(a, b);
                 }
         }
+    }
+
+    /// <summary>The army fights the bandits of a camp (whoever is left of them), in full view like any battle.</summary>
+    private void StartCampBattle(ArmyMarch a, SiteState camp)
+    {
+        var bandits = camp.Bandits.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
+        var battle = new ActiveBattle(_nextId++, NewPublicId(), BattleKind.Camp, camp.Site.Position, a.Out.Direction, ElapsedSeconds, a, null, a.Target);
+        var setup = new ArmySetup("Haydutlar") { Targeting = TargetPriority.Front };
+        foreach (var (type, n) in bandits) setup.Add(type, n);
+        Fight(battle, setup, bandits);
+        Begin(battle);
     }
 
     /// <summary>Two armies met on the road: they fight where they are.</summary>
@@ -815,7 +833,7 @@ public sealed class GameState
         if (battle.Opponent is { } o) o.Battle = battle;
         _active.Add(battle);
         _startedForSpectators.Add(battle);
-        foreach (var p in new[] { battle.Attacker.From, battle.Defender }.Distinct())
+        foreach (var p in new[] { battle.Attacker.From, battle.Defender }.Distinct().Where(_players.ContainsKey))
         {
             if (!_startedBattles.TryGetValue(p, out var list)) _startedBattles[p] = list = [];
             list.Add(battle);
@@ -825,6 +843,7 @@ public sealed class GameState
     /// <summary>The battle is over: losses, castle damage, the report and (maybe) a fallen castle.</summary>
     private void FinishBattle(ActiveBattle b)
     {
+        if (b.Kind == BattleKind.Camp) { FinishCampBattle(b); return; }
         _active.Remove(b);
         var a = b.Attacker;
         a.Battle = null;
@@ -867,6 +886,39 @@ public sealed class GameState
             GoOn(b.Opponent!, b.DefenderSurvivors);
         }
         if (fell) Eliminate(b.Defender);
+    }
+
+    /// <summary>
+    /// The fight at a camp is over: the army's losses count, the camp keeps whoever survived, and an army that cleared
+    /// it carries the camp's gold and weapons home (they arrive with it).
+    /// </summary>
+    private void FinishCampBattle(ActiveBattle b)
+    {
+        _active.Remove(b);
+        var a = b.Attacker;
+        a.Battle = null;
+        var attacker = _players[a.From].Castle;
+        var camp = _sites[b.Defender["site:".Length..]];
+        var attackLost = Lost(b.AttackerUnits, b.AttackerSurvivors);
+        var banditsLost = Lost(b.DefenderUnits, b.DefenderSurvivors);
+        attacker.ArmyLost(attackLost);
+        attacker.Stats.EnemiesKilled += banditsLost.Values.Sum();
+
+        foreach (var (type, n) in banditsLost) camp.Bandits[type] = Math.Max(0, camp.Bandits[type] - n);
+        camp.Version++;
+        bool cleared = camp.BanditCount == 0;
+        if (cleared)
+        {
+            camp.Gone = true;
+            a.LootGold = camp.Site.Gold;
+            a.LootWeapons = camp.Site.Weapons;
+        }
+
+        var report = new BattleReport(b.Id, ElapsedSeconds, a.From, b.Defender,
+            Lines(b.AttackerUnits, attackLost), Lines(b.DefenderUnits, banditsLost), b.Winner, 0, 0, 0, false, BattleKind.Camp);
+        _battles.Add(report);
+        Notify(a.From, new GameNotification(NotificationKind.BattleFought, b.Defender, ElapsedSeconds, BattleId: report.Id));
+        SendHome(a, b.AttackerSurvivors);
     }
 
     private static Dictionary<UnitType, int> Lost(IReadOnlyDictionary<UnitType, int> before, IReadOnlyDictionary<UnitType, int> after) =>

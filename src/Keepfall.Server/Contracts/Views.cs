@@ -181,9 +181,10 @@ public static class ViewMapper
             {
                 bool attacking = b.Attacker == player.CastleKey;
                 var opponent = Other(attacking ? b.Defender : b.Attacker);
+                bool bandits = b.Kind == BattleKind.Camp;
                 bool youWon = attacking ? b.Winner == BattleWinner.Attacker : b.Winner == BattleWinner.Defender;
-                return new BattleReportView(b.Id, b.At, attacking, opponent?.Seat ?? 0, opponent?.Name ?? "?",
-                    opponent?.Color ?? PlayerColor.Blue, Lines(b.AttackerUnits), Lines(b.DefenderUnits), b.Winner, youWon,
+                return new BattleReportView(b.Id, b.At, attacking, opponent?.Seat ?? 0, bandits ? "Haydutlar" : opponent?.Name ?? "?",
+                    bandits ? PlayerColor.Black : opponent?.Color ?? PlayerColor.Blue, Lines(b.AttackerUnits), Lines(b.DefenderUnits), b.Winner, youWon,
                     b.CastleDamage, b.CastleHpAfter, b.CastleHpMax, b.DefenderEliminated, b.Kind);
             }).ToList(),
             new DefenseView(c.DefenseRows.ToDictionary(kv => kv.Key.Id, kv => kv.Value), c.DefensePriority?.Id));

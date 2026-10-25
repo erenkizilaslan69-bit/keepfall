@@ -10,6 +10,8 @@ public enum BattleKind
     Siege,
     /// <summary>Two armies that met on the road.</summary>
     Field,
+    /// <summary>An army against the bandits of a camp in the forest.</summary>
+    Camp,
 }
 
 /// <summary>

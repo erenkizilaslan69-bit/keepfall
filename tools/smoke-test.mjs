@@ -264,9 +264,9 @@ for (const c of [X, Y, Z]) await c.call('SetReady', true);
 check('second match starts', (await X.call('StartMatch')).ok);
 await X.call('SetSpeed', 20);
 await X.call('MoveWorkers', 'idle', 'blacksmith', 4);
-await X.call('QueueWeapon', 'kilicli', 4);
-await sleep(3500);
-check('X arms 4 swordsmen', (await X.call('ArmWorkers', 'kilicli', 4, 'idle')).ok);
+await X.call('QueueWeapon', 'kilicli', 6);
+await sleep(4500);
+check('X arms 6 swordsmen', (await X.call('ArmWorkers', 'kilicli', 6, 'idle')).ok);
 
 // ---- the scout's trail (in preparation, while nothing else is going on) -------------------------------------
 check('X sends a scout to Z', (await X.call('SendScout', 3, 'idle')).ok);
@@ -356,7 +356,7 @@ const afterVillage = X.of('CastleState').at(-1);
 const villageGold = afterVillage.resources.gold - chestGold;
 check('a village gives 30 to 50 gold', villageGold >= 30 && villageGold <= 50, String(villageGold));
 check('the village is gone for X, all soldiers came home', siteOf(X, village.id).gone === true
-  && afterVillage.units.find((u) => u.id === 'kilicli').soldiers === 4);
+  && afterVillage.units.find((u) => u.id === 'kilicli').soldiers === 6);
 check('the raid shows in nobody elses castle state, and Z never hears of the village at all',
   ![Y, Z].some((c) => c.msgs.some((m) => m.target === 'CastleState' && m.raw.includes(village.id)))
   && !Z.msgs.some((m) => m.raw.includes(village.id)));
@@ -364,6 +364,30 @@ check('Y explores again and learns about the empty chest', (await Y.call('SendEx
   && await waitFor(() => siteOf(Y, chest.id).gone === true, 20000));
 check('Y finds the village plundered too', siteOf(Y, village.id).gone === true);
 check('Z knows nothing of all this', Z.of('MapState').every((m) => m.sites.length === 0));
+
+// ---- gold buys soldiers; a camp is fought in full view of its attackers only ------------------------------------
+const goldNow = X.of('CastleState').at(-1).resources.gold;
+const mercs = Math.floor(goldNow / 26);
+check('X hires mercenaries with the loot', mercs >= 1 && (await X.call('HireMercenary', 'kilicli', mercs)).ok);
+const hiredView = X.of('CastleState').at(-1);
+check('the hired are soldiers on top of the people, and cost gold', hiredView.units.find((u) => u.id === 'kilicli').hired === mercs
+  && Math.abs(hiredView.resources.gold - (goldNow - 26 * mercs)) < 1e-6);
+check('hired soldiers cannot be turned into workers', !(await X.call('DisarmSoldiers', 'kilicli', 6 + mercs)).ok);
+check('nobody else can hire without gold', !(await Y.call('HireMercenary', 'kilicli', 1)).ok);
+const camp = found.find((x) => x.kind === 'camp');
+const battlesBefore = { Y: Y.of('BattleStarted').length, Z: Z.of('BattleStarted').length };
+check('X sends three soldiers at the camp', (await X.call('SendArmyToSite', camp.id, { kilicli: 3 }, null, null)).ok);
+check('the fight is replayed for X, against black bandits', await waitFor(() => X.of('BattleStarted').some((b) => b.kind === 'camp'), 30000));
+const campBattle = X.of('BattleStarted').find((b) => b.kind === 'camp');
+check('the camp record has both sides soldier by soldier', campBattle.sides.length === 2 && campBattle.sides[0].soldiers.length === 3
+  && campBattle.sides[1].color === 'black' && campBattle.sides[1].name === 'Haydutlar' && campBattle.sides[1].soldiers.length === 6);
+check('Y and Z get no record of it', Y.of('BattleStarted').length === battlesBefore.Y && Z.of('BattleStarted').length === battlesBefore.Z);
+check('the army is home again', await waitFor(() => X.of('CastleState').at(-1).war.armies.length === 0, 40000));
+const campReport = X.of('CastleState').at(-1).war.battles.find((b) => b.kind === 'camp');
+check('X got a report against the bandits', !!campReport && campReport.opponentName === 'Haydutlar' && campReport.opponentColor === 'black');
+check('X sees roughly who is left at the camp', siteOf(X, camp.id).bandits.every((u) => u.count >= 1));
+check('Y, who has not looked, still sees the first numbers and Z never hears of the report',
+  siteOf(Y, camp.id).bandits.reduce((n, u) => n + u.count, 0) >= 4 && ![Y, Z].some((c) => c.msgs.some((m) => m.target === 'CastleState' && m.raw.includes('Haydutlar'))));
 check('the second war begins', await waitFor(() => X.of('RoomState').some((r) => r.phase === 'war'), 60000));
 const fallen = () => Y.of('CastleState').at(-1)?.eliminated === true;
 for (let i = 0; i < 160 && !fallen(); i++) {

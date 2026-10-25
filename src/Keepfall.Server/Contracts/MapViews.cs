@@ -119,6 +119,9 @@ public static class MapViewMapper
         var record = b.Record;
         BattleSideView Side(int side, string key, bool attacker)
         {
+            if (key.StartsWith("site:")) // the bandits of a camp
+                return new BattleSideView(0, PlayerColor.Black, "Haydutlar", attacker,
+                    record.Soldiers.Where(s => s.Side == side).Select(s => new BattleSoldierView(s.Type.Id, s.Row)).ToList());
             var p = room.PlayerOfCastle(key);
             return new BattleSideView(p?.Seat ?? 0, p?.Color ?? PlayerColor.Blue, p?.Name ?? "?", attacker,
                 record.Soldiers.Where(s => s.Side == side).Select(s => new BattleSoldierView(s.Type.Id, s.Row)).ToList());
