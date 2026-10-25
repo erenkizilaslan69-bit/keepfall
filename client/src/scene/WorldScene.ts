@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { ArmyView, Rect, SpectatorCastleView, SpectatorStateView, BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
+import type { ArmyView, Rect, ScoutReportView, SpectatorCastleView, SpectatorStateView, BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
 import type { Minimap } from '../minimap';
 import type { Anchor, Target } from '../ui/windows';
 import type { WorldLabels } from '../ui/world-labels';
@@ -9,6 +9,7 @@ import { CASTLE, COURTYARD, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH } from './lay
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
 import { buildingSign, placePart, sign } from './parts';
 import { RegionDisplay } from './RegionDisplay';
+import { scoutSignHtml } from '../ui/scout-report';
 import { BattlePlayer } from './BattlePlayer';
 import { Fog } from './Fog';
 import { Movers } from './Movers';
@@ -82,7 +83,10 @@ export class WorldScene extends Phaser.Scene {
   private trees: { sprite: Phaser.GameObjects.Sprite; tile: Vec }[] = [];
   /** The server's clock at the last castle state, and when that arrived (to run it on between ticks). */
   private clock = { elapsed: 0, at: performance.now(), speed: 1 };
-  private otherCastles = new Map<number, { image: Phaser.GameObjects.Image; name: string; color: PlayerColor; wall?: { hp: number; max: number } }>();
+  private otherCastles = new Map<number, { image: Phaser.GameObjects.Image; name: string; color: PlayerColor; wall?: { hp: number; max: number }; fallen?: boolean }>();
+  /** The latest scout report per rival (by seat), for the sign under their castle. */
+  private reports = new Map<number, ScoutReportView>();
+  private reportClock = 0;
   /** A fallen player sees every castle's inside, a fixed delay behind the game (see setSpectator). */
   private spectating = false;
   private pendingSpectator: SpectatorStateView | null = null;
@@ -191,6 +195,7 @@ export class WorldScene extends Phaser.Scene {
       const c = this.otherCastles.get(p.seat);
       if (!c) continue;
       c.image.setAlpha(p.eliminated ? 0.45 : 1);
+      c.fallen = p.eliminated;
       this.setEnemySign(p.seat, c, p.eliminated, c.wall);
     }
   }
@@ -201,12 +206,14 @@ export class WorldScene extends Phaser.Scene {
     const base = toWorld(region.origin);
     const name = sign(`<i class="dot" style="background:${COLOR_CSS[c.color] ?? '#888'}"></i><b>${esc(c.name)}</b>${fallen ? ' <small>(düştü)</small>' : ''}`);
     const p = wall ? Math.max(0, wall.hp / wall.max) : 0;
+    const hp = wall
+      ? `<div class="gbar wl-hp${p < 0.35 ? ' low' : ''}"><div class="fill" style="width:${100 * p}%"></div>
+          <span class="gbar-text">${fallen ? 'Kale düştü' : `${Math.ceil(wall.hp)} / ${wall.max}`}</span></div>` : '';
+    // The last scout report stays under the castle: what we know of it, and how old that is. (A spectator sees all, so no report.)
+    const report = this.spectating ? undefined : this.reports.get(seat);
     this.labels.set(`castle:${seat}`, {
       x: base.x + CASTLE.x, y: base.y + CASTLE.y + 16, anchor: 'top',
-      html: wall
-        ? `<div class="wl-stack">${name}<div class="gbar wl-hp${p < 0.35 ? ' low' : ''}"><div class="fill" style="width:${100 * p}%"></div>
-            <span class="gbar-text">${fallen ? 'Kale düştü' : `${Math.ceil(wall.hp)} / ${wall.max}`}</span></div></div>`
-        : name,
+      html: `<div class="wl-stack">${name}${hp}${report ? scoutSignHtml(report, this.reportClock) : ''}</div>`,
     });
   }
 
@@ -268,6 +275,7 @@ export class WorldScene extends Phaser.Scene {
     const castle = this.otherCastles.get(c.seat);
     if (!castle) return;
     castle.image.setAlpha(c.eliminated ? 0.45 : 1);
+    castle.fallen = c.eliminated;
     castle.wall = { hp: c.wallHp, max: c.maxWallHp };
     this.setEnemySign(c.seat, castle, c.eliminated, castle.wall);
   }
@@ -376,6 +384,11 @@ export class WorldScene extends Phaser.Scene {
 
   setState(state: CastleView): void {
     this.state = state;
+    if (this.ready && !this.spectating) {
+      this.reports = new Map(state.scouting.reports.map((r) => [r.targetSeat, r]));
+      this.reportClock = state.elapsedSeconds;
+      for (const [seat, c] of this.otherCastles) this.setEnemySign(seat, c, !!c.fallen, c.wall);
+    }
     if (this.ready && !this.spectating) this.apply(state); // a spectator's castle is drawn from the delayed pictures
   }
 

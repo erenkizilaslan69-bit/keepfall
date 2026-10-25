@@ -15,7 +15,8 @@ Tarayıcıda oynanır. Tüm oyun mantığı sunucudadır; istemci yalnızca komu
 - Binalar (tarla, oduncu kampı, maden, demirhane) 3 seviyedir; yükseltince kapasite ve üretim artar.
 - Demirhane silah üretir; silah verilen işçi asker olur: okçu, kılıçlı, mızrakçı, kalkanlı.
 - Nüfus otomatik büyür; her yeni kişi bir öncekinden pahalıdır ve yemek rezervi korunur.
-- Gözcü gönderip rakibin askerlerini ve bina seviyelerini öğrenebilirsin; rapor yaklaşıktır (±%20, en az ±1).
+- Gözcü gönderip rakibin askerlerini ve bina seviyelerini öğrenebilirsin; rapor yaklaşıktır (±%20, en az ±1). Gözcü dönünce üstte "Gözcün döndü" şeridi çıkar (tıklayınca rapor açılır); son rapor rakibin kalesinin altındaki tabelada (asker simgeleri, yaklaşık sayılar, "N dk önce") ve sol alttaki rapor etiketlerinde kalır.
+- **Gözcü izi:** Gözcünün yürüdüğü yolun çevresi (gözcü görüşü kadar) geçtikten sonra `map.scoutTrailSeconds` (120 sn; 0 = maç sonuna kadar) canlı görüşte kalır, son 10 sn'de soluklaşarak kapanır; bu alandan geçen ordular, gözcüler ve savaşlar görünür. Rakibin kale bölgesinin içini açmaz: kalenin içi yalnızca raporla öğrenilir.
 
 **Savaş: harita**
 - Ortak kare bir harita: kaleler köşelerde, ortada orman, aralarında yollar. Her köşeden komşulara ve çapraz köşeye olan yollar adil olacak şekilde kurulmuştur.

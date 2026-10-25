@@ -25,10 +25,15 @@ export class Notifications {
     window.setInterval(() => this.renderIncoming(), 250);
   }
 
-  /** A message that goes away by itself. */
-  push(text: string, kind: NoteKind = 'info', ms = 5000): void {
+  /** A message that goes away by itself; <paramref name="onClick"/> makes it a button (and a click dismisses it). */
+  push(text: string, kind: NoteKind = 'info', ms = 5000, onClick?: () => void): void {
     const note = this.ribbon(text, COLOR[kind]);
     note.classList.add('fading');
+    if (onClick) {
+      note.classList.add('clickable', 'strong');
+      note.title = 'Tıkla: raporu aç';
+      note.addEventListener('click', () => { onClick(); note.remove(); });
+    }
     this.el.appendChild(note);
     const timed = [...this.el.querySelectorAll('.fading')];
     while (timed.length > MAX_VISIBLE) timed.shift()!.remove();

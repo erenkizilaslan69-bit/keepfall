@@ -333,3 +333,35 @@ html:not(.ui-art) .spec-wait .ribbon { margin-top: 0; }
 .muted-ink, .small, .muted, .win p, .win small, .win .row.sub, .rep-note, .spec-body p, .win .warn, .tag, .field,
 .screen .error, .wl-small, .report-tag small { font-family: var(--font-text); }
 .muted-ink, .small { font-size: .95em; }
+
+/* ---- scout reports: unit icons, the sign under a castle, the clickable "scout is back" ribbon ------ */
+.unit-ico {
+  --ico: calc(26px * var(--u)); display: inline-block; width: var(--ico); height: var(--ico); flex: none; vertical-align: middle;
+  background-repeat: no-repeat; image-rendering: pixelated; background-size: auto 250%;
+  background-position: calc(var(--ico) * -0.75) calc(var(--ico) * -0.62);
+}
+/* The first frame of each unit's idle sheet (blue; the shape is what tells the types apart). */
+.unit-okcu { background-image: url('/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/Units/Blue%20Units/Archer/Archer_Idle.png'); }
+.unit-kilicli { background-image: url('/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/Units/Blue%20Units/Warrior/Warrior_Idle.png'); }
+.unit-kalkanli { background-image: url('/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/Units/Blue%20Units/Warrior/Warrior_Guard.png'); }
+.unit-mizrakci {
+  background-image: url('/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/Units/Blue%20Units/Lancer/Lancer_Idle.png');
+  background-size: auto 420%; background-position: calc(var(--ico) * -1.55) calc(var(--ico) * -1.45);
+}
+.unit-count { display: inline-flex; align-items: center; gap: calc(1px * var(--u)); font-variant-numeric: tabular-nums; }
+.unit-count.none { opacity: .45; }
+.wl-report { gap: calc(4px * var(--u)); }
+.wl-report small { margin-left: calc(4px * var(--u)); font-family: var(--font-text); }
+.scout-soldiers { display: flex; flex-wrap: wrap; gap: calc(6px * var(--u)) calc(14px * var(--u)); margin: calc(4px * var(--u)) 0; font-size: 1.15em; }
+.scout-soldiers .unit-ico { --ico: calc(38px * var(--u)); }
+.rep-h { margin: calc(8px * var(--u)) 0 calc(2px * var(--u)); font-size: 1em; color: var(--gold); }
+.scout-report .scout-soldiers { font-size: 1em; }
+.scout-report .scout-soldiers .unit-ico { --ico: calc(30px * var(--u)); }
+.scout-report .rep-h { color: var(--ink); }
+.scout-report .rep-note { margin: calc(2px * var(--u)) 0; }
+.report-tag.scout b { color: #8a5a14; }
+.note.clickable { cursor: pointer; }
+.note.strong { animation: tag-flash 1.2s ease-in-out 4; filter: drop-shadow(0 0 6px rgba(255, 220, 90, .9)); font-size: 1.1em; }
+.note.clickable:hover { filter: brightness(1.15) drop-shadow(0 0 8px rgba(255, 220, 90, 1)); }
+
+.paper-dark .muted-ink, .paper-dark .small { color: #b9c3d6; }

@@ -1,5 +1,6 @@
 import { COLOR_NAMES, clock, esc } from '../format';
 import type { ArmyMode, CastleView, Job, PlayerView, RoomView, Row, ScoutReportView, ScoutTargetView } from '../types';
+import { ago, scoutReportHtml } from './scout-report';
 import { Win, type WinContext, type WinData } from './windows';
 
 // A rival's castle: send a scout, read the latest report, send an army. What is inside the castle is
@@ -126,12 +127,8 @@ export class EnemyWin extends Win {
 
   private renderReport(r: ScoutReportView | undefined, now: number): void {
     const el = this.q('[data-f="report"]');
-    const html = !r ? '<p class="muted-ink small">Henüz rapor yok. Gözcü dönünce son rapor burada görünür.</p>' : `
-      <div class="scout-report">
-        <div class="small muted-ink">Son rapor · ${Math.max(0, Math.floor(now - r.deliveredAt))} sn önce</div>
-        <div>${r.soldiers.map((u) => `${esc(u.name)} <b>${u.count === 0 ? '0' : `≈${u.count}`}</b>`).join(' · ')}</div>
-        <div class="small muted-ink">${r.buildings.map((b) => `${esc(b.name)} Sv ${b.level}`).join(' · ')}</div>
-      </div>`;
+    const html = !r ? '<p class="muted-ink small">Henüz rapor yok. Gözcü dönünce son rapor burada görünür.</p>'
+      : `<div class="scout-report">${scoutReportHtml(r, now).replace(/<div class="rep-title[^>]*>.*?<\/div>/s, `<h4>Son gözcü raporu · ${ago(r, now)}</h4>`)}</div>`;
     if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html; }
   }
 

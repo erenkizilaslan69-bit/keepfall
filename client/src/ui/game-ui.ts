@@ -8,6 +8,7 @@ import { ArmyWin, ForestWin, ScoutWin } from './mover-windows';
 import { WindowManager, sameTarget, type Target, type Win, type WinContext } from './windows';
 import { Notifications, type NoteKind } from './notifications';
 import { ReportTags } from './reports';
+import { GENITIVE, scoutKey } from './scout-report';
 import { TopBar } from './topbar';
 import { WorldLabels } from './world-labels';
 
@@ -22,6 +23,8 @@ export class GameUi {
   private waitEnds = 0;
   private waitTotal = 1;
   private spectating = false;
+  /** Scout reports we have already told the player about (null until the first state: a reload is not news). */
+  private scoutsSeen: Set<string> | null = null;
   private readonly bar: TopBar;
   private readonly notes: Notifications;
   private readonly reports: ReportTags;
@@ -124,7 +127,13 @@ export class GameUi {
     this.castle = s;
     this.windows.update({ castle: s, room: this.room });
     this.bar.update(s);
-    this.reports.update(s.war.battles);
+    this.reports.update(s.war.battles, s.scouting.reports, s.elapsedSeconds);
+    const reports = s.scouting.reports;
+    if (this.scoutsSeen) {
+      for (const r of reports.filter((x) => !this.scoutsSeen!.has(scoutKey(x))))
+        this.notes.push(`Gözcün döndü: ${GENITIVE[r.targetColor] ?? 'rakibin'} raporu`, 'battle', 15000, () => this.reports.showScout(r));
+    }
+    this.scoutsSeen = new Set(reports.map(scoutKey));
     this.notes.setIncoming(s.eliminated ? [] : s.war.incoming, s.speed);
     this.notes.setSticky('hunger', s.starving && !s.eliminated, 'Açlık! Yemek bitti, tüm üretim yarıya indi.');
     this.notes.setSticky('out', s.eliminated, 'Kalen düştü — elendin. Artık sadece izleyicisin.', 'info');
