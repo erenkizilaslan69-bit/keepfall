@@ -136,9 +136,11 @@
     // Orta bot bir rapora (ya da kapıda dövüştüğü son kuşatmaya) en çok staleReportSeconds saniye güvenir. Eskiyse ya da hiç yoksa,
     // son bildiğiyle (hiç yoksa kendi ordusunun blindRivalShare katını rakip sanarak) yine saldırabilir, ama beklediği düşman
     // (1 + blindMargin) kat büyük sayılır.
-    "staleReportSeconds": 180,
-    "blindMargin": 0.3,
-    "blindRivalShare": 0.8
+    "staleReportSeconds": 160,
+    "blindMargin": 1.05,
+    "blindRivalShare": 0.8,
+    // Savaşın bu kadar ilk saniyesinde körlemesine saldırmaz; önce rapor almaya çalışır.
+    "blindAfterWarSeconds": 60
   },
 
   // Excel "Maç" sekmesi: gözcü.

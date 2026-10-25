@@ -46,6 +46,9 @@ public sealed class ScoutModule : IBotModule
         double from_ = medium ? 0.35 : 0.6;
         if (ctx.AtWar || ctx.PrepProgress >= from_)
         {
+            // In the first stretch of the war a good bot does not attack blind: it gets a report on anyone it has none worth trusting on.
+            bool getReports = medium && ctx.AtWar && ctx.Castle.ElapsedSeconds - ctx.Castle.PrepSeconds < ctx.Rules.Bots.BlindAfterWarSeconds;
+            if (getReports) interval = Math.Min(interval, ctx.Rules.Bots.StaleReportSeconds * 0.5);
             var target = sc.Targets.Where(t => !t.Busy && ctx.Rivals.Any(r => r.Seat == t.Seat))
                 .Select(t => (Target: t, Age: ctx.LatestReport(t.Seat) is { } r ? ctx.Now - r.ObservedAt : double.MaxValue))
                 .Where(x => x.Age > interval)

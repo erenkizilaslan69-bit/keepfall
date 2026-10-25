@@ -22,6 +22,7 @@ public sealed class AttackModule : IBotModule
         var botRules = ctx.Rules.Bots;
         double maxAge = medium ? botRules.StaleReportSeconds : 400;
         bool mayGoBlind = medium && botRules.BlindMargin > 0;
+        bool blindWaits = ctx.Castle.ElapsedSeconds - ctx.Castle.PrepSeconds < botRules.BlindAfterWarSeconds; // the first stretch of the war
         double keep = ctx.Level.KeepHome;
         var home = c.Units.ToDictionary(u => u.Id, u => ctx.HomeSoldiers(u.Id));
         int homeTotal = home.Values.Sum();
@@ -40,6 +41,7 @@ public sealed class AttackModule : IBotModule
             {
                 ctx.Stats.Count("attackNoReport");
                 if (!mayGoBlind) continue;
+                if (blindWaits) { ctx.Stats.Count("attackBlindWait"); continue; }
                 est = new RivalEstimate(OwnShare(ctx, botRules.BlindRivalShare), ctx.Now, false);
                 doubt = botRules.BlindMargin;
                 ctx.Stats.Count("attackBlind");
@@ -48,6 +50,7 @@ public sealed class AttackModule : IBotModule
             {
                 ctx.Stats.Count("attackStaleReport");
                 if (!mayGoBlind) continue;
+                if (blindWaits) { ctx.Stats.Count("attackBlindWait"); continue; }
                 doubt = botRules.BlindMargin;
                 ctx.Stats.Count("attackBlind");
             }
