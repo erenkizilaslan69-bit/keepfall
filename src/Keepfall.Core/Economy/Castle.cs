@@ -262,6 +262,25 @@ public sealed class Castle
         if (iron > 0) Iron += iron;
     }
 
+    /// <summary>
+    /// The castle has fallen: its conqueror takes this share of the stores and the gold, and this share of the
+    /// workers (idle ones first). Whole units only; what is taken is gone from here.
+    /// </summary>
+    internal (int Food, int Wood, int Iron, int Gold, int Workers) Plunder(double lootShare, double workerShare)
+    {
+        int food = (int)Math.Floor(Food * lootShare), wood = (int)Math.Floor(Wood * lootShare);
+        int iron = (int)Math.Floor(Iron * lootShare), gold = (int)Math.Floor(Gold * lootShare);
+        Food -= food; Wood -= wood; Iron -= iron; Gold -= gold;
+        int workers = (int)Math.Floor(WorkerCount * workerShare), left = workers;
+        foreach (var job in Jobs.All.OrderBy(j => j == Job.Idle ? 0 : 1))
+        {
+            int take = Math.Min(left, _workers[job]);
+            _workers[job] -= take;
+            left -= take;
+        }
+        return (food, wood, iron, gold, workers);
+    }
+
     /// <summary>Loot or a reward: ready weapons go to the stockpile.</summary>
     internal void AddWeapons(UnitType type, int count)
     {

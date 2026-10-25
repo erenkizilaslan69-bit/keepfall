@@ -68,7 +68,11 @@
     "battlePlayback": 0.75,
     // Farklı oyunculara ait iki ordu yolda bu kadar (karo) yaklaşırsa durup savaşır (kavşaklar dahil).
     // Süren bir yol savaşına bu mesafenin 1,5 katından fazla yaklaşamayan üçüncü ordular bekler.
-    "encounterRadius": 1.0
+    "encounterRadius": 1.0,
+    // Kale düşünce düşüren oyuncu (askerleriyle birlikte eve dönerken) düşen kalenin depodaki yemek, odun, demir ve altınının
+    // fallLootShare kadarını alır; hayatta kalan işçilerin fallWorkerShare kadarı boşta olarak ona katılır.
+    "fallLootShare": 0.5,
+    "fallWorkerShare": 0.3333
   },
 
   // Altın (ormandan gelir: sandık, köy, haydut kampı): kale penceresinde birim başına bu fiyata anında asker kiralanır.

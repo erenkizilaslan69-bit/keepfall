@@ -43,6 +43,7 @@ public sealed class ArmyMarch
     public int LootPeople { get; internal set; }
     public int LootFood { get; internal set; }
     public int LootWood { get; internal set; }
+    public int LootIron { get; internal set; }
     public IReadOnlyDictionary<string, int> LootWeapons { get; internal set; } = new Dictionary<string, int>();
     /// <summary>Who marches (fewer after a battle on the road).</summary>
     public IReadOnlyDictionary<UnitType, int> Units { get; internal set; }

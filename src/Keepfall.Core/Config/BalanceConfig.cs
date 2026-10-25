@@ -168,6 +168,10 @@ public sealed class WarConfig
     public double ArcherSiegeMultiplier { get; set; } = 0.5;
     public double BattlePlayback { get; set; } = 1;
     public double EncounterRadius { get; set; } = 1;
+    /// <summary>The share of a fallen castle's stores and gold its conqueror takes (0 = nothing).</summary>
+    public double FallLootShare { get; set; }
+    /// <summary>The share of a fallen castle's surviving workers who join its conqueror.</summary>
+    public double FallWorkerShare { get; set; }
 }
 
 public sealed class ScoutingConfig
@@ -445,7 +449,7 @@ public static class BalanceConfigLoader
                     i + 1, l.Capacity, l.Multiplier, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList()),
             new ScoutingRules(sc.ReportError, sc.MaxScouts),
             new WarRules(w.FamineStart, w.FamineFoodMultiplier,
-                w.CastleHp, w.SiegeSeconds, w.ArcherSiegeMultiplier, w.BattlePlayback, w.EncounterRadius),
+                w.CastleHp, w.SiegeSeconds, w.ArcherSiegeMultiplier, w.BattlePlayback, w.EncounterRadius, w.FallLootShare, w.FallWorkerShare),
             new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout, mp.ScoutTrailSeconds),
             config.Mercenary,
             new ForestRules(fo.ChestsPerCorner, fo.VillagesPerCorner, fo.CampsPerCorner, fo.MinSpacing, fo.HubClearing, fo.FootMin, fo.FootMax,

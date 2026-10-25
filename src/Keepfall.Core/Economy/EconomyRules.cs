@@ -23,7 +23,9 @@ public sealed record WarRules(
     double SiegeSeconds,
     double ArcherSiegeMultiplier,
     double BattlePlayback,
-    double EncounterRadius);
+    double EncounterRadius,
+    double FallLootShare = 0,
+    double FallWorkerShare = 0);
 
 /// <summary>Scout reports ("Maç" sheet): how wrong the soldier counts are. How long a mission takes depends on the map.</summary>
 /// <param name="MaxScouts">Most scouts one player can have out at once (a spy, a tour of a quarter and a chest run all count).</param>

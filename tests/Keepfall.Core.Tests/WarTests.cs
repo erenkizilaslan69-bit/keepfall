@@ -588,6 +588,29 @@ public class WarTests
     }
 
     [Fact]
+    public void The_army_that_brings_a_castle_down_carries_half_its_stores_and_a_third_of_its_workers_home()
+    {
+        var game = War(players: 3);
+        game.CastleOf(B)!.AddGold(100);
+        game.CastleOf(A)!.AddSoldiers(Sword, 20);
+        int popA = game.CastleOf(A)!.Population;
+        Ok(game.Execute(A, Attack(B, (Sword, 20))));
+        RunUntilReports(game, B);
+
+        Assert.True(game.IsEliminated(B));
+        var army = game.ArmiesOf(A).Single();
+        var fallen = game.CastleOf(B)!;
+        Assert.Equal(50, army.LootGold);
+        Assert.Equal(50, fallen.Gold); // taken from the fallen castle
+        Assert.Equal((int)Math.Floor((fallen.WorkerCount + army.LootPeople) * Rules.War.FallWorkerShare), army.LootPeople);
+        Assert.True(army.LootPeople > 0 && army.LootFood > 0 && army.LootWood > 0);
+        int loot = army.LootPeople;
+        RunUntilHome(game, A);
+        Assert.Equal(50, game.CastleOf(A)!.Gold);
+        Assert.Equal(popA + loot, game.CastleOf(A)!.Population); // the soldiers are home again, and so are the new people
+    }
+
+    [Fact]
     public void An_eliminated_players_marching_army_still_fights_then_disbands()
     {
         var game = War(players: 3);
