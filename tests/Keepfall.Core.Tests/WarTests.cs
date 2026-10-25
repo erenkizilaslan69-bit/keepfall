@@ -169,8 +169,8 @@ public class WarTests
         Assert.Empty(game.TakeNotifications(C));
         Assert.Empty(game.IncomingWarningsOf(C));
 
-        // A warning can only carry these fields: kind, who, when, arrival time (and a battle id for reports).
-        Assert.Equal(new[] { "ArrivesAt", "At", "BattleId", "Kind", "OtherPlayer" },
+        // A warning can only carry these fields: kind, who, when, arrival time (a battle id for reports, a short text for loot that came home).
+        Assert.Equal(new[] { "ArrivesAt", "At", "BattleId", "Detail", "Kind", "OtherPlayer" },
             typeof(GameNotification).GetProperties().Select(p => p.Name).Order());
     }
 
@@ -608,6 +608,12 @@ public class WarTests
         RunUntilHome(game, A);
         Assert.Equal(50, game.CastleOf(A)!.Gold);
         Assert.Equal(popA + loot, game.CastleOf(A)!.Population); // the soldiers are home again, and so are the new people
+        var report = Assert.Single(game.BattlesOf(A));
+        Assert.Equal(new FallLoot(army.LootFood, army.LootWood, army.LootIron, 50, loot), report.Loot); // the report says what was taken
+        var home = Assert.Single(game.TakeNotifications(A), n => n.Kind == NotificationKind.LootHome);
+        Assert.Equal(report.Loot!.Describe(), home.Detail);
+        Assert.StartsWith("+", home.Detail);
+        Assert.Contains($"+50 altın", home.Detail);
     }
 
     [Fact]

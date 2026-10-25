@@ -46,5 +46,15 @@ export function reportHtml(b: BattleReportView): string {
     <div class="rep-castle"><span>${b.attacking ? 'Onların kalesi' : 'Kalen'}</span>
       <div class="gbar${low ? ' low' : ''}"><div class="fill" style="width:${(100 * b.castleHpAfter) / b.castleHpMax}%"></div></div>
       <span>${fmt(b.castleHpAfter)} / ${fmt(b.castleHpMax)}</span></div>
-    <p class="rep-note">${b.castleDamage > 0 ? `Kale ${fmt(b.castleDamage)} hasar aldı.` : 'Kale hasar almadı.'}${b.defenderEliminated ? ' <b>Kale düştü!</b>' : ''}</p>`;
+    <p class="rep-note">${b.castleDamage > 0 ? `Kale ${fmt(b.castleDamage)} hasar aldı.` : 'Kale hasar almadı.'}${b.defenderEliminated ? ' <b>Kale düştü!</b>' : ''}</p>${lootLine(b)}`;
 }
+
+/** "Ganimet: +120 yemek, +40 altın, +4 kişi" for the report of a castle that fell (only the attacker takes any). */
+const lootLine = (b: BattleReportView): string => {
+  const l = b.loot;
+  if (!l) return '';
+  const parts = ([[l.food, 'yemek'], [l.wood, 'odun'], [l.iron, 'demir'], [l.gold, 'altın'], [l.people, 'kişi']] as [number, string][])
+    .filter(([n]) => n > 0).map(([n, name]) => `+${n} ${name}`);
+  if (parts.length === 0) return '';
+  return `<p class="rep-note rep-loot">${b.attacking ? 'Ganimet (ordu eve dönünce gelir)' : 'Düşüren ordunun aldığı'}: <b>${parts.join(', ')}</b></p>`;
+};

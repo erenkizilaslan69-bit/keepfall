@@ -683,6 +683,8 @@ public sealed class GameState
             castle.AddGold(a.LootGold);
             castle.AddPeople(a.LootPeople);
             castle.AddGoods(a.LootFood, a.LootWood, a.LootIron);
+            if (a.FallLoot is { } fl && fl.Describe() is { Length: > 0 } text)
+                Notify(a.From, new GameNotification(NotificationKind.LootHome, a.Target, ElapsedSeconds, Detail: text));
             foreach (var (id, n) in a.LootWeapons) castle.AddWeapons(Rules.FindUnit(id)!, n);
             _armies.Remove(a);
         }
@@ -895,14 +897,14 @@ public sealed class GameState
             fell = b.Winner == BattleWinner.Attacker && defender.WallHp <= 1e-9;
         }
 
+        var loot = fell ? PlunderFallen(a, defender) : null;
         var report = new BattleReport(b.Id, ElapsedSeconds, a.From, b.Defender,
             Lines(b.AttackerUnits, attackLost), Lines(b.DefenderUnits, defendLost), b.Winner, b.CastleDamage,
-            defender.WallHp, defender.MaxWallHp, fell, b.Kind);
+            defender.WallHp, defender.MaxWallHp, fell, b.Kind, loot);
         _battles.Add(report);
         Notify(a.From, new GameNotification(NotificationKind.BattleFought, b.Defender, ElapsedSeconds, BattleId: report.Id));
         Notify(b.Defender, new GameNotification(NotificationKind.BattleFought, a.From, ElapsedSeconds, BattleId: report.Id));
 
-        if (fell) PlunderFallen(a, defender);
         if (b.Kind == BattleKind.Siege) SendHome(a, b.AttackerSurvivors);
         else
         {
@@ -913,7 +915,7 @@ public sealed class GameState
     }
 
     /// <summary>The castle fell: the army that brought it down carries a share of its stores, gold and people home.</summary>
-    private void PlunderFallen(ArmyMarch a, Castle fallen)
+    private FallLoot PlunderFallen(ArmyMarch a, Castle fallen)
     {
         var (food, wood, iron, gold, workers) = fallen.Plunder(Rules.War.FallLootShare, Rules.War.FallWorkerShare);
         a.LootFood += food;
@@ -921,6 +923,7 @@ public sealed class GameState
         a.LootIron += iron;
         a.LootGold += gold;
         a.LootPeople += workers;
+        return a.FallLoot = new FallLoot(food, wood, iron, gold, workers);
     }
 
     /// <summary>

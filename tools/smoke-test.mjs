@@ -406,6 +406,11 @@ for (let i = 0; i < 160 && !fallen(); i++) {
   await sleep(500);
 }
 check("Y's castle falls", fallen());
+const fall = X.of('CastleState').at(-1).war.battles.find((b) => b.defenderEliminated);
+check('the report of the fall says what X took', !!fall?.loot && fall.loot.gold >= 0 && fall.loot.people > 0, JSON.stringify(fall?.loot));
+check('Y sees it too (its own report)', Y.of('CastleState').at(-1).war.battles.some((b) => b.defenderEliminated && b.loot !== null));
+check('a ribbon says what came home', await waitFor(() => X.of('Notification').some((t) => t.includes('ganimet') && t.includes('kişi')), 30000));
+check('Z never hears of the loot', !Z.of('Notification').some((t) => t.includes('ganimet')));
 await X.call('SetSpeed', 5);
 const fellAt = Y.of('CastleState').find((c) => c.eliminated).elapsedSeconds;
 check('a countdown comes before the first picture', await waitFor(() => Y.of('SpectatorWait').length > 0, 8000));

@@ -85,8 +85,10 @@ public enum NotificationKind
     BattleFought,
     /// <summary>OtherPlayer's castle fell (sent to everyone).</summary>
     Eliminated,
+    /// <summary>The army that brought OtherPlayer's castle down is home with its loot (Detail says what).</summary>
+    LootHome,
 }
 
 /// <summary>Something that happened to a player because of another one.</summary>
 public sealed record GameNotification(NotificationKind Kind, string OtherPlayer, double At,
-    double? ArrivesAt = null, int? BattleId = null);
+    double? ArrivesAt = null, int? BattleId = null, string? Detail = null);

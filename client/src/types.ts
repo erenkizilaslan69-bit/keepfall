@@ -118,6 +118,8 @@ export interface BattleReportView {
   castleHpMax: number;
   defenderEliminated: boolean;
   kind: BattleKind;
+  /** What the army that brought the castle down took from it (null unless the castle fell). */
+  loot: { food: number; wood: number; iron: number; gold: number; people: number } | null;
 }
 export interface WarView {
   wallHp: number;

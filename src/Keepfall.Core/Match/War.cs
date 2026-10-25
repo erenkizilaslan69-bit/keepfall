@@ -44,6 +44,8 @@ public sealed class ArmyMarch
     public int LootFood { get; internal set; }
     public int LootWood { get; internal set; }
     public int LootIron { get; internal set; }
+    /// <summary>Set when this army brought a castle down: what it took (the same as the loot fields hold from that castle).</summary>
+    public FallLoot? FallLoot { get; internal set; }
     public IReadOnlyDictionary<string, int> LootWeapons { get; internal set; } = new Dictionary<string, int>();
     /// <summary>Who marches (fewer after a battle on the road).</summary>
     public IReadOnlyDictionary<UnitType, int> Units { get; internal set; }
@@ -87,6 +89,16 @@ public sealed record BattleUnitLine(string UnitId, string Name, int Count, int L
 /// The outcome of an attack, given to the two players involved and nobody else. Both see both
 /// armies exactly as they fought.
 /// </summary>
+/// <summary>What the army that brought a castle down took from it (whole units).</summary>
+public sealed record FallLoot(int Food, int Wood, int Iron, int Gold, int People)
+{
+    /// <summary>"+120 yemek, +40 altın, +4 kişi": only what there is.</summary>
+    public string Describe() => string.Join(", ", new[]
+    {
+        (Food, "yemek"), (Wood, "odun"), (Iron, "demir"), (Gold, "altın"), (People, "kişi"),
+    }.Where(x => x.Item1 > 0).Select(x => $"+{x.Item1} {x.Item2}"));
+}
+
 public sealed record BattleReport(
     int Id,
     double At,
@@ -99,7 +111,8 @@ public sealed record BattleReport(
     double CastleHpAfter,
     double CastleHpMax,
     bool DefenderEliminated,
-    BattleKind Kind = BattleKind.Siege);
+    BattleKind Kind = BattleKind.Siege,
+    FallLoot? Loot = null);
 
 /// <summary>Place 1 is the winner (several players can share it on a tie).</summary>
 public sealed record RankedPlayer(string Player, int Place, int Population, bool Eliminated, double? EliminatedAt);

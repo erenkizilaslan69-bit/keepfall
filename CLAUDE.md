@@ -56,4 +56,4 @@ Durum: [x] bitti, [ ] açık.
 - Gözcüyle erzak, para ve mesaj gönderme (başka oyuncuya).
 
 ## KALDIĞIM YER (2026-10-26)
-Görev 0–6 bitti ve push edildi; Production (5080) son commit'le çalışıyor, test sunucuları kapalı. Açık: Görev 7 (yalnız fikir, kodlama yok). Ölçümde saldırısız maç oranı yükseldi (yavaş gözcü → botlar daha az bilgiyle az saldırıyor); kullanıcı isterse bot ayarı yeniden ölçülür, sayılara kendi başına dokunma.
+Görev 0–6 bitti; ayrıca (kullanıcı isteği) Orta bot eski/eksik raporla da saldırabiliyor (`bots.staleReportSeconds` 180, `blindMargin` 0,3, `blindRivalShare` 0,8; ölçüm `docs/bot-deney-eski-rapor.md`: Orta vs Orta saldırısız %39,5 → %0, ama botlar savaşın başında hemen saldırıyor, eleme %13,5, maç sonu nüfus 28 → 19,5) ve kale ganimeti savaş raporunda (`loot`) ile eve dönünce şeritte ("…aldığın ganimet kaleye ulaştı: +N yemek, …") görünüyor. Production (5080) son commit'le çalışıyor, test sunucuları kapalı. Açık: Görev 7 (yalnız fikir, kodlama yok). Bot saldırganlığı biraz fazla görünürse `blindMargin`/`attackMargin` yeniden ölçülür (sayılara kullanıcı onayıyla dokun).
