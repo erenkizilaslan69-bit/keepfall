@@ -48,9 +48,14 @@ public class ForestLootTests
         var chest = Find(game, A, SiteKind.Chest);
         Assert.InRange(chest.Site.Gold, Rules.Forest.Chest.GoldMin, Rules.Forest.Chest.GoldMax);
 
+        Assert.InRange(chest.Site.Iron, Rules.Forest.Chest.IronMin, Rules.Forest.Chest.IronMax);
+        Assert.True(chest.Site.Iron > 0);
+        double ironBefore = game.CastleOf(A)!.Iron;
+
         Ok(game.Execute(A, new SendChestScout(chest.Site.Id)));
         Assert.Equal(0, game.CastleOf(A)!.Gold);
         RunUntil(game, () => game.MissionsOf(A).Count == 0);
+        Assert.True(game.CastleOf(A)!.Iron >= ironBefore + chest.Site.Iron, "the chest's iron came home with the gold");
 
         Assert.Equal(chest.Site.Gold, game.CastleOf(A)!.Gold); // arrives with the scout, not before
         Assert.True(game.AllSites.First(s => s.Site.Id == chest.Site.Id).Gone);
@@ -112,9 +117,12 @@ public class ForestLootTests
         var village = Find(game, A, SiteKind.Village);
         game.CastleOf(A)!.AddSoldiers(Sword, 3);
         int population = game.CastleOf(A)!.Population;
+        Assert.InRange(village.Site.Food, Rules.Forest.Village.FoodMin, Rules.Forest.Village.FoodMax);
+        Assert.True(village.Site.Food > 0);
 
         Ok(game.Execute(A, new SendArmyToSite(village.Site.Id, new Dictionary<string, int> { ["kilicli"] = 3 })));
         RunUntil(game, () => game.AllSites.First(s => s.Site.Id == village.Site.Id).Gone);
+        Assert.Equal(village.Site.Food, game.ArmiesOf(A).Single().LootFood); // carried home with the army
         Assert.Empty(game.ActiveBattles); // no fight
         Assert.Equal(0, game.CastleOf(A)!.Gold); // still out
         RunUntil(game, () => game.ArmiesOf(A).Count == 0);

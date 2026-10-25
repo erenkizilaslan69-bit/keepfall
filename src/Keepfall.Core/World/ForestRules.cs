@@ -24,11 +24,13 @@ public sealed record ForestRules(
         new CampRules(new Dictionary<string, int>(), 0, 0, new Dictionary<string, int>()));
 }
 
-public sealed record ChestRules(int GoldMin, int GoldMax);
+public sealed record ChestRules(int GoldMin, int GoldMax, int IronMin = 0, int IronMax = 0);
 
 /// <param name="MinSoldiers">An army needs at least this many soldiers to plunder a village.</param>
-public sealed record VillageRules(int GoldMin, int GoldMax, int PeopleMin, int PeopleMax, int MinSoldiers);
+public sealed record VillageRules(int GoldMin, int GoldMax, int PeopleMin, int PeopleMax, int MinSoldiers,
+    int FoodMin = 0, int FoodMax = 0);
 
 /// <param name="Bandits">Bandits by unit id (they fight with that unit's stats).</param>
 /// <param name="Weapons">Ready weapons by unit id the winner takes home.</param>
-public sealed record CampRules(IReadOnlyDictionary<string, int> Bandits, int GoldMin, int GoldMax, IReadOnlyDictionary<string, int> Weapons);
+public sealed record CampRules(IReadOnlyDictionary<string, int> Bandits, int GoldMin, int GoldMax, IReadOnlyDictionary<string, int> Weapons,
+    int WoodMin = 0, int WoodMax = 0);

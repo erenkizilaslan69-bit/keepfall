@@ -421,6 +421,7 @@ public sealed class GameState
                         m.Site.Gone = true;
                         m.Site.Version++;
                         m.LootGold = m.Site.Site.Gold;
+                        m.LootIron = m.Site.Site.Iron;
                     }
                     m.Back = new Traveller(m.Out.Route.Reversed(), m.Out.Speed);
                     continue;
@@ -429,6 +430,7 @@ public sealed class GameState
                 LayTrail(m);
                 if (!m.Back.Arrived) continue;
                 _players[m.From].Castle.AddGold(m.LootGold);
+                _players[m.From].Castle.AddGoods(0, 0, m.LootIron);
                 _players[m.From].Castle.ReturnScout();
                 _missions.Remove(m);
                 continue;
@@ -680,6 +682,7 @@ public sealed class GameState
             castle.ArmyReturned(a.Survivors);
             castle.AddGold(a.LootGold);
             castle.AddPeople(a.LootPeople);
+            castle.AddGoods(a.LootFood, a.LootWood, 0);
             foreach (var (id, n) in a.LootWeapons) castle.AddWeapons(Rules.FindUnit(id)!, n);
             _armies.Remove(a);
         }
@@ -703,6 +706,7 @@ public sealed class GameState
             site.Version++;
             a.LootGold = site.Site.Gold;
             a.LootPeople = site.Site.People;
+            a.LootFood = site.Site.Food;
         }
         SendHome(a, a.Units);
     }
@@ -931,6 +935,7 @@ public sealed class GameState
             camp.Gone = true;
             a.LootGold = camp.Site.Gold;
             a.LootWeapons = camp.Site.Weapons;
+            a.LootWood = camp.Site.Wood;
         }
 
         var report = new BattleReport(b.Id, ElapsedSeconds, a.From, b.Defender,

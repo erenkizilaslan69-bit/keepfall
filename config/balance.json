@@ -75,10 +75,10 @@
   // Paralı asker işçiden düşmez, nüfusa sayılır ve yemek yer (askerlik yemeği); işçiye dönüştürülemez.
   // Fiyat ~ silahın odun karşılığı (demir ≈ 1,25 odun) + yeni bir kişinin yemek bedeli (~12 odun), altın ≈ 1,4 odun.
   "mercenary": {
-    "okcu": 30,
-    "mizrakci": 28,
-    "kilicli": 32,
-    "kalkanli": 38
+    "okcu": 26,
+    "mizrakci": 24,
+    "kilicli": 29,
+    "kalkanli": 33
   },
 
   // Orman: her köşe kendi çeyreğinde aynı sayıda ve türde nokta alır (her maç rastgele ama adil: her yuva için tek bir
@@ -97,10 +97,10 @@
     "edgeMargin": 1.5,
     // Bir çeyreği keşfeden gözcü, o çeyreğin noktalarına bu kadar karo yaklaşınca onları bulur (patika uzunluğundan büyük olmalı).
     "discoverRadius": 5,
-    "chest": { "goldMin": 14, "goldMax": 28 },
-    "village": { "goldMin": 21, "goldMax": 35, "peopleMin": 2, "peopleMax": 4, "minSoldiers": 3 },
+    "chest": { "goldMin": 10, "goldMax": 20, "ironMin": 4, "ironMax": 8 },
+    "village": { "goldMin": 12, "goldMax": 20, "foodMin": 14, "foodMax": 24, "peopleMin": 2, "peopleMax": 4, "minSoldiers": 3 },
     // Haydutlar birim istatistikleriyle savaşır (id: sayı). Silahlar kazanana hazır silah olarak depoya gider.
-    "camp": { "bandits": { "kilicli": 6, "okcu": 1 }, "goldMin": 42, "goldMax": 63, "weapons": { "kilicli": 2, "okcu": 1 } },
+    "camp": { "bandits": { "kilicli": 6, "okcu": 1 }, "goldMin": 28, "goldMax": 42, "woodMin": 15, "woodMax": 25, "weapons": { "kilicli": 2, "okcu": 1 } },
     "bigCamp": { "bandits": { "kilicli": 8, "kalkanli": 4, "okcu": 4 }, "goldMin": 154, "goldMax": 210, "weapons": { "kilicli": 3, "mizrakci": 2, "okcu": 1 } }
   },
 

@@ -13,7 +13,8 @@ public enum SiteKind { Chest, Village, Camp, BigCamp }
 /// <param name="Spur">The trail from the road to the place (two points: the foot, then the place).</param>
 public sealed record ForestSite(
     string Id, SiteKind Kind, Corner? Quadrant, Vec Position, Vec Foot, int RoadEdgeId, IReadOnlyList<Vec> Spur,
-    int Gold, int People, IReadOnlyDictionary<string, int> Bandits, IReadOnlyDictionary<string, int> Weapons);
+    int Gold, int People, IReadOnlyDictionary<string, int> Bandits, IReadOnlyDictionary<string, int> Weapons,
+    int Iron = 0, int Food = 0, int Wood = 0);
 
 /// <summary>
 /// Scatters the forest's places: random every match, but fair. Each slot (the first chest, the second chest, the
@@ -42,7 +43,7 @@ public static class ForestLayout
 
         var big = rules.BigCamp;
         sites.Add(new ForestSite(NewId(rng), SiteKind.BigCamp, null, hub, hub, -1, [],
-            rng.Next(big.GoldMin, big.GoldMax + 1), 0, big.Bandits, big.Weapons));
+            rng.Next(big.GoldMin, big.GoldMax + 1), 0, big.Bandits, big.Weapons, Wood: Roll(rng, big.WoodMin, big.WoodMax)));
         return sites;
     }
 
@@ -84,20 +85,42 @@ public static class ForestLayout
         var foot = junction + d * t;
         var position = foot + new Vec(-d.Y, d.X) * (side * s);
         return new ForestSite(NewId(rng), kind, corner, position, foot, road.Id, [foot, position],
-            reward.Gold, reward.People, reward.Bandits, reward.Weapons);
+            reward.Gold, reward.People, reward.Bandits, reward.Weapons, reward.Iron, reward.Food, reward.Wood);
     }
 
-    private sealed record Reward(int Gold, int People, IReadOnlyDictionary<string, int> Bandits, IReadOnlyDictionary<string, int> Weapons);
+    private sealed record Reward(int Gold, int People, IReadOnlyDictionary<string, int> Bandits, IReadOnlyDictionary<string, int> Weapons,
+        int Iron = 0, int Food = 0, int Wood = 0);
 
     private static readonly IReadOnlyDictionary<string, int> None = new Dictionary<string, int>();
 
+    // The extra goods (iron, food, wood) are rolled after the gold and people, and only when the range is set, so a
+    // config without them draws exactly the numbers it always did and the layout of the places does not move.
     private static Reward RollReward(SiteKind kind, ForestRules r, Random rng) => kind switch
     {
-        SiteKind.Chest => new Reward(rng.Next(r.Chest.GoldMin, r.Chest.GoldMax + 1), 0, None, None),
-        SiteKind.Village => new Reward(rng.Next(r.Village.GoldMin, r.Village.GoldMax + 1),
-            rng.Next(r.Village.PeopleMin, r.Village.PeopleMax + 1), None, None),
-        _ => new Reward(rng.Next(r.Camp.GoldMin, r.Camp.GoldMax + 1), 0, r.Camp.Bandits, r.Camp.Weapons),
+        SiteKind.Chest => Chest(r, rng),
+        SiteKind.Village => Village(r, rng),
+        _ => Camp(r, rng),
     };
+
+    private static Reward Chest(ForestRules r, Random rng)
+    {
+        int gold = rng.Next(r.Chest.GoldMin, r.Chest.GoldMax + 1);
+        return new Reward(gold, 0, None, None, Iron: Roll(rng, r.Chest.IronMin, r.Chest.IronMax));
+    }
+
+    private static Reward Village(ForestRules r, Random rng)
+    {
+        int gold = rng.Next(r.Village.GoldMin, r.Village.GoldMax + 1), people = rng.Next(r.Village.PeopleMin, r.Village.PeopleMax + 1);
+        return new Reward(gold, people, None, None, Food: Roll(rng, r.Village.FoodMin, r.Village.FoodMax));
+    }
+
+    private static Reward Camp(ForestRules r, Random rng)
+    {
+        int gold = rng.Next(r.Camp.GoldMin, r.Camp.GoldMax + 1);
+        return new Reward(gold, 0, r.Camp.Bandits, r.Camp.Weapons, Wood: Roll(rng, r.Camp.WoodMin, r.Camp.WoodMax));
+    }
+
+    private static int Roll(Random rng, int min, int max) => max <= 0 ? 0 : rng.Next(min, max + 1);
 
     private static double Between(Random rng, double min, double max) => min + rng.NextDouble() * (max - min);
 

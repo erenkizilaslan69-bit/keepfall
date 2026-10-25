@@ -254,6 +254,14 @@ public sealed class Castle
         Stats.GoldGained += amount;
     }
 
+    /// <summary>Loot arrives: food, wood and iron go to the stores (the loot is not produced, so it is no output).</summary>
+    internal void AddGoods(double food, double wood, double iron)
+    {
+        if (food > 0) Food += food;
+        if (wood > 0) Wood += wood;
+        if (iron > 0) Iron += iron;
+    }
+
     /// <summary>Loot or a reward: ready weapons go to the stockpile.</summary>
     internal void AddWeapons(UnitType type, int count)
     {

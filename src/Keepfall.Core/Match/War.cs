@@ -41,6 +41,8 @@ public sealed class ArmyMarch
     /// <summary>What it carries home from a place it plundered: arrives with it.</summary>
     public int LootGold { get; internal set; }
     public int LootPeople { get; internal set; }
+    public int LootFood { get; internal set; }
+    public int LootWood { get; internal set; }
     public IReadOnlyDictionary<string, int> LootWeapons { get; internal set; } = new Dictionary<string, int>();
     /// <summary>Who marches (fewer after a battle on the road).</summary>
     public IReadOnlyDictionary<UnitType, int> Units { get; internal set; }

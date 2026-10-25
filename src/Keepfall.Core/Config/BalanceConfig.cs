@@ -118,6 +118,8 @@ public sealed class ChestConfig
 {
     public int GoldMin { get; set; }
     public int GoldMax { get; set; }
+    public int IronMin { get; set; }
+    public int IronMax { get; set; }
 }
 
 public sealed class VillageConfig
@@ -127,6 +129,8 @@ public sealed class VillageConfig
     public int PeopleMin { get; set; }
     public int PeopleMax { get; set; }
     public int MinSoldiers { get; set; } = 3;
+    public int FoodMin { get; set; }
+    public int FoodMax { get; set; }
 }
 
 public sealed class CampConfig
@@ -135,6 +139,8 @@ public sealed class CampConfig
     public int GoldMin { get; set; }
     public int GoldMax { get; set; }
     public Dictionary<string, int> Weapons { get; set; } = [];
+    public int WoodMin { get; set; }
+    public int WoodMax { get; set; }
 }
 
 public sealed class MapConfig
@@ -317,11 +323,11 @@ public static class BalanceConfigLoader
         if (fo.FootMin < 0 || fo.FootMax <= fo.FootMin || fo.FootMax > 14) errors.Add("forest.footMin/footMax: 0 ≤ min < max ≤ 14 olmalı.");
         if (fo.SpurMin <= 0 || fo.SpurMax < fo.SpurMin) errors.Add("forest.spurMin/spurMax geçersiz.");
         if (fo.DiscoverRadius < fo.SpurMax) errors.Add("forest.discoverRadius, spurMax'tan küçük olamaz (keşif yolu noktaları kaçırır).");
-        if (fo.Chest.GoldMin < 0 || fo.Chest.GoldMax < fo.Chest.GoldMin) errors.Add("forest.chest: altın aralığı geçersiz.");
-        if (fo.Village.GoldMax < fo.Village.GoldMin || fo.Village.PeopleMax < fo.Village.PeopleMin || fo.Village.MinSoldiers < 1) errors.Add("forest.village: aralıklar geçersiz.");
+        if (fo.Chest.GoldMin < 0 || fo.Chest.GoldMax < fo.Chest.GoldMin || fo.Chest.IronMin < 0 || fo.Chest.IronMax < fo.Chest.IronMin) errors.Add("forest.chest: altın/demir aralığı geçersiz.");
+        if (fo.Village.GoldMax < fo.Village.GoldMin || fo.Village.PeopleMax < fo.Village.PeopleMin || fo.Village.MinSoldiers < 1 || fo.Village.FoodMin < 0 || fo.Village.FoodMax < fo.Village.FoodMin) errors.Add("forest.village: aralıklar geçersiz.");
         foreach (var (name, camp) in new[] { ("camp", fo.Camp), ("bigCamp", fo.BigCamp) })
         {
-            if (camp.GoldMax < camp.GoldMin) errors.Add($"forest.{name}: altın aralığı geçersiz.");
+            if (camp.GoldMax < camp.GoldMin || camp.WoodMin < 0 || camp.WoodMax < camp.WoodMin) errors.Add($"forest.{name}: altın/odun aralığı geçersiz.");
             foreach (var id in camp.Bandits.Keys.Concat(camp.Weapons.Keys))
                 if (!config.Units.Any(u => u.Id == id)) errors.Add($"forest.{name}: bilinmeyen birim \"{id}\".");
         }
@@ -444,10 +450,11 @@ public static class BalanceConfigLoader
             config.Mercenary,
             new ForestRules(fo.ChestsPerCorner, fo.VillagesPerCorner, fo.CampsPerCorner, fo.MinSpacing, fo.HubClearing, fo.FootMin, fo.FootMax,
                 fo.SpurMin, fo.SpurMax, fo.EdgeMargin, fo.DiscoverRadius,
-                new ChestRules(fo.Chest.GoldMin, fo.Chest.GoldMax),
-                new VillageRules(fo.Village.GoldMin, fo.Village.GoldMax, fo.Village.PeopleMin, fo.Village.PeopleMax, fo.Village.MinSoldiers),
-                new CampRules(fo.Camp.Bandits, fo.Camp.GoldMin, fo.Camp.GoldMax, fo.Camp.Weapons),
-                new CampRules(fo.BigCamp.Bandits, fo.BigCamp.GoldMin, fo.BigCamp.GoldMax, fo.BigCamp.Weapons)),
+                new ChestRules(fo.Chest.GoldMin, fo.Chest.GoldMax, fo.Chest.IronMin, fo.Chest.IronMax),
+                new VillageRules(fo.Village.GoldMin, fo.Village.GoldMax, fo.Village.PeopleMin, fo.Village.PeopleMax, fo.Village.MinSoldiers,
+                    fo.Village.FoodMin, fo.Village.FoodMax),
+                new CampRules(fo.Camp.Bandits, fo.Camp.GoldMin, fo.Camp.GoldMax, fo.Camp.Weapons, fo.Camp.WoodMin, fo.Camp.WoodMax),
+                new CampRules(fo.BigCamp.Bandits, fo.BigCamp.GoldMin, fo.BigCamp.GoldMax, fo.BigCamp.Weapons, fo.BigCamp.WoodMin, fo.BigCamp.WoodMax)),
             new BotRules(BotLevel(config.Bots.Easy, false), BotLevel(config.Bots.Medium, true), config.Bots.Mix, config.Bots.WeaponsFrom, config.Bots.ArmFrom, config.Bots.ArmyShare,
                 config.Bots.AttackMargin, config.Bots.AttackRate, config.Bots.OtherQuartersFrom));
     }

@@ -33,6 +33,7 @@ public sealed class ScoutMission
     public SiteState? Site { get; internal init; }
     /// <summary>Gold picked up, delivered when the scout is home.</summary>
     public int LootGold { get; internal set; }
+    public int LootIron { get; internal set; }
     /// <summary>For a tour: which quarter of the forest (named by its corner).</summary>
     public Corner? Quarter { get; }
 

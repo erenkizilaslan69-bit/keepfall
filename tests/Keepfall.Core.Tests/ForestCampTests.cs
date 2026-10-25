@@ -48,6 +48,9 @@ public class ForestCampTests
         Explore(game, A, Corner.NorthWest);
         var camp = game.KnownSitesOf(A).First(k => k.Site.Kind == SiteKind.Camp);
         game.CastleOf(A)!.AddSoldiers(Sword, 20);
+        Assert.InRange(camp.Site.Wood, Rules.Forest.Camp.WoodMin, Rules.Forest.Camp.WoodMax);
+        Assert.True(camp.Site.Wood > 0);
+        double woodBefore = game.CastleOf(A)!.Wood;
         Ok(game.Execute(A, Raid(camp.Site.Id, 20)));
 
         RunUntil(game, () => game.ActiveBattles.Any(b => b.Kind == BattleKind.Camp));
@@ -64,6 +67,7 @@ public class ForestCampTests
         Assert.Equal(0, Truth(game, camp.Site.Id).BanditCount);
         Assert.InRange(castle.Gold, Rules.Forest.Camp.GoldMin, Rules.Forest.Camp.GoldMax);
         Assert.Equal(camp.Site.Gold, castle.Gold);
+        Assert.True(castle.Wood >= woodBefore + camp.Site.Wood, "the camp's wood came home with the army");
         foreach (var (id, n) in Rules.Forest.Camp.Weapons) Assert.Equal(n, castle.Weapons[Rules.FindUnit(id)!]);
         Assert.InRange(castle.Soldiers[Sword], 1, 20); // survivors came home
         Assert.True(game.KnownSitesOf(A).First(k => k.Site.Id == camp.Site.Id).Gone, "A saw it cleared");
