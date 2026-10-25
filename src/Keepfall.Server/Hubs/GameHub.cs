@@ -110,6 +110,13 @@ public sealed class GameHub(RoomRegistry registry) : Hub
     public Task<CommandResultView> SetGrowth(bool enabled) => Economy(new SetGrowth(enabled));
     /// <summary>Send a scout to tour one quarter of the forest (named by its corner); it finds that quarter's places.</summary>
     public Task<CommandResultView> SendExplore(Corner quarter, Job from) => Economy(new SendExplore(quarter, from));
+    /// <summary>Send a scout to a chest this player has found.</summary>
+    public Task<CommandResultView> SendChestScout(string siteId, Job from) => Economy(new SendChestScout(siteId, from));
+
+    /// <summary>Send an army to a place in the forest this player has found (plunder a village, clear a camp).</summary>
+    public Task<CommandResultView> SendArmyToSite(string siteId, Dictionary<string, int> units, Dictionary<string, Row>? rows, string? archerPriority) =>
+        Economy(new SendArmyToSite(siteId, units ?? [], rows, archerPriority));
+
     /// <summary>Hire soldiers for gold (they stand at home at once and cannot become workers).</summary>
     public Task<CommandResultView> HireMercenary(string unitId, int count) => Economy(new HireMercenary(unitId, count));
     /// <summary>The target is named by public seat; the castle itself is never addressed by the client.</summary>

@@ -34,7 +34,14 @@ public sealed class ArmyMarch
     /// <summary>What other players see it as: random, so it gives nothing away.</summary>
     public string PublicId { get; }
     public string From { get; }
+    /// <summary>The player whose castle it marches on, or "site:ID" for a place in the forest.</summary>
     public string Target { get; }
+    /// <summary>The place in the forest it goes to; null for an army marching on a castle.</summary>
+    public SiteState? Site { get; internal init; }
+    /// <summary>What it carries home from a place it plundered: arrives with it.</summary>
+    public int LootGold { get; internal set; }
+    public int LootPeople { get; internal set; }
+    public IReadOnlyDictionary<string, int> LootWeapons { get; internal set; } = new Dictionary<string, int>();
     /// <summary>Who marches (fewer after a battle on the road).</summary>
     public IReadOnlyDictionary<UnitType, int> Units { get; internal set; }
     /// <summary>Attack the castle or cut off the road. Only the owner ever knows.</summary>

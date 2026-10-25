@@ -43,7 +43,8 @@ public sealed record ArmyUnitView(string UnitId, string Name, int Count);
 /// <param name="Fighting">In a battle right now (then it cannot be recalled).</param>
 public sealed record ArmyView(
     int Id, int TargetSeat, string TargetName, PlayerColor TargetColor, ArmyState State,
-    IReadOnlyList<ArmyUnitView> Units, double Distance, double RemainingSeconds, ArmyMode Mode, bool Fighting);
+    IReadOnlyList<ArmyUnitView> Units, double Distance, double RemainingSeconds, ArmyMode Mode, bool Fighting,
+    string? SiteId = null, SiteKind? SiteKind = null);
 public sealed record IncomingView(int FromSeat, string FromName, PlayerColor FromColor, double ArrivesInSeconds);
 public sealed record BattleLineView(string UnitId, string Name, int Count, int Lost);
 public sealed record BattleReportView(
@@ -63,7 +64,7 @@ public sealed record WarView(
 public sealed record ScoutTargetView(int Seat, string Name, PlayerColor Color, bool Busy, double ScoutSeconds, double MarchSeconds);
 /// <param name="Quarter">For a forest tour: which quarter (named by its corner).</param>
 public sealed record ScoutMissionView(int TargetSeat, double Progress, bool Arrived, double RemainingSeconds,
-    MissionKind Kind = MissionKind.Spy, Corner? Quarter = null);
+    MissionKind Kind = MissionKind.Spy, Corner? Quarter = null, string? SiteId = null);
 /// <summary>One quarter of the forest as a place to send a scout: whose corner it belongs to, whether it has been toured, how long a tour takes.</summary>
 public sealed record QuarterView(Corner Corner, int? Seat, string? Name, PlayerColor? Color, bool Explored, bool Busy, double Seconds);
 public sealed record ScoutedUnitView(string UnitId, string Name, int Count);
@@ -165,8 +166,10 @@ public static class ViewMapper
             game.ArmiesOf(player.CastleKey).Select(a =>
             {
                 var target = Other(a.Target);
-                return new ArmyView(a.Id, target?.Seat ?? 0, target?.Name ?? "?", target?.Color ?? PlayerColor.Blue, a.State,
-                    Units(a.State == ArmyState.Marching ? a.Units : a.Survivors), a.Distance, RemainingOf(a), a.Mode, a.Battle is not null);
+                string name = a.Site is { } site ? SiteName(site.Site.Kind) : target?.Name ?? "?";
+                return new ArmyView(a.Id, target?.Seat ?? 0, name, target?.Color ?? PlayerColor.Blue, a.State,
+                    Units(a.State == ArmyState.Marching ? a.Units : a.Survivors), a.Distance, RemainingOf(a), a.Mode, a.Battle is not null,
+                    a.Site?.Site.Id, a.Site?.Site.Kind);
             }).ToList(),
             // Only who and when: an incoming army's size and units are never part of this.
             game.IncomingWarningsOf(player.CastleKey).Select(w =>
@@ -186,6 +189,11 @@ public static class ViewMapper
             new DefenseView(c.DefenseRows.ToDictionary(kv => kv.Key.Id, kv => kv.Value), c.DefensePriority?.Id));
     }
 
+    public static string SiteName(SiteKind kind) => kind switch
+    {
+        SiteKind.Chest => "Sandık", SiteKind.Village => "Köy", SiteKind.Camp => "Haydut kampı", _ => "Büyük haydut kampı",
+    };
+
     /// <summary>Seconds until the army arrives (or is home); an interceptor that met nobody turns back half way.</summary>
     private static double RemainingOf(ArmyMarch a) =>
         a.Mode == ArmyMode.Intercept && a.State == ArmyState.Marching
@@ -202,7 +210,7 @@ public static class ViewMapper
                 .Select(p => new ScoutTargetView(p.Seat, p.Name, p.Color, missions.Any(m => m.Target == p.CastleKey),
                     game.ScoutSeconds(player.CastleKey, p.CastleKey), game.MarchSeconds(player.CastleKey, p.CastleKey)))
                 .ToList(),
-            missions.Select(m => new ScoutMissionView(SeatOf(m.Target), m.Progress, m.Arrived, m.SecondsLeft, m.Kind, m.Quarter)).ToList(),
+            missions.Select(m => new ScoutMissionView(SeatOf(m.Target), m.Progress, m.Arrived, m.SecondsLeft, m.Kind, m.Quarter, m.Site?.Site.Id)).ToList(),
             game.ReportsOf(player.CastleKey).Select(r =>
             {
                 var target = room.PlayerOfCastle(r.Target);

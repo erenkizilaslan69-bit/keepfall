@@ -328,6 +328,42 @@ await X3.call('JoinRoom', jx.code, 'Xaver', jx.token, false);
 await sleep(700);
 check('a reload gets the found places back', (X3.of('MapState')[0]?.sites.length ?? 0) === found.length);
 X3.ws.close();
+
+// ---- loot: gold comes home with the scout, and what others have emptied stays unknown until you look ---------
+const siteOf = (c, id) => c.of('MapState').at(-1).sites.find((x) => x.id === id);
+const chest = found.find((x) => x.kind === 'chest');
+const village = found.find((x) => x.kind === 'village');
+check('Y tours X quarter and sees the chest full', (await Y.call('SendExplore', own.corner, 'idle')).ok
+  && await waitFor(() => siteOf(Y, chest.id) !== undefined, 15000) && siteOf(Y, chest.id).gone === false);
+check('Y is back and its trail closed', await waitFor(() => Y.of('CastleState').at(-1).scouting.missions.length === 0
+  && Y.of('MapState').at(-1).trail.length === 0, 40000));
+check('X sends a scout for the chest', (await X.call('SendChestScout', chest.id, 'idle')).ok);
+check('Z (who never found it) cannot', !(await Z.call('SendChestScout', chest.id, 'idle')).ok);
+check('the gold arrives with the scout', await waitFor(() => X.of('CastleState').at(-1).resources.gold >= 20, 25000));
+const chestGold = X.of('CastleState').at(-1).resources.gold;
+check('a chest holds 20 to 40 gold', chestGold >= 20 && chestGold <= 40, String(chestGold));
+check('X knows the chest is empty', siteOf(X, chest.id).gone === true);
+check('Y, who has not looked since, still thinks it is full', siteOf(Y, chest.id).gone === false);
+check('nobody else got any gold', [Y, Z].every((c) => c.of('CastleState').at(-1).resources.gold === 0));
+
+check('X plunders the village with three soldiers', (await X.call('SendArmyToSite', village.id, { kilicli: 3 }, null, null)).ok);
+check('two soldiers are not enough', !(await X.call('SendArmyToSite', village.id, { kilicli: 2 }, null, null)).ok);
+check('the army is home with the loot', await waitFor(() => {
+  const c = X.of('CastleState').at(-1);
+  return c.war.armies.length === 0 && c.resources.gold > chestGold;
+}, 30000));
+const afterVillage = X.of('CastleState').at(-1);
+const villageGold = afterVillage.resources.gold - chestGold;
+check('a village gives 30 to 50 gold', villageGold >= 30 && villageGold <= 50, String(villageGold));
+check('the village is gone for X, all soldiers came home', siteOf(X, village.id).gone === true
+  && afterVillage.units.find((u) => u.id === 'kilicli').soldiers === 4);
+check('the raid shows in nobody elses castle state, and Z never hears of the village at all',
+  ![Y, Z].some((c) => c.msgs.some((m) => m.target === 'CastleState' && m.raw.includes(village.id)))
+  && !Z.msgs.some((m) => m.raw.includes(village.id)));
+check('Y explores again and learns about the empty chest', (await Y.call('SendExplore', own.corner, 'idle')).ok
+  && await waitFor(() => siteOf(Y, chest.id).gone === true, 20000));
+check('Y finds the village plundered too', siteOf(Y, village.id).gone === true);
+check('Z knows nothing of all this', Z.of('MapState').every((m) => m.sites.length === 0));
 check('the second war begins', await waitFor(() => X.of('RoomState').some((r) => r.phase === 'war'), 60000));
 const fallen = () => Y.of('CastleState').at(-1)?.eliminated === true;
 for (let i = 0; i < 160 && !fallen(); i++) {

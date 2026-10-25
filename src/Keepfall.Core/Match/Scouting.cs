@@ -9,6 +9,8 @@ public enum MissionKind
     Spy,
     /// <summary>A tour of one quarter of the forest, finding its places.</summary>
     Explore,
+    /// <summary>To a chest in the forest and home with its gold.</summary>
+    Chest,
 }
 
 /// <summary>A scout on the road from <see cref="From"/>'s gate to <see cref="Target"/>'s and back (or on a tour of a forest quarter).</summary>
@@ -27,6 +29,10 @@ public sealed class ScoutMission
     }
 
     public MissionKind Kind { get; }
+    /// <summary>For a chest mission: the chest.</summary>
+    public SiteState? Site { get; internal init; }
+    /// <summary>Gold picked up, delivered when the scout is home.</summary>
+    public int LootGold { get; internal set; }
     /// <summary>For a tour: which quarter of the forest (named by its corner).</summary>
     public Corner? Quarter { get; }
 
@@ -43,7 +49,7 @@ public sealed class ScoutMission
     public Vec Velocity => Leg.Arrived ? new Vec(0, 0) : Leg.Direction * Leg.Speed;
     /// <summary>Taken when the scout arrives; handed to <see cref="From"/> only when the scout is back.</summary>
     public ScoutReport? Report { get; internal set; }
-    public bool Arrived => Report is not null;
+    public bool Arrived => Report is not null || (Kind == MissionKind.Chest && Back is not null);
     /// <summary>Where the last trail point was laid (the next one comes a little further on).</summary>
     internal Vec? LastTrail { get; set; }
 

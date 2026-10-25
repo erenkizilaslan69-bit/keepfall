@@ -29,6 +29,9 @@ public sealed record SendScout(string TargetKey, Job From = Job.Idle) : GameComm
 /// <summary>Send one person from <paramref name="From"/> to explore one quarter of the forest (named by its corner): they walk its road, find its places and come home.</summary>
 public sealed record SendExplore(World.Corner Quarter, Job From = Job.Idle) : GameCommand;
 
+/// <summary>Send one person from <paramref name="From"/> to a chest they have found: they pick it up and bring the gold home.</summary>
+public sealed record SendChestScout(string SiteId, Job From = Job.Idle) : GameCommand;
+
 public enum ArmyMode
 {
     /// <summary>March to the target's castle and lay siege.</summary>
@@ -48,6 +51,13 @@ public sealed record SendArmy(
     IReadOnlyDictionary<string, Row>? Rows = null,
     string? ArcherPriority = null,
     ArmyMode Mode = ArmyMode.Attack) : GameCommand;
+
+/// <summary>War: send soldiers to a place in the forest the player has found (plunder a village, clear a bandit camp).</summary>
+public sealed record SendArmyToSite(
+    string SiteId,
+    IReadOnlyDictionary<string, int> Units,
+    IReadOnlyDictionary<string, Row>? Rows = null,
+    string? ArcherPriority = null) : GameCommand;
 
 /// <summary>Call one of our armies home from wherever it is on the road (not while it is fighting).</summary>
 public sealed record RecallArmy(int ArmyId) : GameCommand;

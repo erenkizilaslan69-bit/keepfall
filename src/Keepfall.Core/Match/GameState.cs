@@ -334,6 +334,8 @@ public sealed class GameState
         {
             SendScout scout => LaunchScout(playerKey, player, scout),
             SendExplore explore => LaunchExplore(playerKey, player, explore),
+            SendChestScout chest => LaunchChestScout(playerKey, player, chest),
+            SendArmyToSite raid => LaunchRaid(playerKey, player, raid),
             SendArmy army => LaunchArmy(playerKey, player, army),
             RecallArmy recall => Recall(playerKey, recall.ArmyId),
             _ => player.Castle.Execute(command),
@@ -355,6 +357,22 @@ public sealed class GameState
         return CommandResult.Success;
     }
 
+    private CommandResult LaunchChestScout(string from, PlayerEconomy player, SendChestScout c)
+    {
+        if (!_sites.TryGetValue(c.SiteId, out var site) || !Knows(from, c.SiteId)) return CommandResult.Fail("Böyle bir sandık bilmiyorsun.");
+        if (site.Site.Kind != SiteKind.Chest) return CommandResult.Fail("Bu bir sandık değil.");
+        if (_knowledge[from][c.SiteId].Gone) return CommandResult.Fail("Bu sandık boşalmış görünüyor.");
+        string target = $"site:{c.SiteId}";
+        if (_missions.Any(m => m.From == from && m.Target == target)) return CommandResult.Fail("Bu sandığa zaten bir gözcün gidiyor.");
+        var sent = player.Castle.SendScout(c.From);
+        if (!sent.Ok) return sent;
+        _missions.Add(new ScoutMission(NewPublicId(), from, target, ElapsedSeconds, Map.RouteToSite(_corners[from], site.Site),
+            Rules.Map.ScoutSpeed, MissionKind.Chest) { Site = site });
+        return CommandResult.Success;
+    }
+
+    private bool Knows(string player, string siteId) => _knowledge.TryGetValue(player, out var k) && k.ContainsKey(siteId);
+
     private CommandResult LaunchExplore(string from, PlayerEconomy player, SendExplore c)
     {
         string target = $"quarter:{c.Quarter}";
@@ -372,6 +390,31 @@ public sealed class GameState
         _trail.RemoveAll(t => t.ExpiresAt is { } end && end <= ElapsedSeconds);
         foreach (var m in _missions.ToList())
         {
+            if (m.Kind == MissionKind.Chest)
+            {
+                if (m.Back is null)
+                {
+                    m.Out.Advance(dt);
+                    LayTrail(m);
+                    if (!m.Out.Arrived) continue;
+                    // At the chest: whoever gets there first takes it; a scout who finds it gone walks home empty-handed.
+                    if (!m.Site!.Gone)
+                    {
+                        m.Site.Gone = true;
+                        m.Site.Version++;
+                        m.LootGold = m.Site.Site.Gold;
+                    }
+                    m.Back = new Traveller(m.Out.Route.Reversed(), m.Out.Speed);
+                    continue;
+                }
+                m.Back.Advance(dt);
+                LayTrail(m);
+                if (!m.Back.Arrived) continue;
+                _players[m.From].Castle.AddGold(m.LootGold);
+                _players[m.From].Castle.ReturnScout();
+                _missions.Remove(m);
+                continue;
+            }
             if (m.Kind == MissionKind.Explore)
             {
                 m.Out.Advance(dt);
@@ -515,26 +558,54 @@ public sealed class GameState
         if (!_players.ContainsKey(c.TargetKey)) return CommandResult.Fail("Böyle bir rakip yok.");
         if (_eliminated.ContainsKey(c.TargetKey)) return CommandResult.Fail("Bu oyuncu elendi.");
 
-        var units = new Dictionary<UnitType, int>();
-        foreach (var (id, n) in c.Units)
-        {
-            if (Rules.FindUnit(id) is not { } type) return CommandResult.Fail($"Bilinmeyen birlik \"{id}\".");
-            if (n > 0) units[type] = units.GetValueOrDefault(type) + n;
-        }
-        var rows = new Dictionary<UnitType, Row>();
-        foreach (var (id, row) in c.Rows ?? new Dictionary<string, Row>())
-        {
-            if (Rules.FindUnit(id) is not { } type) return CommandResult.Fail($"Bilinmeyen birlik \"{id}\".");
-            rows[type] = row;
-        }
-        UnitType? priority = null;
-        if (!string.IsNullOrEmpty(c.ArcherPriority) && (priority = Rules.FindUnit(c.ArcherPriority)) is null)
-            return CommandResult.Fail($"Bilinmeyen birlik \"{c.ArcherPriority}\".");
+        var parsed = ParseArmy(c.Units, c.Rows, c.ArcherPriority, out var units, out var rows, out var priority);
+        if (!parsed.Ok) return parsed;
 
         var sent = player.Castle.DispatchArmy(units);
         if (!sent.Ok) return sent;
         _armies.Add(new ArmyMarch(_nextId++, NewPublicId(), from, c.TargetKey, units, rows, priority, ElapsedSeconds,
             RouteBetween(from, c.TargetKey), Rules.Map.ArmySpeed, c.Mode));
+        return CommandResult.Success;
+    }
+
+    private CommandResult ParseArmy(IReadOnlyDictionary<string, int> unitIds, IReadOnlyDictionary<string, Row>? rowIds, string? archerPriority,
+        out Dictionary<UnitType, int> units, out Dictionary<UnitType, Row> rows, out UnitType? priority)
+    {
+        units = [];
+        rows = [];
+        priority = null;
+        foreach (var (id, n) in unitIds)
+        {
+            if (Rules.FindUnit(id) is not { } type) return CommandResult.Fail($"Bilinmeyen birlik \"{id}\".");
+            if (n > 0) units[type] = units.GetValueOrDefault(type) + n;
+        }
+        foreach (var (id, row) in rowIds ?? new Dictionary<string, Row>())
+        {
+            if (Rules.FindUnit(id) is not { } type) return CommandResult.Fail($"Bilinmeyen birlik \"{id}\".");
+            rows[type] = row;
+        }
+        if (!string.IsNullOrEmpty(archerPriority) && (priority = Rules.FindUnit(archerPriority)) is null)
+            return CommandResult.Fail($"Bilinmeyen birlik \"{archerPriority}\".");
+        return CommandResult.Success;
+    }
+
+    /// <summary>An army to a place in the forest the player has found (any phase: the forest is not the war).</summary>
+    private CommandResult LaunchRaid(string from, PlayerEconomy player, SendArmyToSite c)
+    {
+        if (!_sites.TryGetValue(c.SiteId, out var state) || !Knows(from, c.SiteId)) return CommandResult.Fail("Böyle bir yer bilmiyorsun.");
+        var known = _knowledge[from][c.SiteId];
+        if (state.Site.Kind != SiteKind.Village) return CommandResult.Fail("Ordu buraya gönderilemez.");
+        if (known.Gone) return CommandResult.Fail("Bu köy yağmalanmış görünüyor.");
+
+        var parsed = ParseArmy(c.Units, c.Rows, c.ArcherPriority, out var units, out var rows, out var priority);
+        if (!parsed.Ok) return parsed;
+        if (state.Site.Kind == SiteKind.Village && units.Values.Sum() < Rules.Forest.Village.MinSoldiers)
+            return CommandResult.Fail($"Köyü yağmalamak için en az {Rules.Forest.Village.MinSoldiers} asker gerekir.");
+
+        var sent = player.Castle.DispatchArmy(units);
+        if (!sent.Ok) return sent;
+        _armies.Add(new ArmyMarch(_nextId++, NewPublicId(), from, $"site:{c.SiteId}", units, rows, priority, ElapsedSeconds,
+            Map.RouteToSite(_corners[from], state.Site), Rules.Map.ArmySpeed) { Site = state });
         return CommandResult.Success;
     }
 
@@ -568,7 +639,7 @@ public sealed class GameState
         MoveAndMeet(dt);
 
         // The sentry: the target is warned the moment an army coming for it is in sight of the castle.
-        foreach (var a in _armies.Where(a => a.State == ArmyState.Marching && !a.Sighted && !_eliminated.ContainsKey(a.Target)))
+        foreach (var a in _armies.Where(a => a.State == ArmyState.Marching && !a.Sighted && a.Site is null && !_eliminated.ContainsKey(a.Target)))
         {
             if (!CastleVisionOf(a.Target).Contains(a.Position)) continue;
             a.Sighted = true;
@@ -579,6 +650,7 @@ public sealed class GameState
         foreach (var a in _armies.Where(a => a.State == ArmyState.Marching && a.Battle is null && a.Out.Arrived).OrderBy(a => a.Id).ToList())
         {
             if (Phase == MatchPhase.Ended) return;
+            if (a.Site is not null) { ArriveAtSite(a); continue; }
             if (_eliminated.ContainsKey(a.Target)) { SendHome(a, a.Units); continue; } // nothing left to attack
             if (_active.Any(b => b.Kind == BattleKind.Siege && b.Defender == a.Target)) continue;
             StartSiege(a);
@@ -586,9 +658,27 @@ public sealed class GameState
 
         foreach (var a in _armies.Where(a => a.State == ArmyState.Returning && a.Back!.Arrived).ToList())
         {
-            _players[a.From].Castle.ArmyReturned(a.Survivors);
+            var castle = _players[a.From].Castle;
+            castle.ArmyReturned(a.Survivors);
+            castle.AddGold(a.LootGold);
+            castle.AddPeople(a.LootPeople);
+            foreach (var (id, n) in a.LootWeapons) castle.AddWeapons(Rules.FindUnit(id)!, n);
             _armies.Remove(a);
         }
+    }
+
+    /// <summary>The army is at a place in the forest. A village is plundered without a fight (once: it is gone after); the loot goes home with the army.</summary>
+    private void ArriveAtSite(ArmyMarch a)
+    {
+        var site = a.Site!;
+        if (site.Site.Kind == SiteKind.Village && !site.Gone)
+        {
+            site.Gone = true;
+            site.Version++;
+            a.LootGold = site.Site.Gold;
+            a.LootPeople = site.Site.People;
+        }
+        SendHome(a, a.Units);
     }
 
     /// <summary>Sub-steps per game second for walking and meeting.</summary>
@@ -616,7 +706,8 @@ public sealed class GameState
                     TurnBack(a);
             }
 
-            var free = _armies.Where(a => a.Battle is null).OrderBy(a => a.Id).ToList();
+            // Armies meet on the road only in the war (in preparation they walk through each other: only the forest's raids go out then).
+            var free = Phase == MatchPhase.War ? _armies.Where(a => a.Battle is null).OrderBy(a => a.Id).ToList() : [];
             for (int x = 0; x < free.Count; x++)
                 for (int y = x + 1; y < free.Count; y++)
                 {
