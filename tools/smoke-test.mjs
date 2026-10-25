@@ -461,6 +461,43 @@ check('nobody was sent the bots castle (yellow)',
 P.ws.close();
 Q.ws.close();
 
+// ---- every human falls: the host may end the match and the bots play the rest out at once ----------------------
+const H = client(), K = client();
+await Promise.all([H.ready, K.ready]);
+const jh = await H.call('CreateRoom', 'Hasan');
+const jk = await K.call('JoinRoom', jh.code, 'Kemal', null, false);
+check('two humans and two bots take their seats', jh.ok && jk.ok && (await H.call('AddBot', 'medium')).ok && (await H.call('AddBot', 'medium')).ok);
+await H.call('SetReady', true);
+await K.call('SetReady', true);
+check('the match starts', (await H.call('StartMatch')).ok);
+check('the host sets ×20', (await H.call('SetSpeed', 20)).ok);
+// The humans do nothing; the bots scout them, find them undefended and take their gates.
+const allOut = await (async () => {
+  for (let i = 0; i < 300; i++) {
+    const r = H.of('RoomState').at(-1);
+    if (r?.allHumansOut || r?.phase === 'ended') return r;
+    await sleep(500);
+  }
+  return null;
+})();
+check('once every human has fallen the room says so', !!allOut?.allHumansOut, JSON.stringify(allOut?.phase));
+if (allOut?.allHumansOut) {
+  check('the guest cannot end the match', !(await K.call('FinishMatch')).ok);
+  await sleep(1500); // the last one to fall first waits a few game seconds, then gets its pictures
+  check('both fallen humans were shown the whole world, and only them', H.of('SpectatorState').length > 0 && K.of('SpectatorState').length > 0
+    && H.of('SpectatorState').every((f) => f.castles.length === 4),
+    `H ${H.of('SpectatorState').length} frames, K ${K.of('SpectatorState').length}, castles per frame ${[...new Set(H.of('SpectatorState').map((f) => f.castles.length))]}`);
+  check('the host ends it: the bots play the rest at once', (await H.call('FinishMatch')).ok);
+  await sleep(500);
+  const end = H.of('RoomState').at(-1);
+  check('the room is over with a result, won by a bot', end.phase === 'ended' && !!end.result && end.result.winners.every((w) => end.players.find((x) => x.seat === w)?.isBot));
+  check('both humans got their summary, and the bots got no connection', H.of('MatchEnded').length === 1 && K.of('MatchEnded').length === 1);
+  check('it cannot be ended twice', !(await H.call('FinishMatch')).ok);
+}
+check('the humans only ever got their own castles, never a bot castle', H.of('CastleState').every((c) => c.color === 'blue') && K.of('CastleState').every((c) => c.color === 'red'));
+H.ws.close();
+K.ws.close();
+
 X.ws.close();
 Y.ws.close();
 Z.ws.close();

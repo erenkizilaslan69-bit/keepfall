@@ -134,6 +134,17 @@ dotnet run --project src/BattleSim -c Release -- savas "okcu:10,kalkanli:10" "ki
   `--butce kisi` (varsayılan) iki ordunun asker sayısını, `--butce kaynak` kaynak değerini eşitler.
 - `savas`: iki ordu, savaş günlüğüyle. `--tekrar 500` ile kazanma oranı.
 - `kontrol`: ayar dosyasını doğrular.
+- `bot`: arayüzsüz bot vs bot maçları (bkz. Botlar). `bot --izle` tek maçı dakika dakika gösterir.
+
+## Botlar
+
+Oda sahibi lobide boş koltuğa **Bot ekle** (Kolay / Orta) der; bot kendi rengi ve adıyla ("Bot Kırmızı") oturur, hep hazırdır. Oyunda üst şeritte, rakip kale penceresinde ve savaş raporlarında küçük bir bot ikonu görünür.
+
+- **Aynı kapıdan girer.** Bot sunucuda çalışır ama sadece oyuncuların kullandığı komutları kullanır (`Room.Execute`). Girdisi, oyuncuya giden görünümlerin aynısıdır (`Keepfall.Views`): kendi kalesi, görüş alanı, gözcü ve savaş raporları. Sunucunun gerçek durumuna erişmez; bu yapıyla garanti edilir: `Keepfall.Bots` derlemesi `GameState`/`Room` tiplerine başvuramaz (`BotIsolationTests` derlemenin başvurduğu tipleri denetler) ve aynı görünümlerle farklı gizli durumda aynı komutları verdiği ayrıca test edilir.
+- **Davranış** (`src/Keepfall.Bots`, modül modül): ekonomi (işçi dağılımı, büyüme, yemek), bina yükseltme (tarla, oduncu kampı, maden, demirhane), silah/asker üretimi (`bots.mix` karması), gözcülük ve rapora göre karşılık, orman (sandık, köy, kamp; savaş hesaplayıcısıyla kendi gücüne göre), paralı asker, saldırı (rapora göre en zayıf/en yakın rakip) ve savunma (silah kuşanma, dizilim, geri çağırma, gerekirse önünü kesme).
+- **İnsan gibi tepki.** Botlar OYUN saniyesiyle çalışır (hız ×N olunca onlar da aynı oranda hızlanır). Kolay bot daha seyrek düşünür, olayları geç fark eder, bazen yanlış yapar (`bots` bölümündeki `mistake`, `slack`, süreler).
+- **Tüm insanlar elenince** oda sahibine "İzlemeye devam" / "Maçı bitir" çıkar; "Maçı bitir" kalan süreyi sunucuda hızlıca oynatır (botlar aynı kurallarla devam eder) ve doğrudan maç sonu ekranını getirir.
+- **Ayarlar** `config/balance.json` → `bots` (süreler, hata oranı, ordu karması ve payı). Simülasyon: `dotnet run --project src/BattleSim -c Release -- bot --mac 200 --zorluk karisik` ortalama nüfus, ordu büyüklüğü, maç süresi, kazananın stratejisi ve orman kullanımını yazar; ilk çıktılar `docs/bot-raporu.md`'de.
 
 Ayar dosyası çalışma klasöründen yukarı doğru `config/balance.json` olarak aranır; `--config <yol>` ile başka bir dosya verilebilir. Sayıları değiştirmek için derlemeye gerek yok.
 

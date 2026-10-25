@@ -12,9 +12,9 @@ public static class BotMatch
         Room.StartBotMatch("SIM", rules, new RoomOptions { MinPlayers = 1, PrepSeconds = prepSeconds, WarSeconds = warSeconds, Seed = seed }, levels);
 
     /// <summary>Plays until the match ends; <paramref name="every"/> is called after each simulated second (for tracing).</summary>
-    public static void Play(GameRules rules, Room room, int seed, Action<Room, BotHost.BotHost>? every = null)
+    public static void Play(GameRules rules, Room room, int seed, Action<Room, BotHost.BotHost>? every = null, BotHost.BotHost? host = null)
     {
-        var host = new BotHost.BotHost(rules, seed);
+        host ??= new BotHost.BotHost(rules, seed);
         while (room.Phase is RoomPhase.Preparation or RoomPhase.War)
         {
             room.Tick(rules.Match.ServerTickSeconds, dt => host.Step(room, dt));

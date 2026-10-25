@@ -37,6 +37,7 @@ public sealed class ScoutModule : IBotModule
         if (chest is not null && (medium || chest.Quarter == own?.Corner))
         {
             ctx.Wish(80, new SendChestScout(chest.Id, from));
+            ctx.Stats.Count("chestScouts");
             return;
         }
 
@@ -53,6 +54,7 @@ public sealed class ScoutModule : IBotModule
             if (target is not null)
             {
                 ctx.Wish(70, new SendScout(CastleKeys.Of(target.Seat), from));
+                ctx.Stats.Count("spies");
                 return;
             }
         }

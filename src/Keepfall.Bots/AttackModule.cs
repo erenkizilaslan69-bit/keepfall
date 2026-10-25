@@ -1,5 +1,6 @@
 ﻿using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
+using Keepfall.Core.Units;
 
 namespace Keepfall.Bots;
 
@@ -62,11 +63,40 @@ public sealed class AttackModule : IBotModule
 
         // The one we beat most cheaply; a nearer one wins a tie.
         var pick = options.OrderBy(o => o.Needed + o.March * 0.1).First();
-        var units = Tactics.Take(spare, medium ? (int)Math.Ceiling(pick.Needed * 1.1) : pick.Needed);
+        // Enough to win the fight, and if the rival is weak enough, enough to break the gate too (the last castle standing wins).
+        int send = medium ? (int)Math.Ceiling(pick.Needed * 1.1) : pick.Needed;
+        if (medium) send = Math.Max(send, SoldiersToBreak(ctx, spare, GateHp(ctx, pick.Seat)));
+        var units = Tactics.Take(spare, Math.Min(send, spareTotal));
         if (units.Count == 0) return;
         ctx.Wish(80, new SendArmy(CastleKeys.Of(pick.Seat), units, null, null, ArmyMode.Attack));
         ctx.Commit(units);
         ctx.Stats.Count("attacks");
+        ctx.Stats.Count("attackSoldiers", units.Values.Sum());
+        ctx.Stats.Max("biggestAttack", units.Values.Sum());
+    }
+
+    /// <summary>What we know of a rival's gate: the hit points it had after the last siege we fought there (whole if we never have).</summary>
+    private static double GateHp(BotContext ctx, int seat)
+    {
+        var last = ctx.Castle.War.Battles.Where(b => b.Kind == BattleKind.Siege && b.Attacking && b.OpponentSeat == seat).OrderByDescending(b => b.At).FirstOrDefault();
+        return last is null ? ctx.Rules.War.CastleHp : Math.Max(1, last.CastleHpAfter);
+    }
+
+    /// <summary>The fewest soldiers (in the mix we have) whose survivors would break a gate with <paramref name="hp"/> left, allowing for losses.</summary>
+    private static int SoldiersToBreak(BotContext ctx, IReadOnlyDictionary<string, int> spare, double hp)
+    {
+        int total = spare.Values.Sum();
+        for (int n = 1; n <= total; n++)
+        {
+            double damage = 0;
+            foreach (var (id, count) in Tactics.Take(spare, n))
+            {
+                var type = ctx.Rules.FindUnit(id)!;
+                damage += count * type.Dps * ctx.Rules.War.SiegeSeconds * (type.Range == AttackRange.Ranged ? ctx.Rules.War.ArcherSiegeMultiplier : 1);
+            }
+            if (damage * 0.7 >= hp) return n; // about 70 % of them are still standing at the gate
+        }
+        return total;
     }
 
     /// <summary>A rival has been making soldiers since we looked: about one more every 45 seconds, in the proportion it had (a good bot allows for it).</summary>

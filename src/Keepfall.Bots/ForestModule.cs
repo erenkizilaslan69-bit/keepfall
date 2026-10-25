@@ -63,7 +63,8 @@ public sealed class ForestModule : IBotModule
         {
             ctx.Wish(75, new SendArmyToSite(ready.Site.Id, ready.Army!, null, null));
             ctx.Commit(ready.Army!);
-            ctx.Stats.Count(ready.Site.Kind == SiteKind.Village ? "villageRaids" : "campAttacks");
+            ctx.Stats.Count(ready.Site.Kind == SiteKind.Village ? "villageRaids" : ready.Site.Kind == SiteKind.BigCamp ? "bigCampAttacks" : "campAttacks");
+            ctx.Stats.Count("raidSoldiers", ready.Army!.Values.Sum());
             return;
         }
         int want = candidates.OrderByDescending(x => x.Score).First().Need;

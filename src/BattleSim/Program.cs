@@ -13,7 +13,8 @@ const string Usage = """
       BattleSim denge  [--mac 5000] [--min 10] [--max 30] [--butce kisi|kaynak] [--duello 10]
                        [--havuz 60] [--esik 0.55] [--seed 12345]
       BattleSim savas  <ordu A> <ordu B> [--hedef-a X] [--hedef-b X] [--tekrar N] [--seed N]
-      BattleSim bot --izle [--oyuncu 2] [--zorluk orta|kolay] [--mod 15|30] [--seed 1] [--aralik 60]
+      BattleSim bot    [--mac 200] [--oyuncu 2|3|4] [--mod 15|30] [--zorluk orta|kolay|karisik] [--seed 1]   (bot vs bot istatistikleri)
+      BattleSim bot --izle [--oyuncu 2] [--zorluk orta|kolay] [--mod 15|30] [--seed 1] [--aralik 60]   (tek maçı dakika dakika göster)
       BattleSim kontrol
 
     Ortak:   --config <yol>   (varsayılan: yukarı klasörlerde config/balance.json)
@@ -73,6 +74,22 @@ try
             if (flags.TryGetValue("hedef-a", out var ta)) a.Targeting = ArmyParser.ParseTargeting(rules, ta);
             if (flags.TryGetValue("hedef-b", out var tb)) b.Targeting = ArmyParser.ParseTargeting(rules, tb);
             RunBattle(rules, a, b, Int(flags, "seed", 1), Int(flags, "tekrar", 1));
+            return 0;
+        }
+
+        case "bot" when !flags.ContainsKey("izle"):
+        {
+            int players = Int(flags, "oyuncu", 2);
+            if (players is < 2 or > 4) throw new FormatException("--oyuncu 2, 3 ya da 4 olmalı.");
+            int minutes = Int(flags, "mod", 15);
+            if (minutes is not (15 or 30)) throw new FormatException("--mod 15 ya da 30 olmalı.");
+            string level = flags.GetValueOrDefault("zorluk", "karisik").ToLowerInvariant();
+            if (level is not ("orta" or "kolay" or "karisik" or "karışık")) throw new FormatException($"Geçersiz zorluk \"{level}\" (orta | kolay | karisik).");
+            new BotReport(rules, new BotReportOptions
+            {
+                Matches = Int(flags, "mac", 200), Players = players, Minutes = minutes,
+                Difficulty = level.Replace("karışık", "karisik"), Seed = Int(flags, "seed", 1),
+            }).Run();
             return 0;
         }
 
