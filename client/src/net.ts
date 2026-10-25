@@ -107,6 +107,8 @@ export class GameConnection {
   sendArmy = (targetSeat: number, units: Record<string, number>, rows: Record<string, Row>, archerPriority: string | null,
     mode: ArmyMode = 'attack') => this.call('SendArmy', targetSeat, units, rows, archerPriority, mode);
   recallArmy = (armyId: number) => this.call('RecallArmy', armyId);
+  /** A new order for an army on the road: another castle (`targetSeat`) or a place in the forest (`siteId`). */
+  redirectArmy = (armyId: number, targetSeat: number | null, siteId: string | null) => this.call('RedirectArmy', armyId, targetSeat, siteId);
   setDefense = (rows: Record<string, Row>, archerPriority: string | null) => this.call('SetDefense', rows, archerPriority);
   setSpeed = (speed: number) => this.call('SetSpeed', speed);
 

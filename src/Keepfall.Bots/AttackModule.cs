@@ -17,6 +17,7 @@ public sealed class AttackModule : IBotModule
         if (!ctx.AtWar || ctx.Castle.Eliminated || ctx.UnderThreat || ctx.Slip()) return;
         var c = ctx.Castle;
         bool medium = ctx.Level.Calculates;
+        if (medium && Regroup(ctx)) return;
         if (c.War.Armies.Any(a => a.SiteId is null && a.Mode == ArmyMode.Attack && a.State == ArmyState.Marching)) return; // one assault at a time
 
         var botRules = ctx.Rules.Bots;
@@ -96,6 +97,38 @@ public sealed class AttackModule : IBotModule
         if (ctx.Stats["firstAttackAt"] == 0) ctx.Stats.Count("firstAttackAt", Math.Max(1, (int)ctx.Now));
         ctx.Stats.Count("attackSoldiers", units.Values.Sum());
         ctx.Stats.Max("biggestAttack", units.Values.Sum());
+    }
+
+    /// <summary>
+    /// A good bot's army that is walking home from an attack but is still in the half of the road nearer the rivals does not go
+    /// all the way back if a rival it knows about recently is one it beats with what is left of it: it turns to that castle.
+    /// </summary>
+    private static bool Regroup(BotContext ctx)
+    {
+        var c = ctx.Castle;
+        var rules = ctx.Rules.Bots;
+        var army = c.War.Armies.FirstOrDefault(a => a.SiteId is null && a.State == ArmyState.Returning && !a.Fighting && a.Distance > 0.5);
+        if (army is null) return false;
+        var units = army.Units.Where(u => u.Count > 0).ToDictionary(u => u.UnitId, u => u.Count);
+        int total = units.Values.Sum();
+        if (total == 0) return false;
+
+        double bold = ctx.Level.ScoreAware ? 1 : Math.Max(0, ctx.WarProgress - 0.3) / 0.7;
+        (int Seat, double Cost)? best = null;
+        foreach (var target in c.Scouting.Targets.Where(t => ctx.Rivals.Any(r => r.Seat == t.Seat)))
+        {
+            // Only on what it knows: a report (or a siege) that is still worth trusting.
+            if (ctx.EstimateOf(target.Seat) is not { } est || ctx.Now - est.At > rules.StaleReportSeconds) continue;
+            var enemy = Tactics.Setup(ctx, "Savunma", Scale(Grow(est, ctx.Now, true), rules.AttackMargin - (rules.AttackMargin - 1.0) * bold));
+            int needed = Tactics.SmallestWinning(ctx, units, enemy, rules.AttackRate - 0.25 * bold).Needed;
+            if (needed == 0 || needed > total) continue;
+            double cost = needed + target.MarchSeconds * 0.1;
+            if (best is null || cost < best.Value.Cost) best = (target.Seat, cost);
+        }
+        if (best is not { } pick) return false;
+        ctx.Wish(85, new RedirectArmy(army.Id, CastleKeys.Of(pick.Seat)));
+        ctx.Stats.Count("regroups");
+        return true;
     }
 
     /// <summary>What we know of a rival's gate: the hit points it had after the last siege we fought there (whole if we never have).</summary>

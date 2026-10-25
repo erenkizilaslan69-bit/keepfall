@@ -150,6 +150,13 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     /// <summary>Call one of our own armies home (the id is from our own castle view).</summary>
     public Task<CommandResultView> RecallArmy(int armyId) => Economy(new RecallArmy(armyId));
 
+    /// <summary>
+    /// A new order for one of our armies on the road: attack another castle (by public seat; war only) or go to a place in the
+    /// forest we have found. Exactly one of the two. It walks there from where it stands.
+    /// </summary>
+    public Task<CommandResultView> RedirectArmy(int armyId, int? targetSeat, string? siteId) =>
+        Economy(new RedirectArmy(armyId, targetSeat is { } seat ? Room.CastleKeyOf(seat) : null, siteId));
+
     public Task<CommandResultView> SetDefense(Dictionary<string, Row>? rows, string? archerPriority) =>
         Economy(new SetDefense(rows, archerPriority));
 

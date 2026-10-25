@@ -1,5 +1,6 @@
 import { COLOR_NAMES, botMark, esc } from '../format';
 import type { ArmyView, CastleView, Corner, ScoutMissionView, ScoutTargetView } from '../types';
+import { SITE_NAME } from '../scene/Sites';
 import { dot } from './report-html';
 import { Win, type WinContext, type WinData } from './windows';
 
@@ -23,6 +24,10 @@ export class ArmyWin extends Win {
       <h4>Askerler</h4>
       <div data-f="units"></div>
       <p class="muted-ink small" data-f="mode"></p>
+      <h4>Yeni emir</h4>
+      <div class="row"><select data-f="dest" title="Ordu bulunduğu yerden yeni hedefe yol ağı üzerinden yürür"></select></div>
+      <div class="row center"><button class="btn" data-act="redirect" title="Ordu bulunduğu yerden yeni hedefe yürür; rakipler yalnız yönünü görür, hedefini değil">Yeni hedefe gönder</button></div>
+      <p class="muted-ink small" data-f="why"></p>
       <div class="row center"><button class="btn btn-red" data-act="recall" title="Bulunduğu yerden aynı yoldan eve döner">Geri çağır</button></div>`;
     this.body.addEventListener('click', (e) => void this.click(e));
     this.update({ castle: s, room: null });
@@ -30,7 +35,7 @@ export class ArmyWin extends Win {
 
   gone(): boolean { return this.missing; }
 
-  update({ castle: s }: WinData): void {
+  update({ castle: s, room }: WinData): void {
     const a = this.ctx.army?.(this.publicId);
     this.missing = !a;
     if (!a) return;
@@ -42,15 +47,54 @@ export class ArmyWin extends Win {
     this.q('[data-f="units"]').innerHTML = a.units.map((u) => `<div>${u.count} × ${esc(u.name)}</div>`).join('');
     this.q('[data-f="mode"]').textContent = a.mode === 'intercept' && a.state === 'marching'
       ? 'İlk yol savaşından sonra (sağ kalırsa) eve döner; kimseyle karşılaşmazsa yolun yarısından döner.' : '';
+    this.renderOrders(a, s, room);
     const recall = this.q<HTMLButtonElement>('[data-act="recall"]');
     recall.disabled = a.fighting || a.state === 'returning' || s.eliminated;
     recall.title = a.fighting ? 'Savaştaki ordu geri çağrılamaz' : a.state === 'returning' ? 'Zaten eve dönüyor' : 'Bulunduğu yerden aynı yoldan eve döner';
   }
 
+  /** The places this army can be sent to now: rival castles (war only) and the forest's villages and camps. */
+  private renderOrders(a: ArmyView, s: CastleView, room: WinData['room']): void {
+    const dest = this.q<HTMLSelectElement>('[data-f="dest"]');
+    const soldiers = a.units.reduce((n, u) => n + u.count, 0);
+    const walkingTo = (isSite: boolean, id: string | number) => a.state === 'marching' && (isSite ? a.siteId === id : !a.siteId && a.targetSeat === id);
+    const options: string[] = [];
+    for (const t of s.scouting.targets) {
+      if (room?.players.find((p) => p.seat === t.seat)?.eliminated || walkingTo(false, t.seat)) continue;
+      options.push(`<option value="r:${t.seat}"${s.phase === 'war' ? '' : ' disabled'}>Saldır: ${esc(t.name)}${s.phase === 'war' ? '' : ' (savaşta açılır)'}</option>`);
+    }
+    for (const x of this.ctx.sites?.() ?? []) {
+      if (x.kind === 'chest' || x.gone || walkingTo(true, x.id)) continue;
+      const where = x.quarter ? ` · ${QUARTER[x.quarter]}` : ' · orta';
+      const few = x.kind === 'village' && soldiers < x.minSoldiers;
+      options.push(`<option value="s:${x.id}"${few ? ' disabled' : ''}>${x.kind === 'village' ? 'Yağmala' : 'Saldır'}: ${esc(SITE_NAME[x.kind])}${where}${few ? ` (en az ${x.minSoldiers} asker)` : ''}</option>`);
+    }
+    const html = options.join('');
+    if (dest.dataset.html !== html) {
+      const keep = dest.value;
+      dest.innerHTML = html;
+      dest.dataset.html = html;
+      if ([...dest.options].some((o) => o.value === keep && !o.disabled)) dest.value = keep;
+      else dest.selectedIndex = Math.max(0, [...dest.options].findIndex((o) => !o.disabled));
+    }
+    const ok = !!dest.value && !dest.selectedOptions[0]?.disabled;
+    const why = a.fighting ? 'Savaştaki ordu yeni emir alamaz.' : s.eliminated ? 'Kalen düştü; izleyicisin.' : options.length === 0 ? 'Gidilecek yer yok.' : '';
+    this.q('[data-f="why"]').textContent = why;
+    this.q<HTMLButtonElement>('[data-act="redirect"]').disabled = !!why || !ok;
+  }
+
   private async click(e: Event): Promise<void> {
-    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-act="recall"]');
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-act="recall"],[data-act="redirect"]');
     const a = this.ctx.army?.(this.publicId);
     if (!btn || btn.disabled || !a) return;
+    if (btn.dataset.act === 'redirect') {
+      const value = this.q<HTMLSelectElement>('[data-f="dest"]').value;
+      const r = value.startsWith('r:') ? await this.ctx.net.redirectArmy(a.id, Number(value.slice(2)), null)
+        : await this.ctx.net.redirectArmy(a.id, null, value.slice(2));
+      if (!r.ok) this.ctx.say(r.error ?? 'Yeni emir verilemedi.');
+      else this.ctx.info('Ordu yeni hedefe yöneldi.');
+      return;
+    }
     const r = await this.ctx.net.recallArmy(a.id);
     if (!r.ok) this.ctx.say(r.error ?? 'Geri çağrılamadı.');
     else this.ctx.info('Ordu geri çağrıldı.');

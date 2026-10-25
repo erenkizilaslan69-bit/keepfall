@@ -73,7 +73,9 @@ export class Movers {
       const t = this.track(`own:${o.id}`, this.ownColor, o.kind === 'scout', o.units, o.position);
       t.position = o.position;
       t.velocity = o.velocity;
-      if (t.route?.length !== o.route.length || t.route[0].x !== o.route[0].x || t.route[0].y !== o.route[0].y) {
+      const last = o.route.length - 1;
+      if (t.route?.length !== o.route.length || t.route[0].x !== o.route[0].x || t.route[0].y !== o.route[0].y
+        || t.route[last].x !== o.route[last].x || t.route[last].y !== o.route[last].y) { // a new order changes where the road ends
         t.route = o.route;
         t.cumulative = cumulative(o.route);
       }

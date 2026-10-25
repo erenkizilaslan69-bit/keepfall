@@ -201,13 +201,13 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
     private void PrintWar(MatchRecord[] matches)
     {
         Heading("3. Savaş");
-        var t = new Table("Zorluk", "Kale saldırısı/maç", "Pusu/maç", "Ort. kale hasarı", "Ölen asker", "Öldürülen düşman", "Savunma tepkisi/maç");
+        var t = new Table("Zorluk", "Kale saldırısı/maç", "Pusu/maç", "Ort. kale hasarı", "Ölen asker", "Öldürülen düşman", "Savunma tepkisi/maç", "Yeni hedefe yönelme/maç");
         foreach (var level in Groups(matches))
         {
             var seats = matches.SelectMany(m => m.Seats).Where(s => s.Level == level).ToList();
             t.Add(Name(level), F(Avg(seats, s => s.Bot.GetValueOrDefault("attacks")), "0.00"), F(Avg(seats, s => s.Bot.GetValueOrDefault("intercepts")), "0.00"),
                 F(Avg(seats, s => s.SiegeDamage), "0"), F(Avg(seats, s => s.SoldiersLost)), F(Avg(seats, s => s.EnemiesKilled)),
-                F(Avg(seats, s => s.Bot.GetValueOrDefault("defenceThinks")), "0.0"));
+                F(Avg(seats, s => s.Bot.GetValueOrDefault("defenceThinks")), "0.0"), F(Avg(seats, s => s.Bot.GetValueOrDefault("regroups")), "0.00"));
         }
         t.Print();
         Console.WriteLine($"   Maç başına: kale savaşı {F(matches.Average(m => m.SiegeBattles), "0.00")} · yol savaşı {F(matches.Average(m => m.FieldBattles), "0.00")}");

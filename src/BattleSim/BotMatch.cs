@@ -36,7 +36,7 @@ public static class BotMatch
             lines.Add($"  {p.Name,-12} nüfus {c.Population,3}  iş(boş/çift/odun/maden/demir) {jobs}  bina {levels}  yemek {c.Resources.Food,5:0} odun {c.Resources.Wood,4:0} demir {c.Resources.Iron,4:0}"
                 + $"  asker+silah(okçu,kılıçlı,mızrak,kalkan) {weapons}  kuyruk {c.Queue.Sum(o => o.Remaining)}"
                 + $"  altın {c.Resources.Gold:0}  ordu {c.War.Armies.Count}  gözcü {c.Scouting.Missions.Count}  yer {MapViewMapper.StateOf(room, p)?.Sites.Count ?? 0}"
-                + (host.Stats.TryGetValue(p.Seat, out var st) ? $"  [köy {st["villageRaids"]} kamp {st["campAttacks"]} saldırı {st["attacks"]} savunma {st["defenceThinks"]} pusu {st["intercepts"]} saldırı-nedeni {st["attackNoReport"]}/{st["attackStaleReport"]}/{st["attackNoOption"]} red {string.Join(",", st.Counts.Where(k => k.Key.StartsWith("refused:")).Select(k => $"{k.Key[8..]}={k.Value}"))}]" : ""));
+                + (host.Stats.TryGetValue(p.Seat, out var st) ? $"  [köy {st["villageRaids"]} kamp {st["campAttacks"]} saldırı {st["attacks"]} savunma {st["defenceThinks"]} pusu {st["intercepts"]} yönelme {st["regroups"]} saldırı-nedeni {st["attackNoReport"]}/{st["attackStaleReport"]}/{st["attackNoOption"]} red {string.Join(",", st.Counts.Where(k => k.Key.StartsWith("refused:")).Select(k => $"{k.Key[8..]}={k.Value}"))}]" : ""));
         }
         return string.Join("\n", lines);
     }
