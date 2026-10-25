@@ -47,7 +47,7 @@ Durum: [x] bitti, [ ] açık.
 - [x] 1 Kamera butonları alt alta (Kaleme dön, rakipler, Orman)
 - [x] 2 Gözcü raporları isim altında durmasın; oyuncu ismine tıklayınca papirüs/ferman penceresinde rapor
 - [x] 3 HATA: köye 1 askerle gidilince yağmalanıyor; en az 3 asker kuralı sunucuda + arayüzde + botlarda
-- [ ] 4 Ganimet çeşitlendirme (sandık altın+demir, köy altın+yemek+kişi, kamp altın+silah+odun); paralı fiyat çarpanı 1,25 → 1,1; bot simülasyonuyla paralı payını ölç (>%30 ise altını düşür), sayıları ÖNER + ölç
+- [x] 4 Ganimet çeşitlendirme (sandık altın+demir, köy altın+yemek+kişi, kamp altın+silah+odun; paralı ×1,1). Ölçüm: `docs/bot-deney-ganimet.md` (paralı payı savaş başı %26,5→%21; yan etki: saldırısız maç %12→%18)
 - [ ] 5 Düşen kale: düşüren oyuncu kalenin depodaki kaynak ve altınının yarısını alır; hayatta kalan işçilerin 1/3'ü boşta olarak ona katılır (askerlerle birlikte döner); oranlar balance.json'da
 - [ ] 6 Gözcü hızı 2,5 → 1,8 karo/sn
 - [ ] 7 (SONRAYA, kodlama yok) Fikir: gözcüyle erzak, para ve mesaj gönderme
@@ -55,9 +55,6 @@ Durum: [x] bitti, [ ] açık.
 ## Fikirler (kodlanmadı)
 - Gözcüyle erzak, para ve mesaj gönderme (başka oyuncuya).
 
-## KALDIĞIM YER (2026-10-26, hesap değişimi öncesi)
-Görev 0–3 bitti ve push edildi (son commit: köy ≥3 asker varışta da). Kullanıcı "devam et" deyince **Görev 4'ten** sürdür.
-- Görev 4 notları: ödüller `src/Keepfall.Core/World/ForestLayout.cs` (Reward kaydı, `rng.Next` ile; orman yerleşimi aynı rng'yi kullanıyor, YENİ ödül zarlarını yerleşim sırasını bozmayacak şekilde ayır/sona ekle, yoksa mevcut tohum testleri ve harita adaleti değişir), kurallar `World/ForestRules.cs` + `Config/BalanceConfig.cs` + `config/balance.json` (forest.chest/village/camp/bigCamp). Dağıtım: sandık = gözcü `LootGold` (+ `LootIron` ekle) `GameState.AdvanceScouts`; köy/kamp = ordu `LootGold/LootPeople/LootWeapons` (+ `LootFood`, `LootWood`) `ArriveAtSite`/`FinishBattle`, eve dönünce `AdvanceArmies` içinde kasaya. Görünümler (`MapViews.SiteView`, `SpectatorViews`) ve istemci orman penceresi yeni ödülleri göstermeli. Paralı fiyat çarpanı: şu an 30/28/32/38 (×1,25) → ×1,1 ≈ 26/24/29/33 (orijinal 24/22/26/30). Sonra `python tools/bot-deney.py` ile paralı payını ölç (hedef ≤%30; aşarsa altın miktarını düşürmeyi ÖNER ve ölç, kendin yazma). Not: `tools/bot-deney.py` `scale_gold` yeni ödül anahtarlarını da kapsamalı.
-- Görev 5, 6, 7 sırada. Görev 6: `map.scoutSpeed` 2,5 → 1,8 (config; kullanıcı açıkça istedi). Görev 7: yalnız "Fikirler" listesinde (zaten ekli).
-- Test sunucuları kapalı; Production (5080) son commit'le çalışır durumda bırakıldı. Görev 4–6 bitince tekrar `npm --prefix client run build` + Production yeniden başlat.
-
+## KALDIĞIM YER (2026-10-25)
+Görev 0–4 bitti ve push edildi. Kullanıcı "devam et" deyince **Görev 5'ten** sürdür (5: düşen kale ganimeti; 6: `map.scoutSpeed` 2,5 → 1,8; 7: yalnız fikir).
+- Production (5080) henüz yeni ganimet ayarıyla yeniden başlatılmadı; Görev 5–6 bitince `npm --prefix client run build` + Production yeniden başlat. Test sunucuları kapalı.
