@@ -40,6 +40,14 @@ public sealed class Route
         return new Route(points, legs);
     }
 
+    /// <summary>Part of one road edge: from wherever someone stands on it to one of its ends (or to the other one).</summary>
+    internal static Route Segment(IReadOnlyList<Vec> points, int edgeId, bool forward)
+    {
+        double length = 0;
+        for (int i = 1; i < points.Count; i++) length += points[i - 1].DistanceTo(points[i]);
+        return new Route(points, points.Count > 1 ? [new RouteLeg(edgeId, forward, 0, length)] : []);
+    }
+
     /// <summary>Routes walked one after the other (each starts where the one before ended).</summary>
     internal static Route Join(params Route[] parts)
     {

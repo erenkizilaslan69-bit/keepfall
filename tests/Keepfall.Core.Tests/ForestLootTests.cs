@@ -154,6 +154,36 @@ public class ForestLootTests
     }
 
     [Fact]
+    public void An_army_on_its_way_to_the_forest_can_be_sent_to_another_place_and_the_village_rule_still_holds()
+    {
+        var game = Game();
+        Explore(game, A, Corner.NorthWest);
+        var village = Find(game, A, SiteKind.Village);
+        var camp = Find(game, A, SiteKind.Camp);
+        game.CastleOf(A)!.AddSoldiers(Sword, 3);
+        Ok(game.Execute(A, new SendArmyToSite(camp.Site.Id, new Dictionary<string, int> { ["kilicli"] = 3 })));
+        game.Tick(3);
+        var army = game.ArmiesOf(A).Single();
+        var here = army.Position;
+
+        Ok(game.Execute(A, new RedirectArmy(army.Id, SiteId: village.Site.Id)));
+        Assert.Equal($"site:{village.Site.Id}", army.Target);
+        Assert.Same(game.AllSites.First(s => s.Site.Id == village.Site.Id), army.Site);
+        Assert.True(army.Position.DistanceTo(here) < 1e-6);
+        RunUntil(game, () => game.AllSites.First(s => s.Site.Id == village.Site.Id).Gone);
+        RunUntil(game, () => game.ArmiesOf(A).Count == 0);
+        Assert.Equal(village.Site.Gold, game.CastleOf(A)!.Gold); // plundered on the way, loot came home
+
+        // Fewer than three cannot be sent to a village, and a place A does not know cannot be a target either.
+        game.CastleOf(A)!.AddSoldiers(Sword, 3);
+        Ok(game.Execute(A, new SendArmyToSite(camp.Site.Id, new Dictionary<string, int> { ["kilicli"] = 3 })));
+        var second = game.ArmiesOf(A).Single();
+        second.Units = new Dictionary<Units.UnitType, int> { [Sword] = 2 };
+        var other = game.AllSites.First(s => s.Site.Kind == SiteKind.Village && !s.Gone && s.Site.Quadrant != Corner.NorthWest);
+        Assert.False(game.Execute(A, new RedirectArmy(second.Id, SiteId: other.Site.Id)).Ok); // A never found it
+    }
+
+    [Fact]
     public void A_village_needs_three_soldiers_and_can_only_be_plundered_once()
     {
         var game = Game();

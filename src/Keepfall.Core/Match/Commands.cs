@@ -59,6 +59,13 @@ public sealed record SendArmyToSite(
     IReadOnlyDictionary<string, Row>? Rows = null,
     string? ArcherPriority = null) : GameCommand;
 
+/// <summary>
+/// Give a new order to one of our armies that is on the road (not fighting; marching or on its way home): attack another
+/// castle (<paramref name="TargetKey"/>, war phase only) or go to a place in the forest (<paramref name="SiteId"/>). It walks
+/// there from where it stands, over the roads. To bring it home use <see cref="RecallArmy"/>.
+/// </summary>
+public sealed record RedirectArmy(int ArmyId, string? TargetKey = null, string? SiteId = null) : GameCommand;
+
 /// <summary>Call one of our armies home from wherever it is on the road (not while it is fighting).</summary>
 public sealed record RecallArmy(int ArmyId) : GameCommand;
 

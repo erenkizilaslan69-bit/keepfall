@@ -30,14 +30,28 @@ public sealed class ArmyMarch
         Out = new Traveller(route, speed);
     }
 
+    /// <summary>A new order from where it stands: it marches (again) to <paramref name="target"/> along <paramref name="route"/>; what it carries stays with it.</summary>
+    internal void Redirect(string target, SiteState? site, Route route)
+    {
+        if (State == ArmyState.Returning) Units = Survivors;
+        Survivors = new Dictionary<UnitType, int>();
+        Target = target;
+        Site = site;
+        Mode = ArmyMode.Attack;
+        Out = new Traveller(route, Out.Speed);
+        Back = null;
+        State = ArmyState.Marching;
+        Sighted = false;
+    }
+
     public int Id { get; }
     /// <summary>What other players see it as: random, so it gives nothing away.</summary>
     public string PublicId { get; }
     public string From { get; }
     /// <summary>The player whose castle it marches on, or "site:ID" for a place in the forest.</summary>
-    public string Target { get; }
+    public string Target { get; private set; }
     /// <summary>The place in the forest it goes to; null for an army marching on a castle.</summary>
-    public SiteState? Site { get; internal init; }
+    public SiteState? Site { get; internal set; }
     /// <summary>What it carries home from a place it plundered: arrives with it.</summary>
     public int LootGold { get; internal set; }
     public int LootPeople { get; internal set; }
@@ -50,12 +64,12 @@ public sealed class ArmyMarch
     /// <summary>Who marches (fewer after a battle on the road).</summary>
     public IReadOnlyDictionary<UnitType, int> Units { get; internal set; }
     /// <summary>Attack the castle or cut off the road. Only the owner ever knows.</summary>
-    public ArmyMode Mode { get; }
+    public ArmyMode Mode { get; private set; }
     public IReadOnlyDictionary<UnitType, Row> Rows { get; }
     public UnitType? ArcherPriority { get; }
     public double DepartedAt { get; }
     /// <summary>The way to the target.</summary>
-    public Traveller Out { get; }
+    public Traveller Out { get; private set; }
     /// <summary>The way home after the battle; null while marching.</summary>
     public Traveller? Back { get; internal set; }
     public Traveller Leg => Back ?? Out;

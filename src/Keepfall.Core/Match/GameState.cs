@@ -345,6 +345,7 @@ public sealed class GameState
             SendArmyToSite raid => LaunchRaid(playerKey, player, raid),
             SendArmy army => LaunchArmy(playerKey, player, army),
             RecallArmy recall => Recall(playerKey, recall.ArmyId),
+            RedirectArmy redirect => Redirect(playerKey, redirect),
             _ => player.Castle.Execute(command),
         };
     }
@@ -609,23 +610,62 @@ public sealed class GameState
         return CommandResult.Success;
     }
 
+    /// <summary>Can this player send <paramref name="soldiers"/> soldiers to that place (known to them, not a chest, not used up, enough for a village)?</summary>
+    private CommandResult CheckRaid(string from, string siteId, int soldiers)
+    {
+        if (!_sites.TryGetValue(siteId, out var state) || !Knows(from, siteId)) return CommandResult.Fail("Böyle bir yer bilmiyorsun.");
+        var known = _knowledge[from][siteId];
+        if (state.Site.Kind == SiteKind.Chest) return CommandResult.Fail("Sandık için gözcü gönderilir, ordu değil.");
+        if (known.Gone) return CommandResult.Fail(state.Site.Kind == SiteKind.Village ? "Bu köy yağmalanmış görünüyor." : "Bu kamp temizlenmiş görünüyor.");
+        if (state.Site.Kind == SiteKind.Village && soldiers < Rules.Forest.Village.MinSoldiers)
+            return CommandResult.Fail($"Köyü yağmalamak için en az {Rules.Forest.Village.MinSoldiers} asker gerekir.");
+        return CommandResult.Success;
+    }
+
     /// <summary>An army to a place in the forest the player has found (any phase: the forest is not the war).</summary>
     private CommandResult LaunchRaid(string from, PlayerEconomy player, SendArmyToSite c)
     {
-        if (!_sites.TryGetValue(c.SiteId, out var state) || !Knows(from, c.SiteId)) return CommandResult.Fail("Böyle bir yer bilmiyorsun.");
-        var known = _knowledge[from][c.SiteId];
-        if (state.Site.Kind == SiteKind.Chest) return CommandResult.Fail("Sandık için gözcü gönderilir, ordu değil.");
-        if (known.Gone) return CommandResult.Fail(state.Site.Kind == SiteKind.Village ? "Bu köy yağmalanmış görünüyor." : "Bu kamp temizlenmiş görünüyor.");
-
         var parsed = ParseArmy(c.Units, c.Rows, c.ArcherPriority, out var units, out var rows, out var priority);
         if (!parsed.Ok) return parsed;
-        if (state.Site.Kind == SiteKind.Village && units.Values.Sum() < Rules.Forest.Village.MinSoldiers)
-            return CommandResult.Fail($"Köyü yağmalamak için en az {Rules.Forest.Village.MinSoldiers} asker gerekir.");
+        if (CheckRaid(from, c.SiteId, units.Values.Sum()) is { Ok: false } bad) return bad;
+        var state = _sites[c.SiteId];
 
         var sent = player.Castle.DispatchArmy(units);
         if (!sent.Ok) return sent;
         _armies.Add(new ArmyMarch(_nextId++, NewPublicId(), from, $"site:{c.SiteId}", units, rows, priority, ElapsedSeconds,
             Map.RouteToSite(_corners[from], state.Site), Rules.Map.ArmySpeed) { Site = state });
+        return CommandResult.Success;
+    }
+
+    /// <summary>A new order for an army on the road: another castle (war only) or a place in the forest, by the roads from where it is.</summary>
+    private CommandResult Redirect(string from, RedirectArmy c)
+    {
+        var a = _armies.FirstOrDefault(x => x.Id == c.ArmyId && x.From == from);
+        if (a is null) return CommandResult.Fail("Böyle bir ordun yok.");
+        if (a.Battle is not null) return CommandResult.Fail("Savaştaki ordu yeni emir alamaz.");
+        int soldiers = a.Walking.Values.Sum();
+        string target, node;
+        SiteState? site = null;
+        if (c.SiteId is { } siteId)
+        {
+            if (CheckRaid(from, siteId, soldiers) is { Ok: false } bad) return bad;
+            site = _sites[siteId];
+            target = $"site:{siteId}";
+            node = WorldMap.SiteNode(site.Site);
+        }
+        else if (c.TargetKey is { } key)
+        {
+            if (Phase != MatchPhase.War) return CommandResult.Fail("Saldırı sadece savaş fazında yapılabilir.");
+            if (key == from) return CommandResult.Fail("Kendi kalene saldıramazsın.");
+            if (!_players.ContainsKey(key)) return CommandResult.Fail("Böyle bir rakip yok.");
+            if (_eliminated.ContainsKey(key)) return CommandResult.Fail("Bu oyuncu elendi.");
+            target = key;
+            node = WorldMap.GateNode(_corners[key]);
+        }
+        else return CommandResult.Fail("Yeni bir hedef seçmedin.");
+        if (a.State == ArmyState.Marching && a.Target == target) return CommandResult.Fail("Ordu zaten oraya gidiyor.");
+
+        a.Redirect(target, site, Map.RouteFrom(a.Leg.Route, a.Leg.Travelled, node));
         return CommandResult.Success;
     }
 
@@ -706,9 +746,9 @@ public sealed class GameState
         {
             site.Gone = true;
             site.Version++;
-            a.LootGold = site.Site.Gold;
-            a.LootPeople = site.Site.People;
-            a.LootFood = site.Site.Food;
+            a.LootGold += site.Site.Gold;
+            a.LootPeople += site.Site.People;
+            a.LootFood += site.Site.Food;
         }
         SendHome(a, a.Units);
     }
@@ -948,9 +988,9 @@ public sealed class GameState
         if (cleared)
         {
             camp.Gone = true;
-            a.LootGold = camp.Site.Gold;
-            a.LootWeapons = camp.Site.Weapons;
-            a.LootWood = camp.Site.Wood;
+            a.LootGold += camp.Site.Gold;
+            a.LootWeapons = a.LootWeapons.Concat(camp.Site.Weapons).GroupBy(kv => kv.Key).ToDictionary(grp => grp.Key, grp => grp.Sum(kv => kv.Value));
+            a.LootWood += camp.Site.Wood;
         }
 
         var report = new BattleReport(b.Id, ElapsedSeconds, a.From, b.Defender,

@@ -188,6 +188,41 @@ public sealed class WorldMap
     /// <summary>The shortest road from one castle gate to another.</summary>
     public Route RouteBetween(Corner from, Corner to) => ShortestRoute(GateNode(from), GateNode(to));
 
+    /// <summary>
+    /// A new road for something that is already walking one: from where it stands (on a road edge, possibly half way) to
+    /// <paramref name="toNode"/>, by whichever end of that edge is the shorter way round.
+    /// </summary>
+    public Route RouteFrom(Route current, double travelled, string toNode)
+    {
+        var leg = current.LegAt(travelled) ?? throw new InvalidOperationException("The route has no road to stand on.");
+        var edge = _routingEdges.First(e => e.Id == leg.EdgeId);
+        var here = current.PointAt(travelled);
+        var pts = leg.Forward ? edge.Points : edge.Points.Reverse().ToList();
+        string startNode = leg.Forward ? edge.From : edge.To, endNode = leg.Forward ? edge.To : edge.From;
+
+        // Where on the (whole) edge, walked in the leg's direction, is it? (The leg of a route that was cut may be shorter than the edge.)
+        var cum = new double[pts.Count];
+        for (int i = 1; i < pts.Count; i++) cum[i] = cum[i - 1] + pts[i - 1].DistanceTo(pts[i]);
+        double offset = 0, best = double.PositiveInfinity;
+        for (int i = 1; i < pts.Count; i++)
+        {
+            var ab = pts[i] - pts[i - 1];
+            double l2 = ab.X * ab.X + ab.Y * ab.Y;
+            double k = l2 < 1e-12 ? 0 : Math.Clamp(((here.X - pts[i - 1].X) * ab.X + (here.Y - pts[i - 1].Y) * ab.Y) / l2, 0, 1);
+            double d = here.DistanceTo(pts[i - 1] + ab * k);
+            if (d < best - 1e-12) { best = d; offset = cum[i - 1] + k * Math.Sqrt(l2); }
+        }
+
+        var ahead = new List<Vec> { here };
+        for (int i = 1; i < pts.Count; i++) if (cum[i] > offset + 1e-9) ahead.Add(pts[i]);
+        var behind = new List<Vec> { here };
+        for (int i = pts.Count - 1; i >= 0; i--) if (cum[i] < offset - 1e-9) behind.Add(pts[i]);
+
+        var forwardRoute = Route.Join(Route.Segment(ahead, edge.Id, leg.Forward), ShortestRoute(endNode, toNode));
+        var backwardRoute = Route.Join(Route.Segment(behind, edge.Id, !leg.Forward), ShortestRoute(startNode, toNode));
+        return forwardRoute.Length <= backwardRoute.Length ? forwardRoute : backwardRoute;
+    }
+
     /// <summary>Dijkstra over the road graph (a handful of nodes).</summary>
     public Route ShortestRoute(string fromNode, string toNode)
     {

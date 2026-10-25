@@ -553,6 +553,84 @@ public class WarTests
         Assert.Equal(500, game.CastleOf(B)!.WallHp);
     }
 
+    // ---- new orders on the road ---------------------------------------------------------------
+
+    [Fact]
+    public void An_army_on_the_road_can_be_sent_to_another_castle_from_where_it_stands()
+    {
+        var game = War(players: 3);
+        game.CastleOf(A)!.AddSoldiers(Sword, 6);
+        Ok(game.Execute(A, Attack(B, (Sword, 6))));
+        Run(game, 10);
+        var army = game.ArmiesOf(A).Single();
+        var here = army.Position;
+        double toB = army.SecondsLeft;
+
+        Ok(game.Execute(A, new RedirectArmy(army.Id, TargetKey: C)));
+
+        Assert.Equal(C, army.Target);
+        Assert.True(army.Position.DistanceTo(here) < 1e-6, "it goes on from the same spot");
+        Assert.True(army.Out.Route.Start.DistanceTo(here) < 1e-6);
+        Assert.True(army.Out.Route.End.DistanceTo(game.Map.RegionOf(game.Corners[C]).Gate) < 1.0, "the road ends at C's gate");
+        Assert.NotEqual(toB, army.SecondsLeft);
+        RunUntilReports(game, C);
+        Assert.Equal(C, game.BattlesOf(A).Single().Defender);
+        Assert.Empty(game.BattlesOf(B));
+    }
+
+    [Fact]
+    public void A_new_castle_target_must_be_a_rival_still_standing_and_the_army_must_be_ours()
+    {
+        var war = War(players: 3);
+        war.CastleOf(A)!.AddSoldiers(Sword, 6);
+        Ok(war.Execute(A, Attack(B, (Sword, 6))));
+        var id = war.ArmiesOf(A).Single().Id;
+        Assert.False(war.Execute(A, new RedirectArmy(id, TargetKey: A)).Ok);
+        Assert.False(war.Execute(A, new RedirectArmy(id, TargetKey: "nobody")).Ok);
+        Assert.False(war.Execute(A, new RedirectArmy(id)).Ok);
+        Assert.False(war.Execute(A, new RedirectArmy(id, TargetKey: B)).Ok); // it is going there already
+        Assert.False(war.Execute(B, new RedirectArmy(id, TargetKey: C)).Ok); // not B's army
+        Assert.False(war.Execute(A, new RedirectArmy(id, SiteId: "no-such-place")).Ok);
+    }
+
+    [Fact]
+    public void An_army_on_its_way_home_can_be_sent_out_again_with_its_survivors()
+    {
+        var game = War(players: 3);
+        game.CastleOf(A)!.AddSoldiers(Sword, 6);
+        Ok(game.Execute(A, Attack(B, (Sword, 6))));
+        Run(game, 10);
+        var army = game.ArmiesOf(A).Single();
+        Ok(game.Execute(A, new RecallArmy(army.Id)));
+        Assert.Equal(ArmyState.Returning, army.State);
+        Run(game, 3);
+
+        Ok(game.Execute(A, new RedirectArmy(army.Id, TargetKey: C)));
+        Assert.Equal(ArmyState.Marching, army.State);
+        Assert.Equal(6, army.Units.Values.Sum());
+        Assert.Null(army.Back);
+        Assert.Equal(6, game.CastleOf(A)!.SoldiersAway);
+    }
+
+    [Fact]
+    public void A_redirected_army_walks_a_continuous_road_even_when_it_turns_round_on_the_same_edge()
+    {
+        var game = War(players: 3);
+        game.CastleOf(A)!.AddSoldiers(Sword, 6);
+        Ok(game.Execute(A, Attack(B, (Sword, 6))));
+        Run(game, 10);
+        var army = game.ArmiesOf(A).Single();
+        Ok(game.Execute(A, new RedirectArmy(army.Id, TargetKey: C)));
+        var pts = army.Out.Route.Points;
+        for (int i = 1; i < pts.Count; i++) Assert.True(pts[i - 1].DistanceTo(pts[i]) < 200, "no jump in the road");
+        double len = army.Out.Route.Length;
+        Run(game, 4);
+        // sent back to B it must not need more than the way it has come plus the rest
+        Ok(game.Execute(A, new RedirectArmy(army.Id, TargetKey: B)));
+        Assert.True(army.Out.Route.Length < len + 40);
+        Assert.Equal(B, army.Target);
+    }
+
     private static void RunUntilHome(GameState game, string player)
     {
         for (int t = 0; game.ArmiesOf(player).Count > 0; t++)
