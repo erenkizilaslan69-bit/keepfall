@@ -37,7 +37,19 @@ public sealed class BotContext(GameRules rules, BotInput input, BotMemory memory
     public Job? ScoutSource()
     {
         if (Count(Job.Idle) > 0) return Job.Idle;
-        return new[] { Job.Lumberjack, Job.Miner }.Where(j => Count(j) >= 3).OrderByDescending(Count).Cast<Job?>().FirstOrDefault();
+        return new[] { Job.Lumberjack, Job.Miner, Job.Blacksmith, Job.Farmer }.Where(j => Count(j) >= (j == Job.Farmer ? 5 : 2))
+            .OrderByDescending(j => Count(j) - (j == Job.Farmer ? 3 : 0)).Cast<Job?>().FirstOrDefault();
+    }
+
+    /// <summary>How far into the war we are (0–1; 0 before it begins).</summary>
+    public double WarProgress
+    {
+        get
+        {
+            if (!AtWar) return 0;
+            double elapsed = Castle.ElapsedSeconds - Castle.PrepSeconds;
+            return Math.Clamp(elapsed / Math.Max(1, elapsed + Castle.RemainingSeconds), 0, 1);
+        }
     }
 
     /// <summary>A scout or an army is already on its way to this place.</summary>
@@ -62,6 +74,32 @@ public sealed class BotContext(GameRules rules, BotInput input, BotMemory memory
 
     /// <summary>Weapons forged or still in the queue, which are waiting to be turned into soldiers.</summary>
     public int WeaponsWaiting => Castle.Units.Sum(u => u.Weapons) + Castle.Queue.Sum(o => o.Remaining);
+
+    private readonly Dictionary<string, int> _committed = [];
+
+    /// <summary>Soldiers another module has already sent away in this think (they are not at home any more).</summary>
+    public void Commit(IReadOnlyDictionary<string, int> units)
+    {
+        foreach (var (id, n) in units) _committed[id] = _committed.GetValueOrDefault(id) + n;
+    }
+
+    /// <summary>Soldiers of a type at home and not yet promised to an army this think.</summary>
+    public int HomeSoldiers(string unitId) => Math.Max(0, Unit(unitId).Soldiers - _committed.GetValueOrDefault(unitId));
+
+    /// <summary>An army is on its way to the castle (and the bot has had time to notice): nobody leaves.</summary>
+    public bool UnderThreat => Memory.Threats(Now).Any();
+
+    /// <summary>What the bot works out about a rival's soldiers: the newest of a scout report (approximate) and the last siege it fought at that gate (exact).</summary>
+    public RivalEstimate? EstimateOf(int seat)
+    {
+        RivalEstimate? best = null;
+        if (LatestReport(seat) is { } r)
+            best = new RivalEstimate(r.Soldiers.ToDictionary(u => u.UnitId, u => u.Count), r.ObservedAt, false);
+        var siege = Castle.War.Battles.Where(b => b.Kind == BattleKind.Siege && b.Attacking && b.OpponentSeat == seat).OrderByDescending(b => b.At).FirstOrDefault();
+        if (siege is not null && (best is null || siege.At > best.At))
+            best = new RivalEstimate(siege.DefenderUnits.ToDictionary(u => u.UnitId, u => Math.Max(0, u.Count - u.Lost)), siege.At, true);
+        return best;
+    }
 
     /// <summary>Soldiers at home and on the road.</summary>
     public int SoldiersTotal => Castle.Soldiers + Castle.War.SoldiersAway;

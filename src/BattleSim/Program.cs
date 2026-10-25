@@ -99,6 +99,8 @@ try
                     Console.WriteLine(BotMatch.Describe(r, host));
                 }
             });
+            var result = room.Game!.Result!;
+            Console.WriteLine($"Sonuç: kazanan {string.Join(", ", result.Winners.Select(w => room.PlayerOfCastle(w)?.Name))} ({(result.ByElimination ? "eleme" : "süre sonu")})");
             return 0;
         }
 

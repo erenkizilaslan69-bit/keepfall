@@ -71,6 +71,10 @@ public sealed class BotMemory(BotLevelRules level)
     public IEnumerable<BotEvent> Due(BotEventKind kind, double now) =>
         _events.Where(e => e.Kind == kind && !e.Handled && e.ReactAt <= now + 1e-9);
 
+    /// <summary>Armies on their way to us that the bot knows of by now and that have not yet arrived.</summary>
+    public IEnumerable<BotEvent> Threats(double now) =>
+        _events.Where(e => e.Kind == BotEventKind.IncomingArmy && e.ReactAt <= now + 1e-9 && e.Value > now - 3);
+
     /// <summary>The server refused this command: do not offer it again for <paramref name="seconds"/>.</summary>
     public void Refused(GameCommand command, double now, double seconds = 20) => _refused[command] = now + seconds;
 

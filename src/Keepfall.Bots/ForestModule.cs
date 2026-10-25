@@ -1,4 +1,4 @@
-using Keepfall.Core.Combat;
+﻿using Keepfall.Core.Combat;
 using Keepfall.Core.Economy;
 using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
@@ -25,7 +25,8 @@ public sealed class ForestModule : IBotModule
         if (c.War.Armies.Count >= 2) return; // two raids at a time are enough
 
         // At war the castle keeps a share of its soldiers at home; in the preparation nobody can attack it.
-        var home = c.Units.ToDictionary(u => u.Id, u => u.Soldiers);
+        if (ctx.UnderThreat) return; // an army is coming: everybody stays
+        var home = c.Units.ToDictionary(u => u.Id, u => ctx.HomeSoldiers(u.Id));
         double keep = ctx.AtWar ? 0.4 : 0.0;
         var spare = home.ToDictionary(kv => kv.Key, kv => (int)Math.Floor(kv.Value * (1 - keep)));
         int spareTotal = spare.Values.Sum();
@@ -42,7 +43,7 @@ public sealed class ForestModule : IBotModule
             {
                 int need = Math.Max(1, s.MinSoldiers);
                 double value = 40 + 3 * 35; // gold and people
-                candidates.Add((s, value / (2 * trip + 20), need, spareTotal >= need ? Take(spare, need) : null));
+                candidates.Add((s, value / (2 * trip + 20), need, spareTotal >= need ? Tactics.Take(spare, need) : null));
             }
             else
             {
@@ -51,7 +52,7 @@ public sealed class ForestModule : IBotModule
                 double gold = s.Kind == SiteKind.BigCamp ? 260 : 75, weapons = s.Kind == SiteKind.BigCamp ? 6 : 3;
                 double value = gold + weapons * 25 - plan.Loss * 30;
                 if (value <= 0) continue;
-                candidates.Add((s, value / (2 * trip + 30), plan.Needed, spareTotal >= plan.Needed ? Take(spare, plan.Needed) : null));
+                candidates.Add((s, value / (2 * trip + 30), plan.Needed, spareTotal >= plan.Needed ? Tactics.Take(spare, plan.Needed) : null));
             }
         }
         if (candidates.Count == 0) return;
@@ -61,25 +62,12 @@ public sealed class ForestModule : IBotModule
         if (ready.Site is not null)
         {
             ctx.Wish(75, new SendArmyToSite(ready.Site.Id, ready.Army!, null, null));
+            ctx.Commit(ready.Army!);
             ctx.Stats.Count(ready.Site.Kind == SiteKind.Village ? "villageRaids" : "campAttacks");
             return;
         }
         int want = candidates.OrderByDescending(x => x.Score).First().Need;
         ctx.Memory.WantSoldiers = (int)Math.Ceiling(want / (1 - keep));
-    }
-
-    /// <summary>The soldiers to send: <paramref name="count"/> of what is spare, in the proportion it is spare.</summary>
-    private static Dictionary<string, int> Take(Dictionary<string, int> spare, int count)
-    {
-        int total = spare.Values.Sum();
-        var army = spare.ToDictionary(kv => kv.Key, kv => (int)Math.Floor(count * (double)kv.Value / total));
-        int left = count - army.Values.Sum();
-        foreach (var kv in spare.OrderByDescending(kv => count * (double)kv.Value / total - army[kv.Key]))
-        {
-            if (left <= 0) break;
-            if (army[kv.Key] < kv.Value) { army[kv.Key]++; left--; }
-        }
-        return army.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
     }
 
     /// <summary>How many soldiers a camp takes (of the mix we have), and how many of them we expect to lose. Needed 0: not possible or not safe.</summary>
@@ -97,20 +85,9 @@ public sealed class ForestModule : IBotModule
         (int, double) result;
         if (ctx.Difficulty == BotDifficulty.Medium)
         {
-            // The smallest army (in the mix we have) that wins nearly always; searched by halving.
-            int lo = 1, hi = soldiers;
-            if (soldiers == 0 || Win(ctx, Mixed(ctx, spare, hi), enemy).Rate < 0.9) result = (0, 0);
-            else
-            {
-                while (lo < hi)
-                {
-                    int mid = (lo + hi) / 2;
-                    if (Win(ctx, Mixed(ctx, spare, mid), enemy).Rate >= 0.9) hi = mid; else lo = mid + 1;
-                }
-                var w = Win(ctx, Mixed(ctx, spare, lo), enemy);
-                // Not worth a bloody win: lose at most half of what goes.
-                result = w.Loss <= 0.5 * lo ? (lo, w.Loss) : (0, 0);
-            }
+            // The smallest army (in the mix we have) that wins nearly always; not worth a bloody win: lose at most half of what goes.
+            var (needed, loss) = Tactics.SmallestWinning(ctx, spare, enemy, 0.9);
+            result = needed > 0 && loss <= 0.5 * needed ? (needed, loss) : (0, 0);
         }
         else
         {
@@ -120,26 +97,5 @@ public sealed class ForestModule : IBotModule
         }
         ctx.Memory.RaidPlans[camp.Id] = (ctx.Now, soldiers, result.Item1, result.Item2);
         return result;
-    }
-
-    private static ArmySetup Mixed(BotContext ctx, Dictionary<string, int> spare, int count)
-    {
-        var army = new ArmySetup("Ordu");
-        foreach (var (id, n) in Take(spare, count)) if (ctx.Rules.FindUnit(id) is { } t) army.Add(t, n);
-        return army;
-    }
-
-    private static (double Rate, double Loss) Win(BotContext ctx, ArmySetup mine, ArmySetup enemy)
-    {
-        int wins = 0;
-        double lost = 0;
-        for (int i = 0; i < Runs; i++)
-        {
-            var r = ctx.Simulator.Simulate(mine, enemy, ctx.Rng);
-            if (r.Outcome != BattleOutcome.SideAWins) continue;
-            wins++;
-            lost += r.SideA.Initial - r.SideA.Survivors;
-        }
-        return (wins / (double)Runs, wins == 0 ? mine.TotalCount : lost / wins);
     }
 }

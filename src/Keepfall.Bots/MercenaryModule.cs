@@ -1,4 +1,4 @@
-using Keepfall.Core.Lobby;
+﻿using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
 
 namespace Keepfall.Bots;
@@ -15,7 +15,7 @@ public sealed class MercenaryModule : IBotModule
         var c = ctx.Castle;
         double gold = c.Resources.Gold;
         if (gold <= 0 || c.Eliminated) return;
-        bool needed = ctx.ArmingTime || ctx.Memory.WantSoldiers > ctx.Castle.Soldiers;
+        bool needed = ctx.ArmingTime || ctx.UnderThreat || ctx.Memory.WantSoldiers > ctx.Castle.Soldiers;
         if (!needed) return;
         if (c.Starving || (c.Resources.Food < 25 && c.Rates.FoodIn < c.Rates.FoodOut)) return;
         if (ctx.Difficulty == BotDifficulty.Easy && ctx.Slip()) return;
@@ -28,7 +28,7 @@ public sealed class MercenaryModule : IBotModule
         if (pick.Id is null) return;
 
         var price = ctx.Unit(pick.Id).Price;
-        int n = Math.Min((int)Math.Floor(gold / price), ctx.Difficulty == BotDifficulty.Medium ? 3 : 1);
+        int n = Math.Min((int)Math.Floor(gold / price), ctx.UnderThreat ? 6 : ctx.Difficulty == BotDifficulty.Medium ? 3 : 1);
         if (n > 0) ctx.Wish(75, new HireMercenary(pick.Id, n), gold: price * n);
     }
 }
