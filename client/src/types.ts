@@ -197,6 +197,10 @@ export interface MapLayoutView { size: number; regions: RegionView[]; roads: Roa
 export type MoverKind = 'army' | 'scout';
 export interface MoverUnit { unitId: string; name: string; count: number }
 export interface VisionView { center: Vec; radius: number }
+/** Ground one of our scouts walked over that is still in view; `fade` goes 1 → 0 as it closes. */
+export interface TrailView { center: Vec; radius: number; fade: number }
+/** A rectangle of the map in tiles. */
+export interface Rect { x: number; y: number; w: number; h: number }
 /** One of our own armies or scouts, with its road. */
 export interface OwnMoverView {
   id: string; kind: MoverKind; targetSeat: number; returning: boolean;
@@ -209,7 +213,7 @@ export interface SeenMoverView { id: string; kind: MoverKind; ownerSeat: number;
 /** A battle we can see but are not in: only where it is. */
 export interface BattleMarkerView { id: string; at: Vec }
 /** What we see right now (fog of war applied by the server). */
-export interface MapStateView { elapsedSeconds: number; vision: VisionView[]; own: OwnMoverView[]; seen: SeenMoverView[]; battles: BattleMarkerView[] }
+export interface MapStateView { elapsedSeconds: number; vision: VisionView[]; own: OwnMoverView[]; seen: SeenMoverView[]; battles: BattleMarkerView[]; trail: TrailView[] }
 
 /** A battle we fight in, to replay: soldiers numbered side A first; times in simulation ticks. */
 export interface BattleSideView { seat: number; color: PlayerColor; name: string; attacker: boolean; soldiers: { unitId: string; row: Row }[] }

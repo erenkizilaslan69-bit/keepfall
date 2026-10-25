@@ -1,5 +1,5 @@
 import { COLOR_CSS } from './format';
-import type { MapLayoutView, PlayerColor, Vec, VisionView } from './types';
+import type { MapLayoutView, PlayerColor, Rect, TrailView, Vec, VisionView } from './types';
 
 // The minimap in the corner of the scene: the whole map at a glance, darkened where we cannot see,
 // with castles, our armies and scouts, whatever enemy movement we can see, and the camera's view.
@@ -42,7 +42,8 @@ export class Minimap {
   }
 
   /** <paramref name="view"/>: the camera's rectangle, in tiles. */
-  draw(vision: VisionView[], movers: MinimapMover[], view: { x: number; y: number; w: number; h: number }, battles: Vec[] = []): void {
+  draw(vision: VisionView[], movers: MinimapMover[], view: { x: number; y: number; w: number; h: number }, battles: Vec[] = [],
+    trail: TrailView[] = [], foreign: Rect[] = []): void {
     const now = performance.now();
     if (now - this.lastDraw < REDRAW_MS) return;
     this.lastDraw = now;
@@ -57,6 +58,22 @@ export class Minimap {
     f.clearRect(0, 0, SIZE, SIZE);
     f.fillStyle = 'rgba(8, 12, 18, 0.6)';
     f.fillRect(0, 0, SIZE, SIZE);
+    f.globalCompositeOperation = 'destination-out';
+    for (const c of trail) {
+      f.globalAlpha = c.fade;
+      f.beginPath();
+      f.arc(c.center.x * k, c.center.y * k, c.radius * k, 0, Math.PI * 2);
+      f.fill();
+    }
+    f.globalAlpha = 1;
+    // The trail never opens another player's corner.
+    for (const r of foreign) {
+      f.globalCompositeOperation = 'destination-out';
+      f.fillRect(r.x * k, r.y * k, r.w * k, r.h * k);
+      f.globalCompositeOperation = 'source-over';
+      f.fillStyle = 'rgba(8, 12, 18, 0.6)';
+      f.fillRect(r.x * k, r.y * k, r.w * k, r.h * k);
+    }
     f.globalCompositeOperation = 'destination-out';
     for (const c of vision) {
       f.beginPath();

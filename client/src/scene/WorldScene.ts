@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { ArmyView, SpectatorCastleView, SpectatorStateView, BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
+import type { ArmyView, Rect, SpectatorCastleView, SpectatorStateView, BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
 import type { Minimap } from '../minimap';
 import type { Anchor, Target } from '../ui/windows';
 import type { WorldLabels } from '../ui/world-labels';
@@ -238,7 +238,7 @@ export class WorldScene extends Phaser.Scene {
       else this.applyOtherPicture(c);
     }
     // Armies, scouts and battles come as what others see of each other, but all of them; the clock is the picture's.
-    const map: MapStateView = { elapsedSeconds: frame.elapsedSeconds, vision: [], own: [], seen: frame.movers, battles: frame.battles };
+    const map: MapStateView = { elapsedSeconds: frame.elapsedSeconds, vision: [], own: [], seen: frame.movers, battles: frame.battles, trail: [] };
     this.map = map;
     this.movers.sync(map);
     this.syncMarkers(map);
@@ -276,6 +276,12 @@ export class WorldScene extends Phaser.Scene {
   lookAt(tile: Vec): void {
     const p = toWorld(tile);
     this.cameras.main.centerOn(p.x, p.y);
+  }
+
+  /** Other players' corners (tiles): what the trail of our scouts does not open. */
+  private get foreignRegions(): Rect[] {
+    return this.layout.regions.filter((r) => r.seat !== null && r.seat !== this.mySeat)
+      .map((r) => ({ x: r.origin.x, y: r.origin.y, w: r.width, h: r.height }));
   }
 
   private get otherColors(): PlayerColor[] {
@@ -390,11 +396,11 @@ export class WorldScene extends Phaser.Scene {
       // The castle's circle comes from the server; the walking circles follow the drawn armies and scouts.
       const fixed = this.map.vision.slice(0, 1);
       const moving = this.movers.ownVision();
-      if (!this.spectating) this.fog.draw(fixed, moving);
+      if (!this.spectating) this.fog.draw(fixed, moving, this.map.trail, this.foreignRegions);
       const view = this.cameras.main.worldView;
       const tl = toTiles({ x: view.x, y: view.y });
       const battles = [...this.map.battles.map((b) => b.at), ...this.battles.active.map((b) => b.at)];
-      this.minimap?.draw([...fixed, ...moving], this.movers.all(), { x: tl.x, y: tl.y, w: view.width / TILE, h: view.height / TILE }, battles);
+      this.minimap?.draw([...fixed, ...moving], this.movers.all(), { x: tl.x, y: tl.y, w: view.width / TILE, h: view.height / TILE }, battles, this.map.trail, this.foreignRegions);
     }
   }
 

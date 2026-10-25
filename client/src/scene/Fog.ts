@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { Vec, VisionView } from '../types';
+import type { Rect, TrailView, Vec, VisionView } from '../types';
 import { TILE } from './layout';
 import { toWorld } from './world';
 
@@ -16,6 +16,8 @@ const REDRAW_MS = 80;
 export class Fog {
   private readonly rt: Phaser.GameObjects.RenderTexture;
   private readonly hole: Phaser.GameObjects.Image;
+  /** A plain rectangle, to wipe a corner's fog clean before it is laid down again. */
+  private readonly block: Phaser.GameObjects.Image;
   private lastDraw = 0;
 
   constructor(scene: Phaser.Scene, mapSize: number) {
@@ -23,26 +25,40 @@ export class Fog {
     const topLeft = toWorld({ x: 0, y: 0 });
     this.rt = scene.add.renderTexture(topLeft.x, topLeft.y, size, size).setOrigin(0).setScale(SCALE).setDepth(DEPTH);
     this.hole = scene.make.image({ key: Fog.holeTexture(scene), add: false });
+    this.block = scene.make.image({ key: '__WHITE', add: false }).setOrigin(0);
   }
 
   setVisible(visible: boolean): void {
     this.rt.setVisible(visible);
   }
 
-  /** <paramref name="fixed"/>: the castle's sight; <paramref name="moving"/>: armies and scouts where they are now. */
-  draw(fixed: VisionView[], moving: { center: Vec; radius: number }[], force = false): void {
+  /**
+   * <paramref name="fixed"/>: the castle's sight; <paramref name="moving"/>: armies and scouts where they are now;
+   * <paramref name="trail"/>: ground our scouts walked over (fading out as it closes); <paramref name="foreign"/>: other
+   * players' corners, which the trail never opens.
+   */
+  draw(fixed: VisionView[], moving: { center: Vec; radius: number }[], trail: TrailView[] = [], foreign: Rect[] = [], force = false): void {
     const now = performance.now();
     if (!force && now - this.lastDraw < REDRAW_MS) return;
     this.lastDraw = now;
     const topLeft = toWorld({ x: 0, y: 0 });
     this.rt.clear().fill(FOG_COLOR, FOG_ALPHA);
-    for (const c of [...fixed, ...moving]) {
+    const open = (c: { center: Vec; radius: number }, alpha: number) => {
       const p = toWorld(c.center);
       const diameter = (c.radius * 2 * TILE) / SCALE;
       this.hole.setDisplaySize(diameter * 1.15, diameter * 1.15) // the soft rim sits just outside the radius
-        .setPosition((p.x - topLeft.x) / SCALE, (p.y - topLeft.y) / SCALE);
+        .setPosition((p.x - topLeft.x) / SCALE, (p.y - topLeft.y) / SCALE).setAlpha(alpha);
       this.rt.erase(this.hole);
+    };
+    for (const c of trail) open(c, c.fade);
+    // What is inside a castle's corner is learned from reports, not by looking at it from the road.
+    for (const r of foreign) {
+      const p = toWorld({ x: r.x, y: r.y });
+      const x = (p.x - topLeft.x) / SCALE, y = (p.y - topLeft.y) / SCALE, w = (r.w * TILE) / SCALE, h = (r.h * TILE) / SCALE;
+      this.block.setDisplaySize(w, h).setPosition(x, y).setAlpha(1);
+      this.rt.erase(this.block).fill(FOG_COLOR, FOG_ALPHA, x, y, w, h);
     }
+    for (const c of [...fixed, ...moving]) open(c, 1);
   }
 
   /** A white disc fading out at the rim, made once. */
