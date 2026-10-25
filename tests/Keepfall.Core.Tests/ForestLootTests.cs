@@ -1,4 +1,4 @@
-using Keepfall.Core.Config;
+﻿using Keepfall.Core.Config;
 using Keepfall.Core.Economy;
 using Keepfall.Core.Match;
 using Keepfall.Core.World;
@@ -126,6 +126,23 @@ public class ForestLootTests
         Assert.Equal(3, castle.Soldiers[Sword]); // everybody came home
         Assert.InRange(village.Site.People, Rules.Forest.Village.PeopleMin, Rules.Forest.Village.PeopleMax);
         Assert.InRange(village.Site.Gold, Rules.Forest.Village.GoldMin, Rules.Forest.Village.GoldMax);
+    }
+
+    [Fact]
+    public void An_army_that_reaches_a_village_with_fewer_than_three_soldiers_plunders_nothing()
+    {
+        var game = Game();
+        Explore(game, A, Corner.NorthWest);
+        var village = Find(game, A, SiteKind.Village);
+        game.CastleOf(A)!.AddSoldiers(Sword, 3);
+        Ok(game.Execute(A, new SendArmyToSite(village.Site.Id, new Dictionary<string, int> { ["kilicli"] = 3 })));
+        // Two of the three fall on the road: one soldier arrives.
+        var army = game.ArmiesOf(A).Single();
+        army.Units = new Dictionary<Units.UnitType, int> { [Sword] = 1 };
+        RunUntil(game, () => game.ArmiesOf(A).Single().State == ArmyState.Returning);
+        Assert.False(game.AllSites.First(s => s.Site.Id == village.Site.Id).Gone);
+        RunUntil(game, () => game.ArmiesOf(A).Count == 0);
+        Assert.Equal(0, game.CastleOf(A)!.Gold);
     }
 
     [Fact]

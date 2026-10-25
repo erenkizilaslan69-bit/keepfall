@@ -696,7 +696,8 @@ public sealed class GameState
             StartCampBattle(a, site);
             return;
         }
-        if (site.Site.Kind == SiteKind.Village && !site.Gone)
+        // Soldiers lost on the road count: an army that arrives with fewer than the minimum cannot plunder, whatever it set out with.
+        if (site.Site.Kind == SiteKind.Village && !site.Gone && a.Units.Values.Sum() >= Rules.Forest.Village.MinSoldiers)
         {
             site.Gone = true;
             site.Version++;
