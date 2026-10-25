@@ -179,11 +179,11 @@ html.ui-art .strip {
   text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000;
 }
 
-.pcol { display: inline-flex; flex-direction: column; align-items: center; gap: calc(1px * var(--u)); }
-.prep { display: inline-flex; align-items: center; gap: calc(4px * var(--u)); cursor: pointer; font-size: .8em; }
-.prep .unit-ico { --ico: calc(18px * var(--u)); }
-.prep .unit-count { gap: 0; }
-.prep small { font-family: var(--font-text); }
+/* The small scroll under a rival's name: their last scout report (Tiny Swords special paper). */
+.scroll-pop { position: absolute; width: min(calc(300px * var(--u)), 92vw); max-height: 70vh; overflow-y: auto; padding: calc(4px * var(--u)) calc(8px * var(--u)); pointer-events: auto; z-index: 20; }
+.scroll-pop .scout-report { background: none; padding: 0; margin: 0; }
+.scroll-pop .rep-title { font-size: .9em; color: var(--ink); }
+.scroll-pop .scroll-foot { display: flex; justify-content: space-between; gap: calc(6px * var(--u)); margin-top: calc(6px * var(--u)); }
 .chip { display: inline-flex; align-items: center; gap: calc(4px * var(--u)); cursor: pointer; padding: 0 calc(4px * var(--u)); border-bottom: 3px solid transparent; }
 .chip[data-color="blue"] { border-color: #4a8fd9; } .chip[data-color="red"] { border-color: #d9534a; }
 .chip[data-color="yellow"] { border-color: #e2b93b; } .chip[data-color="purple"] { border-color: #9b6bd1; }
@@ -280,8 +280,8 @@ html.ui-art .unit-row .btn { border-width: calc(12px * var(--u)); border-image-w
 .win .gbar { margin: calc(4px * var(--u)) 0; }
 
 .cam-btns {
-  position: absolute; right: calc(8px * var(--u)); bottom: calc(8px * var(--u) + min(22vw, 200px) + 14px); display: flex; flex-wrap: wrap; justify-content: flex-end;
-  gap: calc(4px * var(--u)); max-width: min(60vw, calc(520px * var(--u))); pointer-events: none;
+  position: absolute; right: calc(8px * var(--u)); bottom: calc(8px * var(--u) + min(22vw, 200px) + 14px); display: flex; flex-direction: column; align-items: flex-end;
+  gap: calc(4px * var(--u)); pointer-events: none;
 }
 .cam-btns [data-f="rivals"] { display: contents; }
 .cam-rival { display: inline-flex; align-items: center; gap: calc(4px * var(--u)); }

@@ -44,8 +44,8 @@ Bot dengesi: `python tools/bot-deney.py 200 docs/bot-deney-son.md` (tablo `docs/
 ## Görev listesi (kullanıcı sırası)
 Durum: [x] bitti, [ ] açık.
 - [x] 0 CLAUDE.md yazıldı
-- [ ] 1 Kamera butonları alt alta (Kaleme dön, rakipler, Orman)
-- [ ] 2 Gözcü raporları isim altında durmasın; oyuncu ismine tıklayınca papirüs/ferman penceresinde rapor
+- [x] 1 Kamera butonları alt alta (Kaleme dön, rakipler, Orman)
+- [x] 2 Gözcü raporları isim altında durmasın; oyuncu ismine tıklayınca papirüs/ferman penceresinde rapor
 - [ ] 3 HATA: köye 1 askerle gidilince yağmalanıyor; en az 3 asker kuralı sunucuda + arayüzde + botlarda
 - [ ] 4 Ganimet çeşitlendirme (sandık altın+demir, köy altın+yemek+kişi, kamp altın+silah+odun); paralı fiyat çarpanı 1,25 → 1,1; bot simülasyonuyla paralı payını ölç (>%30 ise altını düşür), sayıları ÖNER + ölç
 - [ ] 5 Düşen kale: düşüren oyuncu kalenin depodaki kaynak ve altınının yarısını alır; hayatta kalan işçilerin 1/3'ü boşta olarak ona katılır (askerlerle birlikte döner); oranlar balance.json'da

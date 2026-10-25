@@ -10,7 +10,7 @@ import { ForestWin, SiteWin } from './forest-window';
 import { WindowManager, sameTarget, type Target, type Win, type WinContext } from './windows';
 import { Notifications, type NoteKind } from './notifications';
 import { ReportTags } from './reports';
-import { GENITIVE, scoutKey } from './scout-report';
+import { GENITIVE, scoutKey, scoutReportHtml } from './scout-report';
 import { TopBar } from './topbar';
 import { WorldLabels } from './world-labels';
 
@@ -46,6 +46,10 @@ export class GameUi {
   /** The "every human is out" box for the host, and whether they already chose to keep watching. */
   private readonly finish: HTMLElement;
   private readonly cam: HTMLElement;
+  /** The small scroll under a rival's name with their last scout report (null seat: closed). */
+  private readonly scroll: HTMLElement;
+  private scrollSeat: number | null = null;
+  private scrollAt: DOMRect | null = null;
   private camKey = '';
   private finishDismissed = false;
   private readonly mySeat: number;
@@ -100,13 +104,18 @@ export class GameUi {
         this.scene?.focus(target);
         this.open(target);
       },
-      report: (seat) => {
-        const report = this.castle?.scouting.reports.find((r) => r.targetSeat === seat);
-        if (report) this.reports.showScout(report);
-      },
+      rival: (seat, at) => this.toggleScroll(seat, at),
     });
     this.bar.setSeat(seat);
     this.notes = new Notifications(this.top);
+    this.scroll = document.createElement('div');
+    this.scroll.className = 'scroll-pop paper-dark hit hidden';
+    this.scroll.addEventListener('click', (e) => {
+      const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act;
+      if (act === 'close') this.closeScroll();
+      else if (act === 'open' && this.scrollSeat !== null) { const seat = this.scrollSeat; this.closeScroll(); this.scene?.focus({ kind: 'enemy', seat }); this.open({ kind: 'enemy', seat }); }
+    });
+    root.appendChild(this.scroll);
     this.reports = new ReportTags(root);
     // Quick camera buttons next to the minimap: our castle, each rival's castle (in their colour) and the forest in the middle.
     this.cam = document.createElement('div');
@@ -178,6 +187,7 @@ export class GameUi {
     this.castle = s;
     this.windows.update({ castle: s, room: this.room });
     this.bar.update(s);
+    this.renderScroll();
     this.reports.update(s.war.battles, s.elapsedSeconds);
     const reports = s.scouting.reports;
     if (this.scoutsSeen) {
@@ -203,6 +213,42 @@ export class GameUi {
     if (!this.eliminated && s.eliminated) this.notes.push('Kalen düştü!', 'danger', 6000);
     this.phase = s.phase;
     this.eliminated = s.eliminated;
+  }
+
+  private toggleScroll(seat: number, at: DOMRect): void {
+    if (this.scrollSeat === seat) { this.closeScroll(); return; }
+    this.scrollSeat = seat;
+    this.scrollAt = at;
+    this.scroll.dataset.html = '';
+    this.renderScroll();
+  }
+
+  private closeScroll(): void {
+    this.scrollSeat = null;
+    this.scroll.classList.add('hidden');
+  }
+
+  /** The scroll's content: the rival's last report in full, or a line saying there is none; it ages with the clock. */
+  private renderScroll(): void {
+    const seat = this.scrollSeat, s = this.castle;
+    if (seat === null || !s) return;
+    const report = s.scouting.reports.find((r) => r.targetSeat === seat);
+    const player = this.room?.players.find((p) => p.seat === seat);
+    const html = `<button class="btn-round btn-red win-close" data-act="close" title="Kapat (Esc)"><i class="ico ico-close"></i></button>
+      ${report ? scoutReportHtml(report, s.elapsedSeconds)
+        : `<div class="rep-title ribbon ribbon-yellow">${esc(player?.name ?? '?')}</div><p class="rep-note">Henüz gözcü raporu yok. Gözcüyü rakip kalenin penceresinden gönderirsin.</p>`}
+      <div class="scroll-foot"><button class="btn" data-act="open">Kale penceresi</button></div>`;
+    if (this.scroll.dataset.html !== html) {
+      this.scroll.dataset.html = html;
+      this.scroll.innerHTML = html;
+    }
+    this.scroll.classList.remove('hidden');
+    const at = this.scrollAt;
+    if (at) {
+      const w = this.scroll.offsetWidth;
+      this.scroll.style.top = `${at.bottom + 6}px`;
+      this.scroll.style.left = `${Math.max(8, Math.min(window.innerWidth - w - 8, at.left + at.width / 2 - w / 2))}px`;
+    }
   }
 
   /** Our castle has fallen and the view starts in <paramref name="startsIn"/> game seconds: a countdown instead of an empty screen. */
@@ -284,6 +330,7 @@ export class GameUi {
   private keydown(e: KeyboardEvent): void {
     if (e.key !== 'Escape') return;
     if (this.reports.isOpen) this.reports.close();
+    else if (this.scrollSeat !== null) this.closeScroll();
     else this.windows.close();
   }
 }
