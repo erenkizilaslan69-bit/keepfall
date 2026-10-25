@@ -18,10 +18,11 @@
 /// <param name="KeepHome">Share of its soldiers it keeps at home when it sends an army to a castle.</param>
 /// <param name="Calculates">It works out fights with the game's own fight calculator (attacks, bandit camps) instead of counting heads.</param>
 /// <param name="SmartDefense">When an army comes it also recalls raiders, aims its archers and goes out to cut the rival off; otherwise it only arms and lines up.</param>
+/// <param name="ScoreAware">The bot plays for victory points (damage, kills) as well as for people, so it is bold from the first second of the war (only where it calculates its fights).</param>
 /// <param name="HeadCountRatio">A poor bot, which judges a rival by a head count, goes when it has this many times the soldiers the last report shows.</param>
 public sealed record BotLevelRules(double ThinkMin, double ThinkMax, double ReactMin, double ReactMax, int Commands, double Mistake, int Slack, double EcoMistake,
     bool ExploreAll = true, bool ChestsAnywhere = true, int Scouts = 2, int MercBatch = 3, int MercThreatBatch = 6, bool Saves = true, int QueueDepth = 3,
-    double KeepHome = 0.25, double HeadCountRatio = 1.0, bool Calculates = true, bool SmartDefense = true);
+    double KeepHome = 0.25, double HeadCountRatio = 1.0, bool Calculates = true, bool SmartDefense = true, bool ScoreAware = false);
 
 /// <param name="Mix">The army it builds: share of each unit type (by id), summing to about 1.</param>
 /// <param name="WeaponsFrom">Share of the preparation after which it starts forging weapons.</param>
@@ -29,9 +30,8 @@ public sealed record BotLevelRules(double ThinkMin, double ThinkMax, double Reac
 /// <param name="ArmyShare">The most of its people it lets become soldiers (the rest keep the castle fed and forging).</param>
 /// <param name="AttackMargin">A good bot expects this many times what the last report says (reports are approximate and out of date).</param>
 /// <param name="AttackRate">…and goes only if its army wins at least this share of the fights it calculates.</param>
-/// <param name="ScoreAware">Experiment: the bot plays for victory points (damage, kills) as well as for people, so it is bold from the first second of the war.</param>
 public sealed record BotRules(BotLevelRules Easy, BotLevelRules Medium, IReadOnlyDictionary<string, double> Mix, double WeaponsFrom, double ArmFrom, double ArmyShare,
-    double AttackMargin = 1.2, double AttackRate = 0.85, bool ScoreAware = false)
+    double AttackMargin = 1.2, double AttackRate = 0.85)
 {
     public static readonly BotRules Default = new(
         new BotLevelRules(6, 10, 8, 15, 2, 0.25, 2, 0.25, false, false, 1, 1, 1, false, 2, 0.1, 1.0, false, false), new BotLevelRules(2, 3, 3, 6, 4, 0.05, 1, 0.05),

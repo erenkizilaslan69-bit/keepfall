@@ -44,7 +44,7 @@ def bots(text, **kw):
         for i, l in enumerate(lines):
             if level and re.match(rf'\s*"{level}":', l):
                 if re.search(rf'"{name}":', l):
-                    lines[i] = re.sub(rf'("{name}":\s*)[\d.]+', lambda m: f'{m.group(1)}{value}', l)
+                    lines[i] = re.sub(rf'("{name}":\s*)[^,}}\s]+', lambda m: f'{m.group(1)}{value}', l)
                 else:  # yeni anahtar ekle
                     lines[i] = re.sub(r'\s*\}\s*,?\s*$', lambda m: f', "{name}": {value} ' + m.group(0).strip(), l)
                 done = True
@@ -90,15 +90,15 @@ if OLD:  # ilk deney tablosu (A/B/C): çarpanlar balance.json'un o günkü değe
     # ---- 2. pasiflik (Orta vs Orta) ----
     add('2 Pasiflik', 'B0', 'şimdiki ayar (nüfus kuralı, eşik 1,2)', run('B0', []))
     add('2 Pasiflik', 'B1', 'zafer puanı, botlar aynı', run('B1', SCORE))
-    add('2 Pasiflik', 'B2', 'zafer puanı + puana duyarlı botlar', run('B2', SCORE, lambda t: bots(t, scoreAware='true')))
+    add('2 Pasiflik', 'B2', 'zafer puanı + puana duyarlı botlar', run('B2', SCORE, lambda t: bots(t, medium_scoreAware='true')))
     add('2 Pasiflik', 'B3', 'eşik 1,3 (nüfus kuralı)', run('B3', [], lambda t: bots(t, attackMargin='1.3')))
     add('2 Pasiflik', 'B4', 'eşik 1,1 (nüfus kuralı)', run('B4', [], lambda t: bots(t, attackMargin='1.1')))
     add('2 Pasiflik', 'B5', 'eşik 1,1 + zafer puanı', run('B5', SCORE, lambda t: bots(t, attackMargin='1.1')))
-    add('2 Pasiflik', 'B6', 'zafer puanı + duyarlı, nüfus ağırlıklı (2/0,1/1/2)', run('B6', SCORE + ['--agirlik', '100,0.1,1,2'], lambda t: bots(t, scoreAware='true')))
-    add('2 Pasiflik', 'B7', 'zafer puanı + duyarlı, saldırı ağırlıklı (200/0,4/3/0,5)', run('B7', SCORE + ['--agirlik', '200,0.4,3,0.5'], lambda t: bots(t, scoreAware='true')))
+    add('2 Pasiflik', 'B6', 'zafer puanı + duyarlı, nüfus ağırlıklı (2/0,1/1/2)', run('B6', SCORE + ['--agirlik', '100,0.1,1,2'], lambda t: bots(t, medium_scoreAware='true')))
+    add('2 Pasiflik', 'B7', 'zafer puanı + duyarlı, saldırı ağırlıklı (200/0,4/3/0,5)', run('B7', SCORE + ['--agirlik', '200,0.4,3,0.5'], lambda t: bots(t, medium_scoreAware='true')))
 
     add('2 Pasiflik', 'B8', 'saldırı oranı 0,85 → 0,65 (nüfus kuralı)', run('B8', [], lambda t: bots(t, attackRate='0.65')))
-    add('2 Pasiflik', 'B9', 'oran 0,65 + eşik 1,1 + puana duyarlı', run('B9', SCORE, lambda t: bots(t, attackRate='0.65', attackMargin='1.1', scoreAware='true')))
+    add('2 Pasiflik', 'B9', 'oran 0,65 + eşik 1,1 + puana duyarlı', run('B9', SCORE, lambda t: bots(t, attackRate='0.65', attackMargin='1.1', medium_scoreAware='true')))
 
     # ---- 3. Kolay bot (Orta + Kolay karışık) ----
     E = lambda **kw: (lambda t: bots(t, **kw))
@@ -119,13 +119,13 @@ if not OLD:
     # ---- son kontrol: balance.json'un şimdiki değerleriyle ----
     add('4 Son', 'D0', 'Orta vs Orta, şimdiki ayar (paralı payı + pasiflik)', run('D0', []))
     add('4 Son', 'D1', 'Orta vs Kolay (karışık), şimdiki ayar', run('D1', [], None, 'karisik'))
-    add('4 Son', 'B10', 'puana duyarlı botlar, zafer puanı YOK (nüfus kuralı)', run('B10', [], lambda t: bots(t, scoreAware='true')))
-    add('4 Son', 'B2', 'puana duyarlı botlar + zafer puanı (karşılaştırma)', run('B2s', SCORE, lambda t: bots(t, scoreAware='true')))
-
+    add('4 Son', 'D2', 'Orta vs Orta, puana duyarlılık KAPALI (karşılaştırma)', run('D2', [], lambda t: bots(t, medium_scoreAware='false')))
+    add('4 Son', 'D3', 'Orta vs Kolay, puana duyarlılık KAPALI (karşılaştırma)', run('D3', [], lambda t: bots(t, medium_scoreAware='false'), 'karisik'))
     E = lambda **kw: (lambda t: bots(t, **kw))
-    # Kolay'ın düşünme süresi alternatifleri (yeni paralı/altın ayarıyla); balance.json'a dokunulmaz
-    for n, lo, hi in [('E1', 5, 8), ('E2', 6, 10), ('E3', 7, 12), ('E4', 8, 14)]:
-        add('4 Son', n, f'Orta vs Kolay, Kolay düşünme {lo}–{hi} sn', run(n, [], E(easy_thinkMin=str(lo), easy_thinkMax=str(hi)), 'karisik'))
+    # Kolay'ın düşünme süresi alternatifleri: komut satırı 4. argüman "6-10,8-14" gibi (yoksa çalışmaz); balance.json'a dokunulmaz
+    for k, span in enumerate(sys.argv[4].split(',') if len(sys.argv) > 4 else []):
+        lo, hi = span.split('-')
+        add('4 Son', f'E{k + 1}', f'Orta vs Kolay, Kolay düşünme {lo}–{hi} sn', run(f'E{k + 1}', [], E(easy_thinkMin=lo, easy_thinkMax=hi), 'karisik'))
 
 head = ['Deney', 'Değişiklik', 'Orta kazanma (karışıkta)', 'Eleme ile biten', 'Saldırısız maç', 'Kale saldırısı/maç', 'Saldırı/koltuk', 'İlk saldırı (savaşın)',
         'Paralı oranı savaş başı', 'Paralı oranı maç sonu', 'Altın/koltuk', 'Nüfus savaş başı', 'Nüfus maç sonu', 'Saldıranın kazanma oranı', 'Eşit olmayan maç']

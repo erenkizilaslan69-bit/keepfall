@@ -39,7 +39,7 @@ public sealed class AttackModule : IBotModule
             {
                 // The longer the war has gone on without a result the more it is willing to risk (the winner is whoever has the most people).
                 var rules = ctx.Rules.Bots;
-                double bold = rules.ScoreAware ? 1 : Math.Max(0, ctx.WarProgress - 0.3) / 0.7;
+                double bold = ctx.Level.ScoreAware ? 1 : Math.Max(0, ctx.WarProgress - 0.3) / 0.7;
                 var enemy = Tactics.Setup(ctx, "Savunma", Scale(guess, rules.AttackMargin - (rules.AttackMargin - 1.0) * bold));
                 needed = Tactics.SmallestWinning(ctx, spare, enemy, rules.AttackRate - 0.25 * bold).Needed;
                 if (needed == 0) wanted = wanted == 0 ? guess.Values.Sum() : Math.Min(wanted, guess.Values.Sum());

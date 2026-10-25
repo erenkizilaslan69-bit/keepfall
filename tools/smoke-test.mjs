@@ -462,34 +462,24 @@ P.ws.close();
 Q.ws.close();
 
 // ---- every human falls: the host may end the match and the bots play the rest out at once ----------------------
-// The bots decide for themselves when to attack, so some matches end on time with an idle human still standing: try up to three rooms.
-let H, K, seatsOk = false, started = false, fast = false, allOut = null;
-for (let attempt = 1; attempt <= 3 && !allOut?.allHumansOut; attempt++) {
-  H?.ws.close();
-  K?.ws.close();
-  H = client();
-  K = client();
-  await Promise.all([H.ready, K.ready]);
-  const jh = await H.call('CreateRoom', 'Hasan');
-  const jk = await K.call('JoinRoom', jh.code, 'Kemal', null, false);
-  seatsOk = jh.ok && jk.ok && (await H.call('AddBot', 'medium')).ok && (await H.call('AddBot', 'medium')).ok;
-  await H.call('SetReady', true);
-  await K.call('SetReady', true);
-  started = (await H.call('StartMatch')).ok;
-  fast = (await H.call('SetSpeed', 20)).ok;
-  // The humans do nothing; the bots scout them, find them undefended and take their gates.
-  allOut = await (async () => {
-    for (let i = 0; i < 300; i++) {
-      const r = H.of('RoomState').at(-1);
-      if (r?.allHumansOut || r?.phase === 'ended') return r;
-      await sleep(500);
-    }
-    return null;
-  })();
-}
-check('two humans and two bots take their seats', seatsOk);
-check('the match starts', started);
-check('the host sets ×20', fast);
+const H = client(), K = client();
+await Promise.all([H.ready, K.ready]);
+const jh = await H.call('CreateRoom', 'Hasan');
+const jk = await K.call('JoinRoom', jh.code, 'Kemal', null, false);
+check('two humans and two bots take their seats', jh.ok && jk.ok && (await H.call('AddBot', 'medium')).ok && (await H.call('AddBot', 'medium')).ok);
+await H.call('SetReady', true);
+await K.call('SetReady', true);
+check('the match starts', (await H.call('StartMatch')).ok);
+check('the host sets ×20', (await H.call('SetSpeed', 20)).ok);
+// The humans do nothing; the bots scout them, find them undefended and take their gates.
+const allOut = await (async () => {
+  for (let i = 0; i < 300; i++) {
+    const r = H.of('RoomState').at(-1);
+    if (r?.allHumansOut || r?.phase === 'ended') return r;
+    await sleep(500);
+  }
+  return null;
+})();
 check('once every human has fallen the room says so', !!allOut?.allHumansOut, JSON.stringify(allOut?.phase));
 if (allOut?.allHumansOut) {
   check('the guest cannot end the match', !(await K.call('FinishMatch')).ok);

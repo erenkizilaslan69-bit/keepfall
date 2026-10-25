@@ -64,7 +64,6 @@ public sealed class BotsConfig
     public double ArmyShare { get; set; } = 0.5;
     public double AttackMargin { get; set; } = 1.2;
     public double AttackRate { get; set; } = 0.85;
-    public bool ScoreAware { get; set; }
 }
 
 public sealed class BotLevelConfig
@@ -90,6 +89,7 @@ public sealed class BotLevelConfig
     public double? HeadCountRatio { get; set; }
     public bool? Calculates { get; set; }
     public bool? SmartDefense { get; set; }
+    public bool? ScoreAware { get; set; }
 }
 
 public sealed class ForestConfig
@@ -442,12 +442,12 @@ public static class BalanceConfigLoader
                 new CampRules(fo.Camp.Bandits, fo.Camp.GoldMin, fo.Camp.GoldMax, fo.Camp.Weapons),
                 new CampRules(fo.BigCamp.Bandits, fo.BigCamp.GoldMin, fo.BigCamp.GoldMax, fo.BigCamp.Weapons)),
             new BotRules(BotLevel(config.Bots.Easy, false), BotLevel(config.Bots.Medium, true), config.Bots.Mix, config.Bots.WeaponsFrom, config.Bots.ArmFrom, config.Bots.ArmyShare,
-                config.Bots.AttackMargin, config.Bots.AttackRate, config.Bots.ScoreAware));
+                config.Bots.AttackMargin, config.Bots.AttackRate));
     }
 
     private static BotLevelRules BotLevel(BotLevelConfig c, bool good) => new(c.ThinkMin, c.ThinkMax, c.ReactMin, c.ReactMax, c.Commands, c.Mistake, c.Slack, c.EcoMistake < 0 ? c.Mistake : c.EcoMistake,
         c.ExploreAll ?? good, c.ChestsAnywhere ?? good, c.Scouts ?? (good ? 2 : 1), c.MercBatch ?? (good ? 3 : 1), c.MercThreatBatch ?? (good ? 6 : 1),
-        c.Saves ?? good, c.QueueDepth ?? (good ? 3 : 2), c.KeepHome ?? (good ? 0.25 : 0.1), c.HeadCountRatio ?? 1.0, c.Calculates ?? good, c.SmartDefense ?? good);
+        c.Saves ?? good, c.QueueDepth ?? (good ? 3 : 2), c.KeepHome ?? (good ? 0.25 : 0.1), c.HeadCountRatio ?? 1.0, c.Calculates ?? good, c.SmartDefense ?? good, c.ScoreAware ?? false);
 
     private static double? ParseMultiplier(JsonElement value, CombatConfig c)
     {

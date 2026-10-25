@@ -1,4 +1,4 @@
-﻿// Keepfall denge ayarları (v1 — denge v1) — kaynak: docs/kale_oyunu_sayilar.xlsx
+// Keepfall denge ayarları (v1 — denge v1) — kaynak: docs/kale_oyunu_sayilar.xlsx
 // Ekonomi: ilk oyun testinden sonra Excel'den ayrıştı (başlangıç odun/demir, çiftçi üretimi, yükseltme maliyetleri).
 // Bu dosya yorum satırlarına izin verir. Sayıları değiştir, BattleSim'i tekrar çalıştır.
 {
@@ -111,20 +111,20 @@
   // armyShare: nüfusunun en çok bu kadarını asker yapar (gerisi yemek ve silah üretiminde çalışır).
   "bots": {
     // Kolay: ekonomide neredeyse Orta kadar düzgün (ecoMistake, slack, orman/üretim yetenekleri), hesaplı saldırı/kamp kararı açık;
-    // zayıflığı hızı (düşünme 4–8 sn, tepki 8–15 sn) ve taktik hata oranı (mistake). Ölçüm: karışık maçta Orta ≈%80 kazanır.
-    "easy":   { "thinkMin": 4, "thinkMax": 8, "reactMin": 8, "reactMax": 15, "commands": 2, "mistake": 0.25, "slack": 1,
+    // zayıflığı hızı (düşünme 7–12 sn, tepki 8–15 sn) ve taktik hata oranı (mistake). Ölçüm: karışık maçta Orta ≈%80 kazanır.
+    "easy":   { "thinkMin": 7, "thinkMax": 12, "reactMin": 8, "reactMax": 15, "commands": 2, "mistake": 0.25, "slack": 1,
                 "ecoMistake": 0.08, "exploreAll": true, "chestsAnywhere": true, "scouts": 2, "mercBatch": 3, "mercThreatBatch": 6,
                 "saves": true, "queueDepth": 3, "calculates": true },
-    "medium": { "thinkMin": 2, "thinkMax": 3,  "reactMin": 3, "reactMax": 6,  "commands": 4, "mistake": 0.05, "slack": 1 },
+    // scoreAware: bot zafer puanı gibi oynar (hasar, öldürme, eleme; savaşın ilk saniyesinden cesur). Oyun kuralını (nüfus) değiştirmez, yalnız botun saldırı isteğini artırır; Orta'da açık.
+    "medium": { "thinkMin": 2, "thinkMax": 3,  "reactMin": 3, "reactMax": 6,  "commands": 4, "mistake": 0.05, "slack": 1, "scoreAware": true },
     "mix": { "kilicli": 0.35, "kalkanli": 0.25, "okcu": 0.25, "mizrakci": 0.15 },
     "weaponsFrom": 0.3,
     "armFrom": 0.75,
     "armyShare": 0.5,
     // Saldırı kararı: iyi bot rakibin son rapordaki gücünün attackMargin katını bekler ve ordusu hesaplanan savaşların en az attackRate kadarını kazanıyorsa gider
-    // (savaş ilerledikçe ikisi de gevşer). scoreAware: deney, botlar zafer puanı için de oynar (savaşın ilk saniyesinden cesur).
+    // (savaş ilerledikçe ikisi de gevşer).
     "attackMargin": 1.2,
-    "attackRate": 0.85,
-    "scoreAware": false
+    "attackRate": 0.85
   },
 
   // Excel "Maç" sekmesi: gözcü.
