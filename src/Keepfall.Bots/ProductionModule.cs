@@ -12,7 +12,8 @@ public sealed class ProductionModule : IBotModule
     public void Think(BotContext ctx)
     {
         if (ctx.ForgingTime && !ctx.Slip()) QueueWeapons(ctx);
-        if (ctx.ArmingTime) Arm(ctx);
+        if (ctx.ArmingTime) Arm(ctx, int.MaxValue);
+        else if (ctx.Memory.WantSoldiers > ctx.SoldiersTotal) Arm(ctx, ctx.Memory.WantSoldiers - ctx.SoldiersTotal); // a raid is waiting for soldiers
     }
 
     private static void QueueWeapons(BotContext ctx)
@@ -39,9 +40,9 @@ public sealed class ProductionModule : IBotModule
         ctx.Wish(60, new QueueWeapon(pick, 1), unit.Wood, unit.Iron);
     }
 
-    private static void Arm(BotContext ctx)
+    private static void Arm(BotContext ctx, int most)
     {
-        int idle = ctx.Count(Job.Idle);
+        int idle = Math.Min(ctx.Count(Job.Idle), most);
         foreach (var u in ctx.Castle.Units.Where(u => u.Weapons > 0))
         {
             int n = Math.Min(u.Weapons, idle);

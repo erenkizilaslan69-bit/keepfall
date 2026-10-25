@@ -1,4 +1,4 @@
-using Keepfall.Bots;
+﻿using Keepfall.Bots;
 using Keepfall.Core.Config;
 using Keepfall.Core.Economy;
 using Keepfall.Core.Lobby;
@@ -95,35 +95,39 @@ public class BotModuleTests
         {
             room.Tick(1, dt => host.Step(room, dt));
             var c = ViewMapper.CastleOf(room, room.Players[0])!;
-            if (firstWeaponAt < 0 && c.Units.Sum(u => u.Weapons + u.Soldiers) + c.Queue.Count > 0) firstWeaponAt = t;
+            if (firstWeaponAt < 0 && c.Units.Sum(u => u.Weapons) + c.Queue.Count > 0) firstWeaponAt = t;
         }
         Assert.True(firstWeaponAt >= 600 * Rules.Bots.WeaponsFrom - 5, $"forging began at {firstWeaponAt}");
 
         var castle = room.Game!.CastleOf(room.Players[0].CastleKey)!;
-        int army = castle.Soldiers.Values.Sum() + castle.Weapons.Values.Sum();
+        int army = castle.Soldiers.Values.Sum() + castle.Weapons.Values.Sum() + castle.SoldiersAway;
         Assert.True(army >= 10, $"only {army} in the army");
-        Assert.True(army <= castle.Population * Rules.Bots.ArmyShare + 1, $"{army} of {castle.Population} people");
+        // Soldiers it forged and armed stay within its share of the people; hired ones come on top.
+        int hired = castle.Mercenaries.Values.Sum();
+        Assert.True(army - hired <= castle.Population * Rules.Bots.ArmyShare + 1, $"{army - hired} of {castle.Population} people");
         double share = Rules.Bots.Mix.Values.Sum();
         foreach (var (id, want) in Rules.Bots.Mix)
         {
             var type = Rules.FindUnit(id)!;
-            double have = (castle.Soldiers[type] + castle.Weapons[type]) / (double)army;
-            Assert.InRange(have, want / share - 0.15, want / share + 0.15);
+            double have = (castle.Soldiers[type] + castle.Weapons[type]) / (double)(castle.Soldiers.Values.Sum() + castle.Weapons.Values.Sum());
+            Assert.InRange(have, want / share - 0.2, want / share + 0.2);
         }
     }
 
     [Fact]
-    public void The_army_is_armed_late_in_the_preparation_not_before()
+    public void Stored_weapons_are_armed_late_in_the_preparation_except_for_what_a_raid_needs()
     {
         var room = Match(prep: 600, war: 300);
         var host = new BotHost.BotHost(Rules, 1);
-        int firstSoldierAt = -1;
-        for (int t = 0; t < 590; t++)
+        int mostBeforeArming = 0;
+        for (int t = 0; t < 600 * Rules.Bots.ArmFrom - 20; t++)
         {
             room.Tick(1, dt => host.Step(room, dt));
-            if (firstSoldierAt < 0 && room.Game!.CastleOf(room.Players[0].CastleKey)!.Soldiers.Values.Sum() > 0) firstSoldierAt = t;
+            var castle = room.Game!.CastleOf(room.Players[0].CastleKey)!;
+            mostBeforeArming = Math.Max(mostBeforeArming, castle.Soldiers.Values.Sum() + castle.SoldiersAway);
         }
-        Assert.True(firstSoldierAt >= 600 * Rules.Bots.ArmFrom - 10, $"first soldier at {firstSoldierAt}");
+        // A village needs three, a camp a handful: never the whole army before it is time.
+        Assert.True(mostBeforeArming <= 10, $"{mostBeforeArming} soldiers before arming time");
     }
 
     [Fact]

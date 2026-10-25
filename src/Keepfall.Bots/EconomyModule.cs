@@ -20,7 +20,8 @@ public sealed class EconomyModule : IBotModule
         if (total <= 0) return;
 
         // From the arming time on, people are kept back (idle) for the weapons that wait to be armed.
-        int kept = ctx.ArmingTime ? Math.Min(ctx.WeaponsWaiting, total) : 0;
+        int wanted = ctx.ArmingTime ? ctx.WeaponsWaiting : Math.Max(0, Math.Min(ctx.WeaponsWaiting, ctx.Memory.WantSoldiers - ctx.SoldiersTotal));
+        int kept = Math.Min(wanted, total);
         var target = Targets(ctx, total - kept, current);
         target[Job.Idle] = total - target.Values.Sum();
 

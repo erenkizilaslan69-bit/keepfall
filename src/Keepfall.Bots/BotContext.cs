@@ -1,4 +1,5 @@
 ﻿using Keepfall.Core;
+using Keepfall.Core.World;
 using Keepfall.Core.Economy;
 using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
@@ -21,6 +22,31 @@ public sealed class BotContext(GameRules rules, BotInput input, BotMemory memory
     public BotLevelRules Level { get; } = level;
     public BotStats Stats { get; } = stats;
     public Random Rng { get; } = rng;
+    public Keepfall.Core.Combat.BattleSimulator Simulator { get; init; } = new(rules);
+
+    public int Seat => Input.Seat;
+    public IReadOnlyList<SiteView> Sites => Map?.Sites ?? [];
+    public VecView? MyGate => Input.Layout?.Regions.FirstOrDefault(r => r.Seat == Seat)?.Gate;
+    public IEnumerable<PlayerView> Rivals => Input.Room.Players.Where(p => p.Seat != Seat && !p.Eliminated);
+
+    /// <summary>The newest scout report about a rival (null: never scouted).</summary>
+    public ScoutReportView? LatestReport(int seat) =>
+        Castle.Scouting.Reports.Where(r => r.TargetSeat == seat).OrderByDescending(r => r.ObservedAt).FirstOrDefault();
+
+    /// <summary>Who can go scouting: an idle person, else somebody from a job where one person less hardly matters.</summary>
+    public Job? ScoutSource()
+    {
+        if (Count(Job.Idle) > 0) return Job.Idle;
+        return new[] { Job.Lumberjack, Job.Miner }.Where(j => Count(j) >= 3).OrderByDescending(Count).Cast<Job?>().FirstOrDefault();
+    }
+
+    /// <summary>A scout or an army is already on its way to this place.</summary>
+    public bool SiteBusy(string siteId) =>
+        Castle.Scouting.Missions.Any(m => m.SiteId == siteId) || Castle.War.Armies.Any(a => a.SiteId == siteId);
+
+    /// <summary>About how long an army needs to get from the gate to a place (the road is longer than the straight line).</summary>
+    public double ArmyTravelSeconds(VecView to) =>
+        MyGate is { } g ? Math.Sqrt((g.X - to.X) * (g.X - to.X) + (g.Y - to.Y) * (g.Y - to.Y)) * 1.5 / Rules.Map.ArmySpeed : 60;
 
     /// <summary>Wood and iron a module has set aside (for an upgrade it is saving up for): weapons are not forged out of it.</summary>
     public (double Wood, double Iron) Reserved { get; private set; }

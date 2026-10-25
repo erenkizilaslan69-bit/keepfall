@@ -1,4 +1,4 @@
-using Keepfall.Core.Lobby;
+﻿using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
 
 namespace Keepfall.Bots;
@@ -30,6 +30,12 @@ public sealed class BotMemory(BotLevelRules level)
     private readonly Dictionary<GameCommand, double> _refused = [];
 
     public IReadOnlyList<BotEvent> Events => _events;
+
+    /// <summary>How many soldiers the bot would like to have at home soon (a raid it cannot yet launch): production arms toward it.</summary>
+    public int WantSoldiers { get; set; }
+
+    /// <summary>When it last looked at each site's raid (the work of the fight calculator is not repeated every think).</summary>
+    public Dictionary<string, (double At, int Soldiers, int Needed, double Loss)> RaidPlans { get; } = [];
 
     /// <summary>Notice what is new in the pictures; each new thing becomes an event that is acted on after a reaction delay.</summary>
     public void Observe(BotInput input, Random rng)

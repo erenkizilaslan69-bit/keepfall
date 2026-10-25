@@ -39,7 +39,8 @@ public class BotIsolationTests
         "Keepfall.Core.Match.ArmyState", "Keepfall.Core.Lobby.PlayerColor", "Keepfall.Core.Lobby.RoomPhase",
         // Public maths: the fight calculator works on rules and armies made up on the spot.
         "Keepfall.Core.Combat.BattleSimulator", "Keepfall.Core.Combat.ArmySetup", "Keepfall.Core.Combat.TargetPriority",
-        "Keepfall.Core.Combat.BattleResult", "Keepfall.Core.Combat.BattleOutcome",
+        "Keepfall.Core.Combat.BattleResult", "Keepfall.Core.Combat.BattleOutcome", "Keepfall.Core.Combat.SideReport",
+        "Keepfall.Core.World.MapRules",
     };
 
     /// <summary>The server's side of the views: they take the whole match as input, so the bots must not call them.</summary>
@@ -120,17 +121,41 @@ public class BotIsolationTests
     }
 
     [Fact]
-    public void Bots_act_the_same_whatever_is_hidden_from_them()
+    public void Bots_act_the_same_whatever_the_rivals_own_until_they_have_scouted_them()
     {
         var roomA = NewMatch(forestSeed: 1, secret: 3);
-        var roomB = NewMatch(forestSeed: 2, secret: 40); // other forest, other rival armies and gold: same pictures
-        Assert.NotEqual(roomA.Game!.ForestSites.Select(x => x.Position), roomB.Game!.ForestSites.Select(x => x.Position));
-        Assert.Equal(roomA.Game.Corners, roomB.Game.Corners);
-        Assert.NotEqual(roomA.Game.CastleOf("o2")!.Soldiers.Values.Sum(), roomB.Game.CastleOf("o2")!.Soldiers.Values.Sum());
+        var roomB = NewMatch(forestSeed: 1, secret: 40); // the same world, but the rivals have far more soldiers and gold
+        Assert.NotEqual(roomA.Game!.CastleOf("o2")!.Soldiers.Values.Sum(), roomB.Game!.CastleOf("o2")!.Soldiers.Values.Sum());
 
-        var a = Play(roomA, 120);
-        var b = Play(roomB, 120);
+        // No spy is sent before a third of the preparation (200 s of 600): until then the pictures are the same.
+        var a = Play(roomA, 150);
+        var b = Play(roomB, 150);
         Assert.NotEmpty(a);
         Assert.Equal(a, b);
+    }
+
+    [Fact]
+    public void Bots_act_the_same_whatever_the_forest_holds_until_they_have_found_it()
+    {
+        var roomA = NewMatch(forestSeed: 1, secret: 3);
+        var roomB = NewMatch(forestSeed: 2, secret: 3); // another forest: other places, other bandits, other loot
+        Assert.NotEqual(roomA.Game!.ForestSites.Select(x => x.Position), roomB.Game!.ForestSites.Select(x => x.Position));
+        Assert.Equal(roomA.Game.Corners, roomB.Game!.Corners);
+
+        // The first scout leaves at 17 s and needs a while to walk its quarter: nothing is found in the first 24 s.
+        var a = Play(roomA, 24);
+        var b = Play(roomB, 24);
+        Assert.NotEmpty(a);
+        Assert.Equal(a, b);
+        Assert.Contains(a, x => x.Command.StartsWith("SendExplore"));
+    }
+
+    [Fact]
+    public void What_the_bot_has_found_is_the_only_thing_the_forest_changes()
+    {
+        // After the first tour the two forests differ in what was found, and only then do the bot's commands differ.
+        var a = Play(NewMatch(forestSeed: 1, secret: 3), 200).Select(x => x.Command).ToList();
+        var b = Play(NewMatch(forestSeed: 2, secret: 3), 200).Select(x => x.Command).ToList();
+        Assert.NotEqual(a, b);
     }
 }
