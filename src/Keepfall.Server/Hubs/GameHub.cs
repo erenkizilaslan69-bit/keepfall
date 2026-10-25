@@ -2,6 +2,7 @@ using Keepfall.Core.Economy;
 using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
 using Keepfall.Core.Units;
+using Keepfall.Core.World;
 using Keepfall.Server.Contracts;
 using Keepfall.Server.Games;
 using Microsoft.AspNetCore.SignalR;
@@ -107,6 +108,8 @@ public sealed class GameHub(RoomRegistry registry) : Hub
     public Task<CommandResultView> DisarmSoldiers(string unitId, int count) => Economy(new DisarmSoldiers(unitId, count));
     public Task<CommandResultView> UpgradeBuilding(BuildingType building) => Economy(new UpgradeBuilding(building));
     public Task<CommandResultView> SetGrowth(bool enabled) => Economy(new SetGrowth(enabled));
+    /// <summary>Send a scout to tour one quarter of the forest (named by its corner); it finds that quarter's places.</summary>
+    public Task<CommandResultView> SendExplore(Corner quarter, Job from) => Economy(new SendExplore(quarter, from));
     /// <summary>Hire soldiers for gold (they stand at home at once and cannot become workers).</summary>
     public Task<CommandResultView> HireMercenary(string unitId, int count) => Economy(new HireMercenary(unitId, count));
     /// <summary>The target is named by public seat; the castle itself is never addressed by the client.</summary>

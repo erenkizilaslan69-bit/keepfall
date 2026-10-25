@@ -2,6 +2,7 @@ using Keepfall.Core.Economy;
 using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
 using Keepfall.Core.Units;
+using Keepfall.Core.World;
 
 namespace Keepfall.Server.Contracts;
 
@@ -60,7 +61,11 @@ public sealed record WarView(
 // counts and building levels. Targets carry only public facts (seat, name, colour) and how far
 // away they are (the map is the same for everyone).
 public sealed record ScoutTargetView(int Seat, string Name, PlayerColor Color, bool Busy, double ScoutSeconds, double MarchSeconds);
-public sealed record ScoutMissionView(int TargetSeat, double Progress, bool Arrived, double RemainingSeconds);
+/// <param name="Quarter">For a forest tour: which quarter (named by its corner).</param>
+public sealed record ScoutMissionView(int TargetSeat, double Progress, bool Arrived, double RemainingSeconds,
+    MissionKind Kind = MissionKind.Spy, Corner? Quarter = null);
+/// <summary>One quarter of the forest as a place to send a scout: whose corner it belongs to, whether it has been toured, how long a tour takes.</summary>
+public sealed record QuarterView(Corner Corner, int? Seat, string? Name, PlayerColor? Color, bool Explored, bool Busy, double Seconds);
 public sealed record ScoutedUnitView(string UnitId, string Name, int Count);
 public sealed record ScoutBuildingView(BuildingType Type, string Name, int Level);
 public sealed record ScoutReportView(
@@ -68,7 +73,7 @@ public sealed record ScoutReportView(
     IReadOnlyList<ScoutedUnitView> Soldiers, IReadOnlyList<ScoutBuildingView> Buildings);
 public sealed record ScoutingView(
     int ScoutsAway, IReadOnlyList<ScoutTargetView> Targets,
-    IReadOnlyList<ScoutMissionView> Missions, IReadOnlyList<ScoutReportView> Reports);
+    IReadOnlyList<ScoutMissionView> Missions, IReadOnlyList<ScoutReportView> Reports, IReadOnlyList<QuarterView> Quarters);
 
 public sealed record CastleView(
     MatchPhase Phase, PlayerColor Color, double ElapsedSeconds, double RemainingSeconds, double PrepSeconds,
@@ -197,7 +202,7 @@ public static class ViewMapper
                 .Select(p => new ScoutTargetView(p.Seat, p.Name, p.Color, missions.Any(m => m.Target == p.CastleKey),
                     game.ScoutSeconds(player.CastleKey, p.CastleKey), game.MarchSeconds(player.CastleKey, p.CastleKey)))
                 .ToList(),
-            missions.Select(m => new ScoutMissionView(SeatOf(m.Target), m.Progress, m.Arrived, m.SecondsLeft)).ToList(),
+            missions.Select(m => new ScoutMissionView(SeatOf(m.Target), m.Progress, m.Arrived, m.SecondsLeft, m.Kind, m.Quarter)).ToList(),
             game.ReportsOf(player.CastleKey).Select(r =>
             {
                 var target = room.PlayerOfCastle(r.Target);
@@ -205,6 +210,12 @@ public static class ViewMapper
                     target?.Seat ?? 0, target?.Name ?? "?", target?.Color ?? PlayerColor.Blue, r.ObservedAt, r.DeliveredAt,
                     r.Soldiers.Select(u => new ScoutedUnitView(u.UnitId, u.Name, u.Count)).ToList(),
                     r.BuildingLevels.Select(kv => new ScoutBuildingView(kv.Key, Jobs.Name(kv.Key), kv.Value)).ToList());
+            }).ToList(),
+            Enum.GetValues<Corner>().Select(q =>
+            {
+                var owner = room.Players.FirstOrDefault(p => game.Corners.TryGetValue(p.CastleKey, out var corner) && corner == q);
+                return new QuarterView(q, owner?.Seat, owner?.Name, owner?.Color, game.ExploredBy(player.CastleKey).Contains(q),
+                    game.IsExploring(player.CastleKey, q), game.ExploreSeconds(player.CastleKey, q));
             }).ToList());
     }
 

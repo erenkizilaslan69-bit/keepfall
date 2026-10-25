@@ -3,17 +3,32 @@ using Keepfall.Core.World;
 
 namespace Keepfall.Core.Match;
 
-/// <summary>A scout on the road from <see cref="From"/>'s gate to <see cref="Target"/>'s and back.</summary>
+public enum MissionKind
+{
+    /// <summary>To a rival's gate and back with a report.</summary>
+    Spy,
+    /// <summary>A tour of one quarter of the forest, finding its places.</summary>
+    Explore,
+}
+
+/// <summary>A scout on the road from <see cref="From"/>'s gate to <see cref="Target"/>'s and back (or on a tour of a forest quarter).</summary>
 public sealed class ScoutMission
 {
-    internal ScoutMission(string publicId, string from, string target, double startedAt, Route route, double speed)
+    internal ScoutMission(string publicId, string from, string target, double startedAt, Route route, double speed,
+        MissionKind kind = MissionKind.Spy, Corner? quarter = null)
     {
         PublicId = publicId;
         From = from;
         Target = target;
         StartedAt = startedAt;
         Out = new Traveller(route, speed);
+        Kind = kind;
+        Quarter = quarter;
     }
+
+    public MissionKind Kind { get; }
+    /// <summary>For a tour: which quarter of the forest (named by its corner).</summary>
+    public Corner? Quarter { get; }
 
     /// <summary>What other players see it as: random, so it gives nothing away.</summary>
     public string PublicId { get; }
@@ -33,10 +48,10 @@ public sealed class ScoutMission
     internal Vec? LastTrail { get; set; }
 
     /// <summary>Seconds until the scout is home with its report.</summary>
-    public double SecondsLeft => Back?.SecondsLeft ?? Out.SecondsLeft + Out.Route.Length / Out.Speed;
+    public double SecondsLeft => Kind == MissionKind.Explore ? Out.SecondsLeft : Back?.SecondsLeft ?? Out.SecondsLeft + Out.Route.Length / Out.Speed;
 
-    /// <summary>0 → 0.5 on the way there, 0.5 → 1 on the way back.</summary>
-    public double Progress => Back is null ? Out.Fraction / 2 : 0.5 + Back.Fraction / 2;
+    /// <summary>0 → 0.5 on the way there, 0.5 → 1 on the way back (a tour: 0 → 1 round).</summary>
+    public double Progress => Kind == MissionKind.Explore ? Out.Fraction : Back is null ? Out.Fraction / 2 : 0.5 + Back.Fraction / 2;
 }
 
 /// <summary>A soldier type as the scout saw it: the type is certain, the count is approximate.</summary>

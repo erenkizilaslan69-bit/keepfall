@@ -39,9 +39,17 @@ public sealed record BattleMarkerView(string Id, VecView At);
 /// <summary>Ground one of the player's scouts walked over that is still in view (fading out as it closes).</summary>
 public sealed record TrailView(VecView Center, double Radius, double Fade);
 
+/// <summary>
+/// A place of the forest the player has found, as they last saw it: what it is, where, the trail to it, whether it was
+/// used up and (for a camp) about how many bandits. Places nobody on the player's side has found are never in here.
+/// </summary>
+public sealed record SiteView(
+    string Id, SiteKind Kind, VecView Position, IReadOnlyList<VecView> Spur, Corner? Quarter, bool Gone,
+    IReadOnlyList<ArmyUnitView> Bandits, double DiscoveredAt, double SeenAt);
+
 public sealed record MapStateView(
     double ElapsedSeconds, IReadOnlyList<VisionView> Vision, IReadOnlyList<OwnMoverView> Own, IReadOnlyList<SeenMoverView> Seen,
-    IReadOnlyList<BattleMarkerView> Battles, IReadOnlyList<TrailView> Trail);
+    IReadOnlyList<BattleMarkerView> Battles, IReadOnlyList<TrailView> Trail, IReadOnlyList<SiteView> Sites);
 
 // A battle, for the two sides fighting it and nobody else: both armies soldier by soldier and the whole
 // record (hits [tick, attacker, target], deaths [tick, soldier], advances [tick, soldier]; soldiers are
@@ -97,7 +105,9 @@ public static class MapViewMapper
         return new MapStateView(game.ElapsedSeconds,
             game.VisionOf(key).Select(v => new VisionView(VecView.Of(v.Center), v.Radius)).ToList(), own, seen,
             game.BattlesSeenBy(key).Select(b => new BattleMarkerView(b.PublicId, VecView.Of(b.Position))).ToList(),
-            game.TrailOf(key).Select(t => new TrailView(VecView.Of(t.Center), t.Radius, t.Fade)).ToList());
+            game.TrailOf(key).Select(t => new TrailView(VecView.Of(t.Center), t.Radius, t.Fade)).ToList(),
+            game.KnownSitesOf(key).Select(k => new SiteView(k.Site.Id, k.Site.Kind, VecView.Of(k.Site.Position),
+                k.Site.Spur.Select(VecView.Of).ToList(), k.Site.Quadrant, k.Gone, Units(k.BanditsSeen), k.DiscoveredAt, k.SeenAt)).ToList());
     }
 
     /// <summary>More hits than this and only the deaths are sent (the client then animates attacks loosely).</summary>

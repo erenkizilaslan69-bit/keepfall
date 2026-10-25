@@ -297,6 +297,37 @@ check('the trail lies along the scouts own road',
 check('nobody but the scouts owner gets a trail',
   [Y, Z].every((c) => c.of('MapState').every((m) => m.trail.length === 0)));
 check('the trail closes again after its time', await waitFor(() => X.of('MapState').at(-1).trail.length === 0, 30000));
+
+// ---- the forest: what a scout finds is its owner's alone -----------------------------------------------------
+const quarters = X.of('CastleState').at(-1).scouting.quarters;
+check('four quarters to explore, one of them X own', quarters.length === 4 && quarters.filter((q) => q.seat === 1).length === 1
+  && quarters.every((q) => !q.explored && !q.busy && q.seconds > 20));
+const own = quarters.find((q) => q.seat === 1);
+const noSites = () => [X, Y, Z].every((c) => c.of('MapState').every((m) => m.sites.length === 0));
+check('nobody knows a place of the forest before a scout was there', noSites());
+check('X explores its own quarter', (await X.call('SendExplore', own.corner, 'idle')).ok);
+check('one scout per quarter', !(await X.call('SendExplore', own.corner, 'idle')).ok);
+check('the tour ends and the quarter counts as explored', await waitFor(() => {
+  const c = X.of('CastleState').at(-1);
+  return c.scouting.missions.length === 0 && c.scouting.quarters.find((q) => q.corner === own.corner).explored;
+}, 20000));
+const found = X.of('MapState').at(-1).sites;
+check('X found places', found.length > 1);
+check('only its own quarter and the big camp', found.every((x) => x.quarter === own.corner || x.kind === 'bigCamp') && found.some((x) => x.kind === 'bigCamp'));
+check('a place carries what a visitor sees', found.every((x) => JSON.stringify(Object.keys(x).sort()) === '["bandits","discoveredAt","gone","id","kind","position","quarter","seenAt","spur"]'
+  && /^[0-9a-f]{16}$/.test(x.id) && x.spur.length === (x.kind === 'bigCamp' ? 0 : 2) && x.gone === false));
+check('the quarter holds two chests, a village and a camp',
+  JSON.stringify(found.filter((x) => x.quarter === own.corner).map((x) => x.kind).sort()) === '["camp","chest","chest","village"]');
+const ids = found.map((x) => x.id);
+check('Y and Z never get a place or a trail to one', [Y, Z].every((c) => c.of('MapState').every((m) => m.sites.length === 0)));
+check('no id of a found place shows up in Y or Z traffic', ![Y, Z].some((c) => c.msgs.some((m) => ids.some((id) => m.raw.includes(id)))));
+check('the public map does not mention any place', !ids.some((id) => JSON.stringify(layouts[0]).includes(id)));
+const X3 = client(); // a reload
+await X3.ready;
+await X3.call('JoinRoom', jx.code, 'Xaver', jx.token, false);
+await sleep(700);
+check('a reload gets the found places back', (X3.of('MapState')[0]?.sites.length ?? 0) === found.length);
+X3.ws.close();
 check('the second war begins', await waitFor(() => X.of('RoomState').some((r) => r.phase === 'war'), 60000));
 const fallen = () => Y.of('CastleState').at(-1)?.eliminated === true;
 for (let i = 0; i < 160 && !fallen(); i++) {

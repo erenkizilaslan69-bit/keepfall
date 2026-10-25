@@ -60,6 +60,12 @@ public sealed class GameState
     private sealed record TrailPoint(string Owner, Vec Center, double? ExpiresAt);
     /// <summary>The trail fades out over this many seconds before it closes.</summary>
     public const double TrailFadeSeconds = 10;
+    /// <summary>What is left of each place in the forest (by id).</summary>
+    private readonly Dictionary<string, SiteState> _sites = [];
+    /// <summary>What each player has found, and how it looked when they last saw it.</summary>
+    private readonly Dictionary<string, Dictionary<string, SiteKnowledge>> _knowledge = [];
+    /// <summary>Quarters each player's scouts have toured.</summary>
+    private readonly Dictionary<string, HashSet<Corner>> _explored = [];
     private readonly Dictionary<string, double> _eliminated = [];
     private readonly Dictionary<string, List<GameNotification>> _notifications = [];
     private readonly BattleSimulator _simulator;
@@ -78,6 +84,9 @@ public sealed class GameState
         // Its own randomness, so seeded matches play their battles the same whatever the forest looks like.
         ForestSites = ForestLayout.Generate(WorldMap.Standard, rules.Forest, new Random(forestSeed ?? RandomNumberGenerator.GetInt32(int.MaxValue)));
         Map = WorldMap.Standard.WithSites(ForestSites);
+        foreach (var site in ForestSites)
+            _sites[site.Id] = new SiteState(site, site.Bandits.Where(kv => rules.FindUnit(kv.Key) is not null)
+                .ToDictionary(kv => rules.FindUnit(kv.Key)!, kv => kv.Value));
         _rng = rng ?? new Random(RandomNumberGenerator.GetInt32(int.MaxValue));
         _simulator = new BattleSimulator(rules);
         PrepSeconds = prepSeconds ?? rules.Match.ShortModePrepSeconds;
@@ -301,6 +310,7 @@ public sealed class GameState
         ElapsedSeconds += dt;
         AdvanceScouts(dt);
         AdvanceArmies(dt);
+        RefreshSight();
         if (Phase == MatchPhase.Ended) return; // the last castle standing ended it
         if (ElapsedSeconds + 1e-9 >= _nextSample) TakeSamples();
         if (RemainingSeconds <= 1e-9)
@@ -323,6 +333,7 @@ public sealed class GameState
         return command switch
         {
             SendScout scout => LaunchScout(playerKey, player, scout),
+            SendExplore explore => LaunchExplore(playerKey, player, explore),
             SendArmy army => LaunchArmy(playerKey, player, army),
             RecallArmy recall => Recall(playerKey, recall.ArmyId),
             _ => player.Castle.Execute(command),
@@ -344,12 +355,39 @@ public sealed class GameState
         return CommandResult.Success;
     }
 
-    /// <summary>Scouts walk to the target's gate, look, and walk home with the report.</summary>
+    private CommandResult LaunchExplore(string from, PlayerEconomy player, SendExplore c)
+    {
+        string target = $"quarter:{c.Quarter}";
+        if (_missions.Any(m => m.From == from && m.Target == target)) return CommandResult.Fail("Bu bölgeye zaten bir gözcün gidiyor.");
+        var sent = player.Castle.SendScout(c.From);
+        if (!sent.Ok) return sent;
+        _missions.Add(new ScoutMission(NewPublicId(), from, target, ElapsedSeconds, Map.ExploreRoute(_corners[from], c.Quarter),
+            Rules.Map.ScoutSpeed, MissionKind.Explore, c.Quarter));
+        return CommandResult.Success;
+    }
+
+    /// <summary>Scouts walk to the target's gate, look, and walk home with the report; explorers walk their tour.</summary>
     private void AdvanceScouts(double dt)
     {
         _trail.RemoveAll(t => t.ExpiresAt is { } end && end <= ElapsedSeconds);
         foreach (var m in _missions.ToList())
         {
+            if (m.Kind == MissionKind.Explore)
+            {
+                m.Out.Advance(dt);
+                LayTrail(m);
+                // Everything of the quarter (and the big camp in the middle) within reach of the scout is found.
+                foreach (var site in ForestSites)
+                    if ((site.Quadrant == m.Quarter || site.Kind == SiteKind.BigCamp)
+                        && site.Position.DistanceTo(m.Position) <= Rules.Forest.DiscoverRadius + 1e-9)
+                        Discover(m.From, site);
+                if (!m.Out.Arrived) continue;
+                if (!_explored.TryGetValue(m.From, out var done)) _explored[m.From] = done = [];
+                done.Add(m.Quarter!.Value);
+                _players[m.From].Castle.ReturnScout();
+                _missions.Remove(m);
+                continue;
+            }
             if (!m.Arrived)
             {
                 m.Out.Advance(dt);
@@ -368,6 +406,73 @@ public sealed class GameState
             _missions.Remove(m);
         }
     }
+
+    // ---- the forest: what each player has found ---------------------------------------------------
+
+    /// <summary>The player finds a place: from now on they know it is there, and how it looks.</summary>
+    private void Discover(string player, ForestSite site)
+    {
+        if (!_knowledge.TryGetValue(player, out var known)) _knowledge[player] = known = [];
+        if (known.ContainsKey(site.Id)) return;
+        var state = _sites[site.Id];
+        known[site.Id] = new SiteKnowledge
+        {
+            DiscoveredAt = ElapsedSeconds, SeenAt = ElapsedSeconds, SeenVersion = state.Version, Gone = state.Gone, Bandits = ApproximateBandits(state),
+        };
+    }
+
+    /// <summary>How many bandits a visitor makes out: off by up to the scouts' margin, never none when there are some.</summary>
+    private IReadOnlyDictionary<UnitType, int> ApproximateBandits(SiteState state)
+    {
+        double error = Rules.Scouting.ReportError;
+        return state.Bandits.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv =>
+        {
+            double spread = Math.Max(kv.Value * error, 1);
+            return Math.Max(1, (int)Math.Round(kv.Value + (_rng.NextDouble() * 2 - 1) * spread, MidpointRounding.AwayFromZero));
+        });
+    }
+
+    /// <summary>
+    /// A place a player already knows is brought up to date whenever it is in their sight again (their castle, armies,
+    /// scouts and the ground their scouts walked over). Out of sight it keeps looking as it did when they last saw it.
+    /// </summary>
+    private void RefreshSight()
+    {
+        foreach (var (player, known) in _knowledge)
+        {
+            if (_eliminated.ContainsKey(player) || known.Count == 0) continue;
+            var circles = VisionOf(player).Concat(TrailOf(player).Select(t => new VisionCircle(t.Center, t.Radius))).ToList();
+            foreach (var (id, k) in known)
+            {
+                var state = _sites[id];
+                if (!circles.Any(c => c.Contains(state.Site.Position))) continue;
+                k.SeenAt = ElapsedSeconds;
+                if (k.SeenVersion == state.Version) continue;
+                k.SeenVersion = state.Version;
+                k.Gone = state.Gone;
+                k.Bandits = ApproximateBandits(state);
+            }
+        }
+    }
+
+    /// <summary>The places this player has found, as they last saw them. Nobody else's.</summary>
+    public IReadOnlyList<KnownSite> KnownSitesOf(string playerKey) =>
+        _knowledge.TryGetValue(playerKey, out var known)
+            ? known.Select(kv => new KnownSite(_sites[kv.Key].Site, kv.Value.DiscoveredAt, kv.Value.SeenAt, kv.Value.Gone, kv.Value.Bandits)).ToList()
+            : [];
+
+    /// <summary>How long a scout of this player needs for a tour of a quarter of the forest (there and back home).</summary>
+    public double ExploreSeconds(string playerKey, Corner quarter) => Map.ExploreRoute(_corners[playerKey], quarter).Length / Rules.Map.ScoutSpeed;
+
+    /// <summary>Whether one of the player's scouts is out touring this quarter right now.</summary>
+    public bool IsExploring(string playerKey, Corner quarter) =>
+        _missions.Any(m => m.From == playerKey && m.Kind == MissionKind.Explore && m.Quarter == quarter);
+
+    /// <summary>The quarters of the forest this player's scouts have toured.</summary>
+    public IReadOnlyCollection<Corner> ExploredBy(string playerKey) => _explored.TryGetValue(playerKey, out var s) ? s : [];
+
+    /// <summary>The true state of every place (the match's own view: never sent to a player who is still playing).</summary>
+    public IReadOnlyList<SiteState> AllSites => _sites.Values.ToList();
 
     /// <summary>A scout leaves open ground behind it: a point every few tiles, each seen from for as long as the trail lasts.</summary>
     private void LayTrail(ScoutMission m)
