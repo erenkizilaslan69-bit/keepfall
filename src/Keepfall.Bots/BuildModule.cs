@@ -20,7 +20,7 @@ public sealed class BuildModule : IBotModule
     {
         var buildings = ctx.Castle.Buildings;
         if (buildings.Any(b => b.UpgradeRemaining is not null)) return; // one at a time
-        if (ctx.Slip()) return;
+        if (ctx.SlipEco()) return;
 
         int idle = ctx.Count(Job.Idle);
         bool army = ctx.ForgingTime;
@@ -50,7 +50,7 @@ public sealed class BuildModule : IBotModule
         var cost = pick.Building.NextUpgrade!;
         if (cost.Wood <= res.Wood + 1e-9 && cost.Iron <= res.Iron + 1e-9)
             ctx.Wish(90, new UpgradeBuilding(pick.Building.Type), cost.Wood, cost.Iron);
-        else if (ctx.Difficulty == Core.Lobby.BotDifficulty.Medium)
+        else if (ctx.Level.Saves)
             ctx.Reserve(cost.Wood, cost.Iron); // saving up
     }
 }

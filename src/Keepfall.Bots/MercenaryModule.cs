@@ -18,7 +18,7 @@ public sealed class MercenaryModule : IBotModule
         bool needed = ctx.ArmingTime || ctx.UnderThreat || ctx.Memory.WantSoldiers > ctx.Castle.Soldiers;
         if (!needed) return;
         if (c.Starving || (c.Resources.Food < 25 && c.Rates.FoodIn < c.Rates.FoodOut)) return;
-        if (ctx.Difficulty == BotDifficulty.Easy && ctx.Slip()) return;
+        if (ctx.Difficulty == BotDifficulty.Easy && ctx.SlipEco()) return;
 
         var mix = ctx.Rules.Bots.Mix;
         double share = mix.Values.Sum();
@@ -28,7 +28,7 @@ public sealed class MercenaryModule : IBotModule
         if (pick.Id is null) return;
 
         var price = ctx.Unit(pick.Id).Price;
-        int n = Math.Min((int)Math.Floor(gold / price), ctx.UnderThreat ? 6 : ctx.Difficulty == BotDifficulty.Medium ? 3 : 1);
+        int n = Math.Min((int)Math.Floor(gold / price), ctx.UnderThreat ? ctx.Level.MercThreatBatch : ctx.Level.MercBatch);
         if (n > 0) ctx.Wish(75, new HireMercenary(pick.Id, n), gold: price * n);
     }
 }

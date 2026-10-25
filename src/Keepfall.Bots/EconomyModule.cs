@@ -30,13 +30,13 @@ public sealed class EconomyModule : IBotModule
             .OrderBy(j => j == Job.Idle ? 0 : 1).ThenByDescending(j => current[j] - target[j]).ToList();
         foreach (var from in over)
         {
-            if (from != Job.Idle && ctx.Slip()) continue;
+            if (from != Job.Idle && ctx.SlipEco()) continue;
             var shortJobs = Jobs.All.Where(j => j != from && target[j] > current[j]).OrderByDescending(j => target[j] - current[j]).ToList();
             foreach (var to in shortJobs)
             {
                 int n = Math.Min(current[from] - target[from], target[to] - current[to]);
                 if (n <= 0) continue;
-                var dest = from == Job.Idle && to != Job.Idle && ctx.Slip() ? PickAnyWithRoom(ctx, current) ?? to : to;
+                var dest = from == Job.Idle && to != Job.Idle && ctx.SlipEco() ? PickAnyWithRoom(ctx, current) ?? to : to;
                 ctx.Wish(from == Job.Idle ? 100 : 85, new MoveWorkers(from, dest, n));
                 current[from] -= n;
                 current[dest] += n;

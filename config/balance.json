@@ -1,4 +1,4 @@
-// Keepfall denge ayarları (v1 — denge v1) — kaynak: docs/kale_oyunu_sayilar.xlsx
+﻿// Keepfall denge ayarları (v1 — denge v1) — kaynak: docs/kale_oyunu_sayilar.xlsx
 // Ekonomi: ilk oyun testinden sonra Excel'den ayrıştı (başlangıç odun/demir, çiftçi üretimi, yükseltme maliyetleri).
 // Bu dosya yorum satırlarına izin verir. Sayıları değiştir, BattleSim'i tekrar çalıştır.
 {
@@ -115,7 +115,12 @@
     "mix": { "kilicli": 0.35, "kalkanli": 0.25, "okcu": 0.25, "mizrakci": 0.15 },
     "weaponsFrom": 0.3,
     "armFrom": 0.75,
-    "armyShare": 0.5
+    "armyShare": 0.5,
+    // Saldırı kararı: iyi bot rakibin son rapordaki gücünün attackMargin katını bekler ve ordusu hesaplanan savaşların en az attackRate kadarını kazanıyorsa gider
+    // (savaş ilerledikçe ikisi de gevşer). scoreAware: deney, botlar zafer puanı için de oynar (savaşın ilk saniyesinden cesur).
+    "attackMargin": 1.2,
+    "attackRate": 0.85,
+    "scoreAware": false
   },
 
   // Excel "Maç" sekmesi: gözcü.

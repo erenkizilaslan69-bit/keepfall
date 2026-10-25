@@ -16,11 +16,11 @@ public sealed class AttackModule : IBotModule
     {
         if (!ctx.AtWar || ctx.Castle.Eliminated || ctx.UnderThreat || ctx.Slip()) return;
         var c = ctx.Castle;
-        bool medium = ctx.Difficulty == BotDifficulty.Medium;
+        bool medium = ctx.Level.Calculates;
         if (c.War.Armies.Any(a => a.SiteId is null && a.Mode == ArmyMode.Attack && a.State == ArmyState.Marching)) return; // one assault at a time
 
         double maxAge = medium ? 120 : 400;
-        double keep = medium ? 0.25 : 0.1;
+        double keep = ctx.Level.KeepHome;
         var home = c.Units.ToDictionary(u => u.Id, u => ctx.HomeSoldiers(u.Id));
         int homeTotal = home.Values.Sum();
         if (homeTotal == 0) return;
@@ -38,16 +38,17 @@ public sealed class AttackModule : IBotModule
             if (medium)
             {
                 // The longer the war has gone on without a result the more it is willing to risk (the winner is whoever has the most people).
-                double bold = Math.Max(0, ctx.WarProgress - 0.3) / 0.7;
-                var enemy = Tactics.Setup(ctx, "Savunma", Scale(guess, 1.2 - 0.2 * bold));
-                needed = Tactics.SmallestWinning(ctx, spare, enemy, 0.85 - 0.25 * bold).Needed;
+                var rules = ctx.Rules.Bots;
+                double bold = rules.ScoreAware ? 1 : Math.Max(0, ctx.WarProgress - 0.3) / 0.7;
+                var enemy = Tactics.Setup(ctx, "Savunma", Scale(guess, rules.AttackMargin - (rules.AttackMargin - 1.0) * bold));
+                needed = Tactics.SmallestWinning(ctx, spare, enemy, rules.AttackRate - 0.25 * bold).Needed;
                 if (needed == 0) wanted = wanted == 0 ? guess.Values.Sum() : Math.Min(wanted, guess.Values.Sum());
             }
             else
             {
                 // A head count: send everything if there are more of us than of them.
                 int theirs = guess.Values.Sum();
-                needed = spareTotal >= theirs ? spareTotal : 0;
+                needed = spareTotal >= theirs * ctx.Level.HeadCountRatio ? spareTotal : 0;
                 if (needed == 0) wanted = wanted == 0 ? theirs : Math.Min(wanted, theirs);
             }
             if (needed > 0) options.Add((target.Seat, target.MarchSeconds, est, needed));
@@ -71,6 +72,7 @@ public sealed class AttackModule : IBotModule
         ctx.Wish(80, new SendArmy(CastleKeys.Of(pick.Seat), units, null, null, ArmyMode.Attack));
         ctx.Commit(units);
         ctx.Stats.Count("attacks");
+        if (ctx.Stats["firstAttackAt"] == 0) ctx.Stats.Count("firstAttackAt", Math.Max(1, (int)ctx.Now));
         ctx.Stats.Count("attackSoldiers", units.Values.Sum());
         ctx.Stats.Max("biggestAttack", units.Values.Sum());
     }

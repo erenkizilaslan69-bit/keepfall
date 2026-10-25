@@ -15,6 +15,15 @@ public sealed record BotReportOptions
     /// <summary>"orta", "kolay" or "karisik" (a mix of both, seats rotated from match to match).</summary>
     public string Difficulty { get; init; } = "karisik";
     public int Seed { get; init; } = 1;
+    /// <summary>Experiment: when time runs out the winner is who has the most victory points, not the most people (nothing in the game changes).</summary>
+    public bool ScoreRule { get; init; }
+    public double PointsPerElimination { get; init; } = 150;
+    /// <summary>Per point of gate damage dealt (a whole gate is 500).</summary>
+    public double PointsPerDamage { get; init; } = 0.2;
+    public double PointsPerKill { get; init; } = 2;
+    public double PointsPerPerson { get; init; } = 1;
+    /// <summary>Print one tab-separated line of the main numbers (for comparing runs).</summary>
+    public bool Summary { get; init; }
 }
 
 /// <summary>Plays many bot matches with no screen and reports how they went: who wins and how, how big the economies and armies get, how the forest is used.</summary>
@@ -23,7 +32,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
     private sealed record SeatResult(
         int Seat, BotDifficulty Level, bool Won, bool Eliminated, double EliminatedAt, int PopWarStart, int SoldiersWarStart, int PopEnd, int PeakPop,
         int Soldiers, double GoldGained, double GoldSpent, int Mercenaries, int SoldiersLost, int EnemiesKilled, double SiegeDamage,
-        IReadOnlyDictionary<string, int> Bot);
+        IReadOnlyDictionary<string, int> Bot, int HiredWarStart, int HiredEnd, int Eliminations, double Points);
 
     private sealed record MatchRecord(
         bool ByElimination, double Duration, IReadOnlyList<SeatResult> Seats, int SiegeBattles, int FieldBattles, int CampBattles, int CampWins,
@@ -48,6 +57,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
         PrintForest(matches);
         PrintStrategies(matches);
         PrintSummary(matches);
+        if (options.Summary) PrintMachineLine(matches);
         Console.WriteLine($"Süre: {clock.Elapsed.TotalSeconds:0.0} sn");
     }
 
@@ -74,27 +84,39 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
         var room = BotMatch.Create(rules, levels, prep, war, seed);
         var game = room.Game!;
         var host = new BotHost.BotHost(rules, seed);
-        var atWarStart = new Dictionary<int, (int Pop, int Soldiers)>();
+        var atWarStart = new Dictionary<int, (int Pop, int Soldiers, int Hired)>();
         BotMatch.Play(rules, room, seed, (r, _) =>
         {
             if (atWarStart.Count == 0 && game.Phase == MatchPhase.War)
                 foreach (var p in r.Players)
                 {
                     var c = game.CastleOf(p.CastleKey)!;
-                    atWarStart[p.Seat] = (c.Population, c.SoldierCount + c.SoldiersAway);
+                    atWarStart[p.Seat] = (c.Population, c.SoldierCount + c.SoldiersAway, c.Mercenaries.Values.Sum());
                 }
         }, host);
 
         var result = game.Result!;
+        var points = room.Players.ToDictionary(p => p.Seat, p =>
+        {
+            var c = game.CastleOf(p.CastleKey)!;
+            int eliminations = game.BattlesOf(p.CastleKey).Count(b => b.Attacker == p.CastleKey && b.DefenderEliminated);
+            return (Eliminations: eliminations, Points: options.PointsPerElimination * eliminations + options.PointsPerDamage * c.Stats.CastleDamageDealt
+                + options.PointsPerKill * c.Stats.EnemiesKilled + options.PointsPerPerson * (game.IsEliminated(p.CastleKey) ? 0 : c.Population));
+        });
+        // With the experiment on, a match that runs out of time goes to whoever has the most points.
+        var winners = result.ByElimination || !options.ScoreRule
+            ? result.Winners.Select(w => room.PlayerOfCastle(w)!.Seat).ToHashSet()
+            : points.Where(kv => !game.IsEliminated(room.Players.First(p => p.Seat == kv.Key).CastleKey))
+                .GroupBy(kv => Math.Round(kv.Value.Points, 3)).OrderByDescending(g => g.Key).First().Select(kv => kv.Key).ToHashSet();
         var seats = room.Players.Select(p =>
         {
             var c = game.CastleOf(p.CastleKey)!;
-            var summary = game.SummaryOf(p.CastleKey)!;
-            var (pop0, sol0) = atWarStart.GetValueOrDefault(p.Seat);
-            return new SeatResult(p.Seat, p.Bot!.Value, result.Winners.Contains(p.CastleKey), game.IsEliminated(p.CastleKey),
+            var (pop0, sol0, hired0) = atWarStart.GetValueOrDefault(p.Seat);
+            return new SeatResult(p.Seat, p.Bot!.Value, winners.Contains(p.Seat), game.IsEliminated(p.CastleKey),
                 game.Eliminated.GetValueOrDefault(p.CastleKey), pop0, sol0, c.Population, c.Stats.PeakPopulation,
                 c.SoldierCount + c.SoldiersAway, c.Stats.GoldGained, c.Stats.GoldSpent, c.Stats.MercenariesHired, c.Stats.SoldiersLost,
-                c.Stats.EnemiesKilled, c.Stats.CastleDamageDealt, host.Stats.TryGetValue(p.Seat, out var st) ? st.Counts : new Dictionary<string, int>());
+                c.Stats.EnemiesKilled, c.Stats.CastleDamageDealt, host.Stats.TryGetValue(p.Seat, out var st) ? st.Counts : new Dictionary<string, int>(),
+                hired0, c.Mercenaries.Values.Sum(), points[p.Seat].Eliminations, points[p.Seat].Points);
         }).ToList();
 
         var reports = room.Players.SelectMany(p => game.BattlesOf(p.CastleKey).Select(b => (Player: p, Report: b))).ToList();
@@ -115,6 +137,14 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
     private static double Avg<T>(IEnumerable<T> items, Func<T, double> f) { var l = items.ToList(); return l.Count == 0 ? double.NaN : l.Average(f); }
     private static string Pct(double x) => double.IsNaN(x) ? "—" : $"%{x * 100:0.0}";
     private static string F(double x, string format = "0.0") => double.IsNaN(x) ? "—" : x.ToString(format);
+
+    /// <summary>Share of hired soldiers in the armies (hired / all soldiers, summed over the seats).</summary>
+    private static double MercShare(IEnumerable<SeatResult> seats, Func<SeatResult, int> hired, Func<SeatResult, int> soldiers)
+    {
+        var l = seats.ToList();
+        double total = l.Sum(soldiers);
+        return total == 0 ? double.NaN : l.Sum(hired) / total;
+    }
 
     private IEnumerable<BotDifficulty> Groups(MatchRecord[] matches) => matches.SelectMany(m => m.Seats).Select(s => s.Level).Distinct().OrderBy(l => l);
 
@@ -153,13 +183,14 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
     private void PrintEconomy(MatchRecord[] matches)
     {
         Heading("2. Ekonomi ve ordu");
-        var t = new Table("Zorluk", "Nüfus savaş başı", "Asker savaş başı", "Zirve nüfus", "Son nüfus", "Son asker", "En büyük saldırı ordusu", "Ort. saldırı ordusu");
+        var t = new Table("Zorluk", "Nüfus savaş başı", "Asker savaş başı", "Zirve nüfus", "Son nüfus", "Son asker", "Paralı oranı savaş başı", "Paralı oranı maç sonu", "En büyük saldırı ordusu", "Ort. saldırı ordusu");
         foreach (var level in Groups(matches))
         {
             var seats = matches.SelectMany(m => m.Seats).Where(s => s.Level == level).ToList();
             var attackers = seats.Where(s => s.Bot.GetValueOrDefault("attacks") > 0).ToList();
             t.Add(Name(level), F(Avg(seats, s => s.PopWarStart)), F(Avg(seats, s => s.SoldiersWarStart)), F(Avg(seats, s => s.PeakPop)), F(Avg(seats, s => s.PopEnd)),
-                F(Avg(seats, s => s.Soldiers)), F(seats.Max(s => s.Bot.GetValueOrDefault("biggestAttack")), "0"),
+                F(Avg(seats, s => s.Soldiers)), Pct(MercShare(seats, s => s.HiredWarStart, s => s.SoldiersWarStart)), Pct(MercShare(seats, s => s.HiredEnd, s => s.Soldiers)),
+                F(seats.Max(s => s.Bot.GetValueOrDefault("biggestAttack")), "0"),
                 F(attackers.Count == 0 ? double.NaN : attackers.Sum(s => s.Bot["attackSoldiers"]) / (double)attackers.Sum(s => s.Bot["attacks"])));
         }
         t.Print();
@@ -246,6 +277,37 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
         if (_findings.Count == 0) Console.WriteLine("  Eşik dışında kalan bir şey yok.");
         foreach (var f in _findings) Console.WriteLine($"  ! {f}");
         Console.WriteLine();
+    }
+
+    /// <summary>One tab-separated line: the numbers the comparison table is made of.</summary>
+    private void PrintMachineLine(MatchRecord[] matches)
+    {
+        var seats = matches.SelectMany(m => m.Seats).ToList();
+        var medium = seats.Where(s => s.Level == BotDifficulty.Medium).ToList();
+        double MediumShare() => medium.Count == 0 ? double.NaN : matches.Sum(m => m.Seats.Where(s => s.Level == BotDifficulty.Medium && s.Won).Sum(s => 1.0 / m.Seats.Count(x => x.Won))) / medium.Count;
+        // Does the one who attacks more win more? (only matches where the seats attacked a different number of times)
+        var lopsided = matches.Where(m => m.Seats.Select(s => s.Bot.GetValueOrDefault("attacks")).Distinct().Count() > 1).ToList();
+        double aggressorWins = lopsided.Count == 0 ? double.NaN
+            : lopsided.Sum(m => { var top = m.Seats.OrderByDescending(s => s.Bot.GetValueOrDefault("attacks")).First(); return top.Won ? 1.0 / m.Seats.Count(x => x.Won) : 0; }) / lopsided.Count;
+        var first = seats.Where(s => s.Bot.GetValueOrDefault("firstAttackAt") > 0).Select(s => s.Bot["firstAttackAt"]).ToList();
+        double warStart = options.Minutes == 30 ? rules.Match.LongModePrepSeconds : rules.Match.ShortModePrepSeconds;
+        var fields = new[]
+        {
+            Pct(MediumShare()),
+            Pct(matches.Count(m => m.ByElimination) / (double)matches.Length),
+            Pct(matches.Count(m => m.SiegeBattles == 0) / (double)matches.Length),
+            F(matches.Average(m => m.SiegeBattles), "0.00"),
+            F(seats.Average(s => s.Bot.GetValueOrDefault("attacks")), "0.00"),
+            first.Count == 0 ? "—" : F((first.Average() - warStart) / 60, "0.0") + " dk",
+            Pct(MercShare(seats, s => s.HiredWarStart, s => s.SoldiersWarStart)),
+            Pct(MercShare(seats, s => s.HiredEnd, s => s.Soldiers)),
+            F(seats.Average(s => s.GoldGained), "0"),
+            F(seats.Average(s => s.PopWarStart)),
+            F(seats.Average(s => s.PopEnd)),
+            Pct(aggressorWins),
+            lopsided.Count.ToString(),
+        };
+        Console.WriteLine("ÖZET	" + string.Join("	", fields));
     }
 
     private static void Heading(string title)

@@ -13,7 +13,8 @@ const string Usage = """
       BattleSim denge  [--mac 5000] [--min 10] [--max 30] [--butce kisi|kaynak] [--duello 10]
                        [--havuz 60] [--esik 0.55] [--seed 12345]
       BattleSim savas  <ordu A> <ordu B> [--hedef-a X] [--hedef-b X] [--tekrar N] [--seed N]
-      BattleSim bot    [--mac 200] [--oyuncu 2|3|4] [--mod 15|30] [--zorluk orta|kolay|karisik] [--seed 1]   (bot vs bot istatistikleri)
+      BattleSim bot    [--mac 200] [--oyuncu 2|3|4] [--mod 15|30] [--zorluk orta|kolay|karisik] [--seed 1] [--puan evet] [--agirlik 150,0.2,2,1] [--ozet 1]
+                       (bot vs bot istatistikleri; --puan: süre bitince kazanan zafer puanına göre sayılır (deney); --ozet: karşılaştırma satırı)
       BattleSim bot --izle [--oyuncu 2] [--zorluk orta|kolay] [--mod 15|30] [--seed 1] [--aralik 60]   (tek maçı dakika dakika göster)
       BattleSim kontrol
 
@@ -89,6 +90,8 @@ try
             {
                 Matches = Int(flags, "mac", 200), Players = players, Minutes = minutes,
                 Difficulty = level.Replace("karışık", "karisik"), Seed = Int(flags, "seed", 1),
+                ScoreRule = flags.GetValueOrDefault("puan", "hayir") is "evet" or "1" or "true", Summary = flags.ContainsKey("ozet"),
+                PointsPerElimination = Weights(flags)[0], PointsPerDamage = Weights(flags)[1], PointsPerKill = Weights(flags)[2], PointsPerPerson = Weights(flags)[3],
             }).Run();
             return 0;
         }
@@ -193,6 +196,17 @@ static (string command, List<string> positional, Dictionary<string, string> flag
     string command = positional.Count > 0 ? positional[0].ToLowerInvariant() : "denge";
     if (positional.Count > 0) positional.RemoveAt(0);
     return (command, positional, flags);
+}
+
+/// <summary>--agirlik eleme,hasar,oldurme,nufus (zafer puanı ağırlıkları; varsayılan 150,0.2,2,1).</summary>
+static double[] Weights(Dictionary<string, string> flags)
+{
+    var w = new[] { 150.0, 0.2, 2.0, 1.0 };
+    if (!flags.TryGetValue("agirlik", out var text)) return w;
+    var parts = text.Split(',');
+    if (parts.Length != 4) throw new FormatException("--agirlik dört sayı ister: eleme,hasar,öldürme,nüfus");
+    for (int i = 0; i < 4; i++) w[i] = double.Parse(parts[i], CultureInfo.InvariantCulture);
+    return w;
 }
 
 static string? FindConfig()

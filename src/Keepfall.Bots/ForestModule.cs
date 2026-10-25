@@ -20,7 +20,7 @@ public sealed class ForestModule : IBotModule
     public void Think(BotContext ctx)
     {
         ctx.Memory.WantSoldiers = 0;
-        if (ctx.Castle.Eliminated || ctx.Slip()) return;
+        if (ctx.Castle.Eliminated || ctx.SlipEco()) return;
         var c = ctx.Castle;
         if (c.War.Armies.Count >= 2) return; // two raids at a time are enough
 
@@ -79,12 +79,12 @@ public sealed class ForestModule : IBotModule
         int soldiers = spare.Values.Sum();
         if (ctx.Memory.RaidPlans.TryGetValue(camp.Id, out var old) && ctx.Now - old.At < 25 && old.Soldiers == soldiers) return (old.Needed, old.Loss);
 
-        double margin = ctx.Difficulty == BotDifficulty.Medium ? 1.15 : 0.85; // the picture of a camp is a little out of date
+        double margin = ctx.Level.Calculates ? 1.15 : 0.85; // the picture of a camp is a little out of date
         var enemy = new ArmySetup("Haydutlar");
         foreach (var b in bandits) if (ctx.Rules.FindUnit(b.UnitId) is { } t) enemy.Add(t, (int)Math.Ceiling(b.Count * margin));
 
         (int, double) result;
-        if (ctx.Difficulty == BotDifficulty.Medium)
+        if (ctx.Level.Calculates)
         {
             // The smallest army (in the mix we have) that wins nearly always; not worth a bloody win: lose at most half of what goes.
             var (needed, loss) = Tactics.SmallestWinning(ctx, spare, enemy, 0.9);

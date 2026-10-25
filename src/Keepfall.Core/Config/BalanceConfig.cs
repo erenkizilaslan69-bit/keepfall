@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Keepfall.Core.Economy;
@@ -62,6 +62,9 @@ public sealed class BotsConfig
     public double WeaponsFrom { get; set; } = 0.3;
     public double ArmFrom { get; set; } = 0.75;
     public double ArmyShare { get; set; } = 0.5;
+    public double AttackMargin { get; set; } = 1.2;
+    public double AttackRate { get; set; } = 0.85;
+    public bool ScoreAware { get; set; }
 }
 
 public sealed class BotLevelConfig
@@ -73,6 +76,20 @@ public sealed class BotLevelConfig
     public int Commands { get; set; } = 3;
     public double Mistake { get; set; }
     public int Slack { get; set; } = 1;
+    /// <summary>Mistake chance of the economy parts; below zero (not given): the same as <see cref="Mistake"/>.</summary>
+    public double EcoMistake { get; set; } = -1;
+    // Not given: what that difficulty does by default (the good bot does everything, the poor one the plain version).
+    public bool? ExploreAll { get; set; }
+    public bool? ChestsAnywhere { get; set; }
+    public int? Scouts { get; set; }
+    public int? MercBatch { get; set; }
+    public int? MercThreatBatch { get; set; }
+    public bool? Saves { get; set; }
+    public int? QueueDepth { get; set; }
+    public double? KeepHome { get; set; }
+    public double? HeadCountRatio { get; set; }
+    public bool? Calculates { get; set; }
+    public bool? SmartDefense { get; set; }
 }
 
 public sealed class ForestConfig
@@ -276,13 +293,18 @@ public static class BalanceConfigLoader
             if (level.ReactMin < 0 || level.ReactMax < level.ReactMin) errors.Add($"bots.{name}: reactMin/reactMax geçersiz.");
             if (level.Commands < 1) errors.Add($"bots.{name}: commands en az 1 olmalı.");
             if (level.Mistake < 0 || level.Mistake > 1) errors.Add($"bots.{name}: mistake 0 ile 1 arasında olmalı.");
+            if (level.EcoMistake > 1) errors.Add($"bots.{name}: ecoMistake 1'den büyük olamaz.");
             if (level.Slack < 0) errors.Add($"bots.{name}: slack negatif olamaz.");
+            if (level.KeepHome is < 0 or > 0.9 || level.HeadCountRatio is <= 0) errors.Add($"bots.{name}: keepHome 0–0,9 arasında, headCountRatio sıfırdan büyük olmalı.");
+            if (level.Scouts < 1 || level.MercBatch < 1 || level.MercThreatBatch < 1 || level.QueueDepth < 1) errors.Add($"bots.{name}: scouts, mercBatch, mercThreatBatch ve queueDepth en az 1 olmalı.");
         }
         foreach (var id in config.Bots.Mix.Keys)
             if (!config.Units.Any(u => u.Id == id)) errors.Add($"bots.mix: bilinmeyen birim \"{id}\".");
         if (config.Bots.Mix.Count == 0 || config.Bots.Mix.Values.Any(v => v < 0) || config.Bots.Mix.Values.Sum() <= 0) errors.Add("bots.mix: en az bir pozitif pay olmalı.");
         if (config.Bots.WeaponsFrom is < 0 or > 1 || config.Bots.ArmFrom is < 0 or > 1) errors.Add("bots.weaponsFrom/armFrom 0 ile 1 arasında olmalı.");
         if (config.Bots.ArmyShare is <= 0 or > 1) errors.Add("bots.armyShare 0 ile 1 arasında olmalı.");
+        if (config.Bots.AttackMargin < 0.5 || config.Bots.AttackMargin > 3) errors.Add("bots.attackMargin 0,5 ile 3 arasında olmalı.");
+        if (config.Bots.AttackRate is <= 0 or > 1) errors.Add("bots.attackRate 0 ile 1 arasında olmalı.");
 
         var fo = config.Forest;
         if (fo.ChestsPerCorner < 0 || fo.VillagesPerCorner < 0 || fo.CampsPerCorner < 0) errors.Add("forest: nokta sayıları negatif olamaz.");
@@ -419,10 +441,13 @@ public static class BalanceConfigLoader
                 new VillageRules(fo.Village.GoldMin, fo.Village.GoldMax, fo.Village.PeopleMin, fo.Village.PeopleMax, fo.Village.MinSoldiers),
                 new CampRules(fo.Camp.Bandits, fo.Camp.GoldMin, fo.Camp.GoldMax, fo.Camp.Weapons),
                 new CampRules(fo.BigCamp.Bandits, fo.BigCamp.GoldMin, fo.BigCamp.GoldMax, fo.BigCamp.Weapons)),
-            new BotRules(BotLevel(config.Bots.Easy), BotLevel(config.Bots.Medium), config.Bots.Mix, config.Bots.WeaponsFrom, config.Bots.ArmFrom, config.Bots.ArmyShare));
+            new BotRules(BotLevel(config.Bots.Easy, false), BotLevel(config.Bots.Medium, true), config.Bots.Mix, config.Bots.WeaponsFrom, config.Bots.ArmFrom, config.Bots.ArmyShare,
+                config.Bots.AttackMargin, config.Bots.AttackRate, config.Bots.ScoreAware));
     }
 
-    private static BotLevelRules BotLevel(BotLevelConfig c) => new(c.ThinkMin, c.ThinkMax, c.ReactMin, c.ReactMax, c.Commands, c.Mistake, c.Slack);
+    private static BotLevelRules BotLevel(BotLevelConfig c, bool good) => new(c.ThinkMin, c.ThinkMax, c.ReactMin, c.ReactMax, c.Commands, c.Mistake, c.Slack, c.EcoMistake < 0 ? c.Mistake : c.EcoMistake,
+        c.ExploreAll ?? good, c.ChestsAnywhere ?? good, c.Scouts ?? (good ? 2 : 1), c.MercBatch ?? (good ? 3 : 1), c.MercThreatBatch ?? (good ? 6 : 1),
+        c.Saves ?? good, c.QueueDepth ?? (good ? 3 : 2), c.KeepHome ?? (good ? 0.25 : 0.1), c.HeadCountRatio ?? 1.0, c.Calculates ?? good, c.SmartDefense ?? good);
 
     private static double? ParseMultiplier(JsonElement value, CombatConfig c)
     {

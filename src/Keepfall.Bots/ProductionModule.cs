@@ -11,7 +11,7 @@ public sealed class ProductionModule : IBotModule
 {
     public void Think(BotContext ctx)
     {
-        if (ctx.ForgingTime && !ctx.Slip()) QueueWeapons(ctx);
+        if (ctx.ForgingTime && !ctx.SlipEco()) QueueWeapons(ctx);
         if (ctx.ArmingTime) Arm(ctx, int.MaxValue);
         else if (ctx.Memory.WantSoldiers > ctx.SoldiersTotal) Arm(ctx, ctx.Memory.WantSoldiers - ctx.SoldiersTotal); // a raid is waiting for soldiers
     }
@@ -19,7 +19,7 @@ public sealed class ProductionModule : IBotModule
     private static void QueueWeapons(BotContext ctx)
     {
         var c = ctx.Castle;
-        if (c.Queue.Sum(o => o.Remaining) >= (ctx.Difficulty == Core.Lobby.BotDifficulty.Medium ? 3 : 2)) return;
+        if (c.Queue.Sum(o => o.Remaining) >= ctx.Level.QueueDepth) return;
         if (ctx.ArmyRoom <= 0) return; // enough soldiers for the people we have
         if (ctx.Count(Job.Blacksmith) == 0 && c.Queue.Count > 0) return;
 
@@ -29,7 +29,7 @@ public sealed class ProductionModule : IBotModule
         int total = have.Values.Sum() + 1;
 
         // The type furthest below its share of the army (a poor bot sometimes just forges something).
-        var pick = ctx.Slip()
+        var pick = ctx.SlipEco()
             ? c.Units.Select(u => u.Id).Where(mix.ContainsKey).OrderBy(_ => ctx.Rng.Next()).FirstOrDefault()
             : mix.OrderByDescending(kv => kv.Value / share * total - have.GetValueOrDefault(kv.Key)).First().Key;
         if (pick is null) return;

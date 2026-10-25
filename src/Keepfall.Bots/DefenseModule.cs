@@ -1,4 +1,4 @@
-using Keepfall.Core.Economy;
+﻿using Keepfall.Core.Economy;
 using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
 
@@ -17,7 +17,7 @@ public sealed class DefenseModule : IBotModule
         var threats = ctx.Memory.Threats(ctx.Now).ToList();
         if (threats.Count == 0 || ctx.Castle.Eliminated || ctx.Slip()) return;
         var c = ctx.Castle;
-        bool medium = ctx.Difficulty == BotDifficulty.Medium;
+        bool medium = ctx.Level.SmartDefense;
         ctx.Stats.Count("defenceThinks");
 
         // The strongest of the armies coming, as far as we can tell (nothing known: assume as many as we have at home).

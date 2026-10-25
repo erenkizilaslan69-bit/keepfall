@@ -68,6 +68,9 @@ public sealed class BotContext(GameRules rules, BotInput input, BotMemory memory
     /// <summary>True when this part of the mind slips this time (never for a good bot, now and then for a poor one).</summary>
     public bool Slip() => Rng.NextDouble() < Level.Mistake;
 
+    /// <summary>The same for the economy parts of the mind (people, buildings, weapons).</summary>
+    public bool SlipEco() => Rng.NextDouble() < Level.EcoMistake;
+
     public int Count(Job job) => Castle.Jobs.FirstOrDefault(j => j.Job == job)?.Count ?? 0;
     public int? Capacity(Job job) => Castle.Jobs.FirstOrDefault(j => j.Job == job)?.Capacity;
     public UnitView Unit(string id) => Castle.Units.First(u => u.Id == id);
