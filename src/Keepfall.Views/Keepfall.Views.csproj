@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- What a player is shown: the view records and the mappers that build them from the game.
+       The server sends these to the clients; the bots read nothing else. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Keepfall.Core\Keepfall.Core.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

@@ -3,7 +3,7 @@ using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
 using Keepfall.Core.Units;
 using Keepfall.Core.World;
-using Keepfall.Server.Contracts;
+using Keepfall.Views;
 using Keepfall.Server.Games;
 using Microsoft.AspNetCore.SignalR;
 

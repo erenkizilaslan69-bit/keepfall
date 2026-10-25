@@ -3,7 +3,7 @@ using Keepfall.Core.Match;
 using Keepfall.Core.Units;
 using Keepfall.Core.World;
 
-namespace Keepfall.Server.Contracts;
+namespace Keepfall.Views;
 
 // What a fallen player watches: the whole map with no fog, every castle's inside, every army and scout, every
 // battle with its record. It is the one view that breaks the hidden-information rule, so it goes ONLY to

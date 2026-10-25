@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Keepfall.Core\Keepfall.Core.csproj" />
+    <ProjectReference Include="..\Keepfall.Views\Keepfall.Views.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

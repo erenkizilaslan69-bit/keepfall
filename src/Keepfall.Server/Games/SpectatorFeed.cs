@@ -1,6 +1,6 @@
 using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
-using Keepfall.Server.Contracts;
+using Keepfall.Views;
 
 namespace Keepfall.Server.Games;
 

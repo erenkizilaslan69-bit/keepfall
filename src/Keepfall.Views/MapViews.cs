@@ -4,7 +4,7 @@ using Keepfall.Core.Match;
 using Keepfall.Core.Units;
 using Keepfall.Core.World;
 
-namespace Keepfall.Server.Contracts;
+namespace Keepfall.Views;
 
 // The shared map. MapLayoutView is public and the same for everyone in the room: terrain, roads and
 // whose castle sits in which corner. MapStateView goes to one player only, every tick: what that

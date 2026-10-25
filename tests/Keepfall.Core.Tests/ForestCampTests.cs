@@ -78,15 +78,15 @@ public class ForestCampTests
         Explore(game, A, Corner.NorthWest);
         var camp = game.KnownSitesOf(A).First(k => k.Site.Kind == SiteKind.Camp);
         int bandits = Rules.Forest.Camp.Bandits.Values.Sum();
-        game.CastleOf(A)!.AddSoldiers(Sword, 5);
-        Ok(game.Execute(A, Raid(camp.Site.Id, 5)));
+        game.CastleOf(A)!.AddSoldiers(Sword, 6);
+        Ok(game.Execute(A, Raid(camp.Site.Id, 6)));
         RunUntil(game, () => game.ArmiesOf(A).Count == 0);
 
         var state = Truth(game, camp.Site.Id);
         Assert.False(state.Gone);
         Assert.InRange(state.BanditCount, 1, bandits); // whoever survived stays
         Assert.Equal(0, game.CastleOf(A)!.Gold);
-        Assert.Equal(0, game.CastleOf(A)!.Soldiers[Sword]); // five against six: none came back
+        Assert.Equal(0, game.CastleOf(A)!.Soldiers[Sword]); // six against seven: none came back
         Assert.Equal(BattleWinner.Defender, game.BattlesOf(A).Single().Winner);
 
         // The survivors have not healed: the next army has an easier time (and finishes it).

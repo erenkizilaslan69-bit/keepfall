@@ -46,6 +46,7 @@ Tarayıcıda oynanır. Tüm oyun mantığı sunucudadır; istemci yalnızca komu
 | `config/balance.json` | Tüm denge sayıları: süreler, ekonomi, bina seviyeleri, harita hızları ve görüş, savaş, birlikler, karşılık matrisi. Kaynak: `docs/kale_oyunu_sayilar.xlsx`. |
 | `src/Keepfall.Core` | Oyun mantığı: `Combat` (savaş simülatörü ve kaydı), `Economy` (kale), `Match` (maç, ordular, savaşlar), `World` (harita, yollar, görüş), `Lobby` (oda). |
 | `src/Keepfall.Server` | ASP.NET Core + SignalR. Tick döngüsü ve gizli bilgi kuralı burada. |
+| `src/Keepfall.Views` | Oyuncuya gösterilen görünüm kayıtları ve onları oyundan üreten eşleyiciler (`ViewMapper`, `MapViewMapper`). Sunucu istemcilere, botlar kendi karar girdisi olarak bunu kullanır. |
 | `src/BattleSim` | Konsol aracı: tek savaş ve denge raporu. |
 | `client/` | Vite + TypeScript + Phaser istemcisi. |
 | `tests/Keepfall.Core.Tests` | Birim testleri (ekonomi, savaş, harita, görüş, oda). |

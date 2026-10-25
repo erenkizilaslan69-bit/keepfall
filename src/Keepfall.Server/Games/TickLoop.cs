@@ -1,5 +1,5 @@
 using Keepfall.Core.Lobby;
-using Keepfall.Server.Contracts;
+using Keepfall.Views;
 using Keepfall.Server.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;

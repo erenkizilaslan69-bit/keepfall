@@ -4,7 +4,7 @@ using Keepfall.Core.Match;
 using Keepfall.Core.Units;
 using Keepfall.Core.World;
 
-namespace Keepfall.Server.Contracts;
+namespace Keepfall.Views;
 
 // What the client receives, built under the room lock.
 // CastleView/SummaryView only ever go to the castle's owner. RoomView goes to the whole room and
