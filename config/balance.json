@@ -42,6 +42,9 @@
   "map": {
     "armySpeed": 1.5,
     "scoutSpeed": 2.5,
+    // Gözcünün yürüdüğü yolun çevresi (görüş yarıçapı kadar) geçtikten sonra bu kadar saniye canlı görüşte kalır
+    // (son 10 sn soluklaşır); 0 = maç sonuna kadar. Rakibin kale bölgesinin içini açmaz.
+    "scoutTrailSeconds": 120,
     // Savaş sisi: oyuncu sadece bu yarıçaplar (karo) içindekileri görür; gerisi sunucudan hiç gelmez.
     // Kale görüşü kapıdan ölçülür; düşman ordusu buna girince "X'den bir ordu yaklaşıyor!" uyarısı çıkar
     // (komşudan gelen ordu için varıştan ~18 sn, çaprazdan ~17 sn önce).

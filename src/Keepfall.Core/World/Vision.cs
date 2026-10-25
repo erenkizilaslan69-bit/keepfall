@@ -8,6 +8,12 @@ public sealed record VisionCircle(Vec Center, double Radius)
     public bool Contains(Vec p) => Center.DistanceTo(p) <= Radius + 1e-9;
 }
 
+/// <summary>
+/// A stretch of ground a scout walked over, still in view. <see cref="Fade"/> goes 1 → 0 over the last seconds
+/// before it closes (the client only uses it to draw the fog closing in; once it is gone it is simply not there).
+/// </summary>
+public sealed record TrailCircle(Vec Center, double Radius, double Fade);
+
 public enum MoverKind { Army, Scout }
 
 /// <summary>

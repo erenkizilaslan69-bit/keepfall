@@ -29,6 +29,8 @@ public sealed class ScoutMission
     /// <summary>Taken when the scout arrives; handed to <see cref="From"/> only when the scout is back.</summary>
     public ScoutReport? Report { get; internal set; }
     public bool Arrived => Report is not null;
+    /// <summary>Where the last trail point was laid (the next one comes a little further on).</summary>
+    internal Vec? LastTrail { get; set; }
 
     /// <summary>Seconds until the scout is home with its report.</summary>
     public double SecondsLeft => Back?.SecondsLeft ?? Out.SecondsLeft + Out.Route.Length / Out.Speed;

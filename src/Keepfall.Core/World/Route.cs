@@ -112,4 +112,5 @@ public sealed class Traveller
 /// Moving and seeing on the map ("map" in the balance config): speeds in tiles per second, vision
 /// radii in tiles around the castle gate, one's own armies and one's own scouts.
 /// </summary>
-public sealed record MapRules(double ArmySpeed, double ScoutSpeed, double CastleVision, double ArmyVision, double ScoutVision);
+/// <param name="ScoutTrailSeconds">How long the ground a scout walked over stays in view after it passed (0 = to the end of the match).</param>
+public sealed record MapRules(double ArmySpeed, double ScoutSpeed, double CastleVision, double ArmyVision, double ScoutVision, double ScoutTrailSeconds);

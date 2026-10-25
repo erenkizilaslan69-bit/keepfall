@@ -14,7 +14,13 @@
 // countdown and then the whole live map, exactly, and nobody still playing ever gets one. Exits with code 1 if any check failed.
 
 const near = (p, c) => Math.hypot(p.x - c.center.x, p.y - c.center.y) <= c.radius + 1e-6;
-const inVision = (p, state) => state.vision.some((c) => near(p, c));
+// What a player can see: their live circles, and the ground their scouts walked over (the trail) except inside
+// somebody else's corner. `regions` is the public map's corner list.
+let regions = [];
+const inForeignRegion = (p, seat) => regions.some((r) => r.seat && r.seat !== seat
+  && p.x >= r.origin.x && p.x <= r.origin.x + r.width && p.y >= r.origin.y && p.y <= r.origin.y + r.height);
+const inVision = (p, state, seat) => state.vision.some((c) => near(p, c))
+  || (state.trail.some((t) => near(p, { center: t.center, radius: t.radius })) && !inForeignRegion(p, seat));
 
 const base = (process.argv[2] ?? 'http://localhost:5080').replace(/\/$/, '');
 const RS = '\x1e';
@@ -68,6 +74,7 @@ check('host starts the match', (await A.call('StartMatch')).ok);
 await sleep(300);
 const layouts = [A, B, C].map((x) => x.of('MapLayout').at(-1));
 check('everyone got the map', layouts.every(Boolean));
+regions = layouts[0]?.regions ?? [];
 check('the map is the same for everyone', layouts.every((l) => JSON.stringify(l) === JSON.stringify(layouts[0])));
 check('the map shows whose castle is in which corner', layouts[0]?.regions.filter((r) => r.seat).length === 3);
 check('the map carries no token and no castle contents',
@@ -155,6 +162,8 @@ check("B's castle never lists A's army", castlesBWar.every((c) => c.war.armies.l
 const mapsA = A.of('MapState'), mapsB = B.of('MapState'), mapsC = C.of('MapState');
 const ownArmy = mapsA.flatMap((m) => m.own.filter((o) => o.kind === 'army').map((o) => ({ t: m.elapsedSeconds, o })));
 check('A got its own army with its road', ownArmy.length > 0 && ownArmy.every(({ o }) => o.route.length >= 2 && o.targetSeat === 2));
+check('A and C (who sent scouts) got trails, B (who never did) never did',
+  mapsA.some((m) => m.trail.length > 0) && mapsC.some((m) => m.trail.length > 0) && mapsB.every((m) => m.trail.length === 0));
 const allSeen = [...mapsA, ...mapsB, ...mapsC].flatMap((m) => m.seen);
 check('a seen mover carries only id, kind, owner, position, heading and units',
   allSeen.every((s) => JSON.stringify(Object.keys(s).sort()) === '["id","kind","ownerColor","ownerSeat","position","units","velocity"]'));
@@ -163,17 +172,17 @@ check('nothing seen ever mentions a target, road or arrival',
 check('seen ids are random', allSeen.every((s) => /^[0-9a-f]{16}$/.test(s.id)));
 check('nobody ever sees their own movers as "seen"',
   [[mapsA, 1], [mapsB, 2], [mapsC, 3]].every(([maps, seat]) => maps.every((m) => m.seen.every((s) => s.ownerSeat !== seat))));
-check('whatever is seen is inside the vision',
-  [...mapsA, ...mapsB, ...mapsC].every((m) => m.seen.every((s) => inVision(s.position, m))));
+check('whatever is seen is inside the vision or the scouts trail (and never inside a foreign corner through the trail)',
+  [[mapsA, 1], [mapsB, 2], [mapsC, 3]].every(([maps, seat]) => maps.every((m) => m.seen.every((s) => inVision(s.position, m, seat)))));
 // Ground truth: A's own army position at each tick. B and C must see it exactly when it is in their vision
 // (while it is fighting, nobody but the two sides sees it at all).
 let compared = 0, mismatches = [];
-for (const [name, maps] of [['B', mapsB], ['C', mapsC]]) {
+for (const [name, maps, seat] of [['B', mapsB, 2], ['C', mapsC, 3]]) {
   for (const { t, o } of ownArmy) {
     const m = maps.find((x) => Math.abs(x.elapsedSeconds - t) < 1e-6);
     if (!m) continue;
     compared++;
-    const shouldSee = !o.fighting && inVision(o.position, m);
+    const shouldSee = !o.fighting && inVision(o.position, m, seat);
     const sees = m.seen.some((s) => s.id === o.id);
     if (shouldSee !== sees) mismatches.push(`${name}@${t}: ${shouldSee ? 'missing' : 'leaked'}`);
   }
@@ -215,7 +224,7 @@ check('C saw that a battle was going on at B (its scout was there)', markersC.le
 check('a battle C sees is only where it is', markersC.every((x) => JSON.stringify(Object.keys(x).sort()) === '["at","id"]')
   && (!startedA[0] || markersC.every((x) => x.id === startedA[0].id)));
 check('C only sees the battle inside its vision',
-  C.of('MapState').every((m) => m.battles.every((x) => inVision(x.at, m))));
+  C.of('MapState').every((m) => m.battles.every((x) => inVision(x.at, m, 3))));
 
 // ---- recall ------------------------------------------------------------------------------------
 await A.call('SetSpeed', 1);
@@ -255,6 +264,36 @@ await X.call('MoveWorkers', 'idle', 'blacksmith', 4);
 await X.call('QueueWeapon', 'kilicli', 4);
 await sleep(3500);
 check('X arms 4 swordsmen', (await X.call('ArmWorkers', 'kilicli', 4, 'idle')).ok);
+
+// ---- the scout's trail (in preparation, while nothing else is going on) -------------------------------------
+check('X sends a scout to Z', (await X.call('SendScout', 3, 'idle')).ok);
+check('the scout leaves a trail', await waitFor(() => X.of('MapState').some((m) => m.trail.length > 0), 10000));
+check('the scout comes home', await waitFor(() => X.of('MapState').at(-1).own.length === 0, 20000));
+const trailNow = X.of('MapState').at(-1).trail;
+check('the trail stays open after the scout is home', trailNow.length > 0);
+const X2 = client(); // a page reload: same token, new connection
+await X2.ready;
+const rejoin = await X2.call('JoinRoom', jx.code, 'Xaver', jx.token, false);
+await sleep(700);
+const firstMap = X2.of('MapState')[0];
+check('a reload rejoins the same seat', rejoin.ok && rejoin.seat === 1, rejoin.error);
+check('a reload gets the open trail back', !!firstMap && firstMap.trail.length > 0
+  && firstMap.trail.every((t) => X.of('MapState').some((m) => m.trail.some((u) => u.center.x === t.center.x && u.center.y === t.center.y))));
+X2.ws.close();
+const allTrail = X.of('MapState').flatMap((m) => m.trail);
+const scoutRoute = X.of('MapState').flatMap((m) => m.own).find((o) => o.kind === 'scout')?.route ?? [];
+const toSegment = (p, a, b) => {
+  const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy;
+  const k = l2 === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2));
+  return Math.hypot(p.x - (a.x + k * dx), p.y - (a.y + k * dy));
+};
+check('a trail circle carries only centre, radius and fade, with the scouts sight',
+  allTrail.every((t) => JSON.stringify(Object.keys(t).sort()) === '["center","fade","radius"]' && t.radius === 10 && t.fade >= 0 && t.fade <= 1));
+check('the trail lies along the scouts own road',
+  scoutRoute.length >= 2 && allTrail.every((t) => scoutRoute.slice(1).some((p, i) => toSegment(t.center, scoutRoute[i], p) < 1e-6)));
+check('nobody but the scouts owner gets a trail',
+  [Y, Z].every((c) => c.of('MapState').every((m) => m.trail.length === 0)));
+check('the trail closes again after its time', await waitFor(() => X.of('MapState').at(-1).trail.length === 0, 30000));
 check('the second war begins', await waitFor(() => X.of('RoomState').some((r) => r.phase === 'war'), 60000));
 const fallen = () => Y.of('CastleState').at(-1)?.eliminated === true;
 for (let i = 0; i < 160 && !fallen(); i++) {

@@ -139,4 +139,102 @@ public class VisionTests
         Assert.Empty(game.VisionOf(C));
         Assert.Empty(game.SeenBy(C)); // although A's army is right at its gate
     }
+
+    // ---- the scout's trail --------------------------------------------------------------------
+
+    [Fact]
+    public void A_scout_leaves_open_ground_behind_it_for_its_owner_only()
+    {
+        Assert.Equal(120, Rules.Map.ScoutTrailSeconds);
+        var game = War();
+        Ok(game.Execute(A, new SendScout(C)));
+        for (int t = 0; t < 10; t++) game.Tick(1);
+
+        var trail = game.TrailOf(A);
+        Assert.True(trail.Count >= 5);
+        Assert.All(trail, c => Assert.Equal((Rules.Map.ScoutVision, 1.0), (c.Radius, c.Fade)));
+        Assert.Empty(game.TrailOf(B));
+        Assert.Empty(game.TrailOf(C)); // the scouted player gets nothing back
+    }
+
+    [Fact]
+    public void The_trail_closes_after_the_configured_time_and_fades_first()
+    {
+        var game = War();
+        Ok(game.Execute(A, new SendScout(C)));
+        while (game.MissionsOf(A).Count > 0) game.Tick(1);
+        Assert.NotEmpty(game.TrailOf(A));
+
+        double fading = 0;
+        for (int t = 0; t < 400 && game.TrailOf(A).Count > 0; t++)
+        {
+            game.Tick(1);
+            if (game.TrailOf(A).Any(c => c.Fade < 1)) fading++;
+        }
+        Assert.Empty(game.TrailOf(A));
+        Assert.InRange(fading, GameState.TrailFadeSeconds, 65); // points close one after the other, each fading for its last seconds
+        Assert.True(game.ElapsedSeconds < 1 + 2 * 22 + 120 + 30, "closed far too late");
+    }
+
+    [Fact]
+    public void Armies_crossing_the_trail_are_seen_but_never_inside_a_castles_region()
+    {
+        var game = War();
+        game.CastleOf(C)!.AddSoldiers(Sword, 2);
+        Ok(game.Execute(A, new SendScout(C)));
+        while (game.MissionsOf(A).Count > 0) game.Tick(1);
+        Assert.Single(game.VisionOf(A)); // no scout out: only the castle sees
+
+        Ok(game.Execute(C, Attack(A, (Sword, 2))));
+        game.Tick(1);
+        var army = game.ArmiesOf(C).Single();
+        var region = game.Map.RegionOf(Corner.NorthEast);
+        Assert.True(army.Position.X >= region.Origin.X && army.Position.X <= region.Origin.X + region.Width
+                    && army.Position.Y >= region.Origin.Y && army.Position.Y <= region.Origin.Y + region.Height, "starts inside its region");
+        Assert.Empty(game.SeenBy(A)); // inside the region: not through the trail
+
+        bool seenOnTheRoad = false;
+        for (int t = 0; t < 30 && !seenOnTheRoad; t++)
+        {
+            game.Tick(1);
+            if (game.CastleVisionOf(A).Contains(army.Position)) break; // from here on the castle sees it anyway
+            seenOnTheRoad = game.SeenBy(A).Any(s => s.Owner == C);
+        }
+        Assert.True(seenOnTheRoad, "the trail should show the army out on the road");
+        Assert.Empty(game.SeenBy(B)); // nobody else gets the trail
+    }
+
+    [Fact]
+    public void A_trail_of_zero_seconds_never_closes()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"balance-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, File.ReadAllText(BalanceConfigLoader.FindDefaultPath(AppContext.BaseDirectory)!)
+            .Replace("\"scoutTrailSeconds\": 120", "\"scoutTrailSeconds\": 0"));
+        var rules = BalanceConfigLoader.LoadFromFile(path);
+        File.Delete(path);
+        Assert.Equal(0, rules.Map.ScoutTrailSeconds);
+        var game = new GameState(rules, [A, B, C], prepSeconds: 1, warSeconds: 100_000, rng: new Random(1),
+            corners: new Dictionary<string, Corner> { [A] = Corner.NorthWest, [B] = Corner.SouthEast, [C] = Corner.NorthEast });
+        foreach (var p in new[] { A, B, C }) Ok(game.Execute(p, new SetGrowth(false)));
+        game.Tick(1);
+        Ok(game.Execute(A, new SendScout(C)));
+        while (game.MissionsOf(A).Count > 0) game.Tick(1);
+        int laid = game.TrailOf(A).Count;
+        for (int t = 0; t < 2000; t++) game.Tick(1);
+        Assert.Equal(laid, game.TrailOf(A).Count);
+        Assert.All(game.TrailOf(A), c => Assert.Equal(1.0, c.Fade));
+    }
+
+    [Fact]
+    public void A_fallen_castle_loses_its_trail()
+    {
+        var game = War();
+        Ok(game.Execute(C, new SendScout(A)));
+        game.Tick(5);
+        Assert.NotEmpty(game.TrailOf(C));
+        game.CastleOf(A)!.AddSoldiers(Sword, 20);
+        Ok(game.Execute(A, Attack(C, (Sword, 20))));
+        while (!game.IsEliminated(C)) game.Tick(1);
+        Assert.Empty(game.TrailOf(C));
+    }
 }

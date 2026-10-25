@@ -36,9 +36,12 @@ public sealed record SeenMoverView(
 /// <summary>A battle going on that the player can see. Deliberately only where it is: not who, not how it goes.</summary>
 public sealed record BattleMarkerView(string Id, VecView At);
 
+/// <summary>Ground one of the player's scouts walked over that is still in view (fading out as it closes).</summary>
+public sealed record TrailView(VecView Center, double Radius, double Fade);
+
 public sealed record MapStateView(
     double ElapsedSeconds, IReadOnlyList<VisionView> Vision, IReadOnlyList<OwnMoverView> Own, IReadOnlyList<SeenMoverView> Seen,
-    IReadOnlyList<BattleMarkerView> Battles);
+    IReadOnlyList<BattleMarkerView> Battles, IReadOnlyList<TrailView> Trail);
 
 // A battle, for the two sides fighting it and nobody else: both armies soldier by soldier and the whole
 // record (hits [tick, attacker, target], deaths [tick, soldier], advances [tick, soldier]; soldiers are
@@ -93,7 +96,8 @@ public static class MapViewMapper
 
         return new MapStateView(game.ElapsedSeconds,
             game.VisionOf(key).Select(v => new VisionView(VecView.Of(v.Center), v.Radius)).ToList(), own, seen,
-            game.BattlesSeenBy(key).Select(b => new BattleMarkerView(b.PublicId, VecView.Of(b.Position))).ToList());
+            game.BattlesSeenBy(key).Select(b => new BattleMarkerView(b.PublicId, VecView.Of(b.Position))).ToList(),
+            game.TrailOf(key).Select(t => new TrailView(VecView.Of(t.Center), t.Radius, t.Fade)).ToList());
     }
 
     /// <summary>More hits than this and only the deaths are sent (the client then animates attacks loosely).</summary>

@@ -53,6 +53,8 @@ public sealed class MapConfig
 {
     public double ArmySpeed { get; set; } = 1.5;
     public double ScoutSpeed { get; set; } = 2.5;
+    /// <summary>The ground a scout walked over stays in view this long (s) after it passed; 0 = until the match ends.</summary>
+    public double ScoutTrailSeconds { get; set; } = 120;
     public VisionConfig Vision { get; set; } = new();
 }
 
@@ -218,6 +220,7 @@ public static class BalanceConfigLoader
         var sc = config.Scouting;
         var mp = config.Map;
         if (mp.ArmySpeed <= 0 || mp.ScoutSpeed <= 0) errors.Add("map: hızlar sıfırdan büyük olmalı.");
+        if (mp.ScoutTrailSeconds < 0) errors.Add("map.scoutTrailSeconds negatif olamaz.");
         if (mp.Vision.Castle < 0 || mp.Vision.Army < 0 || mp.Vision.Scout < 0) errors.Add("map.vision: görüş yarıçapları negatif olamaz.");
         if (sc.ReportError < 0 || sc.ReportError >= 1) errors.Add("scouting.reportError 0 ile 1 arasında olmalı.");
 
@@ -304,7 +307,7 @@ public static class BalanceConfigLoader
             new ScoutingRules(sc.ReportError),
             new WarRules(w.FamineStart, w.FamineFoodMultiplier,
                 w.CastleHp, w.SiegeSeconds, w.ArcherSiegeMultiplier, w.BattlePlayback, w.EncounterRadius),
-            new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout));
+            new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout, mp.ScoutTrailSeconds));
     }
 
     private static double? ParseMultiplier(JsonElement value, CombatConfig c)

@@ -55,6 +55,11 @@ public sealed class GameState
     private readonly Dictionary<string, List<ActiveBattle>> _startedBattles = [];
     /// <summary>Every battle that began since the spectator feed last asked (for fallen players, who watch all of them).</summary>
     private readonly List<ActiveBattle> _startedForSpectators = [];
+    /// <summary>The ground scouts walked over that is still in view: where, whose, and until when (null = to the end).</summary>
+    private readonly List<TrailPoint> _trail = [];
+    private sealed record TrailPoint(string Owner, Vec Center, double? ExpiresAt);
+    /// <summary>The trail fades out over this many seconds before it closes.</summary>
+    public const double TrailFadeSeconds = 10;
     private readonly Dictionary<string, double> _eliminated = [];
     private readonly Dictionary<string, List<GameNotification>> _notifications = [];
     private readonly BattleSimulator _simulator;
@@ -183,7 +188,7 @@ public sealed class GameState
     {
         var vision = VisionOf(playerKey);
         if (vision.Count == 0) return [];
-        bool Visible(Vec p) => vision.Any(c => c.Contains(p));
+        bool Visible(Vec p) => vision.Any(c => c.Contains(p)) || SeenThroughTrail(playerKey, p);
         var seen = new List<SeenMover>();
         foreach (var a in _armies.Where(a => a.From != playerKey && a.Battle is null && Visible(a.Position)))
             seen.Add(new SeenMover(a.PublicId, MoverKind.Army, a.From, a.Position, a.Velocity,
@@ -203,7 +208,37 @@ public sealed class GameState
     public IReadOnlyList<ActiveBattle> BattlesSeenBy(string playerKey)
     {
         var vision = VisionOf(playerKey);
-        return _active.Where(b => b.Involves(playerKey) || vision.Any(c => c.Contains(b.Position))).ToList();
+        return _active.Where(b => b.Involves(playerKey) || vision.Any(c => c.Contains(b.Position)) || SeenThroughTrail(playerKey, b.Position)).ToList();
+    }
+
+    /// <summary>
+    /// The ground this player's scouts walked over, still open to their sight. A fallen castle has none.
+    /// Only the picture: <see cref="SeenBy"/> and <see cref="BattlesSeenBy"/> do the real fog.
+    /// </summary>
+    public IReadOnlyList<TrailCircle> TrailOf(string playerKey)
+    {
+        if (_eliminated.ContainsKey(playerKey)) return [];
+        return _trail.Where(t => t.Owner == playerKey)
+            .Select(t => new TrailCircle(t.Center, Rules.Map.ScoutVision,
+                t.ExpiresAt is { } end ? Math.Clamp((end - ElapsedSeconds) / TrailFadeSeconds, 0, 1) : 1))
+            .ToList();
+    }
+
+    /// <summary>
+    /// True when <paramref name="p"/> is on ground this player's scouts walked over, and not inside another
+    /// player's corner: what is inside a castle's region (buildings, workers, the courtyard, armies leaving)
+    /// is learned from a report only, never by looking from the road.
+    /// </summary>
+    private bool SeenThroughTrail(string playerKey, Vec p)
+    {
+        if (!_trail.Any(t => t.Owner == playerKey && t.Center.DistanceTo(p) <= Rules.Map.ScoutVision + 1e-9)) return false;
+        foreach (var (other, corner) in _corners)
+        {
+            if (other == playerKey) continue;
+            var r = Map.RegionOf(corner);
+            if (p.X >= r.Origin.X && p.X <= r.Origin.X + r.Width && p.Y >= r.Origin.Y && p.Y <= r.Origin.Y + r.Height) return false;
+        }
+        return true;
     }
 
     /// <summary>Every battle being fought right now.</summary>
@@ -306,11 +341,13 @@ public sealed class GameState
     /// <summary>Scouts walk to the target's gate, look, and walk home with the report.</summary>
     private void AdvanceScouts(double dt)
     {
+        _trail.RemoveAll(t => t.ExpiresAt is { } end && end <= ElapsedSeconds);
         foreach (var m in _missions.ToList())
         {
             if (!m.Arrived)
             {
                 m.Out.Advance(dt);
+                LayTrail(m);
                 if (!m.Out.Arrived) continue;
                 m.Report = Observe(m.Target, ElapsedSeconds);
                 Notify(m.Target, new GameNotification(NotificationKind.ScoutedBy, m.From, ElapsedSeconds));
@@ -318,11 +355,23 @@ public sealed class GameState
                 continue;
             }
             m.Back!.Advance(dt);
+            LayTrail(m);
             if (!m.Back.Arrived) continue;
             _reports[(m.From, m.Target)] = m.Report! with { DeliveredAt = ElapsedSeconds };
             _players[m.From].Castle.ReturnScout();
             _missions.Remove(m);
         }
+    }
+
+    /// <summary>A scout leaves open ground behind it: a point every few tiles, each seen from for as long as the trail lasts.</summary>
+    private void LayTrail(ScoutMission m)
+    {
+        var spacing = Math.Max(1, Rules.Map.ScoutVision / 4);
+        var at = m.Position;
+        if (m.LastTrail is { } last && last.DistanceTo(at) < spacing && !m.Leg.Arrived) return;
+        m.LastTrail = at;
+        double? end = Rules.Map.ScoutTrailSeconds > 0 ? ElapsedSeconds + Rules.Map.ScoutTrailSeconds : null;
+        _trail.Add(new TrailPoint(m.From, at, end));
     }
 
     /// <summary>
@@ -665,6 +714,7 @@ public sealed class GameState
         if (_eliminated.ContainsKey(player)) return;
         _eliminated[player] = ElapsedSeconds;
         _missions.RemoveAll(m => m.From == player);
+        _trail.RemoveAll(t => t.Owner == player);
         foreach (var a in _armies.Where(a => a.From == player && a.State == ArmyState.Returning && a.Battle is null).ToList())
         {
             _players[player].Castle.ArmyLost(a.Survivors.Values.Sum());
