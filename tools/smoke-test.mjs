@@ -99,7 +99,7 @@ check('hiring needs gold, and nobody has any yet', !(await A.call('HireMercenary
 check('units carry their hiring price', A.of('CastleState').at(-1).units.every((u) => u.price > 0 && u.hired === 0));
 check('A sends a scout to B', (await A.call('SendScout', 2, 'idle')).ok);
 check('only one scout per target', !(await A.call('SendScout', 2, 'idle')).ok);
-await sleep(3500);
+await sleep(5500); // the scout walks at 1.8 tiles/s: give it time to come home with the report
 
 // ---- what each side received -----------------------------------------------------------------
 const castlesA = A.of('CastleState'), castlesB = B.of('CastleState');
@@ -353,13 +353,17 @@ check('nobody else got any gold', [Y, Z].every((c) => c.of('CastleState').at(-1)
 
 check('X plunders the village with three soldiers', (await X.call('SendArmyToSite', village.id, { kilicli: 3 }, null, null)).ok);
 check('two soldiers are not enough', !(await X.call('SendArmyToSite', village.id, { kilicli: 2 }, null, null)).ok);
+// A chest and a village alone can add up to as little as 22 gold, too little for a hire: the quarter's second chest
+// goes while the army is out (so it costs no extra time).
+const chest2 = found.find((x) => x.kind === 'chest' && x.id !== chest.id && x.quarter === own.corner);
+check('X sends its scout for the second chest', (await X.call('SendChestScout', chest2.id, 'idle')).ok);
 check('the army is home with the loot', await waitFor(() => {
   const c = X.of('CastleState').at(-1);
-  return c.war.armies.length === 0 && c.resources.gold > chestGold;
+  return c.war.armies.length === 0 && c.scouting.missions.length === 0 && c.resources.gold > chestGold;
 }, 30000));
 const afterVillage = X.of('CastleState').at(-1);
 const villageGold = afterVillage.resources.gold - chestGold;
-check('a village gives 12 to 20 gold', villageGold >= 12 && villageGold <= 20, String(villageGold));
+check('the village (12 to 20) and the second chest (10 to 20) give 22 to 40 gold', villageGold >= 22 && villageGold <= 40, String(villageGold));
 check('the village is gone for X, all soldiers came home', siteOf(X, village.id).gone === true
   && afterVillage.units.find((u) => u.id === 'kilicli').soldiers === 6);
 check('the raid shows in nobody elses castle state, and Z never hears of the village at all',
