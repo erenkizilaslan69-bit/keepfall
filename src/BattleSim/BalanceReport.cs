@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Keepfall.Core;
 using Keepfall.Core.Combat;
 using Keepfall.Core.Units;
@@ -54,6 +54,7 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
         PrintPool();
         PrintBackRow();
         PrintTargeting();
+        PrintCamps();
         PrintSummary(stats);
 
         Console.WriteLine($"Süre: {clock.Elapsed.TotalSeconds:0.0} sn");
@@ -462,6 +463,107 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
             _findings.Add($"Hedef: '{names[i]}' baskın ({list}).");
         }
         Console.WriteLine();
+    }
+
+    // ---- 7. Bandit camps ---------------------------------------------------------------------
+
+    /// <summary>The army size band (people) the camps are meant to be beaten with, and the target share of it lost on a win.</summary>
+    private const int SmallCampMin = 7, SmallCampMax = 9, BigCampMin = 18, BigCampMax = 22;
+    private const double CampLossTarget = 1.0 / 3, CampLossTolerance = 0.10;
+    private const int CampRuns = 400;
+
+    private void PrintCamps()
+    {
+        var forest = rules.Forest;
+        Heading("7. Haydut kampları: kampı yenmek için kaç asker gerekir?");
+        var camps = new[] { ("Küçük kamp", forest.Camp, SmallCampMin, SmallCampMax), ("Büyük kamp", forest.BigCamp, BigCampMin, BigCampMax) };
+        if (camps.All(c => c.Item2.Bandits.Count == 0)) { Console.WriteLine("   (ayar dosyasında kamp yok)"); Console.WriteLine(); return; }
+
+        int salt = 9_000_000;
+        foreach (var (name, camp, min, max) in camps)
+        {
+            var bandits = camp.Bandits.Select(kv => (Type: rules.FindUnit(kv.Key)!, Count: kv.Value)).ToList();
+            string who = string.Join(", ", bandits.Select(b => $"{b.Count} {b.Type.Name}"));
+            Console.WriteLine($"   {name}: {who} ({bandits.Sum(b => b.Count)} haydut)");
+
+            var defenders = new ArmySetup("Haydutlar");
+            foreach (var (type, count) in bandits) defenders.Add(type, count);
+
+            var kinds = new (string Label, Func<int, ArmySetup> Build)[]
+            {
+                ("sadece kılıçlı", n => new ArmySetup("Saldıran").Add(rules.FindUnit("kilicli")!, n)),
+                ("karma (eşit; okçu arkada)", n => MixedArmy(n)),
+            };
+
+            var summary = new Table("Ordu", "Başabaş (≥%50)", "≥%90 için", "Kayıp @başabaş", "Kayıp @%90");
+            var band = new Table("Ordu", "Asker", "Kazanma", "Ort. kayıp", "Kayıp oranı");
+            foreach (var (label, build) in kinds)
+            {
+                var even = FirstSize(build, defenders, 0.5, salt);
+                var safe = FirstSize(build, defenders, 0.9, salt);
+                string Loss(int? n) => n is null ? "—" : CampOutcome(build(n.Value), defenders, salt + n.Value) is { Wins: > 0 } o ? $"{o.Lost:0.0} (%{100 * o.Lost / n.Value:0})" : "—";
+                summary.Add(label, even?.ToString() ?? $">{CampSearchLimit}", safe?.ToString() ?? $">{CampSearchLimit}", Loss(even), Loss(safe));
+
+                for (int n = min; n <= max; n += Math.Max(1, (max - min) / 2))
+                {
+                    var o = CampOutcome(build(n), defenders, salt + n);
+                    band.Add(label, n.ToString(), Pct(o.WinRate), o.Wins == 0 ? "—" : F(o.Lost, "0.0"), o.Wins == 0 ? "—" : Pct(o.Lost / n));
+                }
+
+                // Judge the mixed army against the target: the safe size lies in the band and a win at its middle costs about a third.
+                if (label.StartsWith("karma", StringComparison.Ordinal))
+                {
+                    var mid = (min + max) / 2;
+                    var o = CampOutcome(build(mid), defenders, salt + mid);
+                    string tag = $"{name} / {label}";
+                    if (safe is null || safe < min || safe > max)
+                        _findings.Add($"Kamp: {tag} güvenle (≥%90) yenmek için {safe?.ToString() ?? "çok"} asker gerekiyor (hedef {min}–{max}).");
+                    if (o.Wins > 0 && Math.Abs(o.Lost / mid - CampLossTarget) > CampLossTolerance)
+                        _findings.Add($"Kamp: {tag} {mid} askerle kazanınca kayıp %{100 * o.Lost / mid:0} (hedef ≈%33).");
+                }
+                salt += 1000;
+            }
+            summary.Print();
+            Console.WriteLine();
+            Console.WriteLine($"   {name} — hedef bandında ({min}–{max} asker):");
+            band.Print();
+            Console.WriteLine();
+        }
+        Console.WriteLine("   Başabaş = kampı en az yarı savaşta yenen en küçük ordu. Kayıp = kazanılan savaşlarda ölen asker (kiralık/ham fark yok).");
+        Console.WriteLine($"   Hedef: küçük kamp {SmallCampMin}–{SmallCampMax} karma askerle, büyük kamp {BigCampMin}–{BigCampMax} iyi dizilmiş askerle; kazanınca kayıp ≈ üçte bir.");
+        Console.WriteLine();
+    }
+
+    private const int CampSearchLimit = 80;
+
+    private readonly record struct CampResult(double WinRate, int Wins, double Lost);
+
+    private CampResult CampOutcome(ArmySetup attacker, ArmySetup defenders, int salt)
+    {
+        var results = RunParallel(CampRuns, salt, rng => _simulator.Simulate(attacker, defenders, rng));
+        var wins = results.Where(r => r.Outcome == BattleOutcome.SideAWins).ToList();
+        double lost = wins.Count == 0 ? 0 : wins.Average(r => r.SideA.Initial - r.SideA.Survivors);
+        return new CampResult(results.Average(Score), wins.Count, lost);
+    }
+
+    /// <summary>Smallest army size that beats the camp in at least <paramref name="rate"/> of the fights (null: none up to the limit).</summary>
+    private int? FirstSize(Func<int, ArmySetup> build, ArmySetup defenders, double rate, int salt)
+    {
+        for (int n = 1; n <= CampSearchLimit; n++)
+        {
+            var results = RunParallel(CampRuns, salt + n, rng => _simulator.Simulate(build(n), defenders, rng));
+            if (results.Count(r => r.Outcome == BattleOutcome.SideAWins) >= rate * CampRuns) return n;
+        }
+        return null;
+    }
+
+    /// <summary>An equal mix of every unit type (the remainder goes to the sturdier front-row types first); archers stand behind.</summary>
+    private ArmySetup MixedArmy(int n)
+    {
+        var order = new[] { "kilicli", "kalkanli", "mizrakci", "okcu" }.Select(id => rules.FindUnit(id)!).ToList();
+        var army = new ArmySetup("Saldıran");
+        for (int i = 0; i < order.Count; i++) army.Add(order[i], n / order.Count + (i < n % order.Count ? 1 : 0));
+        return army;
     }
 
     // ---- Summary -----------------------------------------------------------------------------
