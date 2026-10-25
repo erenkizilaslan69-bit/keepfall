@@ -1,4 +1,4 @@
-using Keepfall.Core.Economy;
+﻿using Keepfall.Core.Economy;
 using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
 using Keepfall.Core.Units;
@@ -8,7 +8,7 @@ namespace Keepfall.Views;
 
 // What the client receives, built under the room lock.
 // CastleView/SummaryView only ever go to the castle's owner. RoomView goes to the whole room and
-// carries nothing but public facts about players (seat, name, colour, ready, connected, host).
+// carries nothing but public facts about players (seat, name, colour, ready, connected, host, bot).
 
 public sealed record ResourcesView(double Food, double Wood, double Iron, double Gold = 0);
 
@@ -91,7 +91,8 @@ public sealed record CastleView(
 public sealed record CommandResultView(bool Ok, string? Error);
 
 /// <summary>Public facts about a player. Never the token.</summary>
-public sealed record PlayerView(int Seat, string Name, PlayerColor Color, bool Ready, bool Connected, bool IsHost, bool Eliminated);
+public sealed record PlayerView(int Seat, string Name, PlayerColor Color, bool Ready, bool Connected, bool IsHost, bool Eliminated,
+    bool IsBot = false, BotDifficulty? BotLevel = null);
 
 /// <summary>Sent to everyone once the match is over: the hidden-information rule ends with the match.</summary>
 public sealed record RankView(int Seat, string Name, PlayerColor Color, int Place, int Population, bool Eliminated);
@@ -101,7 +102,7 @@ public sealed record ResultView(
 
 public sealed record RoomView(
     string Code, RoomPhase Phase, IReadOnlyList<PlayerView> Players, int MinPlayers, int MaxPlayers,
-    bool CanStart, double? RemainingSeconds, ResultView? Result);
+    bool CanStart, double? RemainingSeconds, ResultView? Result, bool AllHumansOut = false);
 
 /// <summary>Answer to CreateRoom/JoinRoom: the caller's own secret token and seat.</summary>
 public sealed record JoinView(bool Ok, string? Error, string? Code, string? Token, int Seat, RoomView? Room);
@@ -110,9 +111,9 @@ public static class ViewMapper
 {
     public static RoomView ToView(Room room) => new(
         room.Code, room.Phase,
-        room.Players.Select(p => new PlayerView(p.Seat, p.Name, p.Color, p.Ready, p.Connected, p.Seat == room.HostSeat, room.IsEliminated(p))).ToList(),
+        room.Players.Select(p => new PlayerView(p.Seat, p.Name, p.Color, p.Ready, p.Connected, p.Seat == room.HostSeat, room.IsEliminated(p), p.IsBot, p.Bot)).ToList(),
         room.Options.MinPlayers, room.Options.MaxPlayers, room.CanStart, room.Game?.RemainingSeconds,
-        room.Phase == RoomPhase.Ended ? ResultOf(room) : null);
+        room.Phase == RoomPhase.Ended ? ResultOf(room) : null, room.AllHumansOut);
 
     private static ResultView? ResultOf(Room room)
     {

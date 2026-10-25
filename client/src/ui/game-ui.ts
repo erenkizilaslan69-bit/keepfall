@@ -42,8 +42,14 @@ export class GameUi {
   private eliminated = false;
   private readonly onKey = (e: KeyboardEvent) => this.keydown(e);
 
+  /** The "every human is out" box for the host, and whether they already chose to keep watching. */
+  private readonly finish: HTMLElement;
+  private finishDismissed = false;
+  private readonly mySeat: number;
+
   constructor(root: HTMLElement, net: GameConnection, seat: number, home: () => void) {
     root.innerHTML = '';
+    this.mySeat = seat;
     this.labels = new WorldLabels(root); // first, so every window is drawn over the signs
     this.wait = document.createElement('div');
     this.wait.className = 'spec-wait hit hidden';
@@ -57,6 +63,29 @@ export class GameUi {
         </div>
       </div>`;
     root.appendChild(this.wait);
+    this.finish = document.createElement('div');
+    this.finish.className = 'bot-end hidden';
+    this.finish.innerHTML = `
+      <div class="paper">
+        <div class="ribbon ribbon-black">Tüm insanlar elendi</div>
+        <div class="spec-body">
+          <p>Maçta sadece botlar kaldı.</p>
+          <p class="muted-ink small">İzlemeye devam edebilir ya da kalan süreyi hızlıca oynatıp maç sonu ekranına geçebilirsin.</p>
+          <div class="bot-end-btns">
+            <button class="btn" data-a="watch">İzlemeye devam</button>
+            <button class="btn btn-red" data-a="finish">Maçı bitir</button>
+          </div>
+        </div>
+      </div>`;
+    this.finish.addEventListener('click', async (e) => {
+      const a = (e.target as HTMLElement).closest<HTMLElement>('[data-a]')?.dataset.a;
+      if (a === 'watch') { this.finishDismissed = true; this.updateFinish(); }
+      else if (a === 'finish') {
+        const r = await net.finishMatch();
+        if (!r.ok) this.error(r.error ?? 'Maç bitirilemedi.');
+      }
+    });
+    root.appendChild(this.finish);
     const seat0 = seat;
     this.top = document.createElement('div');
     this.top.className = 'ui-top';
@@ -186,6 +215,7 @@ export class GameUi {
       window.clearInterval(this.waitTimer);
       this.waitTimer = 0;
       this.wait.classList.add('hidden');
+      this.updateFinish();
     }
     // A few seconds is just the tick (or the dev speed); only a real delay (match.spectatorDelaySeconds) is worth saying.
     const lag = Math.round(lagSeconds);
@@ -200,6 +230,14 @@ export class GameUi {
   setRoom(room: RoomView): void {
     this.room = room;
     this.bar.setRoom(room);
+    this.updateFinish();
+  }
+
+  /** Once the last human has fallen the host chooses: keep watching, or have the server play the rest out. */
+  private updateFinish(): void {
+    const host = !!this.room?.players.find((p) => p.seat === this.mySeat)?.isHost;
+    const show = !!this.room?.allHumansOut && host && !this.finishDismissed && (this.spectating || this.wait.classList.contains('hidden'));
+    this.finish.classList.toggle('hidden', !show);
   }
 
   /** Something that happened to us (a server notification). */

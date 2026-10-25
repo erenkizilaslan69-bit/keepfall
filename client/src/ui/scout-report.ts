@@ -1,4 +1,4 @@
-import { esc } from '../format';
+import { botMark, esc } from '../format';
 import type { ScoutReportView } from '../types';
 import { dot } from './report-html';
 
@@ -33,7 +33,7 @@ export function scoutSignHtml(r: ScoutReportView, now: number): string {
 /** The report window's content. */
 export function scoutReportHtml(r: ScoutReportView, now: number): string {
   return `
-    <div class="rep-title ribbon ribbon-yellow">Gözcü raporu: ${dot(r.targetColor)}${esc(r.targetName)}</div>
+    <div class="rep-title ribbon ribbon-yellow">Gözcü raporu: ${dot(r.targetColor)}${botMark(r.targetSeat)}${esc(r.targetName)}</div>
     <p class="rep-note">${ago(r, now)} · gözcü dönünce teslim edildi</p>
     <h3 class="rep-h">Askerler <small class="muted-ink">(yaklaşık)</small></h3>
     <div class="scout-soldiers">${soldiersHtml(r)}</div>

@@ -1,4 +1,4 @@
-import { clock, esc, fmt, rate } from '../format';
+import { botMark, clock, esc, fmt, rate } from '../format';
 import type { CastleView, PlayerView, RoomView } from '../types';
 
 // The strip along the top that is always there: resources with their rates, population, the clock and
@@ -114,7 +114,7 @@ export class TopBar {
 
   private renderPlayers(): void {
     const players = this.room?.players ?? [];
-    const key = players.map((p) => `${p.seat}:${p.name}:${p.color}:${p.connected}:${p.eliminated}`).join(',');
+    const key = players.map((p) => `${p.seat}:${p.name}:${p.color}:${p.connected}:${p.eliminated}:${p.isBot}`).join(',');
     if (key === this.playersKey) return;
     this.playersKey = key;
     this.q('[data-f="players"]').innerHTML = players.map((p) => chip(p, p.seat === this.mySeat)).join('');
@@ -128,7 +128,7 @@ export class TopBar {
 function chip(p: PlayerView, me: boolean): string {
   const state = p.eliminated ? 'out' : p.connected ? '' : 'away';
   const avatar = `${AVATAR_ROOT}Avatars_${String(((p.seat - 1) % 25) + 1).padStart(2, '0')}.png`;
-  const title = `${p.name}${me ? ' (sen)' : ''}${p.eliminated ? ' — elendi' : p.connected ? '' : ' — bağlantı yok'}`;
+  const title = `${p.name}${p.isBot ? ' (bot)' : ''}${me ? ' (sen)' : ''}${p.eliminated ? ' — elendi' : p.connected ? '' : ' — bağlantı yok'}`;
   return `<span class="chip ${state} ${me ? 'me' : ''}" data-seat="${p.seat}" data-color="${p.color}" title="${esc(title)}">
-    <i class="avatar" style="background-image:url('${avatar}')"></i><span class="chip-name">${esc(p.name)}</span></span>`;
+    <i class="avatar" style="background-image:url('${avatar}')"></i><span class="chip-name">${botMark(p.seat)}${esc(p.name)}</span></span>`;
 }

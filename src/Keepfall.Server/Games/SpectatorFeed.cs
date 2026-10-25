@@ -1,4 +1,4 @@
-using Keepfall.Core.Lobby;
+﻿using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
 using Keepfall.Views;
 
@@ -44,7 +44,7 @@ public sealed class SpectatorFeed
     {
         var result = new List<(int, List<SpectatorStateView>, SpectatorWaitView?)>();
         if (room.Game is not { } game || !ReferenceEquals(game, _game)) return result;
-        foreach (var p in room.Players)
+        foreach (var p in room.Players.Where(x => !x.IsBot))
         {
             if (!game.IsEliminated(p.CastleKey) || !_fellAt.TryGetValue(p.Seat, out var fell)) continue;
             var next = _next[p.Seat];

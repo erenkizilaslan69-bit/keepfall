@@ -1,6 +1,6 @@
 import * as signalR from '@microsoft/signalr';
 import { loadIdentity, saveIdentity } from './identity';
-import type { ArmyMode, BattleStartedView, BuildingType, CastleView, CommandResult, Job, JoinView, MapLayoutView, MapStateView, RoomView, Row, SpectatorStateView, SpectatorWaitView, SummaryView } from './types';
+import type { ArmyMode, BattleStartedView, BotLevel, BuildingType, CastleView, CommandResult, Job, JoinView, MapLayoutView, MapStateView, RoomView, Row, SpectatorStateView, SpectatorWaitView, SummaryView } from './types';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
 
@@ -85,6 +85,9 @@ export class GameConnection {
   setName = (name: string) => { this.name = name; return this.call('SetName', name); };
   setReady = (ready: boolean) => this.call('SetReady', ready);
   startMatch = () => this.call('StartMatch');
+  addBot = (level: BotLevel) => this.call('AddBot', level);
+  removeBot = (seat: number) => this.call('RemoveBot', seat);
+  finishMatch = () => this.call('FinishMatch');
   backToLobby = () => this.call('BackToLobby');
 
   // Own castle

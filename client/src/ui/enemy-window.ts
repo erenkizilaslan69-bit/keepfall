@@ -1,4 +1,4 @@
-import { COLOR_NAMES, clock, esc } from '../format';
+import { COLOR_NAMES, botMark, clock, esc } from '../format';
 import type { ArmyMode, CastleView, Job, PlayerView, RoomView, Row, ScoutReportView, ScoutTargetView } from '../types';
 import { ago, scoutReportHtml } from './scout-report';
 import { Win, type WinContext, type WinData } from './windows';
@@ -68,7 +68,7 @@ export class EnemyWin extends Win {
     const t = this.target(s), p = this.player(room);
     const name = t?.name ?? p?.name ?? 'Rakip';
     const color = t?.color ?? p?.color ?? 'red';
-    this.setTitle(`${esc(name)} <small>${COLOR_NAMES[color] ?? ''}</small>`);
+    this.setTitle(`${botMark(this.seat)}${esc(name)} <small>${COLOR_NAMES[color] ?? ''}</small>`);
     this.q('[data-f="name"]').textContent = name;
     const out = !!p?.eliminated;
     this.q('[data-f="state"]').textContent = out ? 'Kalesi düştü' : p && !p.connected ? 'Bağlantısı yok' : 'Kalesi ayakta';

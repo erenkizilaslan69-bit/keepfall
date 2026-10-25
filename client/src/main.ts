@@ -17,6 +17,7 @@ import '@fontsource/atkinson-hyperlegible-next/latin-700.css';
 import '@fontsource/atkinson-hyperlegible-next/latin-ext-700.css';
 import { Minimap } from './minimap';
 import { EndScreen, HomeScreen, LobbyScreen } from './screens';
+import { setBotSeats } from './format';
 import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 
 // Routes: "/" is the home screen, "/oda/ABCD" is a room. Inside a room the screen follows the
@@ -88,6 +89,7 @@ if (import.meta.env.DEV) (window as unknown as { keepfallNet: GameConnection }).
 // ---- room events ---------------------------------------------------------------------------
 
 function onRoom(r: RoomView): void {
+  setBotSeats(r.players);
   const wanted: Screen = r.phase === 'lobby' ? 'lobby' : r.phase === 'ended' ? 'end' : 'game';
   if (wanted !== screen) {
     if (wanted === 'lobby') showLobby(r);
@@ -151,6 +153,7 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
 }
 
 function showLobby(r: RoomView): void {
+  setBotSeats(r.players);
   clear();
   document.documentElement.classList.add('in-menu');
   screen = 'lobby';

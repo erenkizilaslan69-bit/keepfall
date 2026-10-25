@@ -1,4 +1,4 @@
-using Keepfall.Core.Economy;
+﻿using Keepfall.Core.Economy;
 using Keepfall.Core.Match;
 
 namespace Keepfall.Core.Lobby;
@@ -8,6 +8,9 @@ public enum RoomPhase { Lobby, Preparation, War, Ended }
 /// <summary>Player colours in seat order; Tiny Swords also has Black, kept spare.</summary>
 /// <summary>The four player colours (a seat's colour is its number − 1) and black, which belongs to the bandits of the forest.</summary>
 public enum PlayerColor { Blue, Red, Yellow, Purple, Black }
+
+/// <summary>How well a bot plays (it also decides how fast it reacts).</summary>
+public enum BotDifficulty { Easy, Medium }
 
 public sealed record RoomOptions
 {
@@ -30,12 +33,23 @@ public sealed record RoomOptions
 /// </summary>
 public sealed class RoomPlayer
 {
-    internal RoomPlayer(int seat, string token, string name)
+    internal RoomPlayer(int seat, string token, string name, BotDifficulty? bot = null)
     {
         Seat = seat;
         Token = token;
         Name = name;
+        Bot = bot;
+        if (bot is not null)
+        {
+            // A bot is always at its seat and always ready; nobody holds its token but the server.
+            Ready = true;
+            Connections = 1;
+        }
     }
+
+    /// <summary>The bot's difficulty; null for a human.</summary>
+    public BotDifficulty? Bot { get; }
+    public bool IsBot => Bot is not null;
 
     /// <summary>Public number 1–4; also decides the colour.</summary>
     public int Seat { get; }
@@ -174,7 +188,8 @@ public sealed class Room
 
     /// <summary>All players ready (and connected), enough of them, still in the lobby.</summary>
     public bool CanStart =>
-        Phase == RoomPhase.Lobby && _players.Count >= Options.MinPlayers && _players.All(p => p.Ready && p.Connected);
+        Phase == RoomPhase.Lobby && _players.Count >= Options.MinPlayers && _players.All(p => p.Ready && p.Connected)
+        && _players.Any(p => !p.IsBot);
 
     // ---- joining and leaving -----------------------------------------------------------------
 
@@ -222,7 +237,7 @@ public sealed class Room
     {
         bool changed = false;
         if (Phase == RoomPhase.Lobby)
-            changed = _players.RemoveAll(p => !p.Connected && nowUtc - p.DisconnectedAtUtc > Options.LobbyGrace) > 0;
+            changed = _players.RemoveAll(p => !p.IsBot && !p.Connected && nowUtc - p.DisconnectedAtUtc > Options.LobbyGrace) > 0;
         if (Host is null || (!Host.Connected && nowUtc - Host.DisconnectedAtUtc > Options.HostGrace))
         {
             int before = HostSeat;
@@ -234,7 +249,7 @@ public sealed class Room
 
     /// <summary>Nobody has been connected for <paramref name="after"/>.</summary>
     public bool IsAbandoned(DateTime nowUtc, TimeSpan after) =>
-        _players.All(p => !p.Connected && nowUtc - p.DisconnectedAtUtc > after);
+        _players.Where(p => !p.IsBot).All(p => !p.Connected && nowUtc - p.DisconnectedAtUtc > after);
 
     // ---- lobby commands ----------------------------------------------------------------------
 
@@ -253,10 +268,30 @@ public sealed class Room
     public CommandResult Start(string token) => InLobby(token, p =>
     {
         if (p.Seat != HostSeat) return CommandResult.Fail("Maçı sadece odayı kuran başlatabilir.");
-        if (_players.Count < Options.MinPlayers) return CommandResult.Fail($"En az {Options.MinPlayers} oyuncu gerekiyor.");
+        if (_players.Count < Options.MinPlayers) return CommandResult.Fail($"En az {Options.MinPlayers} oyuncu gerekiyor (botlar da sayılır).");
         if (!_players.All(x => x.Ready && x.Connected)) return CommandResult.Fail("Herkes hazır değil.");
         Game = new GameState(_rules, _players.Select(x => x.CastleKey), Options.PrepSeconds, Options.WarSeconds);
         Phase = RoomPhase.Preparation;
+        return CommandResult.Success;
+    });
+
+    /// <summary>The host seats a bot in the first empty seat. It gets its colour's name ("Bot Kırmızı") and is ready at once.</summary>
+    public CommandResult AddBot(string token, BotDifficulty difficulty) => InLobby(token, p =>
+    {
+        if (p.Seat != HostSeat) return CommandResult.Fail("Bot eklemek sadece odayı kuran için.");
+        if (_players.Count >= Options.MaxPlayers) return CommandResult.Fail("Boş koltuk yok.");
+        int seat = Enumerable.Range(1, Options.MaxPlayers).First(s => _players.All(x => x.Seat != s));
+        var bot = new RoomPlayer(seat, Tokens.NewPlayerToken(), $"Bot {ColorName((PlayerColor)(seat - 1))}", difficulty);
+        _players.Add(bot);
+        _players.Sort((a, b) => a.Seat.CompareTo(b.Seat));
+        return CommandResult.Success;
+    });
+
+    public CommandResult RemoveBot(string token, int seat) => InLobby(token, p =>
+    {
+        if (p.Seat != HostSeat) return CommandResult.Fail("Botu sadece odayı kuran çıkarabilir.");
+        if (_players.FirstOrDefault(x => x.Seat == seat && x.IsBot) is not { } bot) return CommandResult.Fail("O koltukta bot yok.");
+        _players.Remove(bot);
         return CommandResult.Success;
     });
 
@@ -309,6 +344,30 @@ public sealed class Room
 
     public bool IsEliminated(RoomPlayer player) => Game?.IsEliminated(player.CastleKey) ?? false;
 
+    /// <summary>The match is on, bots are still in it, and every human has fallen: the host may then end it early.</summary>
+    public bool AllHumansOut =>
+        Phase is RoomPhase.Preparation or RoomPhase.War && Game is not null
+        && _players.Any(p => p.IsBot) && _players.Where(p => !p.IsBot).All(IsEliminated);
+
+    /// <summary>
+    /// The host ends a match nobody human is still playing: the rest of the time is simulated at once
+    /// (<paramref name="beforeTick"/> runs before every step, so the bots keep playing by the same rules).
+    /// Returns once the match is over.
+    /// </summary>
+    public CommandResult FinishMatch(string token, double dt, Action<double> beforeTick)
+    {
+        if (Find(token) is not { } player) return NotInRoom;
+        if (player.Seat != HostSeat) return CommandResult.Fail("Maçı sadece odayı kuran bitirebilir.");
+        if (!AllHumansOut) return CommandResult.Fail("Maç, sadece tüm insan oyuncular elendikten sonra bitirilebilir.");
+        while (Game!.Phase != MatchPhase.Ended)
+        {
+            beforeTick(dt);
+            Game.Tick(dt);
+        }
+        Phase = RoomPhase.Ended;
+        return CommandResult.Success;
+    }
+
     // ---- helpers -----------------------------------------------------------------------------
 
     private static readonly CommandResult NotInRoom = CommandResult.Fail("Bu odada değilsin.");
@@ -323,9 +382,10 @@ public sealed class Room
     /// <summary>To the first connected player; if nobody is connected, the host stays.</summary>
     private void PassHost()
     {
-        var next = _players.FirstOrDefault(p => p.Connected && p.Seat != HostSeat)
-                   ?? _players.FirstOrDefault(p => p.Seat == HostSeat)
-                   ?? _players.FirstOrDefault();
+        // The host is always a human.
+        var next = _players.FirstOrDefault(p => !p.IsBot && p.Connected && p.Seat != HostSeat)
+                   ?? _players.FirstOrDefault(p => !p.IsBot && p.Seat == HostSeat)
+                   ?? _players.FirstOrDefault(p => !p.IsBot);
         HostSeat = next?.Seat ?? 0;
     }
 

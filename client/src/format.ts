@@ -12,5 +12,12 @@ export const clock = (seconds: number) => {
 export const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
+/** Seats taken by bots in the current room (public: the lobby shows it too). */
+let botSeats = new Set<number>();
+export const setBotSeats = (players: { seat: number; isBot?: boolean }[]) => { botSeats = new Set(players.filter((p) => p.isBot).map((p) => p.seat)); };
+export const isBotSeat = (seat: number) => botSeats.has(seat);
+/** A small robot head next to a bot's name (nothing for a human or the bandits). */
+export const botMark = (seat: number) => (botSeats.has(seat) ? '<i class="bot-ico" title="Bot"></i>' : '');
+
 export const COLOR_NAMES: Record<string, string> = { blue: 'Mavi', red: 'Kırmızı', yellow: 'Sarı', purple: 'Mor', black: 'Siyah' };
 export const COLOR_CSS: Record<string, string> = { blue: '#4a8fd9', red: '#d9534a', yellow: '#e2b93b', purple: '#9b6bd1', black: '#3a3a44' };

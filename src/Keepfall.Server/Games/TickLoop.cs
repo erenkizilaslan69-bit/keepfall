@@ -1,4 +1,4 @@
-using Keepfall.Core.Lobby;
+﻿using Keepfall.Core.Lobby;
 using Keepfall.Views;
 using Keepfall.Server.Hubs;
 using Microsoft.AspNetCore.SignalR;
@@ -73,7 +73,7 @@ public sealed class TickLoop(
         if (preparing)
         {
             await GameHub.PushCastles(hub.Clients, session);
-            await SendNotifications(session);
+            await MatchPush.Notifications(hub.Clients, session);
         }
         // During preparation the room view carries the shared clock, so it goes out every tick.
         if (roomChanged || preparing)
@@ -85,38 +85,7 @@ public sealed class TickLoop(
         if (ended)
         {
             // Final castle states (with summaries) and the room view with the result.
-            await GameHub.PushCastles(hub.Clients, session);
-            RoomView final;
-            lock (session.Lock) final = ViewMapper.ToView(session.Room);
-            await hub.Clients.Group(GameHub.RoomGroup(session.Room.Code)).SendAsync("RoomState", final);
-            await SendNotifications(session);
-            await SendSummaries(session);
+            await MatchPush.End(hub.Clients, session);
         }
-    }
-
-    /// <summary>E.g. "Kırmızı'nın gözcüsü kaleni gözetledi." — only to the player it is about.</summary>
-    private async Task SendNotifications(RoomSession session)
-    {
-        List<(int Seat, string Text)> notes;
-        lock (session.Lock)
-            notes = session.Room.Players
-                .SelectMany(p => session.Room.TakeNotifications(p).Select(text => (p.Seat, text)))
-                .ToList();
-        foreach (var (seat, text) in notes)
-            await hub.Clients.Group(GameHub.PlayerGroup(session.Room.Code, seat)).SendAsync("Notification", text);
-    }
-
-    /// <summary>Each player gets only their own summary.</summary>
-    private async Task SendSummaries(RoomSession session)
-    {
-        List<(int Seat, SummaryView Summary)> summaries;
-        lock (session.Lock)
-            summaries = session.Room.Players
-                .Select(p => (p.Seat, ViewMapper.CastleOf(session.Room, p)?.Summary))
-                .Where(x => x.Summary is not null)
-                .Select(x => (x.Seat, x.Summary!))
-                .ToList();
-        foreach (var (seat, summary) in summaries)
-            await hub.Clients.Group(GameHub.PlayerGroup(session.Room.Code, seat)).SendAsync("MatchEnded", summary);
     }
 }

@@ -55,7 +55,8 @@ export type PlayerColor = 'blue' | 'red' | 'yellow' | 'purple' | 'black';
 export type RoomPhase = 'lobby' | 'preparation' | 'war' | 'ended';
 
 /** Public facts about a player; the server never sends anyone else's token or castle. */
-export interface PlayerView { seat: number; name: string; color: PlayerColor; ready: boolean; connected: boolean; isHost: boolean; eliminated: boolean }
+export type BotLevel = 'easy' | 'medium';
+export interface PlayerView { seat: number; name: string; color: PlayerColor; ready: boolean; connected: boolean; isHost: boolean; eliminated: boolean; isBot: boolean; botLevel: BotLevel | null }
 
 export interface RoomView {
   code: string;
@@ -65,6 +66,8 @@ export interface RoomView {
   maxPlayers: number;
   canStart: boolean;
   remainingSeconds: number | null;
+  /** The match is on, bots are still in it and every human has fallen: the host may end it. */
+  allHumansOut: boolean;
   /** Only once the match is over; then everyone sees everyone's summary. */
   result: ResultView | null;
 }

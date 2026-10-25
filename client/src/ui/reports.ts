@@ -1,4 +1,4 @@
-import { esc } from '../format';
+import { botMark, esc } from '../format';
 import type { BattleReportView, ScoutReportView } from '../types';
 import { dot, reportHtml, resultWord } from './report-html';
 import { scoutKey, scoutReportHtml } from './scout-report';
@@ -62,13 +62,13 @@ export class ReportTags {
         const b = i.battle;
         return `<button class="report-tag paper hit ${b.winner === 'draw' ? 'draw' : b.youWon ? 'won' : 'lost'} ${f}" data-report="${i.key}" title="Savaş raporunu aç">
           <i class="ico ico-sword"></i>
-          <span>${dot(b.opponentColor)}${esc(b.opponentName)} · <b>${resultWord(b)}</b></span>
+          <span>${dot(b.opponentColor)}${botMark(b.opponentSeat)}${esc(b.opponentName)} · <b>${resultWord(b)}</b></span>
         </button>`;
       }
       const r = i.scout!;
       return `<button class="report-tag paper hit scout ${f}" data-report="${i.key}" title="Gözcü raporunu aç">
         <i class="ico ico-info"></i>
-        <span>${dot(r.targetColor)}${esc(r.targetName)} · <b>gözcü raporu</b></span>
+        <span>${dot(r.targetColor)}${botMark(r.targetSeat)}${esc(r.targetName)} · <b>gözcü raporu</b></span>
       </button>`;
     }).join('');
   }

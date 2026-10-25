@@ -1,4 +1,4 @@
-import { COLOR_CSS, esc, fmt } from '../format';
+import { COLOR_CSS, botMark, esc, fmt } from '../format';
 import type { BattleReportView } from '../types';
 
 export const dot = (color?: string) => `<span class="dot" style="background:${COLOR_CSS[color ?? ''] ?? '#888'}"></span>`;
@@ -16,7 +16,7 @@ export function reportHtml(b: BattleReportView): string {
   const side = (title: string, lines: BattleReportView['attackerUnits']) => `
     <div class="rep-side"><h3>${title}</h3>${lines.length === 0 ? '<p class="rep-none">Kalede asker yoktu.</p>'
       : lines.map((l) => `<div>${l.count} ${esc(l.name)} <span class="loss">−${l.lost}</span></div>`).join('')}</div>`;
-  const them = `${dot(b.opponentColor)}${esc(b.opponentName)}`;
+  const them = `${dot(b.opponentColor)}${botMark(b.opponentSeat)}${esc(b.opponentName)}`;
   const color = b.winner === 'draw' ? 'yellow' : b.youWon ? 'blue' : 'red';
   if (b.kind === 'camp') {
     return `

@@ -1,4 +1,4 @@
-using Keepfall.Core.Economy;
+﻿using Keepfall.Core.Economy;
 using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
 using Keepfall.Core.Units;
@@ -17,7 +17,7 @@ namespace Keepfall.Server.Hubs;
 ///
 /// Groups: "oda:{code}" gets the public room state; "oda:{code}:o{seat}" gets that seat's castle.
 /// </summary>
-public sealed class GameHub(RoomRegistry registry) : Hub
+public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules) : Hub
 {
     private const string CodeKey = "code";
     private const string TokenKey = "token";
@@ -97,6 +97,23 @@ public sealed class GameHub(RoomRegistry registry) : Hub
     public Task<CommandResultView> SetReady(bool ready) => RoomCommand((room, token) => room.SetReady(token, ready));
     public Task<CommandResultView> StartMatch() => RoomCommand((room, token) => room.Start(token), pushCastles: true, pushLayout: true);
     public Task<CommandResultView> BackToLobby() => RoomCommand((room, token) => room.BackToLobby(token));
+    public Task<CommandResultView> AddBot(BotDifficulty difficulty) => RoomCommand((room, token) => room.AddBot(token, difficulty));
+    public Task<CommandResultView> RemoveBot(int seat) => RoomCommand((room, token) => room.RemoveBot(token, seat));
+
+    /// <summary>
+    /// The host ends a match that only bots are still playing: the rest is simulated on the server at once
+    /// and everyone gets the end screen.
+    /// </summary>
+    public async Task<CommandResultView> FinishMatch()
+    {
+        if (Bound() is not { } bound) return NotJoined;
+        CommandResult result;
+        lock (bound.Session.Lock)
+            result = bound.Session.Room.FinishMatch(bound.Token, rules.Match.ServerTickSeconds, _ => { });
+        if (result.Ok) await MatchPush.End(Clients, bound.Session);
+        return new CommandResultView(result.Ok, result.Error);
+    }
+
     public Task<CommandResultView> SetSpeed(int speed) => RoomCommand((room, token) => room.SetSpeed(token, speed), pushCastles: true);
 
     // ---- economy (own castle only) ---------------------------------------------------------
@@ -202,6 +219,7 @@ public sealed class GameHub(RoomRegistry registry) : Hub
         List<(int Seat, CastleView View, MapStateView? Map, List<BattleStartedView> Battles)> views;
         lock (session.Lock)
             views = session.Room.Players
+                .Where(p => !p.IsBot) // bots have no connection to push to
                 .Select(p => (p.Seat, View: ViewMapper.CastleOf(session.Room, p), Map: MapViewMapper.StateOf(session.Room, p),
                     Battles: MapViewMapper.StartedBattlesOf(session.Room, p)))
                 .Where(x => x.View is not null)

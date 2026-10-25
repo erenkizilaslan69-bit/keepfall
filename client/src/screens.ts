@@ -1,6 +1,6 @@
-import { clock, COLOR_CSS, esc, fmt } from './format';
+import { botMark, clock, COLOR_CSS, esc, fmt } from './format';
 import type { GameConnection } from './net';
-import type { RoomView, SummaryView } from './types';
+import type { BotLevel, RoomView, SummaryView } from './types';
 
 // Plain-HTML screens around the game: home, lobby and the end screen, in the same parchment-and-ribbon
 // look as the in-game UI (ui/ui.css).
@@ -101,6 +101,11 @@ export class LobbyScreen {
         this.show(await this.net.setReady(!this.me(this.room!)?.ready));
       } else if (a === 'start') {
         this.show(await this.net.startMatch());
+      } else if (a === 'addbot') {
+        const level = (e.target as HTMLElement).closest<HTMLElement>('[data-level]')?.dataset.level as BotLevel;
+        this.show(await this.net.addBot(level));
+      } else if (a === 'rmbot') {
+        this.show(await this.net.removeBot(Number((e.target as HTMLElement).closest<HTMLElement>('[data-seat]')!.dataset.seat)));
       }
     });
     this.update(room);
@@ -115,12 +120,17 @@ export class LobbyScreen {
     this.q('#players').innerHTML = seats.map((p, i) => p ? `
       <li class="${p.connected ? '' : 'offline'}" data-color="${p.color}">
         <i class="avatar" style="background-image:url('${avatar(p.seat)}')"></i>
-        <span class="pname">${esc(p.name)}${p.seat === this.mySeat ? ' <span class="muted">(sen)</span>' : ''}</span>
+        <span class="pname">${botMark(p.seat)}${esc(p.name)}${p.seat === this.mySeat ? ' <span class="muted">(sen)</span>' : ''}</span>
         <span class="tags">
+          ${p.isBot ? `<span class="tag">bot · ${p.botLevel === 'easy' ? 'kolay' : 'orta'}</span>` : ''}
+          ${p.isBot && me?.isHost ? `<button class="btn small" data-a="rmbot" data-seat="${p.seat}">Bot çıkar</button>` : ''}
           ${p.isHost ? '<span class="tag">oda sahibi</span>' : ''}
-          ${!p.connected ? '<span class="tag warn">bağlantı yok</span>' : p.ready ? '<span class="tag ok">hazır</span>' : '<span class="tag">bekliyor</span>'}
+          ${p.isBot ? '' : !p.connected ? '<span class="tag warn">bağlantı yok</span>' : p.ready ? '<span class="tag ok">hazır</span>' : '<span class="tag">bekliyor</span>'}
         </span>
-      </li>` : `<li class="empty"><i class="avatar"></i><span class="pname muted">Boş yer ${i + 1}</span></li>`).join('');
+      </li>` : `<li class="empty"><i class="avatar"></i><span class="pname muted">Boş yer ${i + 1}</span>
+        ${me?.isHost ? `<span class="tags">Bot ekle:
+          <button class="btn small" data-a="addbot" data-level="easy">Kolay</button>
+          <button class="btn small" data-a="addbot" data-level="medium">Orta</button></span>` : ''}</li>`).join('');
 
     const nameInput = this.q<HTMLInputElement>('#myname');
     if (me && document.activeElement !== nameInput) nameInput.value = me.name;
@@ -132,7 +142,7 @@ export class LobbyScreen {
     const start = this.q<HTMLButtonElement>('#start');
     start.classList.toggle('hidden', !isHost);
     start.disabled = !room.canStart;
-    const notReady = room.players.filter((p) => !p.ready || !p.connected).length;
+    const notReady = room.players.filter((p) => !p.isBot && (!p.ready || !p.connected)).length;
     this.q('#start-hint').textContent = !isHost
       ? 'Herkes hazır olunca oda sahibi maçı başlatır.'
       : room.players.length < room.minPlayers
@@ -209,7 +219,7 @@ export class EndScreen {
         <ol class="ranking">${r.ranking.map((x) => `
           <li class="${r.winners.includes(x.seat) ? 'winner' : ''}" data-color="${x.color}">
             <span class="place">${x.place}.</span><i class="avatar" style="background-image:url('${avatar(x.seat)}')"></i>
-            <span class="pname">${esc(x.name)}${x.seat === this.mySeat ? ' <span class="muted">(sen)</span>' : ''}</span>
+            <span class="pname">${botMark(x.seat)}${esc(x.name)}${x.seat === this.mySeat ? ' <span class="muted">(sen)</span>' : ''}</span>
             <span class="muted small">${x.eliminated ? 'elendi' : `nüfus ${x.population}`}</span>
           </li>`).join('')}</ol>`;
       const mine = r.summaries.find((x) => x.seat === this.mySeat);

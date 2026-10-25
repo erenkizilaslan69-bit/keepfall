@@ -430,6 +430,37 @@ check("X's and Z's traffic never mentions the other castles' insides",
   !Z.msgs.some((m) => m.target === 'CastleState' && m.arg.color !== 'yellow'));
 check('Y only ever got its own castle state', Y.of('CastleState').every((c) => c.color === 'red'));
 
+// ---- a bot takes a seat: public facts only, no token, no castle sent to anyone ----------------------------------
+const P = client(), Q = client();
+await Promise.all([P.ready, Q.ready]);
+const jp = await P.call('CreateRoom', 'Pınar');
+const jq = await Q.call('JoinRoom', jp.code, 'Quentin', null, false);
+check('a guest cannot add a bot', !(await Q.call('AddBot', 'easy')).ok);
+check('the host seats a bot', (await P.call('AddBot', 'easy')).ok);
+await sleep(300);
+const botRoom = Q.of('RoomState').at(-1);
+const botSeat = botRoom.players.find((x) => x.isBot);
+check('everyone sees the bot as a bot, with its colour name and level',
+  !!botSeat && botSeat.seat === 3 && botSeat.name === 'Bot Sarı' && botSeat.botLevel === 'easy' && botSeat.ready && botSeat.connected);
+check('a guest cannot remove the bot', !(await Q.call('RemoveBot', 3)).ok);
+check('the host cannot remove a human', !(await P.call('RemoveBot', 2)).ok);
+check('the host removes and seats it again', (await P.call('RemoveBot', 3)).ok && (await P.call('AddBot', 'medium')).ok);
+await P.call('SetReady', true);
+await Q.call('SetReady', true);
+check('a match starts with a bot in it', (await P.call('StartMatch')).ok);
+await sleep(1500);
+check('no bot can be added or removed once the match is on', !(await P.call('AddBot', 'easy')).ok && !(await P.call('RemoveBot', 3)).ok);
+check('the match cannot be "finished" while a human is still in it', !(await P.call('FinishMatch')).ok);
+check('P and Q only ever got their own castles, never the bots',
+  P.of('CastleState').length > 0 && P.of('CastleState').every((c) => c.color === 'blue')
+  && Q.of('CastleState').length > 0 && Q.of('CastleState').every((c) => c.color === 'red'));
+check('no token in anything the room sent about the bot',
+  ![P, Q].some((c) => c.of('RoomState').some((r) => /token/i.test(JSON.stringify(r)))));
+check('nobody was sent the bots castle (yellow)',
+  ![P, Q].some((c) => c.msgs.some((m) => m.target === 'CastleState' && m.arg.color === 'yellow')));
+P.ws.close();
+Q.ws.close();
+
 X.ws.close();
 Y.ws.close();
 Z.ws.close();
