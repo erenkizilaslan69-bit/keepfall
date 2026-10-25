@@ -1,0 +1,56 @@
+# Keepfall — Claude için proje notları
+
+Kullanıcıyla **Türkçe** konuş. Kısa ve öz raporla. Kod, yorum ve commit mesajı bağlamı: kod yorumları İngilizce, oyun metinleri ve commit başlıkları Türkçe.
+
+## Oyun (özet)
+2–4 kişilik tarayıcı kale stratejisi. Her oyuncunun tek kalesi var. **Hazırlık** (10 dk): işçileri çiftçi/oduncu/madenci/demirci yap, silah üret, asker hazırla, orman (sandık, köy, haydut kampı, ortada büyük kamp) yağmala, gözcü gönder, paralı asker kirala (altınla). **Savaş** (5 dk): ordular yollarda yürür, yolda ve kale kapısında çarpışır; kale canı 500, sıfırlanan elenir ve izleyici olur. Son ayakta kalan kazanır; süre dolarsa en yüksek nüfus. 15 dk ve 30 dk modu var. Botlar (Kolay/Orta) lobide eklenir. Ayrıntı: `README.md`.
+
+## Mimari
+- `src/Keepfall.Core`: tüm oyun kuralları (Economy, Match/GameState, Combat, World, Lobby/Room, Config). Hiçbir ağ/UI bağımlılığı yok.
+- `src/Keepfall.Views`: oyuncuya gösterilen görünüm kayıtları + `ViewMapper`. Sunucudan istemciye giden TEK şey bunlardır.
+- `src/Keepfall.Bots`: botların beyni; yalnız Views + herkese açık kuralları görür (`BotIsolationTests` derleme başvurularını denetler). `Keepfall.BotHost` botları odaya oturtur.
+- `src/Keepfall.Server`: ASP.NET Core + SignalR (`/hub`), `TickLoop` her `match.serverTickSeconds`'te odaları ilerletir ve her oyuncuya kendi görünümünü yollar; `/api/client-log` istemci hatalarını `logs/client-errors.log`'a yazar.
+- `client/`: Vite + TypeScript + Phaser (harita) + HTML katmanı (`src/ui`, Tiny Swords parçalarıyla). İstemci yalnız komut yollar, sunucunun gösterdiğini çizer.
+- `src/BattleSim`: konsol aracı (`denge`, `savas`, `bot` komutları). `tools/bot-deney.py`: config'e dokunmadan bot deneyleri. `tools/smoke-test.mjs`: duman testi. `tools/replay-check.mjs`: savaş oynatması donma testi (başsız Chrome).
+- `tests/Keepfall.Core.Tests`: birim testleri (`dotnet test -c Release`).
+- Süreler OYUN saniyesidir; oda hızı ×N olunca (yalnız Development) hepsi hızlanır.
+
+## DEĞİŞMEZ KURALLAR
+1. **Gizli bilgi sunucuda.** Oyuncu yalnız kendi kalesini ve sisin açtığını görür; görüş dışı hiçbir şey istemciye gitmez. Savaş kaydı yalnız savaşan iki tarafa gider. Yeni her özellik duman testini (`tools/smoke-test.mjs`) genişletir; botlar da yalnız insanın göreceği görünümleri kullanır.
+2. **Sayılar `config/balance.json`'da** ve kullanıcının onayı olmadan DEĞİŞTİRİLMEZ. Önce ölç (BattleSim / `tools/bot-deney.py`, geçici config ile `--config`), sonra öner. Yeni ayar anahtarı eklemek serbest (varsayılan = eski davranış).
+3. **Her parça ayrı commit + push** (sormadan). Büyük adımlarda önce plan çıkar ve onay bekle. Belirsizlikte sor.
+4. Commit sonu: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`; git e-postası noreply.
+5. **Production** sunucusunu yalnız kullanıcı söyleyince / iş bitince yeniden başlat. Önce `npm --prefix client run build`. PowerShell:
+   `$env:ASPNETCORE_ENVIRONMENT='Production'; dotnet run --project src/Keepfall.Server --no-launch-profile --urls http://localhost:5080` (`--no-launch-profile` şart, yoksa Development açılır). Çalışan sunucu `bin/Debug` dosyalarını kilitler: başka sunucu derlemeden önce onu durdur. Test için açtığın sunucuları (5081, Vite 5174) işin sonunda KAPAT.
+6. **Tünel** yalnız istenince: `cloudflared tunnel --url http://localhost:5080` (Vite'a değil, 5080'e).
+7. **Asset'ler repoda değil** (`client/public/assets/` .gitignore'da, Tiny Swords paketi). Ekleme/commit etme.
+8. Satır sonu: dosyaların mevcut biçimini koru (çoğu LF; BOM ekleme). Python ile dosya düzenlerken BOM/CRLF değiştirme.
+9. Test sunucusunda tarayıcı bölmesi gizliyken Phaser çizmez; ekran testi için başsız Chrome (CDP) kullan (örnek: `tools/replay-check.mjs`).
+
+## Test rutini
+`dotnet test -c Release` (189 test) → geliştirme sunucusu (5081) + `node tools/smoke-test.mjs http://localhost:5081` (~2 dk) → istemci için `npm --prefix client run build` (tsc dahil).
+Bot dengesi: `python tools/bot-deney.py 200 docs/bot-deney-son.md` (tablo `docs/`'ta).
+
+## Son durum (2026-10-26)
+- Bitenler: ekonomi, harita/sis, görünür savaşlar, UI yenilemesi, orman (sandık/köy/kamp/altın/paralı asker), botlar (Kolay/Orta, 7 parça), bot dengesi (paralı payı ~%27, Orta vs Kolay ~%71), gözcü izi/raporları, tek gözcü kuralı (`scouting.maxScouts` = 1), izleyici modu ("İzlemeye devam / Maçı bitir", son insan düşünce maç ≥120 oyun sn sürer), istemci hata günlüğü, hızlı kamera butonları.
+- Bot ayarları: Orta `scoreAware` açık; Kolay düşünme 7–12 sn, ekonomisi iyi, taktiği zayıf. Botlar hazırlığın ilk yarısında yalnız kendi orman çeyreğinde gezer (`bots.otherQuartersFrom` 0,5).
+- Önceki bot tabloları (`docs/bot-deney-*.md`) tek gözcü kuralı ve bot orman sırasından ÖNCEKİ durumu gösterir; yeniden ölçmek gerekebilir.
+
+## Bilinen açık konular
+- Duman testinde izleyici bölümündeki "every picture is of the live game (no delay)" denetimi ara sıra düşüyor (iki bağlantıdan gelen mesajların sırasına bağlı zamanlama; bot/oyun hatası değil).
+- Saldırısız maç oranı yüksek (Orta vs Orta ~%39 saldırısız); `scoreAware` ve zafer puanı deneyi sonuçları `docs/bot-deney-son.md`'de. Zafer puanı kuralı oyuna EKLENMEDİ (kullanıcı kararı: nüfus kuralı değişmedi).
+- Kolay'ın düşünme süresi 7–12 sn'de bırakıldı (Orta kazanma ~%71, hedef ~%80); kullanıcı yeniden ayar isterse 8–12 / 8–14 ölçüldü.
+
+## Görev listesi (kullanıcı sırası)
+Durum: [x] bitti, [ ] açık.
+- [x] 0 CLAUDE.md yazıldı
+- [ ] 1 Kamera butonları alt alta (Kaleme dön, rakipler, Orman)
+- [ ] 2 Gözcü raporları isim altında durmasın; oyuncu ismine tıklayınca papirüs/ferman penceresinde rapor
+- [ ] 3 HATA: köye 1 askerle gidilince yağmalanıyor; en az 3 asker kuralı sunucuda + arayüzde + botlarda
+- [ ] 4 Ganimet çeşitlendirme (sandık altın+demir, köy altın+yemek+kişi, kamp altın+silah+odun); paralı fiyat çarpanı 1,25 → 1,1; bot simülasyonuyla paralı payını ölç (>%30 ise altını düşür), sayıları ÖNER + ölç
+- [ ] 5 Düşen kale: düşüren oyuncu kalenin depodaki kaynak ve altınının yarısını alır; hayatta kalan işçilerin 1/3'ü boşta olarak ona katılır (askerlerle birlikte döner); oranlar balance.json'da
+- [ ] 6 Gözcü hızı 2,5 → 1,8 karo/sn
+- [ ] 7 (SONRAYA, kodlama yok) Fikir: gözcüyle erzak, para ve mesaj gönderme
+
+## Fikirler (kodlanmadı)
+- Gözcüyle erzak, para ve mesaj gönderme (başka oyuncuya).
