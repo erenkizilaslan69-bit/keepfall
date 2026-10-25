@@ -48,13 +48,12 @@ Durum: [x] bitti, [ ] açık.
 - [x] 2 Gözcü raporları isim altında durmasın; oyuncu ismine tıklayınca papirüs/ferman penceresinde rapor
 - [x] 3 HATA: köye 1 askerle gidilince yağmalanıyor; en az 3 asker kuralı sunucuda + arayüzde + botlarda
 - [x] 4 Ganimet çeşitlendirme (sandık altın+demir, köy altın+yemek+kişi, kamp altın+silah+odun; paralı ×1,1). Ölçüm: `docs/bot-deney-ganimet.md` (paralı payı savaş başı %26,5→%21; yan etki: saldırısız maç %12→%18)
-- [ ] 5 Düşen kale: düşüren oyuncu kalenin depodaki kaynak ve altınının yarısını alır; hayatta kalan işçilerin 1/3'ü boşta olarak ona katılır (askerlerle birlikte döner); oranlar balance.json'da
-- [ ] 6 Gözcü hızı 2,5 → 1,8 karo/sn
+- [x] 5 Düşen kale: düşüren ordu kalenin depodaki yemek/odun/demir/altınının yarısını (`war.fallLootShare`) ve hayatta kalan işçilerin üçte birini (`war.fallWorkerShare`, boşta) eve getirir
+- [x] 6 Gözcü hızı 2,5 → 1,8 karo/sn. Ölçüm: `docs/bot-deney-gorev56.md` (Orta vs Orta saldırısız maç %18→%39,5; Orta vs Kolay %66,8→%62,5; paralı payı savaş başı ~%20/%18)
 - [ ] 7 (SONRAYA, kodlama yok) Fikir: gözcüyle erzak, para ve mesaj gönderme
 
 ## Fikirler (kodlanmadı)
 - Gözcüyle erzak, para ve mesaj gönderme (başka oyuncuya).
 
-## KALDIĞIM YER (2026-10-25)
-Görev 0–4 bitti ve push edildi. Kullanıcı "devam et" deyince **Görev 5'ten** sürdür (5: düşen kale ganimeti; 6: `map.scoutSpeed` 2,5 → 1,8; 7: yalnız fikir).
-- Production (5080) henüz yeni ganimet ayarıyla yeniden başlatılmadı; Görev 5–6 bitince `npm --prefix client run build` + Production yeniden başlat. Test sunucuları kapalı.
+## KALDIĞIM YER (2026-10-26)
+Görev 0–6 bitti ve push edildi; Production (5080) son commit'le çalışıyor, test sunucuları kapalı. Açık: Görev 7 (yalnız fikir, kodlama yok). Ölçümde saldırısız maç oranı yükseldi (yavaş gözcü → botlar daha az bilgiyle az saldırıyor); kullanıcı isterse bot ayarı yeniden ölçülür, sayılara kendi başına dokunma.
