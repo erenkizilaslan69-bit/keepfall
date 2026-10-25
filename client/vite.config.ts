@@ -9,6 +9,7 @@ export default defineConfig({
     port: Number(process.env.KEEPFALL_CLIENT_PORT ?? 5173),
     strictPort: true,
     proxy: {
+      '/api': { target: process.env.KEEPFALL_SERVER ?? 'http://localhost:5080', changeOrigin: true },
       '/hub': { target: process.env.KEEPFALL_SERVER ?? 'http://localhost:5080', ws: true, changeOrigin: true },
     },
   },

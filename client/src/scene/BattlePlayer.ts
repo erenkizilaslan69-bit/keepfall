@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { reportError } from '../error-report';
 import type { BattleStartedView, PlayerColor, Vec } from '../types';
 import { SHIELD_SCALE, UNIT_SCALE, colorKey, unitOriginY } from './assets';
 import type { Point } from './layout';
@@ -110,35 +111,54 @@ export class BattlePlayer {
   update(): void {
     const { now, speed } = this.clock();
     for (const [id, r] of this.replays) {
-      const v = r.view;
-      const t = (now - v.startedAt) * v.playback; // simulation seconds into the battle
-      const tick = t / v.tickSeconds;
-
-      // The melee of both front rows closes in during the approach.
-      const k = Math.min(1, Math.max(0, t / APPROACH_SECONDS));
-      for (const f of r.fighters) {
-        if (!f || f.dead || f.ranged || !f.inFront || r.sieging || this.scene.tweens.isTweening(f.sprite)) continue;
-        f.sprite.setPosition(f.start.x + (f.front.x - f.start.x) * k, f.start.y + (f.front.y - f.start.y) * k).setDepth(f.sprite.y);
-        if (k >= 1 && f.sprite.anims.isPlaying && f.sprite.anims.currentAnim?.key.endsWith('-run')) f.sprite.anims.stop();
+      if (r.ended) continue; // its sprites are fading out or gone: nothing left to move
+      try {
+        this.step(id, r, now, speed);
+      } catch (e) {
+        // One broken replay must not stop the whole game loop (an error out of a scene's update ends Phaser's frame loop for good: the picture
+        // freezes and the canvas takes no more clicks). Report it and clear that fight off the map.
+        reportError('battle-replay', e, { source: `battle ${id}` });
+        this.drop(id, r);
       }
-
-      const h = v.hits;
-      for (; r.hit < h.length && h[r.hit] <= tick; r.hit += 3) this.strike(r, h[r.hit + 1], h[r.hit + 2], speed);
-      const a = v.advances;
-      for (; r.advance < a.length && a[r.advance] <= tick; r.advance += 2) {
-        const f = r.fighters[a[r.advance + 1]];
-        if (f && !f.dead) { f.inFront = true; f.start = f.front; this.walk(f.sprite, f.front, 0.6 / speed); }
-      }
-      const d = v.deaths;
-      for (; r.death < d.length && d[r.death] <= tick; r.death += 2) this.fall(r.fighters[d[r.death + 1]], speed);
-
-      // A won siege: the survivors go for the gate.
-      if (!r.sieging && v.siegeSeconds > 0 && now >= v.startedAt + v.fightSeconds) {
-        r.sieging = true;
-        this.siege(r, speed);
-      }
-      if (now >= v.startedAt + v.fightSeconds + v.siegeSeconds) this.end(id, r);
     }
+  }
+
+  private step(id: string, r: Replay, now: number, speed: number): void {
+    const v = r.view;
+    const t = (now - v.startedAt) * v.playback; // simulation seconds into the battle
+    const tick = t / v.tickSeconds;
+
+    // The melee of both front rows closes in during the approach.
+    const k = Math.min(1, Math.max(0, t / APPROACH_SECONDS));
+    for (const f of r.fighters) {
+      if (!f || f.dead || !f.sprite.active || f.ranged || !f.inFront || r.sieging || this.scene.tweens.isTweening(f.sprite)) continue;
+      f.sprite.setPosition(f.start.x + (f.front.x - f.start.x) * k, f.start.y + (f.front.y - f.start.y) * k).setDepth(f.sprite.y);
+      if (k >= 1 && f.sprite.anims.isPlaying && f.sprite.anims.currentAnim?.key.endsWith('-run')) f.sprite.anims.stop();
+    }
+
+    const h = v.hits;
+    for (; r.hit < h.length && h[r.hit] <= tick; r.hit += 3) this.strike(r, h[r.hit + 1], h[r.hit + 2], speed);
+    const a = v.advances;
+    for (; r.advance < a.length && a[r.advance] <= tick; r.advance += 2) {
+      const f = r.fighters[a[r.advance + 1]];
+      if (f && !f.dead) { f.inFront = true; f.start = f.front; this.walk(f.sprite, f.front, 0.6 / speed); }
+    }
+    const d = v.deaths;
+    for (; r.death < d.length && d[r.death] <= tick; r.death += 2) this.fall(r.fighters[d[r.death + 1]], speed);
+
+    // A won siege: the survivors go for the gate.
+    if (!r.sieging && v.siegeSeconds > 0 && now >= v.startedAt + v.fightSeconds) {
+      r.sieging = true;
+      this.siege(r, speed);
+    }
+    if (now >= v.startedAt + v.fightSeconds + v.siegeSeconds) this.end(id, r);
+  }
+
+  /** Remove a replay whose code failed: its sprites go, it is not drawn or counted as active again. */
+  private drop(id: string, r: Replay): void {
+    r.ended = true;
+    for (const f of r.fighters) if (f?.sprite.active) { this.scene.tweens.killTweensOf(f.sprite); f.sprite.destroy(); }
+    this.replays.delete(id);
   }
 
   private strike(r: Replay, attacker: number, target: number, speed: number): void {
@@ -218,8 +238,8 @@ export class BattlePlayer {
     if (Math.abs(to.x - sprite.x) > 2) sprite.setFlipX(to.x < sprite.x);
     this.scene.tweens.add({
       targets: sprite, x: to.x, y: to.y, duration: Math.max(50, seconds * 1000),
-      onUpdate: () => sprite.setDepth(sprite.y),
-      onComplete: () => { if (!done) sprite.anims.stop(); done?.(); },
+      onUpdate: () => { if (sprite.active) sprite.setDepth(sprite.y); },
+      onComplete: () => { if (!sprite.active) return; if (!done) sprite.anims.stop(); done?.(); },
     });
   }
 }

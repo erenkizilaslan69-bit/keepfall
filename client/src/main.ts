@@ -18,6 +18,7 @@ import '@fontsource/atkinson-hyperlegible-next/latin-ext-700.css';
 import { Minimap } from './minimap';
 import { EndScreen, HomeScreen, LobbyScreen } from './screens';
 import { setBotSeats } from './format';
+import { installErrorReporting } from './error-report';
 import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 
 // Routes: "/" is the home screen, "/oda/ABCD" is a room. Inside a room the screen follows the
@@ -41,6 +42,14 @@ let pendingBattles: BattleStartedView[] = [];
 let lastSpectator: SpectatorStateView | null = null;
 let summary: SummaryView | null = null;
 let status = '';
+
+installErrorReporting(() => ({
+  room: /^\/oda\/([A-Za-z]{4})/.exec(location.pathname)?.[1]?.toUpperCase(),
+  seat: net.seat,
+  phase: lastCastle?.phase,
+  elapsedSeconds: lastCastle?.elapsedSeconds,
+  context: `screen=${screen} scene=${scene ? 'on' : 'off'} spectating=${lastSpectator ? 'yes' : 'no'}`,
+}));
 
 let lobby: LobbyScreen | null = null;
 let end: EndScreen | null = null;

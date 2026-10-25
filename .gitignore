@@ -31,3 +31,6 @@ client/dist/
 
 # Third-party art (license forbids redistribution; see README)
 client/public/assets/
+
+# Server logs (client errors)
+logs/

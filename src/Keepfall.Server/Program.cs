@@ -1,6 +1,7 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using Keepfall.Core.Config;
+using Keepfall.Server;
 using Keepfall.Server.Games;
 using Keepfall.Server.Hubs;
 
@@ -18,6 +19,7 @@ var rules = BalanceConfigLoader.LoadFromFile(balancePath);
 
 builder.Services.AddSingleton(rules);
 builder.Services.AddSingleton<RoomRegistry>();
+builder.Services.AddSingleton<ClientErrorLog>();
 builder.Services.AddHostedService<TickLoop>();
 builder.Services.AddSignalR().AddJsonProtocol(o =>
     o.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
@@ -36,6 +38,16 @@ if (Directory.Exists(clientDist))
 
 app.MapHub<GameHub>("/hub");
 app.MapGet("/health", () => "ok");
+// Script errors and unhandled rejections from the browser (see client/src/error-report.ts); the body is capped and the address rate-limited.
+app.MapPost("/api/client-log", async (HttpContext http, ClientErrorLog log) =>
+{
+    if (http.Request.ContentLength is null or > 8192) return Results.StatusCode(StatusCodes.Status413PayloadTooLarge);
+    ClientError? error;
+    try { error = await http.Request.ReadFromJsonAsync<ClientError>(); }
+    catch (Exception e) when (e is JsonException or BadHttpRequestException) { return Results.BadRequest(); }
+    if (error is null) return Results.BadRequest();
+    return log.Write(http.Connection.RemoteIpAddress?.ToString() ?? "?", error, DateTimeOffset.UtcNow) ? Results.NoContent() : Results.StatusCode(StatusCodes.Status429TooManyRequests);
+});
 
 // Client-side routes such as /oda/ABCD load the single-page app.
 if (Directory.Exists(clientDist))
