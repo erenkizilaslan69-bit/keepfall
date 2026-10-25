@@ -123,6 +123,9 @@ export class SiteWin extends Win {
     const army = kind === 'chest' ? '' : `
       <h4>${kind === 'village' ? 'Yağmala' : 'Saldır'}</h4>
       <div data-f="attack">
+        <div class="row quick"><span>Hızlı doldur</span><span>
+          <button class="btn" data-act="all" title="Her türden kaledeki tüm askerleri yaz">Tümü</button>
+          <button class="btn" data-act="half" title="Her türden kaledeki askerin yarısını yaz">Yarısı</button></span></div>
         <div class="atk-head"><span>Birlik</span><span>Gönder</span><span>Sıra</span></div>
         ${units}
         <div class="row"><span>Okçu hedefi</span><select data-f="priority">${priority}</select></div>
@@ -205,13 +208,20 @@ export class SiteWin extends Win {
     why.textContent = reason;
     why.classList.toggle('hidden', reason === '');
     this.q<HTMLButtonElement>('[data-act="send"]').disabled = total === 0 || !enough || !!reason;
-    for (const b of this.body.querySelectorAll<HTMLButtonElement>('[data-act="less"],[data-act="more"]')) b.disabled = !!reason;
+    for (const b of this.body.querySelectorAll<HTMLButtonElement>('[data-act="less"],[data-act="more"],[data-act="all"],[data-act="half"]')) b.disabled = !!reason;
   }
 
   private async click(e: Event): Promise<void> {
     const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-act]');
     if (!btn || btn.disabled || !this.last) return;
     const s = this.last.castle, net = this.ctx.net;
+    if (btn.dataset.act === 'all' || btn.dataset.act === 'half') {
+      for (const u of s.units) {
+        this.q<HTMLInputElement>(`[data-count="${u.id}"]`).value = String(btn.dataset.act === 'all' ? u.soldiers : Math.floor(u.soldiers / 2));
+      }
+      this.refreshSend();
+      return;
+    }
     if (btn.dataset.act === 'less' || btn.dataset.act === 'more') {
       const input = btn.closest('[data-unit]')!.querySelector<HTMLInputElement>('[data-count]')!;
       const next = Number(input.value) + (btn.dataset.act === 'more' ? 1 : -1);

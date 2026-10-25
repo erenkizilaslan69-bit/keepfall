@@ -37,6 +37,9 @@ export class EnemyWin extends Win {
       <h4>Saldır</h4>
       <p class="muted-ink small hidden" data-f="locked"></p>
       <div data-f="attack">
+        <div class="row quick"><span>Hızlı doldur</span><span>
+          <button class="btn" data-act="all" title="Her türden kaledeki tüm askerleri yaz">Tümü</button>
+          <button class="btn" data-act="half" title="Her türden kaledeki askerin yarısını yaz">Yarısı</button></span></div>
         <div class="atk-head"><span>Birlik</span><span>Gönder</span><span>Sıra</span></div>
         ${units}
         <div class="row"><span>Okçu hedefi</span><select data-f="priority">${priority}</select></div>
@@ -122,7 +125,7 @@ export class EnemyWin extends Win {
     button.textContent = intercept ? 'Önünü kes' : 'Saldır';
     const out = !!this.player(this.last.room)?.eliminated;
     button.disabled = total === 0 || !t || out || s.eliminated || s.phase !== 'war';
-    for (const b of this.body.querySelectorAll<HTMLButtonElement>('[data-act="less"],[data-act="more"]')) b.disabled = s.phase !== 'war' || out || s.eliminated;
+    for (const b of this.body.querySelectorAll<HTMLButtonElement>('[data-act="less"],[data-act="more"],[data-act="all"],[data-act="half"]')) b.disabled = s.phase !== 'war' || out || s.eliminated;
   }
 
   private renderReport(r: ScoutReportView | undefined, now: number): void {
@@ -137,6 +140,13 @@ export class EnemyWin extends Win {
     if (!btn || btn.disabled || !this.last) return;
     const s = this.last.castle;
     const net = this.ctx.net;
+    if (btn.dataset.act === 'all' || btn.dataset.act === 'half') {
+      for (const u of s.units) {
+        this.q<HTMLInputElement>(`[data-count="${u.id}"]`).value = String(btn.dataset.act === 'all' ? u.soldiers : Math.floor(u.soldiers / 2));
+      }
+      this.refreshSend();
+      return;
+    }
     if (btn.dataset.act === 'less' || btn.dataset.act === 'more') {
       const input = btn.closest('[data-unit]')!.querySelector<HTMLInputElement>('[data-count]')!;
       const next = Number(input.value) + (btn.dataset.act === 'more' ? 1 : -1);
