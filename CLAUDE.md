@@ -54,6 +54,7 @@ Durum: [x] bitti, [ ] açık.
 
 ## Fikirler (kodlanmadı)
 - Gözcüyle erzak, para ve mesaj gönderme (başka oyuncuya).
+- Geri dönüş sorunu: savaş kaybeden oyuncu toparlanamıyor, nüfus ve ordular az. Aday çözümler: kale muhafızları, sığınan köylüler, son çiftçi uyarısı, büyüme maliyet artışını %8'den %6'ya çekmek. Detaylı düşünülecek.
 
 ## KALDIĞIM YER (2026-10-26)
 Görev 0–6 bitti; ayrıca Orta bot eski/eksik raporla da saldırabiliyor: `bots.staleReportSeconds` 160, `blindMargin` 1,05, `blindAfterWarSeconds` 60 (savaşın ilk 60 sn'sinde körlemesine saldırmaz, rapor almaya çalışır). Ölçüm `docs/bot-deney-yumusat.md`: Orta vs Orta saldırısız %14, maç sonu nüfus 23,3, eleme %17 (blindMargin 1,0→1,1 arası eşik gibi sıçrıyor; 160/1,05 hedefi tutturdu). Kale ganimeti savaş raporunda (`loot`) ve eve dönünce şeritte görünüyor. Production (5080) son commit'le çalışıyor, test sunucuları kapalı. Açık: Görev 7 (yalnız fikir, kodlama yok). Bot saldırganlığı biraz fazla görünürse `blindMargin`/`attackMargin` yeniden ölçülür (sayılara kullanıcı onayıyla dokun).
