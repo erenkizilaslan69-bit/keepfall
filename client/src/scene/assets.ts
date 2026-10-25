@@ -8,7 +8,7 @@ const ROOT = '/assets/tiny-swords/Tiny Swords (Free Pack)/';
 const url = (path: string) => encodeURI(ROOT + path);
 
 /** Folder name of each player colour in the pack (Black stays spare). */
-const COLOR_FOLDER: Record<PlayerColor, string> = { blue: 'Blue', red: 'Red', yellow: 'Yellow', purple: 'Purple' };
+const COLOR_FOLDER: Record<PlayerColor, string> = { blue: 'Blue', red: 'Red', yellow: 'Yellow', purple: 'Purple', black: 'Black' };
 
 /** Every unit is drawn at this scale so they stay in proportion (the Lancer's frame is just bigger, not its body). */
 export const UNIT_SCALE = 0.55;
@@ -63,6 +63,7 @@ const SHARED_SHEETS: SheetDef[] = [
   { key: 'sheep-idle', path: 'Terrain/Resources/Meat/Sheep/Sheep_Idle.png', frame: 128 },
   { key: 'dust', path: 'Particle FX/Dust_01.png', frame: 64 },
   { key: 'explosion', path: 'Particle FX/Explosion_01.png', frame: 192 },
+  { key: 'fire', path: 'Particle FX/Fire_01.png', frame: 64 },
   { key: 'tiles', path: 'Terrain/Tileset/Tilemap_color1.png', frame: 64 },
 ];
 
@@ -89,11 +90,13 @@ const IMAGES: Record<string, string> = {
   'wood-pile': 'Terrain/Resources/Wood/Wood Resource/Wood Resource.png',
   rock1: 'Terrain/Decorations/Rocks/Rock1.png',
   rock2: 'Terrain/Decorations/Rocks/Rock2.png',
+  'gold-pile': 'Terrain/Resources/Gold/Gold Resource/Gold_Resource.png',
   ...Object.fromEntries([1, 2, 3, 4, 5, 6].map((i) => [`stone${i}`, `Terrain/Resources/Gold/Gold Stones/Gold Stone ${i}.png`])),
 };
 
 /** Sheets other players' armies and scouts need on the map, loaded in their colours as "<colour>-<key>". */
-const MOVER_KEYS = ['pawn-run', 'warrior-run', 'archer-run', 'lancer-run', 'warrior-guard', 'warrior-attack', 'archer-shoot', 'lancer-attack'];
+const MOVER_KEYS = ['pawn-run', 'warrior-run', 'archer-run', 'lancer-run', 'warrior-guard', 'warrior-attack', 'archer-shoot', 'lancer-attack',
+  'warrior-idle', 'archer-idle', 'lancer-idle', 'pawn-idle'];
 const moverSheets = (others: PlayerColor[]): SheetDef[] =>
   others.flatMap((c) => units(COLOR_FOLDER[c]).filter((s) => MOVER_KEYS.includes(s.key)).map((s) => ({ ...s, key: `${c}-${s.key}` })));
 
@@ -107,6 +110,8 @@ export function preloadAssets(scene: Phaser.Scene, color: PlayerColor, others: P
   for (const s of [...sheets(color), ...moverSheets(others)])
     scene.load.spritesheet(s.key, url(s.path), { frameWidth: s.frame, frameHeight: s.frameHeight ?? s.frame });
   for (const [key, path] of Object.entries({ ...buildingImages(color), ...IMAGES })) scene.load.image(key, url(path));
+  // The bandits' camps and the villages of the forest are black buildings.
+  for (const name of COLORED_IMAGES) scene.load.image(`black-${name}`, url(buildingImages('black')[name]));
   // Everyone's castle, for the other corners of the map.
   for (const [c, folder] of Object.entries(COLOR_FOLDER)) scene.load.image(`castle-${c}`, url(`Buildings/${folder} Buildings/Castle.png`));
 }

@@ -50,7 +50,8 @@ export interface SummaryView {
   war: WarStats;
 }
 
-export type PlayerColor = 'blue' | 'red' | 'yellow' | 'purple';
+/** The four players' colours, and black: the bandits of the forest. */
+export type PlayerColor = 'blue' | 'red' | 'yellow' | 'purple' | 'black';
 export type RoomPhase = 'lobby' | 'preparation' | 'war' | 'ended';
 
 /** Public facts about a player; the server never sends anyone else's token or castle. */
@@ -90,9 +91,12 @@ export interface ArmyView {
   mode: ArmyMode;
   /** In a battle: cannot be recalled until it is over. */
   fighting: boolean;
+  /** For an army sent to a place in the forest (then `targetName` is what kind of place). */
+  siteId: string | null;
+  siteKind: SiteKind | null;
 }
 export type ArmyMode = 'attack' | 'intercept';
-export type BattleKind = 'siege' | 'field';
+export type BattleKind = 'siege' | 'field' | 'camp';
 export interface IncomingView { fromSeat: number; fromName: string; fromColor: PlayerColor; arrivesInSeconds: number }
 export interface BattleLineView { unitId: string; name: string; count: number; lost: number }
 export interface BattleReportView {
@@ -139,7 +143,14 @@ export interface JoinView { ok: boolean; error: string | null; code: string | nu
 // Scouting: a report is all we ever learn about another castle.
 /** scoutSeconds / marchSeconds: one way along the roads to that castle. */
 export interface ScoutTargetView { seat: number; name: string; color: PlayerColor; busy: boolean; scoutSeconds: number; marchSeconds: number }
-export interface ScoutMissionView { targetSeat: number; progress: number; arrived: boolean; remainingSeconds: number }
+export type MissionKind = 'spy' | 'explore' | 'chest';
+/** `quarter`: for a forest tour; `siteId`: for a chest. */
+export interface ScoutMissionView {
+  targetSeat: number; progress: number; arrived: boolean; remainingSeconds: number;
+  kind: MissionKind; quarter: Corner | null; siteId: string | null;
+}
+/** One quarter of the forest as a place to send a scout (named by its corner). */
+export interface QuarterView { corner: Corner; seat: number | null; name: string | null; color: PlayerColor | null; explored: boolean; busy: boolean; seconds: number }
 export interface ScoutReportView {
   targetSeat: number;
   targetName: string;
@@ -154,6 +165,7 @@ export interface ScoutingView {
   targets: ScoutTargetView[];
   missions: ScoutMissionView[];
   reports: ScoutReportView[];
+  quarters: QuarterView[];
 }
 
 export interface CastleView {
@@ -208,13 +220,28 @@ export interface OwnMoverView {
   position: Vec; velocity: Vec; units: MoverUnit[]; route: Vec[]; travelled: number; speed: number; visionRadius: number;
   /** In a battle: it stands still and nobody else sees it walking. */
   fighting: boolean;
+  /** For a scout: what it is out for. */
+  missionKind: MissionKind | null; quarter: Corner | null; siteId: string | null;
 }
 /** Someone else's army or scout inside our vision: never its target, road or arrival time. */
 export interface SeenMoverView { id: string; kind: MoverKind; ownerSeat: number; ownerColor: PlayerColor; position: Vec; velocity: Vec; units: MoverUnit[] }
 /** A battle we can see but are not in: only where it is. */
 export interface BattleMarkerView { id: string; at: Vec }
 /** What we see right now (fog of war applied by the server). */
-export interface MapStateView { elapsedSeconds: number; vision: VisionView[]; own: OwnMoverView[]; seen: SeenMoverView[]; battles: BattleMarkerView[]; trail: TrailView[] }
+export interface MapStateView {
+  elapsedSeconds: number; vision: VisionView[]; own: OwnMoverView[]; seen: SeenMoverView[]; battles: BattleMarkerView[]; trail: TrailView[];
+  /** The places of the forest we have found, as we last saw them. */
+  sites: SiteView[];
+}
+
+export type SiteKind = 'chest' | 'village' | 'camp' | 'bigCamp';
+/** A place of the forest we found. `gone`: used up (a chest taken, a village plundered, a camp cleared); `bandits`: about how many are in a camp. */
+export interface SiteView {
+  id: string; kind: SiteKind; position: Vec; spur: Vec[]; quarter: Corner | null; gone: boolean;
+  bandits: { unitId: string; name: string; count: number }[]; discoveredAt: number; seenAt: number;
+  /** For a village: how many soldiers it takes to plunder it. */
+  minSoldiers: number;
+}
 
 /** A battle we fight in, to replay: soldiers numbered side A first; times in simulation ticks. */
 export interface BattleSideView { seat: number; color: PlayerColor; name: string; attacker: boolean; soldiers: { unitId: string; row: Row }[] }

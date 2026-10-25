@@ -1,5 +1,5 @@
 import type { GameConnection } from '../net';
-import type { ArmyView, BuildingType, CastleView, RoomView } from '../types';
+import type { ArmyView, BuildingType, CastleView, RoomView, SiteView } from '../types';
 
 // The contextual windows on the map. One is open at a time, next to the thing it is about: a
 // building, our castle, an enemy castle, one of our armies or scouts, the forest. Clicking another
@@ -11,7 +11,10 @@ export type Target =
   | { kind: 'enemy'; seat: number }
   | { kind: 'army'; id: string }
   | { kind: 'scout'; id: string }
-  | { kind: 'forest'; id: string };
+  /** One quarter of the forest (`id` is its corner). */
+  | { kind: 'forest'; id: string }
+  /** A place of the forest we have found. */
+  | { kind: 'site'; id: string };
 
 export const sameTarget = (a: Target | null, b: Target | null): boolean => JSON.stringify(a) === JSON.stringify(b);
 
@@ -24,6 +27,10 @@ export interface WinContext {
   say: (message: string) => void;
   /** Show a message for something that worked (a blue ribbon). */
   info: (message: string) => void;
+  /** Our seat in the room. */
+  seat: number;
+  /** The places of the forest we have found, as we last saw them. */
+  sites?: () => SiteView[];
   /** One of our armies by the id the map gave it (null once it is gone). */
   army?: (publicId: string) => ArmyView | undefined;
   /** Open a window for another target (e.g. from a button). */

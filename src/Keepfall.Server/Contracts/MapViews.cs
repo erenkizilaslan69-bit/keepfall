@@ -27,7 +27,8 @@ public sealed record VisionView(VecView Center, double Radius);
 /// <summary>One of the player's own armies or scouts, with its whole road (so the client can walk it smoothly) and how far it sees.</summary>
 public sealed record OwnMoverView(
     string Id, MoverKind Kind, int TargetSeat, bool Returning, VecView Position, VecView Velocity,
-    IReadOnlyList<ArmyUnitView> Units, IReadOnlyList<VecView> Route, double Travelled, double Speed, double VisionRadius, bool Fighting);
+    IReadOnlyList<ArmyUnitView> Units, IReadOnlyList<VecView> Route, double Travelled, double Speed, double VisionRadius, bool Fighting,
+    MissionKind? MissionKind = null, Corner? Quarter = null, string? SiteId = null);
 
 /// <summary>Someone else's army or scout inside the player's vision. Nothing more than this.</summary>
 public sealed record SeenMoverView(
@@ -45,7 +46,7 @@ public sealed record TrailView(VecView Center, double Radius, double Fade);
 /// </summary>
 public sealed record SiteView(
     string Id, SiteKind Kind, VecView Position, IReadOnlyList<VecView> Spur, Corner? Quarter, bool Gone,
-    IReadOnlyList<ArmyUnitView> Bandits, double DiscoveredAt, double SeenAt);
+    IReadOnlyList<ArmyUnitView> Bandits, double DiscoveredAt, double SeenAt, int MinSoldiers = 0);
 
 public sealed record MapStateView(
     double ElapsedSeconds, IReadOnlyList<VisionView> Vision, IReadOnlyList<OwnMoverView> Own, IReadOnlyList<SeenMoverView> Seen,
@@ -93,7 +94,8 @@ public static class MapViewMapper
         foreach (var m in game.MissionsOf(key))
             own.Add(new OwnMoverView(m.PublicId, MoverKind.Scout, SeatOf(m.Target), m.Back is not null,
                 VecView.Of(m.Position), VecView.Of(m.Velocity), [],
-                m.Leg.Route.Points.Select(VecView.Of).ToList(), m.Leg.Travelled, m.Leg.Speed, game.Rules.Map.ScoutVision, false));
+                m.Leg.Route.Points.Select(VecView.Of).ToList(), m.Leg.Travelled, m.Leg.Speed, game.Rules.Map.ScoutVision, false,
+                m.Kind, m.Quarter, m.Site?.Site.Id));
 
         var seen = game.SeenBy(key).Select(s =>
         {
@@ -107,7 +109,8 @@ public static class MapViewMapper
             game.BattlesSeenBy(key).Select(b => new BattleMarkerView(b.PublicId, VecView.Of(b.Position))).ToList(),
             game.TrailOf(key).Select(t => new TrailView(VecView.Of(t.Center), t.Radius, t.Fade)).ToList(),
             game.KnownSitesOf(key).Select(k => new SiteView(k.Site.Id, k.Site.Kind, VecView.Of(k.Site.Position),
-                k.Site.Spur.Select(VecView.Of).ToList(), k.Site.Quadrant, k.Gone, Units(k.BanditsSeen), k.DiscoveredAt, k.SeenAt)).ToList());
+                k.Site.Spur.Select(VecView.Of).ToList(), k.Site.Quadrant, k.Gone, Units(k.BanditsSeen), k.DiscoveredAt, k.SeenAt,
+                k.Site.Kind == SiteKind.Village ? game.Rules.Forest.Village.MinSoldiers : 0)).ToList());
     }
 
     /// <summary>More hits than this and only the deaths are sent (the client then animates attacks loosely).</summary>

@@ -61,6 +61,7 @@ const net = new GameConnection({
   mapState: (state) => {
     lastMap = state;
     scene?.setMap(state);
+    ui?.setSites(state.sites);
   },
   spectatorState: (frame) => {
     lastSpectator = frame;

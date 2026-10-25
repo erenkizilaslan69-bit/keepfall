@@ -314,7 +314,7 @@ check('the tour ends and the quarter counts as explored', await waitFor(() => {
 const found = X.of('MapState').at(-1).sites;
 check('X found places', found.length > 1);
 check('only its own quarter and the big camp', found.every((x) => x.quarter === own.corner || x.kind === 'bigCamp') && found.some((x) => x.kind === 'bigCamp'));
-check('a place carries what a visitor sees', found.every((x) => JSON.stringify(Object.keys(x).sort()) === '["bandits","discoveredAt","gone","id","kind","position","quarter","seenAt","spur"]'
+check('a place carries what a visitor sees', found.every((x) => JSON.stringify(Object.keys(x).sort()) === '["bandits","discoveredAt","gone","id","kind","minSoldiers","position","quarter","seenAt","spur"]'
   && /^[0-9a-f]{16}$/.test(x.id) && x.spur.length === (x.kind === 'bigCamp' ? 0 : 2) && x.gone === false));
 check('the quarter holds two chests, a village and a camp',
   JSON.stringify(found.filter((x) => x.quarter === own.corner).map((x) => x.kind).sort()) === '["camp","chest","chest","village"]');

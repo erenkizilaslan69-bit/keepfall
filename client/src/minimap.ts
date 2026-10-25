@@ -43,7 +43,7 @@ export class Minimap {
 
   /** <paramref name="view"/>: the camera's rectangle, in tiles. */
   draw(vision: VisionView[], movers: MinimapMover[], view: { x: number; y: number; w: number; h: number }, battles: Vec[] = [],
-    trail: TrailView[] = [], foreign: Rect[] = []): void {
+    trail: TrailView[] = [], foreign: Rect[] = [], places: { position: Vec; kind: string; gone: boolean }[] = []): void {
     const now = performance.now();
     if (now - this.lastDraw < REDRAW_MS) return;
     this.lastDraw = now;
@@ -90,6 +90,16 @@ export class Minimap {
       ctx.lineWidth = 1.2;
       ctx.strokeStyle = m.own ? '#fff8e6' : '#1d1b18';
       ctx.stroke();
+    }
+
+    // The places of the forest we have found: gold, green, black (grey once used up).
+    for (const p of places) {
+      ctx.fillStyle = p.gone ? '#8a8a8a' : p.kind === 'chest' ? '#f1c84b' : p.kind === 'village' ? '#5f9b45' : '#1d1d24';
+      ctx.strokeStyle = p.kind.endsWith('amp') && !p.gone ? '#ff5a4a' : '#fff8e6';
+      ctx.lineWidth = 1;
+      const size = p.kind === 'bigCamp' ? 6 : 4;
+      ctx.fillRect(p.position.x * k - size / 2, p.position.y * k - size / 2, size, size);
+      ctx.strokeRect(p.position.x * k - size / 2, p.position.y * k - size / 2, size, size);
     }
 
     // Battles: a small red cross.

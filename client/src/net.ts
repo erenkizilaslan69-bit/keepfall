@@ -94,6 +94,10 @@ export class GameConnection {
   armWorkers = (unitId: string, count: number, from: Job) => this.call('ArmWorkers', unitId, count, from);
   disarmSoldiers = (unitId: string, count: number) => this.call('DisarmSoldiers', unitId, count);
   upgradeBuilding = (building: BuildingType) => this.call('UpgradeBuilding', building);
+  sendExplore = (quarter: string, from: Job) => this.call('SendExplore', quarter, from);
+  sendChestScout = (siteId: string, from: Job) => this.call('SendChestScout', siteId, from);
+  sendArmyToSite = (siteId: string, units: Record<string, number>, rows: Record<string, Row> | null, archerPriority: string | null) =>
+    this.call('SendArmyToSite', siteId, units, rows, archerPriority);
   hireMercenary = (unitId: string, count: number) => this.call('HireMercenary', unitId, count);
   setGrowth = (enabled: boolean) => this.call('SetGrowth', enabled);
   sendScout = (targetSeat: number, from: Job) => this.call('SendScout', targetSeat, from);

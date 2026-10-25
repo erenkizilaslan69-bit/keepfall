@@ -9,6 +9,7 @@ import { CASTLE, COURTYARD, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH } from './lay
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
 import { buildingSign, placePart, sign } from './parts';
 import { RegionDisplay } from './RegionDisplay';
+import { SiteLayer } from './Sites';
 import { scoutSignHtml } from '../ui/scout-report';
 import { BattlePlayer } from './BattlePlayer';
 import { Fog } from './Fog';
@@ -92,6 +93,8 @@ export class WorldScene extends Phaser.Scene {
   private pendingSpectator: SpectatorStateView | null = null;
   private regions = new Map<number, RegionDisplay>();
   private spectatorAssets: 'none' | 'loading' | 'ready' = 'none';
+  /** The places of the forest we have found. */
+  sites!: SiteLayer;
   private castleSprite!: Phaser.GameObjects.Image;
   private lastWallHp: number | null = null;
 
@@ -107,7 +110,7 @@ export class WorldScene extends Phaser.Scene {
 
   preload(): void {
     this.load.on('loaderror', () => { this.loadFailed = true; });
-    preloadAssets(this, this.color, this.otherColors);
+    preloadAssets(this, this.color, [...this.otherColors, 'black']);
   }
 
   create(): void {
@@ -117,7 +120,7 @@ export class WorldScene extends Phaser.Scene {
         { ...LABEL_STYLE, fontSize: '22px' }).setOrigin(0.5);
       return;
     }
-    createAnimations(this, this.color, this.otherColors);
+    createAnimations(this, this.color, [...this.otherColors, 'black']);
     this.drawGround();
     this.drawRoads();
     this.drawForest();
@@ -129,6 +132,7 @@ export class WorldScene extends Phaser.Scene {
     this.workers = new Workers(this, this.labels);
     this.soldiers = new Soldiers(this, this.labels);
     this.movers = new Movers(this, this.color, this.labels);
+    this.sites = new SiteLayer(this, this.labels, (id) => this.select({ kind: 'site', id }));
     this.movers.onSelect = (t) => this.select(t);
     this.fog = new Fog(this, this.layout.size);
     this.battles = new BattlePlayer(this, this.color, () => this.gameNow(), (seat) => this.courtyardOf(seat));
@@ -148,6 +152,7 @@ export class WorldScene extends Phaser.Scene {
     if (!this.ready) return;
     this.movers.sync(state);
     this.syncMarkers(state);
+    this.sites.sync(state.sites, state.elapsedSeconds);
   }
 
   private syncMarkers(state: MapStateView): void {
@@ -245,7 +250,7 @@ export class WorldScene extends Phaser.Scene {
       else this.applyOtherPicture(c);
     }
     // Armies, scouts and battles come as what others see of each other, but all of them; the clock is the picture's.
-    const map: MapStateView = { elapsedSeconds: frame.elapsedSeconds, vision: [], own: [], seen: frame.movers, battles: frame.battles, trail: [] };
+    const map: MapStateView = { elapsedSeconds: frame.elapsedSeconds, vision: [], own: [], seen: frame.movers, battles: frame.battles, trail: [], sites: [] };
     this.map = map;
     this.movers.sync(map);
     this.syncMarkers(map);
@@ -335,10 +340,16 @@ export class WorldScene extends Phaser.Scene {
         return at(base.x + CASTLE.x, base.y + CASTLE.y - 150, 190);
       }
       case 'forest': {
-        const forest = this.layout.features.find((f) => f.id === target.id);
+        // The middle of the quarter that was clicked.
+        const forest = this.layout.features.find((f) => f.kind === 'forest');
         if (!forest) return null;
-        const p = toWorld(forest.center);
-        return at(p.x, p.y, 120);
+        const p = toWorld(forest.center), r = forest.radius * TILE * 0.5;
+        const dx = target.id.endsWith('West') ? -1 : 1, dy = target.id.startsWith('north') ? -1 : 1;
+        return at(p.x + dx * r, p.y + dy * r, 150);
+      }
+      case 'site': {
+        const p = this.sites.positionOf(target.id);
+        return p ? at(p.x, p.y - 30, 70) : null;
       }
       default: {
         // One of our armies or scouts on the road.
@@ -357,14 +368,18 @@ export class WorldScene extends Phaser.Scene {
     return army && army.targetSeat === own[i].targetSeat && (army.state === 'returning') === own[i].returning ? army : undefined;
   }
 
-  /** The forest answers a click (it is only a place for now), below everything else that can be clicked. */
+  /**
+   * The forest answers a click, below everything else that can be clicked: which quarter was clicked (by the corner
+   * it belongs to) tells the window which tour to offer. The clickable area is the square the ring road makes.
+   */
   private makeForestClickable(): void {
     for (const f of this.layout.features.filter((x) => x.kind === 'forest')) {
-      const p = toWorld(f.center), r = f.radius * TILE;
-      const zone = this.add.zone(p.x, p.y, r * 2, r * 2).setDepth(-50_000)
-        .setInteractive(new Phaser.Geom.Circle(r, r, r), Phaser.Geom.Circle.Contains);
-      zone.input!.cursor = 'pointer';
-      zone.on('pointerup', () => this.select({ kind: 'forest', id: f.id }));
+      const p = toWorld(f.center), half = (f.radius + 2) * TILE;
+      const zone = this.add.zone(p.x, p.y, half * 2, half * 2).setDepth(-50_000).setInteractive({ useHandCursor: true });
+      zone.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+        const corner = `${pointer.worldY < p.y ? 'north' : 'south'}${pointer.worldX < p.x ? 'West' : 'East'}`;
+        this.select({ kind: 'forest', id: corner });
+      });
     }
   }
 
@@ -413,7 +428,8 @@ export class WorldScene extends Phaser.Scene {
       const view = this.cameras.main.worldView;
       const tl = toTiles({ x: view.x, y: view.y });
       const battles = [...this.map.battles.map((b) => b.at), ...this.battles.active.map((b) => b.at)];
-      this.minimap?.draw([...fixed, ...moving], this.movers.all(), { x: tl.x, y: tl.y, w: view.width / TILE, h: view.height / TILE }, battles, this.map.trail, this.foreignRegions);
+      this.minimap?.draw([...fixed, ...moving], this.movers.all(), { x: tl.x, y: tl.y, w: view.width / TILE, h: view.height / TILE }, battles, this.map.trail, this.foreignRegions,
+        this.map.sites.map((s) => ({ position: s.position, kind: s.kind, gone: s.gone })));
     }
   }
 
@@ -503,9 +519,12 @@ export class WorldScene extends Phaser.Scene {
   private clearTreesAroundBattles(dt: number): void {
     const spots = [...(this.map?.battles.map((b) => b.at) ?? []), ...this.battles.active.map((b) => b.at)];
     const k = Math.min(1, dt * 8);
+    // The ground round a place we have found is cleared of trees (and trees near a battle turn see-through).
+    const sites = this.sites?.tiles() ?? [];
     for (const t of this.trees) {
       const near = spots.some((s) => Math.hypot(t.tile.x - s.x, t.tile.y - s.y) < BATTLE_CLEARING);
-      const goal = near ? TREE_FADED_ALPHA : 1;
+      const cleared = sites.some((s) => Math.hypot(t.tile.x - s.position.x, t.tile.y - s.position.y) < (s.kind === 'bigCamp' ? 3.4 : s.kind === 'chest' ? 1.2 : 2.1));
+      const goal = cleared ? 0 : near ? TREE_FADED_ALPHA : 1;
       if (Math.abs(t.sprite.alpha - goal) > 0.01) t.sprite.setAlpha(t.sprite.alpha + (goal - t.sprite.alpha) * k);
     }
   }

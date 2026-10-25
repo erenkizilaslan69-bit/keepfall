@@ -1,9 +1,11 @@
 import { COLOR_NAMES, esc } from '../format';
-import type { ArmyView, CastleView, ScoutMissionView, ScoutTargetView } from '../types';
+import type { ArmyView, CastleView, Corner, ScoutMissionView, ScoutTargetView } from '../types';
 import { dot } from './report-html';
 import { Win, type WinContext, type WinData } from './windows';
 
-// One of our armies or scouts on the road, and the forest (a place kept for the next step).
+// One of our armies or scouts on the road.
+
+const QUARTER: Record<Corner, string> = { northWest: 'Kuzeybatı', northEast: 'Kuzeydoğu', southWest: 'Güneybatı', southEast: 'Güneydoğu' };
 
 const armyState = (a: ArmyView) =>
   a.fighting ? 'savaşta' : a.state === 'returning' ? 'eve dönüyor' : a.mode === 'intercept' ? 'önünü kesiyor' : 'saldırıya gidiyor';
@@ -62,28 +64,46 @@ export class ArmyWin extends Win {
 export class ScoutWin extends Win {
   private missing = false;
 
-  constructor(ctx: WinContext, private readonly seat: number, s: CastleView) {
+  /** `id`: the target's seat for a spy, "q:corner" for a tour of a forest quarter, "c:id" for a chest. */
+  constructor(ctx: WinContext, private readonly id: string, s: CastleView) {
     super(ctx, 'yellow');
     this.body.innerHTML = `
       <div class="row"><span>Hedef</span><b data-f="target"></b></div>
       <div class="row"><span>Durum</span><b data-f="state"></b></div>
       <div class="gbar" data-f="bar"><div class="fill"></div></div>
       <div class="row sub"><span data-f="left"></span></div>
-      <p class="muted-ink small">Gözcü hedefin kapısına yürür, orada bakar ve raporla birlikte eve döner.
-        Görevdeki gözcü çalışmaz ama yemek yer.</p>`;
+      <p class="muted-ink small" data-f="note"></p>`;
     this.update({ castle: s, room: null });
+  }
+
+  private find(s: CastleView): ScoutMissionView | undefined {
+    return s.scouting.missions.find((m) => this.id.startsWith('q:') ? m.kind === 'explore' && m.quarter === this.id.slice(2)
+      : this.id.startsWith('c:') ? m.kind === 'chest' && m.siteId === this.id.slice(2)
+      : m.kind === 'spy' && m.targetSeat === Number(this.id));
   }
 
   gone(): boolean { return this.missing; }
 
   update({ castle: s }: WinData): void {
-    const m: ScoutMissionView | undefined = s.scouting.missions.find((x) => x.targetSeat === this.seat);
+    const m: ScoutMissionView | undefined = this.find(s);
     this.missing = !m;
     if (!m) return;
-    const t: ScoutTargetView | undefined = s.scouting.targets.find((x) => x.seat === this.seat);
     this.setTitle('Gözcün');
-    this.q('[data-f="target"]').innerHTML = t ? `${dot(t.color)}${esc(t.name)} <small>${COLOR_NAMES[t.color] ?? ''}</small>` : '?';
-    this.q('[data-f="state"]').textContent = m.arrived ? 'gözetledi, dönüyor' : 'hedefe gidiyor';
+    const note = this.q('[data-f="note"]');
+    if (m.kind === 'explore') {
+      this.q('[data-f="target"]').textContent = `Orman · ${QUARTER[m.quarter as Corner] ?? ''}`;
+      this.q('[data-f="state"]').textContent = 'bölgeyi dolaşıyor';
+      note.textContent = 'Gözcü ormanın bu bölgesinin yolunu yürür, yakınındaki yerleri bulur ve eve döner.';
+    } else if (m.kind === 'chest') {
+      this.q('[data-f="target"]').textContent = 'Sandık';
+      this.q('[data-f="state"]').textContent = m.arrived ? 'altınla dönüyor' : 'sandığa gidiyor';
+      note.textContent = 'Sandığı alır ve altını eve getirir; altın gözcü dönünce kasaya girer.';
+    } else {
+      const t: ScoutTargetView | undefined = s.scouting.targets.find((x) => x.seat === m.targetSeat);
+      this.q('[data-f="target"]').innerHTML = t ? `${dot(t.color)}${esc(t.name)} <small>${COLOR_NAMES[t.color] ?? ''}</small>` : '?';
+      this.q('[data-f="state"]').textContent = m.arrived ? 'gözetledi, dönüyor' : 'hedefe gidiyor';
+      note.textContent = 'Gözcü hedefin kapısına yürür, orada bakar ve raporla birlikte eve döner. Görevdeki gözcü çalışmaz ama yemek yer.';
+    }
     this.q('[data-f="bar"] .fill').style.width = `${100 * m.progress}%`;
     this.q('[data-f="left"]').textContent = `${Math.ceil(m.remainingSeconds)} sn sonra evde`;
   }
@@ -91,17 +111,4 @@ export class ScoutWin extends Win {
   private q<T extends HTMLElement = HTMLElement>(selector: string): T {
     return this.body.querySelector<T>(selector)!;
   }
-}
-
-/** The forest in the middle of the map. Nothing to do there yet; the window is here for what comes next. */
-export class ForestWin extends Win {
-  constructor(ctx: WinContext) {
-    super(ctx, 'purple');
-    this.body.innerHTML = `
-      <p>Haritanın ortasındaki orman. Yollar içinden geçer; çapraz köşeye giden ordular da buradan yürür.</p>
-      <p class="muted-ink">Yakında: gözcü gönderip keşfetmek, ganimet toplamak, köyler ve haydut kampları.</p>`;
-    this.setTitle('Orman');
-  }
-
-  update(): void {}
 }

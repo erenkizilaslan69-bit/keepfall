@@ -365,3 +365,14 @@ html:not(.ui-art) .spec-wait .ribbon { margin-top: 0; }
 .note.clickable:hover { filter: brightness(1.15) drop-shadow(0 0 8px rgba(255, 220, 90, 1)); }
 
 .paper-dark .muted-ink, .paper-dark .small { color: #b9c3d6; }
+
+/* ---- the forest: found places ---------------------------------------------------------------------- */
+.site-list { display: flex; flex-direction: column; gap: calc(4px * var(--u)); }
+.site-row {
+  width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: calc(8px * var(--u)); cursor: pointer;
+  background: rgba(255, 248, 224, .75); border: 2px solid #8a6a3a; border-radius: 6px; padding: calc(4px * var(--u)) calc(8px * var(--u)); color: var(--ink);
+}
+.site-row:hover { background: #fff3c9; }
+.site-row small { font-family: var(--font-text); }
+.wl-gone .wl-sign { opacity: .75; }
+.wl-report-gone { opacity: .6; }

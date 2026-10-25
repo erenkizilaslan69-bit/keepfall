@@ -1,10 +1,11 @@
 import type { GameConnection } from '../net';
-import type { CastleView, RoomView } from '../types';
+import type { CastleView, Corner, RoomView, SiteView } from '../types';
 import type { WorldScene } from '../scene/WorldScene';
 import { BuildingWin } from './building-window';
 import { CastleWin } from './castle-window';
 import { EnemyWin } from './enemy-window';
-import { ArmyWin, ForestWin, ScoutWin } from './mover-windows';
+import { ArmyWin, ScoutWin } from './mover-windows';
+import { ForestWin, SiteWin } from './forest-window';
 import { WindowManager, sameTarget, type Target, type Win, type WinContext } from './windows';
 import { Notifications, type NoteKind } from './notifications';
 import { ReportTags } from './reports';
@@ -25,6 +26,10 @@ export class GameUi {
   private spectating = false;
   /** Scout reports we have already told the player about (null until the first state: a reload is not news). */
   private scoutsSeen: Set<string> | null = null;
+  /** The places of the forest we have found (the latest map state). */
+  private sites: SiteView[] = [];
+  private lastGold: number | null = null;
+  private exploredSeen: Set<string> | null = null;
   private readonly bar: TopBar;
   private readonly notes: Notifications;
   private readonly reports: ReportTags;
@@ -77,7 +82,7 @@ export class GameUi {
       [homeButton, document.querySelector('.minimap'), root.querySelector('.report-tags')].filter((e): e is Element => !!e)
         .map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0));
     this.ctx = { net, say: (m) => this.error(m), info: (m) => this.notes.push(m, 'info', 3500), open: (t) => this.open(t), close: () => this.windows.close(),
-      army: (id) => this.scene?.resolveArmy(id) };
+      army: (id) => this.scene?.resolveArmy(id), seat, sites: () => this.sites };
     window.addEventListener('keydown', this.onKey);
   }
 
@@ -111,8 +116,9 @@ export class GameUi {
       case 'castle': return new CastleWin(this.ctx, s);
       case 'enemy': return new EnemyWin(this.ctx, target.seat, s, this.room);
       case 'army': return new ArmyWin(this.ctx, target.id, s);
-      case 'scout': return new ScoutWin(this.ctx, Number(target.id), s);
-      case 'forest': return new ForestWin(this.ctx);
+      case 'scout': return new ScoutWin(this.ctx, target.id, s);
+      case 'forest': return new ForestWin(this.ctx, target.id as Corner, s);
+      case 'site': return new SiteWin(this.ctx, target.id, s);
       default: return null; // the other windows come in the next steps
     }
   }
@@ -134,6 +140,17 @@ export class GameUi {
         this.notes.push(`Gözcün döndü: ${GENITIVE[r.targetColor] ?? 'rakibin'} raporu`, 'battle', 15000, () => this.reports.showScout(r));
     }
     this.scoutsSeen = new Set(reports.map(scoutKey));
+
+    // Gold that came home, and a quarter of the forest that has been toured.
+    const gold = s.resources.gold;
+    if (this.lastGold !== null && gold > this.lastGold + 1e-6) this.notes.push(`+${Math.round(gold - this.lastGold)} altın kasaya girdi`, 'info', 5000);
+    this.lastGold = gold;
+    const explored = new Set(s.scouting.quarters.filter((q) => q.explored).map((q) => q.corner));
+    if (this.exploredSeen) {
+      for (const corner of explored)
+        if (!this.exploredSeen.has(corner)) this.notes.push('Keşif bitti: ormanın bu bölgesindeki yerler haritada', 'info', 6000);
+    }
+    this.exploredSeen = explored;
     this.notes.setIncoming(s.eliminated ? [] : s.war.incoming, s.speed);
     this.notes.setSticky('hunger', s.starving && !s.eliminated, 'Açlık! Yemek bitti, tüm üretim yarıya indi.');
     this.notes.setSticky('out', s.eliminated, 'Kalen düştü — elendin. Artık sadece izleyicisin.', 'info');
@@ -173,6 +190,11 @@ export class GameUi {
     // A few seconds is just the tick (or the dev speed); only a real delay (match.spectatorDelaySeconds) is worth saying.
     const lag = Math.round(lagSeconds);
     this.notes.setSticky('spectating', true, lag >= 10 ? `İzleyici: tüm harita, oyundan ${lag} sn geride` : 'İzleyici: tüm harita, canlı', 'info');
+  }
+
+  /** The places of the forest we have found, from the latest map state (the windows about them read this). */
+  setSites(sites: SiteView[]): void {
+    this.sites = sites;
   }
 
   setRoom(room: RoomView): void {

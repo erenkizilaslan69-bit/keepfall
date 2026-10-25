@@ -18,6 +18,15 @@ export function reportHtml(b: BattleReportView): string {
       : lines.map((l) => `<div>${l.count} ${esc(l.name)} <span class="loss">−${l.lost}</span></div>`).join('')}</div>`;
   const them = `${dot(b.opponentColor)}${esc(b.opponentName)}`;
   const color = b.winner === 'draw' ? 'yellow' : b.youWon ? 'blue' : 'red';
+  if (b.kind === 'camp') {
+    return `
+      <div class="rep-title ribbon ribbon-${color}">Haydut kampı — ${resultWord(b)}</div>
+      <div class="rep-sides">
+        ${side('Senin ordun', b.attackerUnits)}
+        ${side('Haydutlar', b.defenderUnits)}
+      </div>
+      <p class="rep-note">${b.winner === 'attacker' ? 'Kamp temizlendi: altın ve silahlar ordu eve dönünce gelir.' : 'Kamp kalan haydutlarla yerinde duruyor.'}</p>`;
+  }
   if (b.kind === 'field') {
     return `
       <div class="rep-title ribbon ribbon-${color}">Yolda ${them} ile çarpışma — ${resultWord(b)}</div>

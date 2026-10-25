@@ -81,7 +81,9 @@ export class Movers {
       t.speed = o.speed;
       t.vision = o.visionRadius;
       t.fighting = o.fighting;
-      t.select = o.kind === 'scout' ? { kind: 'scout', id: String(o.targetSeat) } : { kind: 'army', id: o.id };
+      t.select = o.kind === 'scout'
+        ? { kind: 'scout', id: o.missionKind === 'explore' ? `q:${o.quarter}` : o.missionKind === 'chest' ? `c:${o.siteId}` : String(o.targetSeat) }
+        : { kind: 'army', id: o.id };
       if (!t.zone) {
         const zone = this.scene.add.zone(0, 0, 84, 76).setDepth(20_000).setInteractive({ useHandCursor: true });
         zone.on('pointerup', () => { if (t.select) this.onSelect(t.select); });
