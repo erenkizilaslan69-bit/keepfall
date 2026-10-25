@@ -54,3 +54,10 @@ Durum: [x] bitti, [ ] açık.
 
 ## Fikirler (kodlanmadı)
 - Gözcüyle erzak, para ve mesaj gönderme (başka oyuncuya).
+
+## KALDIĞIM YER (2026-10-26, hesap değişimi öncesi)
+Görev 0–3 bitti ve push edildi (son commit: köy ≥3 asker varışta da). Kullanıcı "devam et" deyince **Görev 4'ten** sürdür.
+- Görev 4 notları: ödüller `src/Keepfall.Core/World/ForestLayout.cs` (Reward kaydı, `rng.Next` ile; orman yerleşimi aynı rng'yi kullanıyor, YENİ ödül zarlarını yerleşim sırasını bozmayacak şekilde ayır/sona ekle, yoksa mevcut tohum testleri ve harita adaleti değişir), kurallar `World/ForestRules.cs` + `Config/BalanceConfig.cs` + `config/balance.json` (forest.chest/village/camp/bigCamp). Dağıtım: sandık = gözcü `LootGold` (+ `LootIron` ekle) `GameState.AdvanceScouts`; köy/kamp = ordu `LootGold/LootPeople/LootWeapons` (+ `LootFood`, `LootWood`) `ArriveAtSite`/`FinishBattle`, eve dönünce `AdvanceArmies` içinde kasaya. Görünümler (`MapViews.SiteView`, `SpectatorViews`) ve istemci orman penceresi yeni ödülleri göstermeli. Paralı fiyat çarpanı: şu an 30/28/32/38 (×1,25) → ×1,1 ≈ 26/24/29/33 (orijinal 24/22/26/30). Sonra `python tools/bot-deney.py` ile paralı payını ölç (hedef ≤%30; aşarsa altın miktarını düşürmeyi ÖNER ve ölç, kendin yazma). Not: `tools/bot-deney.py` `scale_gold` yeni ödül anahtarlarını da kapsamalı.
+- Görev 5, 6, 7 sırada. Görev 6: `map.scoutSpeed` 2,5 → 1,8 (config; kullanıcı açıkça istedi). Görev 7: yalnız "Fikirler" listesinde (zaten ekli).
+- Test sunucuları kapalı; Production (5080) son commit'le çalışır durumda bırakıldı. Görev 4–6 bitince tekrar `npm --prefix client run build` + Production yeniden başlat.
+
