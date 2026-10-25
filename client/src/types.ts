@@ -4,7 +4,7 @@ export type Job = 'idle' | 'farmer' | 'lumberjack' | 'miner' | 'blacksmith';
 export type BuildingType = 'farm' | 'lumberCamp' | 'mine' | 'forge';
 export type MatchPhase = 'preparation' | 'war' | 'ended';
 
-export interface Resources { food: number; wood: number; iron: number }
+export interface Resources { food: number; wood: number; iron: number; gold: number }
 export interface Rates { foodIn: number; foodOut: number; wood: number; iron: number; forgeSpeed: number }
 export interface JobView { job: Job; name: string; count: number; capacity: number | null }
 export type Resource = 'food' | 'wood' | 'iron';
@@ -27,7 +27,8 @@ export interface BuildingView {
   upgradeGain: number | null;
 }
 
-export interface UnitView { id: string; name: string; wood: number; iron: number; buildSeconds: number; weapons: number; soldiers: number }
+/** `price`: gold to hire one soldier (0 = cannot); `hired`: how many of the soldiers were hired (they cannot become workers). */
+export interface UnitView { id: string; name: string; wood: number; iron: number; buildSeconds: number; weapons: number; soldiers: number; price: number; hired: number }
 export interface OrderView { unitId: string; name: string; remaining: number; progress: number; buildSeconds: number }
 export interface EconomySample { seconds: number; population: number; soldiers: number; food: number; wood: number; iron: number }
 

@@ -9,7 +9,7 @@ namespace Keepfall.Server.Contracts;
 // CastleView/SummaryView only ever go to the castle's owner. RoomView goes to the whole room and
 // carries nothing but public facts about players (seat, name, colour, ready, connected, host).
 
-public sealed record ResourcesView(double Food, double Wood, double Iron);
+public sealed record ResourcesView(double Food, double Wood, double Iron, double Gold = 0);
 
 public sealed record RatesView(double FoodIn, double FoodOut, double Wood, double Iron, double ForgeSpeed);
 
@@ -23,7 +23,10 @@ public sealed record BuildingView(
     BuildingType Type, string Name, Job Worker, Resource? Product, int Level, int MaxLevel, int Capacity, double Multiplier,
     double? UpgradeRemaining, double UpgradeTotal, CostView? NextUpgrade, double? UpgradeGain);
 
-public sealed record UnitView(string Id, string Name, double Wood, double Iron, double BuildSeconds, int Weapons, int Soldiers);
+/// <param name="Price">Gold to hire one soldier (0 = cannot be hired).</param>
+/// <param name="Hired">How many of the soldiers were hired (they cannot become workers).</param>
+public sealed record UnitView(string Id, string Name, double Wood, double Iron, double BuildSeconds, int Weapons, int Soldiers,
+    double Price = 0, int Hired = 0);
 
 public sealed record OrderView(string UnitId, string Name, int Remaining, double Progress, double BuildSeconds);
 
@@ -130,7 +133,7 @@ public static class ViewMapper
         bool speedControl = room.Options.AllowSpeedControl && player.Seat == room.HostSeat;
         return new CastleView(
             game.Phase, player.Color, game.ElapsedSeconds, game.RemainingSeconds, game.PrepSeconds, room.Speed, speedControl,
-            new ResourcesView(c.Food, c.Wood, c.Iron),
+            new ResourcesView(c.Food, c.Wood, c.Iron, c.Gold),
             new RatesView(c.ProductionPerMinute(Resource.Food), c.FoodConsumptionPerMinute,
                 c.ProductionPerMinute(Resource.Wood), c.ProductionPerMinute(Resource.Iron), c.ForgeSpeed),
             c.Population, c.SoldierCount, c.NextPersonCost, c.GrowthReserve, c.GrowthEnabled, c.Starving,
@@ -223,7 +226,7 @@ public static class ViewMapper
 
     public static List<UnitView> UnitsOf(Castle c) =>
         c.UnitTypes.Select(u => new UnitView(u.Id, u.Name, u.Cost.Wood, u.Cost.Iron, u.BuildSeconds,
-            c.Weapons[u], c.Soldiers[u])).ToList();
+            c.Weapons[u], c.Soldiers[u], c.MercenaryPrice(u), c.Mercenaries[u])).ToList();
 
     private static SummaryView ToView(EconomySummary s, Castle c) => new(
         s.DurationSeconds, s.StartPopulation, s.FinalPopulation, s.PeakPopulation, s.PeopleBorn,

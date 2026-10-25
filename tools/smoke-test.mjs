@@ -94,6 +94,9 @@ check('B arms 6 spearmen', (await B.call('ArmWorkers', 'mizrakci', 6, 'idle')).o
 check('A arms 4 swordsmen', (await A.call('ArmWorkers', 'kilicli', 4, 'idle')).ok);
 check('attacks refused in preparation', !(await A.call('SendArmy', 2, { kilicli: 1 }, null, null, 'attack')).ok);
 check('cannot scout yourself', !(await A.call('SendScout', 1, 'idle')).ok);
+check('hiring needs gold, and nobody has any yet', !(await A.call('HireMercenary', 'kilicli', 1)).ok
+  && A.of('CastleState').at(-1).resources.gold === 0);
+check('units carry their hiring price', A.of('CastleState').at(-1).units.every((u) => u.price > 0 && u.hired === 0));
 check('A sends a scout to B', (await A.call('SendScout', 2, 'idle')).ok);
 check('only one scout per target', !(await A.call('SendScout', 2, 'idle')).ok);
 await sleep(3500);

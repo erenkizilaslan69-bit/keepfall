@@ -553,7 +553,7 @@ public sealed class GameState
 
     private void Disband(ArmyMarch a)
     {
-        _players[a.From].Castle.ArmyLost(a.Size);
+        _players[a.From].Castle.ArmyLost(a.State == ArmyState.Returning ? a.Survivors : a.Walking);
         _armies.Remove(a);
     }
 
@@ -630,7 +630,7 @@ public sealed class GameState
         var defender = _players[b.Defender].Castle;
         var attackLost = Lost(b.AttackerUnits, b.AttackerSurvivors);
         var defendLost = Lost(b.DefenderUnits, b.DefenderSurvivors);
-        attacker.ArmyLost(attackLost.Values.Sum());
+        attacker.ArmyLost(attackLost);
         attacker.Stats.EnemiesKilled += defendLost.Values.Sum();
         defender.Stats.EnemiesKilled += attackLost.Values.Sum();
 
@@ -638,11 +638,11 @@ public sealed class GameState
         if (b.Opponent is { } o)
         {
             o.Battle = null;
-            defender.ArmyLost(defendLost.Values.Sum());
+            defender.ArmyLost(defendLost);
         }
         if (b.Kind == BattleKind.Siege)
         {
-            defender.DefendersBack(b.DefenderSurvivors, defendLost.Values.Sum());
+            defender.DefendersBack(b.DefenderSurvivors, defendLost);
             if (b.CastleDamage > 0)
             {
                 defender.TakeWallDamage(b.CastleDamage);
@@ -691,7 +691,7 @@ public sealed class GameState
         if (count == 0 || _eliminated.ContainsKey(a.From))
         {
             // No one left, or no castle to go back to: the army is gone.
-            _players[a.From].Castle.ArmyLost(count);
+            _players[a.From].Castle.ArmyLost(survivors);
             _armies.Remove(a);
             return;
         }
@@ -717,7 +717,7 @@ public sealed class GameState
         _trail.RemoveAll(t => t.Owner == player);
         foreach (var a in _armies.Where(a => a.From == player && a.State == ArmyState.Returning && a.Battle is null).ToList())
         {
-            _players[player].Castle.ArmyLost(a.Survivors.Values.Sum());
+            _players[player].Castle.ArmyLost(a.Survivors);
             _armies.Remove(a);
         }
         foreach (var key in _players.Keys)
@@ -802,7 +802,7 @@ public sealed class GameState
                 Jobs.Buildings.ToDictionary(b => b, b => c.Building(b).Level),
                 Samples.ToList(),
                 new WarStats(s.AttacksLaunched, s.SoldiersLost, s.EnemiesKilled, s.CastleDamageDealt, s.CastleDamageTaken,
-                    c.WallHp, c.MaxWallHp, eliminated));
+                    c.WallHp, c.MaxWallHp, eliminated, s.GoldGained, s.GoldSpent, s.MercenariesHired));
         }
     }
 }

@@ -28,6 +28,7 @@ export class TopBar {
           <span class="res" data-r="food" title=""><i class="ico ico-meat"></i><b></b><small></small></span>
           <span class="res" data-r="wood" title=""><i class="ico ico-wood"></i><b></b><small></small></span>
           <span class="res" data-r="iron" title=""><i class="ico ico-iron"></i><b></b><small></small></span>
+          <span class="res" data-r="gold" title="Altın: ormandan gelir; kale penceresinde asker kiralanır"><i class="ico ico-coin"></i><b></b><small></small></span>
         </div>
         <div class="strip hit tb-pop" title="Nüfus ve asker sayısı">
           <span class="pop"><span class="lbl">Nüfus</span><b data-f="pop"></b></span>
@@ -76,6 +77,7 @@ export class TopBar {
     set('food', fmt(s.resources.food), `${rate(foodNet)}`, foodNet < 0 ? 'down' : 'up');
     set('wood', fmt(s.resources.wood), `${rate(s.rates.wood)}`, 'up');
     set('iron', fmt(s.resources.iron), `${rate(s.rates.iron)}`, 'up');
+    set('gold', fmt(s.resources.gold), '', 'up');
     this.q('[data-r="food"]').title = `Yemek: +${s.rates.foodIn.toFixed(1)} üretim, −${s.rates.foodOut.toFixed(1)} tüketim (dakikada)`
       + (s.starving ? '\nAçlık: üretim yarıya indi!' : '');
     this.q('[data-r="food"]').classList.toggle('starving', s.starving);

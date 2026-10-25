@@ -18,6 +18,8 @@ public sealed class BalanceConfig
     public WarConfig War { get; set; } = new();
     public MapConfig Map { get; set; } = new();
     public CombatConfig Combat { get; set; } = new();
+    /// <summary>Gold price of hiring one soldier of each unit type (by unit id).</summary>
+    public Dictionary<string, double> Mercenary { get; set; } = [];
     public List<UnitConfig> Units { get; set; } = [];
     public Dictionary<string, Dictionary<string, JsonElement>> Counters { get; set; } = [];
 }
@@ -202,6 +204,12 @@ public static class BalanceConfigLoader
         var sr = mc.StartingResources;
         if (sr.Food < 0 || sr.Wood < 0 || sr.Iron < 0) errors.Add("match.startingResources negatif olamaz.");
 
+        foreach (var (id, price) in config.Mercenary)
+        {
+            if (!config.Units.Any(u => u.Id == id)) errors.Add($"mercenary.{id}: bilinmeyen birim.");
+            else if (price <= 0) errors.Add($"mercenary.{id}: fiyat sıfırdan büyük olmalı.");
+        }
+
         var e = config.Economy;
         if (e.WorkerFoodPerMinute < 0 || e.SoldierFoodPerMinute < 0) errors.Add("economy: yemek tüketimi negatif olamaz.");
         if (e.StarvationMultiplier < 0 || e.StarvationMultiplier > 1) errors.Add("economy.starvationMultiplier 0 ile 1 arasında olmalı.");
@@ -307,7 +315,8 @@ public static class BalanceConfigLoader
             new ScoutingRules(sc.ReportError),
             new WarRules(w.FamineStart, w.FamineFoodMultiplier,
                 w.CastleHp, w.SiegeSeconds, w.ArcherSiegeMultiplier, w.BattlePlayback, w.EncounterRadius),
-            new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout, mp.ScoutTrailSeconds));
+            new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout, mp.ScoutTrailSeconds),
+            config.Mercenary);
     }
 
     private static double? ParseMultiplier(JsonElement value, CombatConfig c)

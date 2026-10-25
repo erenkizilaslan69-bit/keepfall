@@ -69,6 +69,16 @@
     "encounterRadius": 1.0
   },
 
+  // Altın (ormandan gelir: sandık, köy, haydut kampı): kale penceresinde birim başına bu fiyata anında asker kiralanır.
+  // Paralı asker işçiden düşmez, nüfusa sayılır ve yemek yer (askerlik yemeği); işçiye dönüştürülemez.
+  // Fiyat ~ silahın odun karşılığı (demir ≈ 1,25 odun) + yeni bir kişinin yemek bedeli (~12 odun), altın ≈ 1,4 odun.
+  "mercenary": {
+    "okcu": 24,
+    "mizrakci": 22,
+    "kilicli": 26,
+    "kalkanli": 30
+  },
+
   // Excel "Maç" sekmesi: gözcü.
   // Gözcü hedefin kapısına yürür, raporu orada alır ve eve dönünce teslim eder.
   // Görevdeki gözcü çalışmaz ama yemek yer; dönünce boşta olur.

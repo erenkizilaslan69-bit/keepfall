@@ -16,8 +16,10 @@ public sealed record ProductionRates(double FoodPerMinute, double WoodPerMinute,
 public sealed class GameRules
 {
     public GameRules(IReadOnlyList<UnitType> units, CounterMatrix counters, CombatSettings combat, ProductionRates production,
-        MatchRules match, EconomyRules economy, ScoutingRules scouting, WarRules war, MapRules map)
+        MatchRules match, EconomyRules economy, ScoutingRules scouting, WarRules war, MapRules map,
+        IReadOnlyDictionary<string, double>? mercenaryPrices = null)
     {
+        MercenaryPrices = mercenaryPrices ?? new Dictionary<string, double>();
         Units = units;
         Counters = counters;
         Combat = combat;
@@ -38,6 +40,8 @@ public sealed class GameRules
     public ScoutingRules Scouting { get; }
     public WarRules War { get; }
     public MapRules Map { get; }
+    /// <summary>Gold per soldier when hiring (by unit id); a unit without a price cannot be hired.</summary>
+    public IReadOnlyDictionary<string, double> MercenaryPrices { get; }
 
     public UnitType? FindUnit(string idOrName) =>
         Units.FirstOrDefault(u => string.Equals(u.Id, idOrName, StringComparison.OrdinalIgnoreCase)

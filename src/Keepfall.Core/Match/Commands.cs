@@ -52,6 +52,9 @@ public sealed record RecallArmy(int ArmyId) : GameCommand;
 /// <summary>How the soldiers at home line up when the castle is attacked.</summary>
 public sealed record SetDefense(IReadOnlyDictionary<string, Row>? Rows, string? ArcherPriority) : GameCommand;
 
+/// <summary>Hire soldiers for gold at the castle: they are there at once and cannot become workers.</summary>
+public sealed record HireMercenary(string UnitId, int Count) : GameCommand;
+
 /// <summary>Turn automatic population growth on or off.</summary>
 public sealed record SetGrowth(bool Enabled) : GameCommand;
 

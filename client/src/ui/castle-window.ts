@@ -4,8 +4,8 @@ import { Win, type WinContext, type WinData } from './windows';
 
 // Our own castle: soldiers (arm and disarm, from which job), growth and the defence line-up.
 
-type Tab = 'soldiers' | 'growth' | 'defense';
-const TABS: [Tab, string][] = [['soldiers', 'Askerler'], ['growth', 'Büyüme'], ['defense', 'Savunma']];
+type Tab = 'soldiers' | 'hire' | 'growth' | 'defense';
+const TABS: [Tab, string][] = [['soldiers', 'Askerler'], ['hire', 'Kirala'], ['growth', 'Büyüme'], ['defense', 'Savunma']];
 
 export class CastleWin extends Win {
   private tab: Tab = 'soldiers';
@@ -22,6 +22,12 @@ export class CastleWin extends Win {
         <span class="stepper"><button class="btn" data-act="arm" data-n="1">+1</button><button class="btn" data-act="arm" data-n="5">+5</button>
           <button class="btn btn-red" data-act="disarm" data-n="1" title="Silahı bırak, boşa dön">−1</button></span>
       </div>`).join('');
+    const hire = s.units.map((u) => `
+      <div class="unit-row" data-hire="${u.id}">
+        <div class="unit-head"><b>${esc(u.name)}</b> <span class="cost"><i class="ico ico-coin"></i><b>${fmt(u.price)}</b></span>
+          <small class="muted-ink" data-f="hired"></small></div>
+        <span class="stepper"><button class="btn" data-act="hire" data-n="1">+1</button><button class="btn" data-act="hire" data-n="5">+5</button></span>
+      </div>`).join('');
     const rows = s.units.map((u) => `
       <div class="row"><span>${esc(u.name)}</span>
         <select data-d-row="${u.id}"><option value="front">ön sıra</option><option value="back">arka sıra</option></select></div>`).join('');
@@ -32,6 +38,11 @@ export class CastleWin extends Win {
         <div class="row"><span>Hangi meslekten</span><select data-f="source" title="Silah verilen kişi hangi meslekten alınsın">${sources}</select></div>
         ${units}
         <p class="muted-ink small" data-f="soldier-note"></p>
+      </div>
+      <div class="pane" data-pane="hire">
+        <div class="row"><span>Kasadaki altın</span><span class="cost"><i class="ico ico-coin"></i><b data-f="gold"></b></span></div>
+        ${hire}
+        <p class="muted-ink small">Paralı asker anında gelir, işçiden eksilmez ve nüfusa sayılır; yemek yer ve bir daha işçi olamaz. Altın ormandan (sandık, köy, haydut kampı) gelir.</p>
       </div>
       <div class="pane" data-pane="growth">
         <div class="row"><span>Nüfus</span><b data-f="pop"></b></div>
@@ -74,8 +85,14 @@ export class CastleWin extends Win {
       const row = this.q(`[data-unit="${u.id}"]`);
       row.querySelector('[data-f="stock"]')!.textContent = `asker ${u.soldiers} · silah ${u.weapons}`;
       for (const b of row.querySelectorAll<HTMLButtonElement>('[data-act="arm"]')) b.disabled = u.weapons < Number(b.dataset.n) || dead;
-      row.querySelector<HTMLButtonElement>('[data-act="disarm"]')!.disabled = u.soldiers === 0 || dead;
+      row.querySelector<HTMLButtonElement>('[data-act="disarm"]')!.disabled = u.soldiers - u.hired <= 0 || dead;
+      row.querySelector<HTMLButtonElement>('[data-act="disarm"]')!.title = u.hired > 0 ? `${u.hired} paralı asker işçiye dönemez` : 'Silahı bırak, boşa dön';
+      const h = this.q(`[data-hire="${u.id}"]`);
+      h.querySelector('[data-f="hired"]')!.textContent = u.hired > 0 ? `kiralanan ${u.hired}` : '';
+      for (const b of h.querySelectorAll<HTMLButtonElement>('[data-act="hire"]'))
+        b.disabled = dead || u.price <= 0 || s.resources.gold + 1e-6 < u.price * Number(b.dataset.n);
     }
+    this.q('[data-f="gold"]').textContent = fmt(s.resources.gold);
     this.q('[data-f="soldier-note"]').textContent = `Asker ${s.soldiers} / nüfus ${s.population}. Silahı demirhanede üret, burada işçiye ver.`;
 
     // growth
@@ -104,10 +121,14 @@ export class CastleWin extends Win {
     const btn = t.closest<HTMLButtonElement>('button[data-act]');
     if (!btn || btn.disabled) return;
     const net = this.ctx.net;
-    const unit = btn.closest<HTMLElement>('[data-unit]')?.dataset.unit;
+    const unit = btn.closest<HTMLElement>('[data-unit]')?.dataset.unit ?? btn.closest<HTMLElement>('[data-hire]')?.dataset.hire;
     let r;
     switch (btn.dataset.act) {
       case 'arm': r = await net.armWorkers(unit!, Number(btn.dataset.n), this.q<HTMLSelectElement>('[data-f="source"]').value as Job); break;
+      case 'hire':
+        r = await net.hireMercenary(unit!, Number(btn.dataset.n));
+        if (r.ok) this.ctx.info('Paralı asker geldi.');
+        break;
       case 'disarm': r = await net.disarmSoldiers(unit!, Number(btn.dataset.n)); break;
       case 'growth': r = await net.setGrowth(!this.growthOn); break;
       case 'save-defense': {

@@ -30,6 +30,9 @@ public sealed class CastleStats
     public double ProducedIron { get; internal set; }
     public int WeaponsMade { get; internal set; }
     public int PeopleBorn { get; internal set; }
+    public double GoldGained { get; internal set; }
+    public double GoldSpent { get; internal set; }
+    public int MercenariesHired { get; internal set; }
     public int PeakPopulation { get; internal set; }
     public double StarvingSeconds { get; internal set; }
     public double IdleWorkerSeconds { get; internal set; }
@@ -55,6 +58,10 @@ public sealed class Castle
     private readonly Dictionary<BuildingType, Building> _buildings = Jobs.Buildings.ToDictionary(b => b, b => new Building(b));
     private readonly Dictionary<UnitType, int> _weapons = [];
     private readonly Dictionary<UnitType, int> _soldiers = [];
+    /// <summary>Soldiers of each type that were hired for gold (wherever they are now): they cannot be turned back into workers.</summary>
+    private readonly Dictionary<UnitType, int> _mercenaries = [];
+    /// <summary>Soldiers of each type that are away with an army.</summary>
+    private readonly Dictionary<UnitType, int> _away = [];
     private readonly List<WeaponOrder> _queue = [];
     private readonly Dictionary<UnitType, Row> _defenseRows = [];
 
@@ -66,7 +73,7 @@ public sealed class Castle
         Food = m.StartingFood;
         Wood = m.StartingWood;
         Iron = m.StartingIron;
-        foreach (var u in rules.Units) { _weapons[u] = 0; _soldiers[u] = 0; }
+        foreach (var u in rules.Units) { _weapons[u] = 0; _soldiers[u] = 0; _mercenaries[u] = 0; _away[u] = 0; }
         WallHp = MaxWallHp = rules.War.CastleHp;
         Stats.PeakPopulation = Population;
     }
@@ -74,6 +81,8 @@ public sealed class Castle
     public double Food { get; private set; }
     public double Wood { get; private set; }
     public double Iron { get; private set; }
+    /// <summary>Gold from the forest (chests, villages, bandit camps); spent on mercenaries.</summary>
+    public double Gold { get; private set; }
     public bool GrowthEnabled { get; private set; } = true;
     /// <summary>True when the last tick ended with no food; production runs at the starvation multiplier.</summary>
     public bool Starving { get; private set; }
@@ -94,6 +103,11 @@ public sealed class Castle
     public IReadOnlyDictionary<Job, int> Workers => _workers;
     public IReadOnlyDictionary<UnitType, int> Weapons => _weapons;
     public IReadOnlyDictionary<UnitType, int> Soldiers => _soldiers;
+    /// <summary>Hired soldiers per type (alive, at home or away).</summary>
+    public IReadOnlyDictionary<UnitType, int> Mercenaries => _mercenaries;
+    /// <summary>How many soldiers of this type could still be disarmed: the hired ones never can.</summary>
+    public int Disarmable(UnitType type) => Math.Max(0, _soldiers[type] - _mercenaries[type]);
+    public double MercenaryPrice(UnitType type) => _rules.MercenaryPrices.GetValueOrDefault(type.Id);
     public IReadOnlyList<WeaponOrder> Queue => _queue;
     public IReadOnlyList<UnitType> UnitTypes => _rules.Units;
     public EconomyRules Economy => _rules.Economy;
@@ -177,24 +191,41 @@ public sealed class Castle
             if (n < 0) return CommandResult.Fail("Asker sayısı negatif olamaz.");
             if (_soldiers[type] < n) return CommandResult.Fail($"Kalede sadece {_soldiers[type]} {type.Name} var.");
         }
-        foreach (var (type, n) in units) _soldiers[type] -= n;
+        foreach (var (type, n) in units) { _soldiers[type] -= n; _away[type] += n; }
         SoldiersAway += units.Values.Sum();
         Stats.AttacksLaunched++;
         return CommandResult.Success;
     }
 
     /// <summary>Soldiers of a marching army died (or disbanded): they stop eating.</summary>
-    internal void ArmyLost(int count)
+    internal void ArmyLost(IReadOnlyDictionary<UnitType, int> lost)
     {
+        int count = lost.Values.Sum();
         SoldiersAway = Math.Max(0, SoldiersAway - count);
         Stats.SoldiersLost += count;
+        foreach (var (type, n) in lost)
+        {
+            if (n <= 0) continue;
+            Fell(type, n, _soldiers[type] + _away[type]);
+            _away[type] = Math.Max(0, _away[type] - n);
+        }
     }
 
     /// <summary>A returning army is home: its soldiers can defend again.</summary>
     internal void ArmyReturned(IReadOnlyDictionary<UnitType, int> survivors)
     {
-        foreach (var (type, n) in survivors) _soldiers[type] += n;
+        foreach (var (type, n) in survivors) { _soldiers[type] += n; _away[type] = Math.Max(0, _away[type] - n); }
         SoldiersAway = Math.Max(0, SoldiersAway - survivors.Values.Sum());
+    }
+
+    /// <summary>Casualties are taken from hired and regular soldiers in proportion (nobody can tell them apart in a battle).</summary>
+    private void Fell(UnitType type, int lost, int totalBefore)
+    {
+        if (_mercenaries[type] == 0 || totalBefore <= 0) return;
+        int hired = (int)Math.Round(lost * (double)_mercenaries[type] / totalBefore, MidpointRounding.AwayFromZero);
+        _mercenaries[type] = Math.Max(0, _mercenaries[type] - Math.Min(hired, _mercenaries[type]));
+        // Never more hired soldiers than soldiers.
+        _mercenaries[type] = Math.Min(_mercenaries[type], Math.Max(0, totalBefore - lost));
     }
 
     /// <summary>The soldiers at home go down to the gate to fight; they are out of reach until the battle is over.</summary>
@@ -205,11 +236,35 @@ public sealed class Castle
     }
 
     /// <summary>The battle at the gate is over: the survivors are home again, the fallen are gone.</summary>
-    internal void DefendersBack(IReadOnlyDictionary<UnitType, int> survivors, int fallen)
+    internal void DefendersBack(IReadOnlyDictionary<UnitType, int> survivors, IReadOnlyDictionary<UnitType, int> lost)
     {
+        int fallen = lost.Values.Sum();
         foreach (var (type, n) in survivors) _soldiers[type] += n;
         SoldiersDefending = Math.Max(0, SoldiersDefending - survivors.Values.Sum() - fallen);
         Stats.SoldiersLost += fallen;
+        foreach (var (type, n) in lost)
+            if (n > 0) Fell(type, n, _soldiers[type] + n + _away[type]);
+    }
+
+    /// <summary>Loot arrives: gold is added to the treasury.</summary>
+    internal void AddGold(double amount)
+    {
+        if (amount <= 0) return;
+        Gold += amount;
+        Stats.GoldGained += amount;
+    }
+
+    /// <summary>Loot or a reward: ready weapons go to the stockpile.</summary>
+    internal void AddWeapons(UnitType type, int count)
+    {
+        if (count > 0) _weapons[type] += count;
+    }
+
+    /// <summary>Loot: people who join the castle as idle workers.</summary>
+    internal void AddPeople(int count)
+    {
+        if (count > 0) _workers[Job.Idle] += count;
+        Stats.PeakPopulation = Math.Max(Stats.PeakPopulation, Population);
     }
 
     internal void TakeWallDamage(double amount)
@@ -289,6 +344,7 @@ public sealed class Castle
         UpgradeBuilding c => Upgrade(c),
         SetGrowth c => ToggleGrowth(c),
         SetDefense c => SetDefense_(c),
+        HireMercenary c => Hire(c),
         _ => CommandResult.Fail("Bilinmeyen komut."),
     };
 
@@ -346,6 +402,8 @@ public sealed class Castle
         if (FindUnit(c.UnitId) is not { } type) return CommandResult.Fail($"Bilinmeyen birlik \"{c.UnitId}\".");
         if (c.Count <= 0) return CommandResult.Fail("Sayı en az 1 olmalı.");
         if (_soldiers[type] < c.Count) return CommandResult.Fail($"Sadece {_soldiers[type]} {type.Name} var.");
+        if (Disarmable(type) < c.Count)
+            return CommandResult.Fail($"{type.Name} askerlerinin {_mercenaries[type]} tanesi paralı asker; işçiye dönemez (en fazla {Disarmable(type)}).");
         _soldiers[type] -= c.Count;
         _weapons[type] += c.Count;
         _workers[Job.Idle] += c.Count;
@@ -380,6 +438,24 @@ public sealed class Castle
         _defenseRows.Clear();
         foreach (var (type, row) in rows) _defenseRows[type] = row;
         DefensePriority = priority;
+        return CommandResult.Success;
+    }
+
+    /// <summary>Hire soldiers for gold: they appear at home at once, extra to the workers, and eat like soldiers.</summary>
+    private CommandResult Hire(HireMercenary c)
+    {
+        if (FindUnit(c.UnitId) is not { } type) return CommandResult.Fail($"Bilinmeyen birim \"{c.UnitId}\".");
+        if (c.Count <= 0) return CommandResult.Fail("Sayı en az 1 olmalı.");
+        var price = MercenaryPrice(type);
+        if (price <= 0) return CommandResult.Fail($"{type.Name} kiralanamaz.");
+        double cost = price * c.Count;
+        if (Gold + CostTolerance < cost) return CommandResult.Fail($"{c.Count} {type.Name} için {cost:0} altın gerekiyor (kasada {Gold:0}).");
+        Gold = Math.Max(0, Gold - cost);
+        Stats.GoldSpent += cost;
+        Stats.MercenariesHired += c.Count;
+        _soldiers[type] += c.Count;
+        _mercenaries[type] += c.Count;
+        Stats.PeakPopulation = Math.Max(Stats.PeakPopulation, Population);
         return CommandResult.Success;
     }
 
