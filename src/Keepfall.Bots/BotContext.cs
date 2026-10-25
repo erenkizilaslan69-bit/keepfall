@@ -25,7 +25,20 @@ public sealed class BotContext(GameRules rules, BotInput input, BotMemory memory
     public Keepfall.Core.Combat.BattleSimulator Simulator { get; init; } = new(rules);
 
     public int Seat => Input.Seat;
-    public IReadOnlyList<SiteView> Sites => Map?.Sites ?? [];
+    /// <summary>
+    /// The places of the forest the bot may go for now: in the first part of the preparation only those of its own quarter (the big camp in the middle
+    /// and the other players' quarters wait, <c>bots.otherQuartersFrom</c>); later on, and in the war, every place it knows.
+    /// </summary>
+    public IReadOnlyList<SiteView> Sites
+    {
+        get
+        {
+            var all = Map?.Sites ?? [];
+            if (AtWar || PrepProgress >= Rules.Bots.OtherQuartersFrom) return all;
+            var own = Castle.Scouting.Quarters.FirstOrDefault(q => q.Seat == Seat)?.Corner;
+            return all.Where(s => s.Kind != SiteKind.BigCamp && s.Quarter is { } q && q == own).ToList();
+        }
+    }
     public VecView? MyGate => Input.Layout?.Regions.FirstOrDefault(r => r.Seat == Seat)?.Gate;
     public IEnumerable<PlayerView> Rivals => Input.Room.Players.Where(p => p.Seat != Seat && !p.Eliminated);
 

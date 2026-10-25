@@ -35,6 +35,19 @@ public class BotForestTests
     }
 
     [Fact]
+    public void In_the_first_half_of_the_preparation_a_bot_stays_in_its_own_quarter()
+    {
+        var (room, host) = Play(BotDifficulty.Medium, seed: 6, prep: 600, seconds: 295);
+        var game = room.Game!;
+        foreach (var p in room.Players)
+            Assert.Equal([game.CornerOf(p.CastleKey)], game.ExploredBy(p.CastleKey).ToArray());
+        // The only places it knows are those of its own quarter (touring it also shows the big camp, which it leaves alone for now).
+        foreach (var p in room.Players)
+            Assert.All(game.KnownSitesOf(p.CastleKey).Where(k => k.Site.Kind != SiteKind.BigCamp), k => Assert.Equal(game.CornerOf(p.CastleKey), k.Site.Quadrant));
+        Assert.Equal(0, host.Stats.Values.Sum(st => st["bigCampAttacks"]));
+    }
+
+    [Fact]
     public void A_good_bot_tours_the_other_quarters_too_a_poor_one_hardly_does()
     {
         var medium = Play(BotDifficulty.Medium, seed: 6, seconds: 360).Room;
