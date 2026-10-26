@@ -32,7 +32,10 @@ public sealed record GuideView(
     int MaxScouts, double ScoutErrorPercent, double ArmySpeed, double ScoutSpeed,
     int ChestsPerCorner, int VillagesPerCorner, int CampsPerCorner,
     GuideChestView Chest, GuideVillageView Village, GuideCampView Camp, GuideCampView BigCamp,
-    double FallLootShare, double FallWorkerShare);
+    double FallLootShare, double FallWorkerShare,
+    IReadOnlyList<GuideWallLevelView>? Walls = null, double ArcherDefenseBonusPercent = 0);
+
+public sealed record GuideWallLevelView(int Level, double Hp, double UpgradeWood, double UpgradeIron, double UpgradeSeconds);
 
 public static class GuideMapper
 {
@@ -60,6 +63,10 @@ public static class GuideMapper
             new GuideChestView(new(f.Chest.GoldMin, f.Chest.GoldMax), new(f.Chest.IronMin, f.Chest.IronMax)),
             new GuideVillageView(new(f.Village.GoldMin, f.Village.GoldMax), new(f.Village.FoodMin, f.Village.FoodMax),
                 new(f.Village.PeopleMin, f.Village.PeopleMax), f.Village.MinSoldiers),
-            Camp(f.Camp), Camp(f.BigCamp), rules.War.FallLootShare, rules.War.FallWorkerShare);
+            Camp(f.Camp), Camp(f.BigCamp), rules.War.FallLootShare, rules.War.FallWorkerShare,
+            Enumerable.Range(1, rules.Walls.MaxLevel).Select(l => l == 1
+                ? new GuideWallLevelView(1, rules.Walls.HpOf(1), 0, 0, 0)
+                : new GuideWallLevelView(l, rules.Walls.HpOf(l), rules.Walls.UpgradeTo(l).UpgradeWood, rules.Walls.UpgradeTo(l).UpgradeIron, rules.Walls.UpgradeTo(l).UpgradeSeconds)).ToList(),
+            Math.Round(rules.Walls.ArcherDefenseBonus * 100));
     }
 }

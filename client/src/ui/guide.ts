@@ -23,6 +23,8 @@ export interface Guide {
   village: { gold: Range; food: Range; people: Range; minSoldiers: number };
   camp: GuideCamp; bigCamp: GuideCamp;
   fallLootShare: number; fallWorkerShare: number;
+  walls: { level: number; hp: number; upgradeWood: number; upgradeIron: number; upgradeSeconds: number }[];
+  archerDefenseBonusPercent: number;
 }
 
 let cached: Promise<Guide> | null = null;
@@ -43,7 +45,8 @@ export function guideHtml(g: Guide): string {
     ['Amaç', [
       '2–4 kişi oynar, herkesin tek bir kalesi vardır. <b>Son ayakta kalan kale kazanır</b>; süre dolarsa en yüksek nüfus kazanır.',
       `<b>Hazırlık</b> (${minutes(g.shortPrepSeconds)}): ekonomi, silah, orman. <b>Savaş</b> (${minutes(g.shortWarSeconds)}): ordular yola çıkar. ${minutes(shortTotal)} ve ${minutes(longTotal)} modu var.`,
-      `Kale canı ${num(g.castleHp)}; sıfırlanan oyuncu elenir ve izleyici olur.`,
+      `Kale canı = sur canı: ${num(g.castleHp)}; sıfırlanan oyuncu elenir ve izleyici olur.`,
+      ...(g.walls.length > 1 ? [`<b>Sur</b>: kalenin etrafı. ${g.walls.slice(1).map((w) => `Sv ${w.level}: ${num(w.hp)} can (${num(w.upgradeWood)} odun, ${num(w.upgradeIron)} demir, ${num(w.upgradeSeconds)} sn)`).join(' · ')}. Sur ayaktayken kapıdaki okçular %${num(g.archerDefenseBonusPercent)} fazla hasar verir; rakibin sur seviyesini kapısını görünce ya da gözcü raporundan öğrenirsin.`] : []),
     ]],
     ['Ekonomi: işçi mi asker mi?', [
       `Her işçi çiftçi, oduncu, madenci ya da demirci olur. Boşta duran üretmez ama yemek yer. Kişi başı dakikada: yemek ${num(g.foodPerMinute)}, odun ${num(g.woodPerMinute)}, demir ${num(g.ironPerMinute)}.`,
