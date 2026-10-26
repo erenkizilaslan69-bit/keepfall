@@ -99,16 +99,16 @@ export class SiteLayer {
     this.trails.clear();
     for (const s of sites) {
       const c = toWorld(s.position), r = CLEARING[s.kind];
-      this.trails.fillStyle(TRAIL_EDGE, 1).fillEllipse(c.x, c.y + 14, r * 2 + 10, r * 1.3 + 10);
+      this.trails.fillStyle(TRAIL_EDGE, 1).fillEllipse(c.x, c.y + 14, r * 2 + 14, r * 1.3 + 14);
       this.trails.fillStyle(TRAIL_COLOR, 1).fillEllipse(c.x, c.y + 14, r * 2, r * 1.3);
     }
     for (const s of sites) {
       if (s.spur.length < 2) continue;
       const pts = s.spur.map(toWorld);
-      this.trails.lineStyle(14, TRAIL_EDGE, 1).beginPath().moveTo(pts[0].x, pts[0].y);
+      this.trails.lineStyle(19, TRAIL_EDGE, 1).beginPath().moveTo(pts[0].x, pts[0].y);
       for (const p of pts.slice(1)) this.trails.lineTo(p.x, p.y);
       this.trails.strokePath();
-      this.trails.lineStyle(9, TRAIL_COLOR, 1).beginPath().moveTo(pts[0].x, pts[0].y);
+      this.trails.lineStyle(13, TRAIL_COLOR, 1).beginPath().moveTo(pts[0].x, pts[0].y);
       for (const p of pts.slice(1)) this.trails.lineTo(p.x, p.y);
       this.trails.strokePath();
     }

@@ -280,16 +280,44 @@ export class Terrain {
     return -1;
   }
 
-  /** Patches of bare earth, here and there. */
+  /**
+   * Patches of bare earth: few, of very different sizes (mostly small, an occasional big one), a part of them in small groups
+   * (a big patch with one or two small ones round it) and the rest on their own, so they do not read as a pattern.
+   */
   private dirt(): void {
     const rnd = seeded(this.seed ^ 0xd127);
-    const spots: Vec[] = [];
-    for (let i = 0; i < 800 && spots.length < 20; i++) {
-      const x = this.left + rnd() * (this.right - this.left), y = this.top + rnd() * (this.bottom - this.top);
-      // away from the roads, the coast, the corners, the forest and the other patches
-      if (!this.grass(x, y, 170, 220) || this.inCorner(x, y, 1) || this.inForest(x, y) >= 0 || spots.some((q) => Math.hypot(q.x - x, q.y - y) < 330)) continue;
-      spots.push({ x, y });
-      this.scene.add.image(x, y, `kf-dirt${Math.floor(rnd() * 4)}`).setDepth(DEPTH.dirt).setScale(0.55 + rnd() * 0.6).setFlipX(rnd() < 0.5).setAlpha(0.95);
+    const placed: { x: number; y: number; r: number }[] = [];
+    const free = (x: number, y: number, r: number, gap: number) =>
+      this.grass(x, y, 150 + r * 0.4, 220) && !this.inCorner(x, y, 1) && this.inForest(x, y) < 0 && placed.every((q) => Math.hypot(q.x - x, q.y - y) > gap + q.r + r);
+    const put = (x: number, y: number, scale: number): void => {
+      placed.push({ x, y, r: 70 * scale });
+      this.scene.add.image(x, y, `kf-dirt${Math.floor(rnd() * 4)}`).setDepth(DEPTH.dirt).setScale(scale).setFlipX(rnd() < 0.5).setFlipY(rnd() < 0.5)
+        .setAngle((rnd() - 0.5) * 24).setAlpha(0.92);
+    };
+    const where = (): Vec => ({ x: this.left + rnd() * (this.right - this.left), y: this.top + rnd() * (this.bottom - this.top) });
+    // sizes: many small, few big
+    const size = () => 0.3 + rnd() * rnd() * 1.15;
+
+    // groups: one bigger patch and one or two smaller ones close by
+    for (let g = 0, tries = 0; g < 3 && tries < 600; tries++) {
+      const c = where(), big = 0.7 + rnd() * 0.55;
+      if (!free(c.x, c.y, 70 * big, 520)) continue;
+      put(c.x, c.y, big);
+      for (let k = 0, n = 1 + Math.floor(rnd() * 2), t = 0; k < n && t < 40; t++) {
+        const angle = rnd() * Math.PI * 2, dist = 90 * big + 60 + rnd() * 90, sm = 0.28 + rnd() * 0.4;
+        const x = c.x + Math.cos(angle) * dist, y = c.y + Math.sin(angle) * dist;
+        if (!free(x, y, 70 * sm, 18)) continue;
+        put(x, y, sm);
+        k++;
+      }
+      g++;
+    }
+    // loners, far from everything
+    for (let n = 0, tries = 0; n < 4 && tries < 600; tries++) {
+      const p = where(), sc = size();
+      if (!free(p.x, p.y, 70 * sc, 420)) continue;
+      put(p.x, p.y, sc);
+      n++;
     }
   }
 
