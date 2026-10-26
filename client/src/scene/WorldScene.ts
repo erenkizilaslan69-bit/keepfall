@@ -19,6 +19,7 @@ import { Fog } from './Fog';
 import { Movers } from './Movers';
 import { Soldiers } from './Soldiers';
 import { Terrain } from './Terrain';
+import { WallRing } from './Walls';
 import { Workers } from './Workers';
 
 const MAX_ZOOM = 1.5;
@@ -103,6 +104,8 @@ export class WorldScene extends Phaser.Scene {
   /** The places of the forest we have found. */
   sites!: SiteLayer;
   private castleSprite!: Phaser.GameObjects.Image;
+  /** The walls round the regions, by seat. */
+  private walls = new Map<number, WallRing>();
   private lastWallHp: number | null = null;
   /** Our own castle: has it fallen (null: not seen yet, so a castle already down is shown as a ruin without the show)? */
   private ownFallen: boolean | null = null;
@@ -139,6 +142,7 @@ export class WorldScene extends Phaser.Scene {
     this.drawRoads();
     this.drawForest();
     this.drawOtherCastles();
+    this.drawWalls();
     this.makeForestClickable();
     this.terrain.shade(CASTLE.x, CASTLE.y - 6, 470, 130);
     this.castleSprite = this.add.image(CASTLE.x, CASTLE.y, 'castle').setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(CASTLE.y);
@@ -616,6 +620,17 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /** The other players' castles in their colour: where they are is public, what is inside is not. */
+  /** A wall round every castle's region, at the level we know of (our own from the castle state; a preview with ?sur=1..3). */
+  private drawWalls(): void {
+    const preview = Number(new URLSearchParams(window.location.search).get('sur')) || 0;
+    for (const r of this.layout.regions) {
+      if (r.seat === null || !r.color) continue;
+      const ring = new WallRing(this, toWorld(r.origin), r.corner, r.color, this.color);
+      ring.setLevel(preview || 1);
+      this.walls.set(r.seat, ring);
+    }
+  }
+
   private drawOtherCastles(): void {
     for (const r of this.layout.regions) {
       if (r.seat === null || r.seat === this.mySeat || !r.color) continue;

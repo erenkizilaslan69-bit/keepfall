@@ -1,0 +1,3 @@
+Tiny Swords, "TS_old version_CC0 Licensed" (Update 010) by Pixel Frog - CC0 1.0 Universal (public domain), https://pixelfrog-assets.itch.io/tiny-swords
+Files here: Tilemap_Elevation.png (Terrain/Ground), Signpost.png (Deco/17), Signpost_Cross.png (Deco/16).
+These are the only Tiny Swords files that may be committed. The Free Pack (client/public/assets/tiny-swords/) is NOT in the repo.
