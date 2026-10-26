@@ -65,6 +65,10 @@ const SHARED_SHEETS: SheetDef[] = [
   { key: 'explosion', path: 'Particle FX/Explosion_01.png', frame: 192 },
   { key: 'fire', path: 'Particle FX/Fire_01.png', frame: 64 },
   { key: 'tiles', path: 'Terrain/Tileset/Tilemap_color1.png', frame: 64 },
+  { key: 'foam', path: 'Terrain/Tileset/Water Foam.png', frame: 192 },
+  ...[1, 2, 3, 4].map((i) => ({ key: `wrock${i}`, path: `Terrain/Decorations/Rocks in the Water/Water Rocks_0${i}.png`, frame: 64 })),
+  { key: 'bush3', path: 'Terrain/Decorations/Bushes/Bushe3.png', frame: 128 },
+  { key: 'bush4', path: 'Terrain/Decorations/Bushes/Bushe4.png', frame: 128 },
 ];
 
 const sheets = (color: PlayerColor): SheetDef[] => [...units(COLOR_FOLDER[color]), ...SHARED_SHEETS];
@@ -90,6 +94,8 @@ const IMAGES: Record<string, string> = {
   'wood-pile': 'Terrain/Resources/Wood/Wood Resource/Wood Resource.png',
   rock1: 'Terrain/Decorations/Rocks/Rock1.png',
   rock2: 'Terrain/Decorations/Rocks/Rock2.png',
+  rock3: 'Terrain/Decorations/Rocks/Rock3.png',
+  rock4: 'Terrain/Decorations/Rocks/Rock4.png',
   'gold-pile': 'Terrain/Resources/Gold/Gold Resource/Gold_Resource.png',
   ...Object.fromEntries([1, 2, 3, 4, 5, 6].map((i) => [`stone${i}`, `Terrain/Resources/Gold/Gold Stones/Gold Stone ${i}.png`])),
 };

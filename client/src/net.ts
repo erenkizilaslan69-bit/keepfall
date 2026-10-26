@@ -26,7 +26,8 @@ export interface ConnectionEvents {
 /** Thin wrapper over the hub: the client only sends commands, the server decides. */
 export class GameConnection {
   private readonly hub: signalR.HubConnection;
-  private code: string | null = null;
+  /** The room we are in (its code is public: the room's link has it). */
+  roomCode: string | null = null;
   private name = '';
   /** This tab's seat in the room (1–4), 0 before joining. */
   seat = 0;
@@ -48,7 +49,7 @@ export class GameConnection {
     this.hub.on('Notification', (text: string) => this.on.notification(text));
     this.hub.onreconnecting(() => this.on.status('reconnecting'));
     // A reconnect is a new connection on the server: rejoin the same seat with our token.
-    this.hub.onreconnected(() => { if (this.code) void this.joinRoom(this.code, this.name); });
+    this.hub.onreconnected(() => { if (this.roomCode) void this.joinRoom(this.roomCode, this.name); });
     this.hub.onclose(() => this.on.status('disconnected'));
   }
 
@@ -71,7 +72,7 @@ export class GameConnection {
 
   private joined(result: JoinView, name: string): JoinView {
     if (result.ok) {
-      this.code = result.code;
+      this.roomCode = result.code;
       this.name = name;
       this.seat = result.seat;
       saveIdentity(result.code!, result.token!);

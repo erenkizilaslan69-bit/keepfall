@@ -9,7 +9,7 @@ import { COLOR_CSS, esc } from '../format';
 import { createAnimations, loadSpectatorAssets, preloadAssets } from './assets';
 import { CASTLE, COURTYARD, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH } from './layout';
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
-import { buildingSign, placePart, sign } from './parts';
+import { buildingSign, placePart, setShadeHook, sign } from './parts';
 import { RegionDisplay } from './RegionDisplay';
 import { SiteLayer } from './Sites';
 import { scoutSignHtml } from '../ui/scout-report';
@@ -17,6 +17,7 @@ import { BattlePlayer } from './BattlePlayer';
 import { Fog } from './Fog';
 import { Movers } from './Movers';
 import { Soldiers } from './Soldiers';
+import { Terrain } from './Terrain';
 import { Workers } from './Workers';
 
 const MAX_ZOOM = 1.5;
@@ -77,6 +78,7 @@ export class WorldScene extends Phaser.Scene {
   private soldiers!: Soldiers;
   private movers!: Movers;
   private fog!: Fog;
+  private terrain!: Terrain;
   private battles!: BattlePlayer;
   private pendingBattles: BattleStartedView[] = [];
   /** Battles we can see but are not in: just a cloud of dust and crossed swords where they are. */
@@ -101,7 +103,8 @@ export class WorldScene extends Phaser.Scene {
   private lastWallHp: number | null = null;
 
   /** <paramref name="color"/>: the player's colour; units and buildings are drawn in it. */
-  constructor(private readonly color: PlayerColor, private readonly layout: MapLayoutView, private readonly mySeat: number) {
+  /** <paramref name="seed"/>: the room's (everybody in it draws the same decorations). */
+  constructor(private readonly color: PlayerColor, private readonly layout: MapLayoutView, private readonly mySeat: number, private readonly seed = 1) {
     super('world');
     setWorldOrigin(this.ownRegion.origin);
   }
@@ -123,11 +126,14 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     createAnimations(this, this.color, [...this.otherColors, 'black']);
-    this.drawGround();
+    const ground = this.drawGround();
+    this.terrain = new Terrain(this, this.layout, this.seed, ground);
+    setShadeHook((x, y, w, h) => this.terrain.shade(x, y, w, h));
     this.drawRoads();
     this.drawForest();
     this.drawOtherCastles();
     this.makeForestClickable();
+    this.terrain.shade(CASTLE.x, CASTLE.y - 6, 470, 130);
     this.castleSprite = this.add.image(CASTLE.x, CASTLE.y, 'castle').setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(CASTLE.y);
     this.castleSprite.setInteractive({ useHandCursor: true }).on('pointerup', () => this.select({ kind: 'castle' }));
     for (const type of Object.keys(SITES) as BuildingType[]) this.createSite(type);
@@ -424,6 +430,7 @@ export class WorldScene extends Phaser.Scene {
     if (this.scale.gameSize.width !== window.innerWidth || this.scale.gameSize.height !== window.innerHeight)
       this.scale.resize(window.innerWidth, window.innerHeight);
     // Each part on its own: a failure in one must not end the frame loop (the whole picture would freeze).
+    guarded('scene-update', () => this.terrain.update(dt, this.cameras.main.worldView), 'terrain');
     guarded('scene-update', () => this.workers.update(dt), 'workers');
     guarded('scene-update', () => { for (const r of this.regions.values()) r.update(dt); }, 'regions');
     guarded('scene-update', () => this.movers.update(dt), 'movers');
@@ -479,7 +486,7 @@ export class WorldScene extends Phaser.Scene {
   // ---- ground ------------------------------------------------------------------------------
 
   /** The whole map: one grass island inside a one-tile water border. */
-  private drawGround(): void {
+  private drawGround(): Phaser.Tilemaps.TilemapLayer {
     const topLeft = toWorld({ x: 0, y: 0 });
     const cols = this.layout.size, rows = this.layout.size;
     this.add.tileSprite(topLeft.x, topLeft.y, cols * TILE, rows * TILE, 'water').setOrigin(0).setDepth(DEPTH_WATER);
@@ -492,21 +499,23 @@ export class WorldScene extends Phaser.Scene {
     }));
     const map = this.make.tilemap({ data, tileWidth: TILE, tileHeight: TILE });
     const tiles = map.addTilesetImage('tiles', 'tiles', TILE, TILE, 0, 0)!;
-    map.createLayer(0, tiles, topLeft.x, topLeft.y)!.setDepth(DEPTH_GROUND);
+    return map.createLayer(0, tiles, topLeft.x, topLeft.y)!.setDepth(DEPTH_GROUND);
   }
 
   /** Dirt roads between the gates, round the forest and through it. */
   private drawRoads(): void {
     const g = this.add.graphics().setDepth(DEPTH_ROAD);
-    for (const [width, color] of [[54, ROAD_EDGE], [42, ROAD_COLOR]] as const) {
-      g.lineStyle(width, color, 1);
+    // outline (soft, under), edge, surface, and a lighter worn strip down the middle; the geometry is the server's roads, unchanged
+    for (const [width, color, alpha] of [[62, 0x4a3418, 0.2], [54, ROAD_EDGE, 1], [42, ROAD_COLOR, 1], [16, 0xe9d29b, 0.5]] as const) {
+      g.lineStyle(width, color, alpha);
       for (const road of this.layout.roads) {
         const pts = road.points.map(toWorld);
         g.strokePoints(pts.map((p) => new Phaser.Math.Vector2(p.x, p.y)), false, false);
-        g.fillStyle(color, 1);
+        g.fillStyle(color, alpha);
         for (const p of pts) g.fillCircle(p.x, p.y, width / 2); // round corners
       }
     }
+    this.terrain.roadEdges(this.layout.roads, 27);
   }
 
   /** Trees fill the forest, leaving the roads through it clear. Seeded, so everyone sees the same forest. */
@@ -514,6 +523,7 @@ export class WorldScene extends Phaser.Scene {
     const rnd = seeded(7);
     for (const forest of this.layout.features.filter((f) => f.kind === 'forest')) {
       const count = Math.round(forest.radius * forest.radius * 1.7);
+      this.undergrowth(forest.center, forest.radius, rnd);
       for (let i = 0, placed = 0; i < count * 4 && placed < count; i++) {
         const angle = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * forest.radius;
         const p = { x: forest.center.x + Math.cos(angle) * r, y: forest.center.y + Math.sin(angle) * r };
@@ -523,10 +533,28 @@ export class WorldScene extends Phaser.Scene {
         placed++;
         const w = toWorld(p);
         const key = rnd() < 0.5 ? 'tree1' : 'tree2';
-        const sprite = this.add.sprite(w.x, w.y, key).setOrigin(0.5, 0.9).setScale(0.75 + rnd() * 0.25).setDepth(w.y);
+        const scale = 0.75 + rnd() * 0.25;
+        const sprite = this.add.sprite(w.x, w.y, key).setOrigin(0.5, 0.9).setScale(scale).setDepth(w.y);
         sprite.play({ key, startFrame: Math.floor(rnd() * 4) });
+        // deeper into the forest the trees are darker (a multiply tint), and every tree stands in a soft shadow
+        const deep = Math.max(0, 1 - r / forest.radius);
+        sprite.setTint(Phaser.Display.Color.GetColor(255 - deep * 70, 255 - deep * 42, 255 - deep * 62));
+        this.terrain.treeShadow(w.x, w.y, scale);
         this.trees.push({ sprite, tile: p });
       }
+    }
+  }
+
+  /** Bushes between the trees (and clear of the roads through the forest). */
+  private undergrowth(center: Vec, radius: number, rnd: () => number): void {
+    for (let i = 0, placed = 0; i < 400 && placed < 34; i++) {
+      const angle = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * radius * 0.92;
+      const p = { x: center.x + Math.cos(angle) * r, y: center.y + Math.sin(angle) * r };
+      if (!this.layout.roads.every((road) => road.points.slice(1).every((b, j) => distanceToSegment(p, road.points[j], b) > 1.3))) continue;
+      placed++;
+      const w = toWorld(p), key = rnd() < 0.5 ? 'bush3' : 'bush4';
+      this.add.sprite(w.x, w.y, key).setOrigin(0.5, 0.75).setScale(0.55 + rnd() * 0.25).setTint(0xa8c4a8).setDepth(w.y)
+        .play({ key, startFrame: Math.floor(rnd() * 4) });
     }
   }
 
@@ -550,6 +578,7 @@ export class WorldScene extends Phaser.Scene {
       if (r.seat === null || r.seat === this.mySeat || !r.color) continue;
       const base = toWorld(r.origin);
       const x = base.x + CASTLE.x, y = base.y + CASTLE.y;
+      this.terrain.shade(x, y - 6, 470, 130);
       const image = this.add.image(x, y, `castle-${r.color}`).setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(y);
       const seat = r.seat;
       image.setInteractive({ useHandCursor: true }).on('pointerup', () => this.select({ kind: 'enemy', seat }));

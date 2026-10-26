@@ -201,9 +201,16 @@ function showGame(): void {
   if (lastCastle) onCastle(lastCastle);
 }
 
+/** A number from the room code: the same for everybody in the room, so the decorations of the map come out the same. */
+function seedOf(code: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < code.length; i++) h = Math.imul(h ^ code.charCodeAt(i), 16777619);
+  return (h >>> 0) || 1;
+}
+
 /** The scene is drawn in the player's colour on the shared map, so it starts once both have arrived. */
 function startScene(color: CastleView['color'], layout: MapLayoutView): void {
-  scene = new WorldScene(color, layout, net.seat);
+  scene = new WorldScene(color, layout, net.seat, seedOf(net.roomCode ?? ''));
   ui?.attach(scene);
   const world = scene;
   world.minimap = new Minimap(document.getElementById('stage')!, layout, (tile) => world.lookAt(tile));

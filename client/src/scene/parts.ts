@@ -8,6 +8,11 @@ import type { Part, Point } from './layout';
 
 export const NO_OFFSET: Point = { x: 0, y: 0 };
 
+type ShadeHook = (x: number, y: number, w: number, h: number) => Phaser.GameObjects.Image;
+let shadeHook: ShadeHook | null = null;
+/** The terrain says how a soft shadow is made; every building part and tree then gets one that goes when the part does. */
+export function setShadeHook(hook: ShadeHook): void { shadeHook = hook; }
+
 /** One sprite of a building. <paramref name="off"/> moves the whole castle to another corner of the map. */
 export function placePart(scene: Phaser.Scene, p: Part, off: Point = NO_OFFSET, keyOf: (key: string) => string = (k) => k): Phaser.GameObjects.Sprite {
   const flat = /^(sheep|stone|rock|wood-pile|bush|stump)/.test(p.key);
@@ -17,6 +22,11 @@ export function placePart(scene: Phaser.Scene, p: Part, off: Point = NO_OFFSET, 
     .setFlipX(!!p.flip)
     .setDepth(p.y + off.y);
   if (p.grey) sprite.preFX?.addColorMatrix().grayscale(0.9).brightness(1.05, true);
+  if (shadeHook && !flat) {
+    const s = p.scale ?? 1;
+    const size = /^(house|tower|barracks|archery)/.test(p.key) ? [150 * s, 46 * s] : /^tree/.test(p.key) ? [95 * s, 34 * s] : null;
+    if (size) { const shade = shadeHook(p.x + off.x, p.y + off.y, size[0], size[1]); sprite.once('destroy', () => shade.destroy()); }
+  }
   if (p.anim) sprite.play({ key: p.key, startFrame: Phaser.Math.Between(0, 3) });
   return sprite;
 }
