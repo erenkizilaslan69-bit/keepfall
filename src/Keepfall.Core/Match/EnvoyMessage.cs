@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using Keepfall.Core.Economy;
 
 namespace Keepfall.Core.Match;
@@ -21,6 +22,26 @@ public static class EnvoyMessage
                 or UnicodeCategory.PrivateUse or UnicodeCategory.OtherNotAssigned)
                 return new(false, null, "Mesajda satır sonu, denetim ya da görünmez karakter olamaz.");
         }
-        return new(true, text, null);
+        return new(true, rules.ProfanityFilter ? Mask(text) : text, null);
     }
+
+    // A short list, on purpose: words that begin with these (Turkish is agglutinative: "siktirgit"), and words that must stand alone because they are
+    // also the start of harmless ones ("ass" / "class", "aq" / "aquarium").
+    private static readonly string[] Stems =
+    [
+        "orospu", "orosbu", "siktir", "sikeyim", "sikerim", "sikik", "sikici", "yarrak", "yarak", "amcık", "amcik", "amına", "amina", "amını", "aminı",
+        "piç", "gavat", "ibne", "puşt", "pust", "kahpe", "pezevenk", "şerefsiz", "serefsiz", "götveren", "gotveren",
+        "fuck", "shit", "bitch", "asshole", "cunt", "whore", "bastard", "slut", "nigg", "faggot", "wanker", "twat", "dickhead",
+    ];
+    private static readonly string[] Whole = ["amk", "aq", "oç", "dick", "cock", "pussy", "ass", "götü"];
+
+    private static readonly Regex Profanity = new(
+        @"(?<![\p{L}\p{N}])(?:(?:" + string.Join("|", Stems.Select(Letters)) + @")\p{L}*|(?:" + string.Join("|", Whole.Select(Letters)) + @")(?![\p{L}\p{N}]))",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    /// <summary>A word as a pattern that takes the Turkish dotted and dotless i for either.</summary>
+    private static string Letters(string word) => string.Concat(word.Select(c => c is 'i' or 'ı' ? "[iıİI]" : Regex.Escape(c.ToString())));
+
+    /// <summary>Every swear word of the list becomes stars (same length).</summary>
+    public static string Mask(string text) => Profanity.Replace(text, m => new string('*', m.Length));
 }

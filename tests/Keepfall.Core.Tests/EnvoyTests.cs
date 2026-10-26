@@ -172,3 +172,50 @@ public class EnvoyTests
         Assert.False(game.Execute(B, new SendEnvoy(A, 1, 0, 0, 0)).Ok); // and the fallen send nothing
     }
 }
+
+/// <summary>The message checks and the optional swear-word mask.</summary>
+public class EnvoyMessageTests
+{
+    private static readonly EnvoyRules Off = new(40, 140, false), On = new(40, 140, true);
+
+    [Fact]
+    public void The_filter_is_off_in_the_shipped_config_and_off_means_the_text_is_left_alone()
+    {
+        var rules = BalanceConfigLoader.LoadFromFile(BalanceConfigLoader.FindDefaultPath(AppContext.BaseDirectory)!);
+        Assert.False(rules.Envoy.ProfanityFilter);
+        Assert.Equal("fuck you", EnvoyMessage.Check("fuck you", Off).Text);
+    }
+
+    [Theory]
+    [InlineData("fuck you", "**** you")]
+    [InlineData("What the SHIT", "What the ****")]
+    [InlineData("siktir git", "****** git")]
+    [InlineData("Siktirgit", "*********")]
+    [InlineData("amk ne yapıyorsun", "*** ne yapıyorsun")]
+    [InlineData("ORospu çocuğu", "****** çocuğu")]
+    [InlineData("PİÇ misin", "*** misin")]
+    [InlineData("you ass", "you ***")]
+    public void With_the_filter_on_swear_words_become_stars(string text, string masked) =>
+        Assert.Equal(masked, EnvoyMessage.Check(text, On).Text);
+
+    [Theory]
+    [InlineData("class assignment")]
+    [InlineData("aquarium")]
+    [InlineData("Barış ve dostluk, mal alışverişi")]
+    [InlineData("sikke ve altın")]
+    [InlineData("Bütün hamle iyi niyetle")]
+    public void Harmless_words_that_only_look_alike_are_left_alone(string text) =>
+        Assert.Equal(text, EnvoyMessage.Check(text, On).Text);
+
+    [Fact]
+    public void The_limits_hold_in_characters_and_an_empty_message_is_no_message()
+    {
+        Assert.Null(EnvoyMessage.Check(null, On).Text);
+        Assert.Null(EnvoyMessage.Check("   ", On).Text);
+        Assert.True(EnvoyMessage.Check(new string('ş', 140), Off).Ok);
+        Assert.False(EnvoyMessage.Check(new string('ş', 141), Off).Ok);
+        Assert.False(EnvoyMessage.Check("a\u0007b", Off).Ok); // bell
+        Assert.False(EnvoyMessage.Check("a\u2028b", Off).Ok); // line separator
+        Assert.False(EnvoyMessage.Check("a\uE000b", Off).Ok); // private use
+    }
+}
