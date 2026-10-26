@@ -43,7 +43,7 @@ public sealed class Bot
     /// <summary>One go at thinking: look at the pictures, wish, and give the commands that fit the budget.</summary>
     public IReadOnlyList<GameCommand> Think(BotInput input)
     {
-        _memory.Observe(input, _rng);
+        _memory.Observe(input, _rng, _rules.Bots);
         var ctx = new BotContext(_rules, input, _memory, Difficulty, _level, Stats, _rng) { Simulator = _simulator };
         foreach (var module in _modules) module.Think(ctx);
         var commands = ctx.Decide(_level.Commands);

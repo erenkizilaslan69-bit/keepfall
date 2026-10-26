@@ -43,11 +43,13 @@ public sealed record BotLevelRules(double ThinkMin, double ThinkMax, double Reac
 /// <param name="BlindMargin">…after that, or with no report at all, it may still attack on its last knowledge (or, with none, on its own army's size) if it demands this much more (0 = it waits for a fresh report).</param>
 /// <param name="BlindAfterWarSeconds">…but not in the first stretch of the war: it tries to get a report first.</param>
 /// <param name="BlindRivalShare">With no report at all it guesses a rival has this share of its own army.</param>
+/// <param name="GiftThreshold">A gift (goods in all) of at least this much, brought by an envoy, makes a bot leave the sender alone…</param>
+/// <param name="GiftPeaceSeconds">…for this long (it does not send armies against them; the message is ignored).</param>
 /// <param name="OtherQuartersFrom">Share of the preparation after which a bot may tour and raid other players' quarters of the forest (before that: only its own; the big camp in the middle waits too).</param>
 public sealed record BotRules(BotLevelRules Easy, BotLevelRules Medium, IReadOnlyDictionary<string, double> Mix, double WeaponsFrom, double ArmFrom, double ArmyShare,
     double AttackMargin = 1.2, double AttackRate = 0.85, double OtherQuartersFrom = 0.5,
     double StaleReportSeconds = 120, double BlindMargin = 0, double BlindRivalShare = 0.8, double BlindAfterWarSeconds = 0,
-    BotLevelRules? Hard = null)
+    BotLevelRules? Hard = null, double GiftThreshold = 30, double GiftPeaceSeconds = 90)
 {
     public static readonly BotRules Default = new(
         new BotLevelRules(6, 10, 8, 15, 2, 0.25, 2, 0.25, false, false, 1, 1, 1, false, 2, 0.1, 1.0, false, false), new BotLevelRules(2, 3, 3, 6, 4, 0.05, 1, 0.05),

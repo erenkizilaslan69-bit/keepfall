@@ -76,6 +76,8 @@ public sealed class BotsConfig
     public double BlindMargin { get; set; }
     public double BlindRivalShare { get; set; } = 0.8;
     public double BlindAfterWarSeconds { get; set; }
+    public double GiftThreshold { get; set; } = 30;
+    public double GiftPeaceSeconds { get; set; } = 90;
 }
 
 public sealed class BotLevelConfig
@@ -343,6 +345,7 @@ public static class BalanceConfigLoader
         if (config.Bots.Mix.Count == 0 || config.Bots.Mix.Values.Any(v => v < 0) || config.Bots.Mix.Values.Sum() <= 0) errors.Add("bots.mix: en az bir pozitif pay olmalı.");
         if (config.Bots.WeaponsFrom is < 0 or > 1 || config.Bots.ArmFrom is < 0 or > 1) errors.Add("bots.weaponsFrom/armFrom 0 ile 1 arasında olmalı.");
         if (config.Bots.ArmyShare is <= 0 or > 1) errors.Add("bots.armyShare 0 ile 1 arasında olmalı.");
+        if (config.Bots.GiftThreshold < 0 || config.Bots.GiftPeaceSeconds < 0) errors.Add("bots.giftThreshold ve giftPeaceSeconds negatif olamaz.");
         if (config.Bots.OtherQuartersFrom is < 0 or > 1) errors.Add("bots.otherQuartersFrom 0 ile 1 arasında olmalı.");
         if (config.Bots.AttackMargin < 0.5 || config.Bots.AttackMargin > 3) errors.Add("bots.attackMargin 0,5 ile 3 arasında olmalı.");
         if (config.Bots.AttackRate is <= 0 or > 1) errors.Add("bots.attackRate 0 ile 1 arasında olmalı.");
@@ -490,7 +493,7 @@ public static class BalanceConfigLoader
             new BotRules(BotLevel(config.Bots.Easy, false), BotLevel(config.Bots.Medium, true), config.Bots.Mix, config.Bots.WeaponsFrom, config.Bots.ArmFrom, config.Bots.ArmyShare,
                 config.Bots.AttackMargin, config.Bots.AttackRate, config.Bots.OtherQuartersFrom,
                 config.Bots.StaleReportSeconds, config.Bots.BlindMargin, config.Bots.BlindRivalShare, config.Bots.BlindAfterWarSeconds,
-                config.Bots.Hard is null ? null : BotLevel(config.Bots.Hard, true)),
+                config.Bots.Hard is null ? null : BotLevel(config.Bots.Hard, true), config.Bots.GiftThreshold, config.Bots.GiftPeaceSeconds),
             new EnvoyRules(config.Envoy.MaxCargo, config.Envoy.MaxMessageLength, config.Envoy.ProfanityFilter));
     }
 

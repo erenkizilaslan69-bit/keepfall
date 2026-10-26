@@ -45,13 +45,26 @@ public sealed class BotMemory(BotLevelRules level)
     public string? CounterPick { get; set; }
     public double CounterAt { get; set; } = double.NegativeInfinity;
 
+    /// <summary>Rivals who sent a generous gift by envoy: until when the bot will not send an army against them (game seconds).</summary>
+    public Dictionary<int, double> Peace { get; } = [];
+    private readonly HashSet<int> _lettersSeen = [];
+
+    public bool AtPeaceWith(int seat, double now) => Peace.TryGetValue(seat, out var until) && until > now;
+
     /// <summary>When it last looked at each site's raid (the work of the fight calculator is not repeated every think).</summary>
     public Dictionary<string, (double At, int Soldiers, int Needed, double Loss)> RaidPlans { get; } = [];
 
     /// <summary>Notice what is new in the pictures; each new thing becomes an event that is acted on after a reaction delay.</summary>
-    public void Observe(BotInput input, Random rng)
+    public void Observe(BotInput input, Random rng, BotRules? rules = null)
     {
         double now = input.Now;
+        // What envoys left: only the goods count (the message is not read). A gift worth enough buys the sender a while of peace.
+        foreach (var letter in input.Castle.Letters ?? [])
+        {
+            if (!_lettersSeen.Add(letter.Id) || rules is null) continue;
+            if (letter.Food + letter.Wood + letter.Iron + letter.Gold >= rules.GiftThreshold && rules.GiftThreshold > 0)
+                Peace[letter.FromSeat] = Math.Max(Peace.GetValueOrDefault(letter.FromSeat), now + rules.GiftPeaceSeconds);
+        }
         var war = input.Castle.War;
 
         foreach (var i in war.Incoming)

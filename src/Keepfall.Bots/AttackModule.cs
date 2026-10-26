@@ -37,7 +37,7 @@ public sealed class AttackModule : IBotModule
 
         var options = new List<(int Seat, double March, RivalEstimate Estimate, int Needed)>();
         int wanted = 0;
-        foreach (var target in c.Scouting.Targets.Where(t => ctx.Rivals.Any(r => r.Seat == t.Seat)))
+        foreach (var target in c.Scouting.Targets.Where(t => ctx.Rivals.Any(r => r.Seat == t.Seat) && !ctx.Memory.AtPeaceWith(t.Seat, ctx.Now)))
         {
             // No fresh report: a good bot goes on what it last knew (or on its own army's size) but expects more of the rival.
             double doubt = 0;
@@ -123,7 +123,7 @@ public sealed class AttackModule : IBotModule
 
         double bold = ctx.Level.ScoreAware ? 1 : Math.Max(0, ctx.WarProgress - 0.3) / 0.7;
         (int Seat, double Cost)? best = null;
-        foreach (var target in c.Scouting.Targets.Where(t => ctx.Rivals.Any(r => r.Seat == t.Seat)))
+        foreach (var target in c.Scouting.Targets.Where(t => ctx.Rivals.Any(r => r.Seat == t.Seat) && !ctx.Memory.AtPeaceWith(t.Seat, ctx.Now)))
         {
             // Only on what it knows: a report (or a siege) that is still worth trusting.
             if (ctx.EstimateOf(target.Seat) is not { } est || ctx.Now - est.At > rules.StaleReportSeconds) continue;
