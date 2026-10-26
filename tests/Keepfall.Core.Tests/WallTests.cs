@@ -148,3 +148,47 @@ public class WallTests
         Assert.Empty(MapViewMapper.StateOf(room, me)!.Walls ?? []);
     }
 }
+
+/// <summary>Medium and hard bots raise their wall; an easy one does not.</summary>
+public class BotWallTests
+{
+    private static readonly GameRules Rules = BalanceConfigLoader.LoadFromFile(
+        BalanceConfigLoader.FindDefaultPath(AppContext.BaseDirectory)
+        ?? throw new InvalidOperationException("config/balance.json bulunamadı."));
+
+    /// <summary>The wall's level, counting an upgrade under way as the level it will reach.</summary>
+    private static int WallLevelAfter(BotDifficulty level, double seconds)
+    {
+        var room = Room.StartBotMatch("BWL", Rules, new RoomOptions { MinPlayers = 1, PrepSeconds = 300, WarSeconds = 900, Seed = 3 }, [level, BotDifficulty.Easy]);
+        var game = room.Game!;
+        var me = room.Players[0];
+        var castle = game.CastleOf(me.CastleKey)!;
+        castle.AddGoods(0, 400, 400);
+        var bot = new Keepfall.Bots.Bot(Rules, level, 1, 11);
+        for (int t = 0; t < seconds; t++)
+        {
+            if (t % 100 == 0) castle.AddGoods(0, 300, 300); // plenty, so that only the bot's own policy decides
+            if (bot.IsDue(game.ElapsedSeconds))
+            {
+                var input = new Keepfall.Bots.BotInput(ViewMapper.CastleOf(room, me)!, MapViewMapper.StateOf(room, me), MapViewMapper.LayoutOf(room), ViewMapper.ToView(room), me.Seat);
+                foreach (var c in bot.Think(input)) if (!game.Execute(me.CastleKey, c).Ok) bot.Refused(c, game.ElapsedSeconds);
+            }
+            room.Tick(1);
+        }
+        return castle.WallLevel + (castle.WallUpgradeRemaining is null ? 0 : 1);
+    }
+
+    [Fact]
+    public void Medium_and_hard_bots_raise_the_wall_in_the_middle_of_the_preparation_and_again_in_the_war_but_an_easy_one_does_not()
+    {
+        Assert.True(Rules.Bots.Of(BotDifficulty.Medium).WallUpgrade && Rules.Bots.Of(BotDifficulty.Hard).WallUpgrade);
+        Assert.False(Rules.Bots.Of(BotDifficulty.Easy).WallUpgrade);
+        foreach (var level in new[] { BotDifficulty.Medium, BotDifficulty.Hard })
+        {
+            Assert.Equal(1, WallLevelAfter(level, 100)); // not before the preparation is half over
+            Assert.Equal(2, WallLevelAfter(level, 280)); // level 2 by the end of the preparation, level 3 waits for the war
+            Assert.Equal(3, WallLevelAfter(level, 330)); // …and is under way soon after it begins
+        }
+        Assert.Equal(1, WallLevelAfter(BotDifficulty.Easy, 330));
+    }
+}

@@ -36,7 +36,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
 
     private sealed record MatchRecord(
         bool ByElimination, double Duration, IReadOnlyList<SeatResult> Seats, int SiegeBattles, int FieldBattles, int CampBattles, int CampWins,
-        int ChestsTaken, int VillagesPlundered, int CampsCleared, int BigCampsCleared, int Chests, int Villages, int Camps, int BigCamps);
+        int ChestsTaken, int VillagesPlundered, int CampsCleared, int BigCampsCleared, int Chests, int Villages, int Camps, int BigCamps, double FirstEliminationAt = double.NaN);
 
     private readonly List<string> _findings = [];
 
@@ -131,7 +131,8 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
             sites.Count(s => s.Site.Kind == SiteKind.Chest && s.Gone), sites.Count(s => s.Site.Kind == SiteKind.Village && s.Gone),
             sites.Count(s => s.Site.Kind == SiteKind.Camp && s.BanditCount == 0), sites.Count(s => s.Site.Kind == SiteKind.BigCamp && s.BanditCount == 0),
             sites.Count(s => s.Site.Kind == SiteKind.Chest), sites.Count(s => s.Site.Kind == SiteKind.Village),
-            sites.Count(s => s.Site.Kind == SiteKind.Camp), sites.Count(s => s.Site.Kind == SiteKind.BigCamp));
+            sites.Count(s => s.Site.Kind == SiteKind.Camp), sites.Count(s => s.Site.Kind == SiteKind.BigCamp),
+            game.Eliminated.Count == 0 ? double.NaN : game.Eliminated.Values.Min());
     }
 
     // ---- sections ----------------------------------------------------------------------------
@@ -311,6 +312,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
             F(seats.Average(s => s.PopEnd)),
             Pct(aggressorWins),
             lopsided.Count.ToString(),
+            matches.Any(m => !double.IsNaN(m.FirstEliminationAt)) ? F((matches.Where(m => !double.IsNaN(m.FirstEliminationAt)).Average(m => m.FirstEliminationAt) - warStart) / 60, "0.0") + " dk" : "—",
         };
         Console.WriteLine("ÖZET	" + string.Join("	", fields));
     }

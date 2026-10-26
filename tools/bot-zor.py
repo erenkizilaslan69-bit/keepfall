@@ -65,6 +65,20 @@ for _name, _what, _kw in [('F0', 'öngörü KAPALI', dict(foresight='false', gar
                           ('F4', 'garnizon %70', dict(foresight='true', garrisonShare='0.7')),
                           ('F5', 'garnizon %50, tutma KAPALI', dict(foresight='true', garrisonShare='0.5', holdWeapons='false'))]:
     VARIANTS.append((_name, _what, lambda t, kw=_kw: hard(t, **kw)))
+# Sur: öncesi (bonus yok, bot yükseltmez), yalnız okçu bonusu, ve şimdiki (bonus + botlar yükseltir)
+_noBonus = lambda t: t.replace('"archerDefenseBonus": 0.25', '"archerDefenseBonus": 0')
+_noUpgrade = lambda t: t.replace('"wallUpgrade": true', '"wallUpgrade": false')
+for _name, _what, _tf in [('W0', 'sur öncesi: okçu bonusu yok, bot yükseltmez', lambda t: _noUpgrade(_noBonus(t))),
+                          ('W1', 'yalnız okçu bonusu, bot yükseltmez', _noUpgrade),
+                          ('W2', 'sur şimdiki ayar (bonus + botlar yükseltir)', lambda t: t)]:
+    VARIANTS.append((_name, _what + ': Zor vs Orta', _tf))
+    VARIANTS.append((_name + 'o', _what + ': Orta vs Orta', _tf))
+# Sur canı önerileri (Sv2 / Sv3 canı; Sv1 500 sabit)
+def _walls(a, b):
+    return lambda t: t.replace('"hp": 1000,', f'"hp": {a},').replace('"hp": 1800,', f'"hp": {b},')
+for _name, _a, _b in [('P1', 750, 1100), ('P2', 800, 1300), ('P3', 1000, 1400), ('P4', 700, 900)]:
+    VARIANTS.append((_name, f'sur canı Sv2 {_a} / Sv3 {_b}: Zor vs Orta', _walls(_a, _b)))
+    VARIANTS.append((_name + 'o', f'sur canı Sv2 {_a} / Sv3 {_b}: Orta vs Orta', _walls(_a, _b)))
 VARIANTS.append(('Fz', 'şimdiki Zor ayarı (öngörü + garnizon %20)', lambda t: t))
 VARIANTS.append(('Fh', 'öngörü ayarı, depoda tutma KAPALI', lambda t: hard(t, holdWeapons='false')))
 VARIANTS.append(('Fo', 'Orta vs Orta (şimdiki ayar)', lambda t: t))
@@ -91,7 +105,7 @@ def run(name, transform, level='zor-orta'):
 
 
 head = ['Deney', 'Değişiklik', 'Zor kazanma', 'Eleme ile biten', 'Saldırısız maç', 'Kale saldırısı/maç', 'Saldırı/koltuk', 'İlk saldırı', 'Paralı savaş başı',
-        'Paralı maç sonu', 'Altın/koltuk', 'Nüfus savaş başı', 'Nüfus maç sonu', 'Saldıranın kazanma oranı', 'Eşit olmayan maç']
+        'Paralı maç sonu', 'Altın/koltuk', 'Nüfus savaş başı', 'Nüfus maç sonu', 'Saldıranın kazanma oranı', 'Eşit olmayan maç', 'İlk eleme (savaştan)']
 rows = []
 for name, what, tf in VARIANTS:
     if ONLY and name not in ONLY:

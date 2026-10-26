@@ -28,7 +28,7 @@ public class BotIsolationTests
         // Public rules (the balance file), and the command language a player speaks.
         "Keepfall.Core.GameRules", "Keepfall.Core.Lobby.BotRules", "Keepfall.Core.Lobby.BotLevelRules", "Keepfall.Core.Lobby.BotDifficulty",
         "Keepfall.Core.Match.GameCommand", "Keepfall.Core.Match.MoveWorkers", "Keepfall.Core.Match.QueueWeapon", "Keepfall.Core.Match.CancelWeapon",
-        "Keepfall.Core.Match.ArmWorkers", "Keepfall.Core.Match.DisarmSoldiers", "Keepfall.Core.Match.UpgradeBuilding", "Keepfall.Core.Match.SendScout",
+        "Keepfall.Core.Match.ArmWorkers", "Keepfall.Core.Match.DisarmSoldiers", "Keepfall.Core.Match.UpgradeBuilding", "Keepfall.Core.Match.UpgradeWall", "Keepfall.Core.Match.SendScout",
         "Keepfall.Core.Match.SendExplore", "Keepfall.Core.Match.SendChestScout", "Keepfall.Core.Match.SendArmy", "Keepfall.Core.Match.SendArmyToSite",
         "Keepfall.Core.Match.RecallArmy", "Keepfall.Core.Match.RedirectArmy", "Keepfall.Core.Match.SetDefense", "Keepfall.Core.Match.HireMercenary", "Keepfall.Core.Match.SetGrowth",
         "Keepfall.Core.Match.ArmyMode", "Keepfall.Core.Match.CastleKeys",
@@ -40,7 +40,7 @@ public class BotIsolationTests
         // Public maths: the fight calculator works on rules and armies made up on the spot.
         "Keepfall.Core.World.MoverKind", "Keepfall.Core.Economy.MatchRules", "Keepfall.Core.Combat.BattleSimulator", "Keepfall.Core.Combat.ArmySetup", "Keepfall.Core.Combat.TargetPriority",
         "Keepfall.Core.Combat.BattleResult", "Keepfall.Core.Combat.BattleOutcome", "Keepfall.Core.Combat.SideReport",
-        "Keepfall.Core.World.MapRules", "Keepfall.Core.Economy.WarRules", "Keepfall.Core.Units.AttackRange",
+        "Keepfall.Core.World.MapRules", "Keepfall.Core.Economy.WarRules", "Keepfall.Core.Economy.WallRules", "Keepfall.Core.Economy.WallLevelRules", "Keepfall.Core.Units.AttackRange",
     };
 
     /// <summary>The server's side of the views: they take the whole match as input, so the bots must not call them.</summary>

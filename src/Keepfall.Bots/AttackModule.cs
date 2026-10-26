@@ -68,6 +68,7 @@ public sealed class AttackModule : IBotModule
                 var rules = ctx.Rules.Bots;
                 double bold = ctx.Level.ScoreAware ? 1 : Math.Max(0, ctx.WarProgress - 0.3) / 0.7;
                 var enemy = Tactics.Setup(ctx, "Savunma", Scale(guess, (rules.AttackMargin - (rules.AttackMargin - 1.0) * bold) * (1 + doubt)));
+                enemy.RangedDamageFactor = ctx.WallArcherFactor; // its archers stand behind a wall
                 needed = Tactics.SmallestWinning(ctx, spare, enemy, rules.AttackRate - 0.25 * bold).Needed;
                 if (needed == 0) wanted = wanted == 0 ? guess.Values.Sum() : Math.Min(wanted, guess.Values.Sum());
             }
@@ -128,6 +129,7 @@ public sealed class AttackModule : IBotModule
             // Only on what it knows: a report (or a siege) that is still worth trusting.
             if (ctx.EstimateOf(target.Seat) is not { } est || ctx.Now - est.At > rules.StaleReportSeconds) continue;
             var enemy = Tactics.Setup(ctx, "Savunma", Scale(Grow(est, ctx.Now, true), rules.AttackMargin - (rules.AttackMargin - 1.0) * bold));
+            enemy.RangedDamageFactor = ctx.WallArcherFactor;
             int needed = Tactics.SmallestWinning(ctx, units, enemy, rules.AttackRate - 0.25 * bold).Needed;
             if (needed == 0 || needed > total) continue;
             double cost = needed + target.MarchSeconds * 0.1;
@@ -154,7 +156,8 @@ public sealed class AttackModule : IBotModule
     private static double GateHp(BotContext ctx, int seat)
     {
         var last = ctx.Castle.War.Battles.Where(b => b.Kind == BattleKind.Siege && b.Attacking && b.OpponentSeat == seat).OrderByDescending(b => b.At).FirstOrDefault();
-        return last is null ? ctx.Rules.War.CastleHp : Math.Max(1, last.CastleHpAfter);
+        // Never besieged it: what the wall level we have seen of it (a scout's report) is worth.
+        return last is null ? ctx.Rules.Walls.HpOf(ctx.LatestReport(seat)?.WallLevel ?? 1) : Math.Max(1, last.CastleHpAfter);
     }
 
     /// <summary>The fewest soldiers (in the mix we have) whose survivors would break a gate with <paramref name="hp"/> left, allowing for losses.</summary>

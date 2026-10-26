@@ -65,6 +65,9 @@ public sealed class BotContext(GameRules rules, BotInput input, BotMemory memory
         }
     }
 
+    /// <summary>How much harder the archers at a gate shoot from behind a standing wall (a public rule).</summary>
+    public double WallArcherFactor => 1 + Rules.Walls.ArcherDefenseBonus;
+
     /// <summary>A scout or an army is already on its way to this place.</summary>
     public bool SiteBusy(string siteId) =>
         Castle.Scouting.Missions.Any(m => m.SiteId == siteId) || Castle.War.Armies.Any(a => a.SiteId == siteId);
