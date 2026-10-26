@@ -14,6 +14,7 @@ import { RegionDisplay } from './RegionDisplay';
 import { SiteLayer } from './Sites';
 import { scoutSignHtml } from '../ui/scout-report';
 import { BattlePlayer } from './BattlePlayer';
+import { Effects } from './Effects';
 import { Fog } from './Fog';
 import { Movers } from './Movers';
 import { Soldiers } from './Soldiers';
@@ -103,6 +104,10 @@ export class WorldScene extends Phaser.Scene {
   sites!: SiteLayer;
   private castleSprite!: Phaser.GameObjects.Image;
   private lastWallHp: number | null = null;
+  /** Our own castle: has it fallen (null: not seen yet, so a castle already down is shown as a ruin without the show)? */
+  private ownFallen: boolean | null = null;
+  private lastPhase: string | null = null;
+  private fx!: Effects;
 
   /** <paramref name="color"/>: the player's colour; units and buildings are drawn in it. */
   /** <paramref name="seed"/>: the room's (everybody in it draws the same decorations). */
@@ -145,10 +150,12 @@ export class WorldScene extends Phaser.Scene {
     this.sites = new SiteLayer(this, this.labels, (id) => this.select({ kind: 'site', id }));
     this.movers.onSelect = (t) => this.select(t);
     this.fog = new Fog(this, this.layout.size);
-    this.battles = new BattlePlayer(this, this.color, () => this.gameNow(), (seat) => this.courtyardOf(seat));
+    this.fx = new Effects(this);
+    this.battles = new BattlePlayer(this, this.color, () => this.gameNow(), (seat) => this.courtyardOf(seat), this.fx);
     for (const b of this.pendingBattles) this.battles.start(b);
     this.pendingBattles = [];
     this.setupCamera();
+    this.cameras.main.fadeIn(600, 10, 14, 22); // the map comes up out of the dark
     this.ready = true;
     if (this.state) this.apply(this.state);
     if (this.map) this.setMap(this.map);
@@ -209,10 +216,20 @@ export class WorldScene extends Phaser.Scene {
     for (const p of room.players) {
       const c = this.otherCastles.get(p.seat);
       if (!c) continue;
-      c.image.setAlpha(p.eliminated ? 0.45 : 1);
-      c.fallen = p.eliminated;
+      this.markFallen(p.seat, c, p.eliminated);
       this.setEnemySign(p.seat, c, p.eliminated, c.wall);
     }
+  }
+
+  /** Another player's castle falls (everybody sees it: it is public): fireballs and a collapse; one already down when we first look is just a ruin. */
+  private markFallen(seat: number, c: { image: Phaser.GameObjects.Image; wall?: { hp: number; max: number }; fallen?: boolean }, fallen: boolean): void {
+    const was = c.fallen;
+    c.fallen = fallen;
+    c.image.setAlpha(fallen ? 0.45 : 1);
+    if (fallen && was === false) this.fx.collapse(c.image, c.image.x, c.image.y, CASTLE.scale);
+    else if (fallen && was === undefined) this.fx.ruin(c.image, CASTLE.scale);
+    // Smoke and flames only where the walls' health is known (a spectator's pictures); a player never learns it for others.
+    if (this.spectating && c.wall) this.fx.damage(`castle:${seat}`, c.image.x, c.image.y, c.wall.hp / c.wall.max, fallen);
   }
 
   /** The sign under another player's castle: their name, and (to a spectator) the health of their walls. */
@@ -290,9 +307,8 @@ export class WorldScene extends Phaser.Scene {
     this.regions.get(c.seat)?.sync(c);
     const castle = this.otherCastles.get(c.seat);
     if (!castle) return;
-    castle.image.setAlpha(c.eliminated ? 0.45 : 1);
-    castle.fallen = c.eliminated;
     castle.wall = { hp: c.wallHp, max: c.maxWallHp };
+    this.markFallen(c.seat, castle, c.eliminated);
     this.setEnemySign(c.seat, castle, c.eliminated, castle.wall);
   }
 
@@ -416,6 +432,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   setState(state: CastleView): void {
+    if (this.ready && this.lastPhase === 'preparation' && state.phase === 'war') this.cameras.main.flash(380, 255, 232, 180); // the war begins
+    this.lastPhase = state.phase;
     this.state = state;
     if (this.ready && !this.spectating) {
       this.reports = new Map(state.scouting.reports.map((r) => [r.targetSeat, r]));
@@ -478,9 +496,15 @@ export class WorldScene extends Phaser.Scene {
     if (this.lastWallHp !== null && wallHp < this.lastWallHp - 1e-6) {
       this.castleSprite.setTint(0xff6b5e);
       sfx.play('castleHit');
-      this.cameras.main.shake(250, 0.004);
-      this.time.delayedCall(400, () => this.castleSprite.clearTint());
+      this.fx.shake(250, Math.min(0.01, 0.003 + ((this.lastWallHp - wallHp) / maxWallHp) * 0.05));
+      this.fx.hit(CASTLE.x, CASTLE.y - 70, 'melee');
+      this.fx.dust(CASTLE.x + Phaser.Math.Between(-60, 60), CASTLE.y - 30, 1.1, 0x8a7a66);
+      this.time.delayedCall(400, () => { if (!this.ownFallen) this.castleSprite.clearTint(); });
     }
+    this.fx.damage('own', CASTLE.x, CASTLE.y, p, s.eliminated);
+    if (s.eliminated && this.ownFallen === false) this.fx.collapse(this.castleSprite, CASTLE.x, CASTLE.y, CASTLE.scale);
+    else if (s.eliminated && this.ownFallen === null) this.fx.ruin(this.castleSprite, CASTLE.scale);
+    this.ownFallen = s.eliminated;
     this.lastWallHp = wallHp;
     this.castleSprite.setAlpha(s.eliminated ? 0.55 : 1);
   }

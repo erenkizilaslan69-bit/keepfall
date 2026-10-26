@@ -63,3 +63,7 @@ Görev 0–6 ve kullanıcı istekleri bitti, hepsi push edildi; Production (5080
 - **Gece işleri (kullanıcı uyurken)**: (1) hata taraması: `guarded()` ile kare döngüsü/UI/mesaj işleyicileri bölüm bölüm korumalı (`client/src/error-report.ts`), `client-errors.log` yoktu; (2) ses efektleri: `client/src/audio.ts` (Web Audio, dosya yok; üst şeritte ♪ ve ses düzeyi, localStorage `keepfall.sound`, varsayılan 0,3, en çok 8 eşzamanlı ses, aynı ses için bekleme süresi, savaş sesleri yalnız kamerada görünen yerde); (3) "Nasıl oynanır" rehberi: `?` butonu (menülerde sağ üst, oyunda üst şerit), sayılar `/api/guide` (`GuideMapper`, balance.json'dan).
 - Kararlar/notlar: ses kancaları ve ribbon metinleri Türkçe; rehber metni kısa tutuldu; `?` Esc ile kapanır. Atlanan iş yok.
 - Açık: Görev 7 (yalnız fikir). "Geri dönüş sorunu" fikir listesinde (büyüme maliyeti %8 → %6 dahil).
+
+## Görsel yenileme durumu
+- Aşama 1 (arayüz) ve 2 (harita) bitti. Harita düzeltmeleri (toprak lekeleri, ormanda seçilebilirlik, yollar bir kez dokuya) bitti.
+- Aşama 3 (efektler): `client/src/scene/Effects.ts` (kıvılcım, toz, ok izi, hasarlı kalede duman/alev, çöküş, kamera sarsıntısı; `?fx=0` kapatır, azaltılmış hareket tercihinde sarsıntı yok), ekran geçişleri (kamera fadeIn, savaş başlangıcında parlama, ekran değişiminde CSS kayma). Ölçüm/ekran görüntüsü araçları: `tools/shot-fx.mjs`, `tools/shot-forest.mjs`, `tools/shot-map.mjs`, `tools/fps.mjs`.

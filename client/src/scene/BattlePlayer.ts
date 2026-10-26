@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { sfx } from '../audio';
 import { reportError } from '../error-report';
+import type { Effects } from './Effects';
 import type { BattleStartedView, PlayerColor, Vec } from '../types';
 import { SHIELD_SCALE, UNIT_SCALE, colorKey, unitOriginY } from './assets';
 import type { Point } from './layout';
@@ -62,6 +63,7 @@ export class BattlePlayer {
     private readonly ownColor: PlayerColor,
     private readonly clock: () => { now: number; speed: number },
     private readonly courtyardOf: (seat: number) => Point | null,
+    private readonly fx: Effects,
   ) {}
 
   /** Battles being replayed right now, for the minimap and for hiding the armies in them. */
@@ -191,9 +193,11 @@ export class BattlePlayer {
       arrow.setRotation(Math.atan2(b.sprite.y - 24 - arrow.y, b.sprite.x - arrow.x));
       this.scene.tweens.add({
         targets: arrow, x: b.sprite.x, y: b.sprite.y - 24, duration: 280 / speed,
+        onUpdate: () => this.fx.trail(arrow.x, arrow.y),
         onComplete: () => arrow.destroy(),
       });
     }
+    if (b && b.sprite.active) this.fx.hit(b.sprite.x, b.sprite.y - 22, a.ranged ? 'arrow' : look.attack ? 'melee' : 'shield');
     if (b && !b.dead && b.sprite.active) {
       b.sprite.setTintFill(0xffffff);
       this.scene.time.delayedCall(70, () => { if (!b.dead && b.sprite.active) b.sprite.clearTint(); });
@@ -206,6 +210,7 @@ export class BattlePlayer {
     if (!f.sprite.active) return;
     sfx.play('death', this.loudness(f.sprite.x, f.sprite.y));
     f.sprite.anims.stop();
+    this.fx.dust(f.sprite.x, f.sprite.y - 4, 0.55);
     f.sprite.setTint(0xff6b5e);
     this.scene.tweens.killTweensOf(f.sprite);
     this.scene.tweens.add({
@@ -226,8 +231,11 @@ export class BattlePlayer {
         f.sprite.setFlipX(r.view.facing.x < 0); // facing the gate
       });
     });
+    const ours = r.view.sides.some((side) => side.color === this.ownColor);
     for (let i = 0; i < 6; i++) {
       this.scene.time.delayedCall((i * 700) / speed, () => {
+        this.fx.hit(r.gate.x + Phaser.Math.Between(-30, 30), r.gate.y - Phaser.Math.Between(0, 30), 'melee');
+        if (ours) this.fx.shake(140, 0.0035);
         const fx = this.scene.add.sprite(r.gate.x + Phaser.Math.Between(-30, 30), r.gate.y - Phaser.Math.Between(0, 30), 'dust')
           .setScale(1.6).setDepth(r.gate.y + 50);
         fx.play('dust');
