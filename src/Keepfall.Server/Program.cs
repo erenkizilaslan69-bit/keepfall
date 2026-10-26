@@ -38,6 +38,9 @@ if (Directory.Exists(clientDist))
 
 app.MapHub<GameHub>("/hub");
 app.MapGet("/health", () => "ok");
+// The numbers of the "how to play" page: public rules only, read from the balance config (so the page follows the config).
+var guide = Keepfall.Views.GuideMapper.Of(rules);
+app.MapGet("/api/guide", () => Results.Json(guide));
 // Script errors and unhandled rejections from the browser (see client/src/error-report.ts); the body is capped and the address rate-limited.
 app.MapPost("/api/client-log", async (HttpContext http, ClientErrorLog log) =>
 {
