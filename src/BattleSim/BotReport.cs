@@ -71,6 +71,9 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
             {
                 "kolay" => BotDifficulty.Easy,
                 "orta" => BotDifficulty.Medium,
+                "zor" => BotDifficulty.Hard,
+                // Hard against Medium: about half of each, seats rotated from match to match.
+                "zor-orta" => (s + match) % 2 == 0 ? BotDifficulty.Hard : BotDifficulty.Medium,
                 // Mixed: about half of each, and who sits where changes from match to match.
                 _ => (s + match) % 2 == 0 ? BotDifficulty.Medium : BotDifficulty.Easy,
             });
@@ -133,7 +136,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
 
     // ---- sections ----------------------------------------------------------------------------
 
-    private static string Name(BotDifficulty d) => d == BotDifficulty.Easy ? "Kolay" : "Orta";
+    private static string Name(BotDifficulty d) => d switch { BotDifficulty.Easy => "Kolay", BotDifficulty.Hard => "Zor", _ => "Orta" };
     private static double Avg<T>(IEnumerable<T> items, Func<T, double> f) { var l = items.ToList(); return l.Count == 0 ? double.NaN : l.Average(f); }
     private static string Pct(double x) => double.IsNaN(x) ? "—" : $"%{x * 100:0.0}";
     private static string F(double x, string format = "0.0") => double.IsNaN(x) ? "—" : x.ToString(format);
@@ -169,7 +172,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
         }
         t.Print();
 
-        if (Groups(matches).Count() == 2)
+        if (Groups(matches).Count() == 2 && Groups(matches).All(l => l is BotDifficulty.Easy or BotDifficulty.Medium))
         {
             double Share(BotDifficulty l) => matches.Sum(m => m.Seats.Where(s => s.Level == l && s.Won).Sum(s => 1.0 / m.Seats.Count(x => x.Won)))
                 / matches.Sum(m => m.Seats.Count(s => s.Level == l));
@@ -283,8 +286,10 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
     private void PrintMachineLine(MatchRecord[] matches)
     {
         var seats = matches.SelectMany(m => m.Seats).ToList();
-        var medium = seats.Where(s => s.Level == BotDifficulty.Medium).ToList();
-        double MediumShare() => medium.Count == 0 ? double.NaN : matches.Sum(m => m.Seats.Where(s => s.Level == BotDifficulty.Medium && s.Won).Sum(s => 1.0 / m.Seats.Count(x => x.Won))) / medium.Count;
+        // The first number: the win share of the strongest level in the match (Hard when it plays, else Medium).
+        var top = seats.Any(s => s.Level == BotDifficulty.Hard) ? BotDifficulty.Hard : BotDifficulty.Medium;
+        var medium = seats.Where(s => s.Level == top).ToList();
+        double MediumShare() => medium.Count == 0 ? double.NaN : matches.Sum(m => m.Seats.Where(s => s.Level == top && s.Won).Sum(s => 1.0 / m.Seats.Count(x => x.Won))) / medium.Count;
         // Does the one who attacks more win more? (only matches where the seats attacked a different number of times)
         var lopsided = matches.Where(m => m.Seats.Select(s => s.Bot.GetValueOrDefault("attacks")).Distinct().Count() > 1).ToList();
         double aggressorWins = lopsided.Count == 0 ? double.NaN

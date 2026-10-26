@@ -19,10 +19,16 @@
 /// <param name="Calculates">It works out fights with the game's own fight calculator (attacks, bandit camps) instead of counting heads.</param>
 /// <param name="SmartDefense">When an army comes it also recalls raiders, aims its archers and goes out to cut the rival off; otherwise it only arms and lines up.</param>
 /// <param name="ScoreAware">The bot plays for victory points (damage, kills) as well as for people, so it is bold from the first second of the war (only where it calculates its fights).</param>
+/// <param name="HoldWeapons">It keeps forged weapons in the store (their people go on working) and arms them only when an army is coming or when it sends one out; a rival's scout sees no soldiers for them.</param>
+/// <param name="CounterUnits">It forges the unit types that do best against what the scout reports say its rivals have.</param>
+/// <param name="Opportunist">It watches the rivals: one that has an army out on the road, or whose gate is under siege by someone else, is weaker than its report says, and it goes for it with a smaller margin.</param>
+/// <param name="ScoutFactor">Its pauses between spying on a rival are this much of the usual (below 1: it keeps its reports fresher).</param>
+/// <param name="UpgradeEarly">It starts an upgrade as soon as a building's room is nearly full and saves for it, instead of waiting for people to stand idle.</param>
 /// <param name="HeadCountRatio">A poor bot, which judges a rival by a head count, goes when it has this many times the soldiers the last report shows.</param>
 public sealed record BotLevelRules(double ThinkMin, double ThinkMax, double ReactMin, double ReactMax, int Commands, double Mistake, int Slack, double EcoMistake,
     bool ExploreAll = true, bool ChestsAnywhere = true, int Scouts = 2, int MercBatch = 3, int MercThreatBatch = 6, bool Saves = true, int QueueDepth = 3,
-    double KeepHome = 0.25, double HeadCountRatio = 1.0, bool Calculates = true, bool SmartDefense = true, bool ScoreAware = false);
+    double KeepHome = 0.25, double HeadCountRatio = 1.0, bool Calculates = true, bool SmartDefense = true, bool ScoreAware = false,
+    bool HoldWeapons = false, bool CounterUnits = false, bool Opportunist = false, double ScoutFactor = 1.0, bool UpgradeEarly = false);
 
 /// <param name="Mix">The army it builds: share of each unit type (by id), summing to about 1.</param>
 /// <param name="WeaponsFrom">Share of the preparation after which it starts forging weapons.</param>
@@ -37,11 +43,12 @@ public sealed record BotLevelRules(double ThinkMin, double ThinkMax, double Reac
 /// <param name="OtherQuartersFrom">Share of the preparation after which a bot may tour and raid other players' quarters of the forest (before that: only its own; the big camp in the middle waits too).</param>
 public sealed record BotRules(BotLevelRules Easy, BotLevelRules Medium, IReadOnlyDictionary<string, double> Mix, double WeaponsFrom, double ArmFrom, double ArmyShare,
     double AttackMargin = 1.2, double AttackRate = 0.85, double OtherQuartersFrom = 0.5,
-    double StaleReportSeconds = 120, double BlindMargin = 0, double BlindRivalShare = 0.8, double BlindAfterWarSeconds = 0)
+    double StaleReportSeconds = 120, double BlindMargin = 0, double BlindRivalShare = 0.8, double BlindAfterWarSeconds = 0,
+    BotLevelRules? Hard = null)
 {
     public static readonly BotRules Default = new(
         new BotLevelRules(6, 10, 8, 15, 2, 0.25, 2, 0.25, false, false, 1, 1, 1, false, 2, 0.1, 1.0, false, false), new BotLevelRules(2, 3, 3, 6, 4, 0.05, 1, 0.05),
         new Dictionary<string, double> { ["kilicli"] = 0.35, ["kalkanli"] = 0.25, ["okcu"] = 0.25, ["mizrakci"] = 0.15 }, 0.3, 0.75, 0.5);
 
-    public BotLevelRules Of(BotDifficulty level) => level == BotDifficulty.Easy ? Easy : Medium;
+    public BotLevelRules Of(BotDifficulty level) => level switch { BotDifficulty.Easy => Easy, BotDifficulty.Hard => Hard ?? Medium, _ => Medium };
 }

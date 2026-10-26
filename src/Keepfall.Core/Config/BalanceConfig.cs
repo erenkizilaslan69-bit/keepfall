@@ -60,6 +60,8 @@ public sealed class BotsConfig
 {
     public BotLevelConfig Easy { get; set; } = new();
     public BotLevelConfig Medium { get; set; } = new();
+    /// <summary>Not in the file: the hard level plays like Medium.</summary>
+    public BotLevelConfig? Hard { get; set; }
     public Dictionary<string, double> Mix { get; set; } = [];
     public double WeaponsFrom { get; set; } = 0.3;
     public double ArmFrom { get; set; } = 0.75;
@@ -97,6 +99,11 @@ public sealed class BotLevelConfig
     public bool? Calculates { get; set; }
     public bool? SmartDefense { get; set; }
     public bool? ScoreAware { get; set; }
+    public bool? HoldWeapons { get; set; }
+    public bool? CounterUnits { get; set; }
+    public bool? Opportunist { get; set; }
+    public double? ScoutFactor { get; set; }
+    public bool? UpgradeEarly { get; set; }
 }
 
 public sealed class ForestConfig
@@ -306,7 +313,7 @@ public static class BalanceConfigLoader
         var sr = mc.StartingResources;
         if (sr.Food < 0 || sr.Wood < 0 || sr.Iron < 0) errors.Add("match.startingResources negatif olamaz.");
 
-        foreach (var (name, level) in new[] { ("easy", config.Bots.Easy), ("medium", config.Bots.Medium) })
+        foreach (var (name, level) in new[] { ("easy", config.Bots.Easy), ("medium", config.Bots.Medium), ("hard", config.Bots.Hard ?? config.Bots.Medium) })
         {
             if (level.ThinkMin <= 0 || level.ThinkMax < level.ThinkMin) errors.Add($"bots.{name}: thinkMin/thinkMax geçersiz.");
             if (level.ReactMin < 0 || level.ReactMax < level.ReactMin) errors.Add($"bots.{name}: reactMin/reactMax geçersiz.");
@@ -465,12 +472,14 @@ public static class BalanceConfigLoader
                 new CampRules(fo.BigCamp.Bandits, fo.BigCamp.GoldMin, fo.BigCamp.GoldMax, fo.BigCamp.Weapons, fo.BigCamp.WoodMin, fo.BigCamp.WoodMax)),
             new BotRules(BotLevel(config.Bots.Easy, false), BotLevel(config.Bots.Medium, true), config.Bots.Mix, config.Bots.WeaponsFrom, config.Bots.ArmFrom, config.Bots.ArmyShare,
                 config.Bots.AttackMargin, config.Bots.AttackRate, config.Bots.OtherQuartersFrom,
-                config.Bots.StaleReportSeconds, config.Bots.BlindMargin, config.Bots.BlindRivalShare, config.Bots.BlindAfterWarSeconds));
+                config.Bots.StaleReportSeconds, config.Bots.BlindMargin, config.Bots.BlindRivalShare, config.Bots.BlindAfterWarSeconds,
+                config.Bots.Hard is null ? null : BotLevel(config.Bots.Hard, true)));
     }
 
     private static BotLevelRules BotLevel(BotLevelConfig c, bool good) => new(c.ThinkMin, c.ThinkMax, c.ReactMin, c.ReactMax, c.Commands, c.Mistake, c.Slack, c.EcoMistake < 0 ? c.Mistake : c.EcoMistake,
         c.ExploreAll ?? good, c.ChestsAnywhere ?? good, c.Scouts ?? (good ? 2 : 1), c.MercBatch ?? (good ? 3 : 1), c.MercThreatBatch ?? (good ? 6 : 1),
-        c.Saves ?? good, c.QueueDepth ?? (good ? 3 : 2), c.KeepHome ?? (good ? 0.25 : 0.1), c.HeadCountRatio ?? 1.0, c.Calculates ?? good, c.SmartDefense ?? good, c.ScoreAware ?? false);
+        c.Saves ?? good, c.QueueDepth ?? (good ? 3 : 2), c.KeepHome ?? (good ? 0.25 : 0.1), c.HeadCountRatio ?? 1.0, c.Calculates ?? good, c.SmartDefense ?? good, c.ScoreAware ?? false,
+        c.HoldWeapons ?? false, c.CounterUnits ?? false, c.Opportunist ?? false, c.ScoutFactor ?? 1.0, c.UpgradeEarly ?? false);
 
     private static double? ParseMultiplier(JsonElement value, CombatConfig c)
     {

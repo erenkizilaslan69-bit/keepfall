@@ -55,7 +55,7 @@ export type PlayerColor = 'blue' | 'red' | 'yellow' | 'purple' | 'black';
 export type RoomPhase = 'lobby' | 'preparation' | 'war' | 'ended';
 
 /** Public facts about a player; the server never sends anyone else's token or castle. */
-export type BotLevel = 'easy' | 'medium';
+export type BotLevel = 'easy' | 'medium' | 'hard';
 export interface PlayerView { seat: number; name: string; color: PlayerColor; ready: boolean; connected: boolean; isHost: boolean; eliminated: boolean; isBot: boolean; botLevel: BotLevel | null }
 
 export interface RoomView {

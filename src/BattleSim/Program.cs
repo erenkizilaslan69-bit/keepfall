@@ -13,7 +13,7 @@ const string Usage = """
       BattleSim denge  [--mac 5000] [--min 10] [--max 30] [--butce kisi|kaynak] [--duello 10]
                        [--havuz 60] [--esik 0.55] [--seed 12345]
       BattleSim savas  <ordu A> <ordu B> [--hedef-a X] [--hedef-b X] [--tekrar N] [--seed N]
-      BattleSim bot    [--mac 200] [--oyuncu 2|3|4] [--mod 15|30] [--zorluk orta|kolay|karisik] [--seed 1] [--puan evet] [--agirlik 150,0.2,2,1] [--ozet 1]
+      BattleSim bot    [--mac 200] [--oyuncu 2|3|4] [--mod 15|30] [--zorluk orta|kolay|zor|zor-orta|karisik] [--seed 1] [--puan evet] [--agirlik 150,0.2,2,1] [--ozet 1]
                        (bot vs bot istatistikleri; --puan: süre bitince kazanan zafer puanına göre sayılır (deney); --ozet: karşılaştırma satırı)
       BattleSim bot --izle [--oyuncu 2] [--zorluk orta|kolay] [--mod 15|30] [--seed 1] [--aralik 60]   (tek maçı dakika dakika göster)
       BattleSim kontrol
@@ -85,7 +85,7 @@ try
             int minutes = Int(flags, "mod", 15);
             if (minutes is not (15 or 30)) throw new FormatException("--mod 15 ya da 30 olmalı.");
             string level = flags.GetValueOrDefault("zorluk", "karisik").ToLowerInvariant();
-            if (level is not ("orta" or "kolay" or "karisik" or "karışık")) throw new FormatException($"Geçersiz zorluk \"{level}\" (orta | kolay | karisik).");
+            if (level is not ("orta" or "kolay" or "zor" or "zor-orta" or "karisik" or "karışık")) throw new FormatException($"Geçersiz zorluk \"{level}\" (kolay | orta | zor | zor-orta | karisik).");
             new BotReport(rules, new BotReportOptions
             {
                 Matches = Int(flags, "mac", 200), Players = players, Minutes = minutes,
@@ -102,8 +102,8 @@ try
             int minutes = Int(flags, "mod", 15);
             var level = (flags.GetValueOrDefault("zorluk", "orta").ToLowerInvariant()) switch
             {
-                "kolay" => BotDifficulty.Easy, "orta" => BotDifficulty.Medium,
-                var z => throw new FormatException($"Geçersiz zorluk \"{z}\" (kolay | orta)."),
+                "kolay" => BotDifficulty.Easy, "orta" => BotDifficulty.Medium, "zor" => BotDifficulty.Hard,
+                var z => throw new FormatException($"Geçersiz zorluk \"{z}\" (kolay | orta | zor)."),
             };
             int seed = Int(flags, "seed", 1);
             int every = Int(flags, "aralik", 60);

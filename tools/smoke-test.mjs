@@ -474,7 +474,9 @@ check('everyone sees the bot as a bot, with its colour name and level',
   !!botSeat && botSeat.seat === 3 && botSeat.name === 'Bot Sarı' && botSeat.botLevel === 'easy' && botSeat.ready && botSeat.connected);
 check('a guest cannot remove the bot', !(await Q.call('RemoveBot', 3)).ok);
 check('the host cannot remove a human', !(await P.call('RemoveBot', 2)).ok);
-check('the host removes and seats it again', (await P.call('RemoveBot', 3)).ok && (await P.call('AddBot', 'medium')).ok);
+check('the host removes and seats a hard bot instead', (await P.call('RemoveBot', 3)).ok && (await P.call('AddBot', 'hard')).ok);
+await sleep(300);
+check('everyone sees it as a hard bot', Q.of('RoomState').at(-1).players.find((x) => x.isBot)?.botLevel === 'hard');
 await P.call('SetReady', true);
 await Q.call('SetReady', true);
 check('a match starts with a bot in it', (await P.call('StartMatch')).ok);

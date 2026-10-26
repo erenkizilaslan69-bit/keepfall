@@ -137,7 +137,7 @@ export class LobbyScreen {
         <i class="avatar" style="background-image:url('${avatar(p.seat)}')"></i>
         <span class="pname">${botMark(p.seat)}${esc(p.name)}${p.seat === this.mySeat ? ' <span class="muted">(sen)</span>' : ''}</span>
         <span class="tags">
-          ${p.isBot ? `<span class="tag">bot · ${p.botLevel === 'easy' ? 'kolay' : 'orta'}</span>` : ''}
+          ${p.isBot ? `<span class="tag">bot · ${p.botLevel === 'easy' ? 'kolay' : p.botLevel === 'hard' ? 'zor' : 'orta'}</span>` : ''}
           ${p.isBot && me?.isHost ? `<button class="btn small" data-a="rmbot" data-seat="${p.seat}">Bot çıkar</button>` : ''}
           ${p.isHost ? '<span class="tag">oda sahibi</span>' : ''}
           ${p.isBot ? '' : !p.connected ? '<span class="tag warn">bağlantı yok</span>' : p.ready ? '<span class="tag ok">hazır</span>' : '<span class="tag">bekliyor</span>'}
@@ -145,7 +145,8 @@ export class LobbyScreen {
       </li>` : `<li class="empty"><i class="avatar"></i><span class="pname muted">Boş yer ${i + 1}</span>
         ${me?.isHost ? `<span class="tags">Bot ekle:
           <button class="btn small" data-a="addbot" data-level="easy">Kolay</button>
-          <button class="btn small" data-a="addbot" data-level="medium">Orta</button></span>` : ''}</li>`).join('');
+          <button class="btn small" data-a="addbot" data-level="medium">Orta</button>
+          <button class="btn small" data-a="addbot" data-level="hard">Zor</button></span>` : ''}</li>`).join('');
 
     const nameInput = this.q<HTMLInputElement>('#myname');
     if (me && document.activeElement !== nameInput) nameInput.value = me.name;

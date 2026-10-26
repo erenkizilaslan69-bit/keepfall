@@ -10,7 +10,7 @@ public enum RoomPhase { Lobby, Preparation, War, Ended }
 public enum PlayerColor { Blue, Red, Yellow, Purple, Black }
 
 /// <summary>How well a bot plays (it also decides how fast it reacts).</summary>
-public enum BotDifficulty { Easy, Medium }
+public enum BotDifficulty { Easy, Medium, Hard }
 
 public sealed record RoomOptions
 {

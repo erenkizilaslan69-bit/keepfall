@@ -123,6 +123,10 @@
                 "saves": true, "queueDepth": 3, "calculates": true },
     // scoreAware: bot zafer puanı gibi oynar (hasar, öldürme, eleme; savaşın ilk saniyesinden cesur). Oyun kuralını (nüfus) değiştirmez, yalnız botun saldırı isteğini artırır; Orta'da açık.
     "medium": { "thinkMin": 2, "thinkMax": 3,  "reactMin": 3, "reactMax": 6,  "commands": 4, "mistake": 0.05, "slack": 1, "scoreAware": true },
+    // Zor: hile yok (aynı görünümler, aynı komutlar); fark karar kalitesi. Hızlı düşünür ve tepki verir, boşta işçi bırakmaz, yükseltmeyi erken başlatır,
+    // rakip raporlarına göre karşı birlik üretir (counterUnits), silahları depoda tutup (holdWeapons) saldırı gelince ya da saldırırken kuşanır,
+    // rakiplerin zayıfladığı anı kollar (opportunist) ve gözcü raporlarını taze tutar (scoutFactor).
+    "hard":   { "thinkMin": 0.7, "thinkMax": 1.2, "reactMin": 1, "reactMax": 2, "commands": 6, "mistake": 0, "slack": 0, "ecoMistake": 0, "scoreAware": true, "queueDepth": 4, "holdWeapons": true, "counterUnits": true, "opportunist": true, "scoutFactor": 0.5, "upgradeEarly": true },
     "mix": { "kilicli": 0.35, "kalkanli": 0.25, "okcu": 0.25, "mizrakci": 0.15 },
     "weaponsFrom": 0.3,
     "armFrom": 0.75,
