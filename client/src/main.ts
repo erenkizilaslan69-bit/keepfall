@@ -19,6 +19,7 @@ import { Minimap } from './minimap';
 import { EndScreen, HomeScreen, LobbyScreen } from './screens';
 import { setBotSeats } from './format';
 import { sfx } from './audio';
+import { mountGuideButton } from './ui/guide';
 import { guarded, installErrorReporting } from './error-report';
 import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 
@@ -43,6 +44,8 @@ let pendingBattles: BattleStartedView[] = [];
 let lastSpectator: SpectatorStateView | null = null;
 let summary: SummaryView | null = null;
 let status = '';
+
+mountGuideButton(); // the "?" for the menus (in the game it is in the top bar)
 
 // Sound: browsers start it only after a gesture; every button press gets a small click.
 window.addEventListener('pointerdown', () => sfx.unlock(), { capture: true });

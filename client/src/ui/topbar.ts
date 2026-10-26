@@ -1,4 +1,5 @@
 import { sfx } from '../audio';
+import { toggleGuide } from './guide';
 import { botMark, clock, esc, fmt, rate } from '../format';
 import type { CastleView, PlayerView, RoomView } from '../types';
 
@@ -46,6 +47,7 @@ export class TopBar {
         <div class="strip hit tb-sound" title="Ses">
           <button class="btn-round" data-sound="toggle" aria-label="Sesi aç / kapat"><b>♪</b></button>
           <input type="range" min="0" max="100" step="5" data-sound="volume" aria-label="Ses düzeyi" title="Ses düzeyi">
+          <button class="btn-round" data-guide title="Nasıl oynanır?" aria-label="Nasıl oynanır?"><b>?</b></button>
         </div>
         <div class="strip hit tb-players" data-f="players"></div>
         <div class="strip hit tb-speed hidden" data-f="speed"></div>
@@ -75,6 +77,7 @@ export class TopBar {
       slider.disabled = sfx.muted;
     };
     button.addEventListener('click', () => { sfx.setMuted(!sfx.muted); show(); });
+    this.q('[data-guide]').addEventListener('click', toggleGuide);
     slider.addEventListener('input', () => { sfx.setVolume(Number(slider.value) / 100); });
     slider.addEventListener('change', () => sfx.play('sword')); // a sample at the new level
     show();
