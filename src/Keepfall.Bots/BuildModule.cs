@@ -31,7 +31,8 @@ public sealed class BuildModule : IBotModule
             .Select(b =>
             {
                 int workers = ctx.Count(b.Worker);
-                bool full = b.Capacity > 0 && workers >= b.Capacity;
+                // A bot that upgrades early counts a building as full when only one place is left.
+                bool full = b.Capacity > 0 && workers >= b.Capacity - (ctx.Level.UpgradeEarly ? 1 : 0);
                 double score = Need[b.Type] + (full && idle > 0 ? 5 : 0) - (workers == 0 ? 4 : 0);
                 // The one whose product runs short; the forge only when weapons wait for it.
                 if (b.Type == BuildingType.Mine && res.Iron < 25 && res.Wood > 60) score += 2.5;

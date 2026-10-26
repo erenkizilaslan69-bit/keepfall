@@ -26,6 +26,7 @@ public sealed class MercenaryModule : IBotModule
         var pick = mix.Select(kv => (Id: kv.Key, Deficit: kv.Value / share * total - ctx.Owned(kv.Key)))
             .Where(x => ctx.Unit(x.Id).Price > 0).OrderByDescending(x => x.Deficit).FirstOrDefault();
         if (pick.Id is null) return;
+        if (ctx.CounterPick() is { } counter && ctx.Owned(counter) < 0.5 * total && ctx.Unit(counter).Price > 0) pick = (counter, 0);
 
         var price = ctx.Unit(pick.Id).Price;
         int n = Math.Min((int)Math.Floor(gold / price), ctx.UnderThreat ? ctx.Level.MercThreatBatch : ctx.Level.MercBatch);

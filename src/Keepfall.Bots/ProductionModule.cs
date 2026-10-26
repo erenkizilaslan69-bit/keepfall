@@ -32,6 +32,8 @@ public sealed class ProductionModule : IBotModule
         var pick = ctx.SlipEco()
             ? c.Units.Select(u => u.Id).Where(mix.ContainsKey).OrderBy(_ => ctx.Rng.Next()).FirstOrDefault()
             : mix.OrderByDescending(kv => kv.Value / share * total - have.GetValueOrDefault(kv.Key)).First().Key;
+        // Against what the rivals have: the type that does best against it, as long as it is not already over half of the army.
+        if (ctx.CounterPick() is { } counter && have.GetValueOrDefault(counter) < 0.5 * total) pick = counter;
         if (pick is null) return;
 
         var unit = ctx.Unit(pick);

@@ -25,7 +25,8 @@ public sealed class AttackModule : IBotModule
         bool mayGoBlind = medium && botRules.BlindMargin > 0;
         bool blindWaits = ctx.Castle.ElapsedSeconds - ctx.Castle.PrepSeconds < botRules.BlindAfterWarSeconds; // the first stretch of the war
         double keep = ctx.Level.KeepHome;
-        var home = c.Units.ToDictionary(u => u.Id, u => ctx.HomeSoldiers(u.Id));
+        // A bot that keeps its weapons in the store counts them as soldiers it can have at once.
+        var home = c.Units.ToDictionary(u => u.Id, u => ctx.HomeSoldiers(u.Id) + (ctx.Level.HoldWeapons ? c.Units.First(x => x.Id == u.Id).Weapons : 0));
         int homeTotal = home.Values.Sum();
         if (homeTotal == 0) return;
         var spare = home.ToDictionary(kv => kv.Key, kv => (int)Math.Floor(kv.Value * (1 - keep)));
@@ -56,6 +57,7 @@ public sealed class AttackModule : IBotModule
                 ctx.Stats.Count("attackBlind");
             }
             var guess = Grow(est, ctx.Now, medium);
+            if (ctx.Level.Opportunist) guess = Weakened(ctx, target.Seat, guess);
             int needed;
             if (medium)
             {
@@ -85,12 +87,16 @@ public sealed class AttackModule : IBotModule
         }
 
         // The one we beat most cheaply; a nearer one wins a tie.
-        var pick = options.OrderBy(o => o.Needed + o.March * 0.1).First();
+        // An opportunist goes first for the rival somebody else is busy with (a besieged rival has less to throw at us).
+        double Eager(int seat) => ctx.Level.Opportunist && ctx.Memory.GateFights.TryGetValue(seat, out var at) && ctx.Now - at < 90 ? 6 : 0;
+        var pick = options.OrderBy(o => o.Needed + o.March * 0.1 - Eager(o.Seat)).First();
         // Enough to win the fight, and if the rival is weak enough, enough to break the gate too (the last castle standing wins).
         int send = medium ? (int)Math.Ceiling(pick.Needed * 1.1) : pick.Needed;
         if (medium) send = Math.Max(send, SoldiersToBreak(ctx, spare, GateHp(ctx, pick.Seat)));
         var units = Tactics.Take(spare, Math.Min(send, spareTotal));
         if (units.Count == 0) return;
+        if (ctx.Level.HoldWeapons)
+            foreach (var (id, n) in units) ctx.ArmFromStore(id, n - ctx.HomeSoldiers(id));
         ctx.Wish(80, new SendArmy(CastleKeys.Of(pick.Seat), units, null, null, ArmyMode.Attack));
         ctx.Commit(units);
         ctx.Stats.Count("attacks");
@@ -129,6 +135,17 @@ public sealed class AttackModule : IBotModule
         ctx.Wish(85, new RedirectArmy(army.Id, CastleKeys.Of(pick.Seat)));
         ctx.Stats.Count("regroups");
         return true;
+    }
+
+    /// <summary>
+    /// A rival whose gate somebody else has been fighting at lately has lost soldiers since our report: an opportunist expects a little less of it.
+    /// (Armies seen on the road are not counted: they are usually home again before ours arrives.)
+    /// </summary>
+    private static Dictionary<string, int> Weakened(BotContext ctx, int seat, Dictionary<string, int> guess)
+    {
+        if (!ctx.Memory.GateFights.TryGetValue(seat, out var fight) || ctx.Now - fight > 60) return guess;
+        ctx.Stats.Count("opportunities");
+        return guess.ToDictionary(kv => kv.Key, kv => (int)Math.Ceiling(kv.Value * 0.85));
     }
 
     /// <summary>What we know of a rival's gate: the hit points it had after the last siege we fought there (whole if we never have).</summary>

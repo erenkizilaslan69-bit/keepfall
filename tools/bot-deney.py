@@ -40,7 +40,7 @@ def bots(text, **kw):
     """bots bölümündeki tek sayıları değiştirir: anahtar=değer (easy_/medium_ önekiyle seviyeye özel)."""
     lines = text.split('\n')
     for key, value in kw.items():
-        level, _, name = key.partition('_') if key.startswith(('easy_', 'medium_')) else ('', '', key)
+        level, _, name = key.partition('_') if key.startswith(('easy_', 'medium_', 'hard_')) else ('', '', key)
         done = False
         for i, l in enumerate(lines):
             if level and re.match(rf'\s*"{level}":', l):

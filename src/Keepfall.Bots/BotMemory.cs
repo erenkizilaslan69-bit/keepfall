@@ -1,5 +1,6 @@
 ﻿using Keepfall.Core.Lobby;
 using Keepfall.Core.Match;
+using Keepfall.Core.World;
 
 namespace Keepfall.Bots;
 
@@ -34,6 +35,16 @@ public sealed class BotMemory(BotLevelRules level)
     /// <summary>How many soldiers the bot would like to have at home soon (a raid it cannot yet launch): production arms toward it.</summary>
     public int WantSoldiers { get; set; }
 
+    /// <summary>Rival armies seen on the road (soldiers out of their castle): when, and how many.</summary>
+    public Dictionary<int, (double At, int Soldiers)> ArmiesAway { get; } = [];
+
+    /// <summary>When a battle that is not ours was last seen at a rival's gate (it is being besieged by somebody else).</summary>
+    public Dictionary<int, double> GateFights { get; } = [];
+
+    /// <summary>The unit type that does best against the rivals' soldiers as the reports show them, worked out at <see cref="CounterAt"/>.</summary>
+    public string? CounterPick { get; set; }
+    public double CounterAt { get; set; } = double.NegativeInfinity;
+
     /// <summary>When it last looked at each site's raid (the work of the fight calculator is not repeated every think).</summary>
     public Dictionary<string, (double At, int Soldiers, int Needed, double Loss)> RaidPlans { get; } = [];
 
@@ -58,8 +69,32 @@ public sealed class BotMemory(BotLevelRules level)
             if (_seen.Add(key)) Add(BotEventKind.ScoutReport, key, r.TargetSeat, now, r.ObservedAt, rng);
         }
 
+        ObserveRivals(input);
         _events.RemoveAll(e => e.Handled && now - e.ReactAt > 600);
     }
+
+    /// <summary>
+    /// What the map shows of the rivals: armies of theirs on the road (so those soldiers are not at home) and fights at their gates that are
+    /// not ours (somebody is besieging them). Only what is in view, as for a human.
+    /// </summary>
+    private void ObserveRivals(BotInput input)
+    {
+        if (input.Map is not { } map) return;
+        double now = input.Now;
+        foreach (var group in map.Seen.Where(m => m.Kind == MoverKind.Army && m.OwnerSeat != input.Seat).GroupBy(m => m.OwnerSeat))
+            ArmiesAway[group.Key] = (now, group.Sum(m => m.Units.Sum(u => u.Count)));
+        if (input.Layout is not { } layout) return;
+        foreach (var region in layout.Regions.Where(r => r.Seat is { } seat && seat != input.Seat))
+            foreach (var fight in map.Battles)
+            {
+                if (Distance(fight.At, region.Gate) > 6) continue;
+                // A fight of ours (our army is right there) says nothing about anyone else.
+                if (map.Own.Any(o => o.Kind == MoverKind.Army && Distance(o.Position, fight.At) < 8)) continue;
+                GateFights[region.Seat!.Value] = now;
+            }
+    }
+
+    private static double Distance(Keepfall.Views.VecView a, Keepfall.Views.VecView b) => Math.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y));
 
     private void Add(BotEventKind kind, string key, int seat, double now, double value, Random rng)
     {

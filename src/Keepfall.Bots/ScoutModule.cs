@@ -16,7 +16,7 @@ public sealed class ScoutModule : IBotModule
     public void Think(BotContext ctx)
     {
         var sc = ctx.Castle.Scouting;
-        bool medium = ctx.Difficulty == BotDifficulty.Medium;
+        bool medium = ctx.Difficulty != BotDifficulty.Easy;
         if (sc.Missions.Count >= Math.Min(ctx.Level.Scouts, sc.MaxScouts)) return;
         if (ctx.Now < 15 || ctx.SlipEco()) return;
         if (ctx.Castle.Eliminated) return;
@@ -42,7 +42,7 @@ public sealed class ScoutModule : IBotModule
         }
 
         // 3. spy on the rivals once the army is being built; the one we know least about first.
-        double interval = ctx.AtWar ? (medium ? 50 : 300) : medium ? 150 : 400;
+        double interval = (ctx.AtWar ? (medium ? 50 : 300) : medium ? 150 : 400) * ctx.Level.ScoutFactor;
         double from_ = medium ? 0.35 : 0.6;
         if (ctx.AtWar || ctx.PrepProgress >= from_)
         {

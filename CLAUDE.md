@@ -3,7 +3,7 @@
 Kullanıcıyla **Türkçe** konuş. Kısa ve öz raporla. Kod, yorum ve commit mesajı bağlamı: kod yorumları İngilizce, oyun metinleri ve commit başlıkları Türkçe.
 
 ## Oyun (özet)
-2–4 kişilik tarayıcı kale stratejisi. Her oyuncunun tek kalesi var. **Hazırlık** (10 dk): işçileri çiftçi/oduncu/madenci/demirci yap, silah üret, asker hazırla, orman (sandık, köy, haydut kampı, ortada büyük kamp) yağmala, gözcü gönder, paralı asker kirala (altınla). **Savaş** (5 dk): ordular yollarda yürür, yolda ve kale kapısında çarpışır; kale canı 500, sıfırlanan elenir ve izleyici olur. Son ayakta kalan kazanır; süre dolarsa en yüksek nüfus. 15 dk ve 30 dk modu var. Botlar (Kolay/Orta) lobide eklenir. Ayrıntı: `README.md`.
+2–4 kişilik tarayıcı kale stratejisi. Her oyuncunun tek kalesi var. **Hazırlık** (10 dk): işçileri çiftçi/oduncu/madenci/demirci yap, silah üret, asker hazırla, orman (sandık, köy, haydut kampı, ortada büyük kamp) yağmala, gözcü gönder, paralı asker kirala (altınla). **Savaş** (5 dk): ordular yollarda yürür, yolda ve kale kapısında çarpışır; kale canı 500, sıfırlanan elenir ve izleyici olur. Son ayakta kalan kazanır; süre dolarsa en yüksek nüfus. 15 dk ve 30 dk modu var. Botlar (Kolay/Orta/Zor) lobide eklenir. Ayrıntı: `README.md`.
 
 ## Mimari
 - `src/Keepfall.Core`: tüm oyun kuralları (Economy, Match/GameState, Combat, World, Lobby/Room, Config). Hiçbir ağ/UI bağımlılığı yok.
@@ -70,3 +70,6 @@ Görev 0–6 ve kullanıcı istekleri bitti, hepsi push edildi; Production (5080
 
 ## Ses durumu
 - Gerçek sesler: `client/public/audio/sfx` (OGG + MP3 yedek), `music` (prep.mp3 hazırlık/lobi/maç sonu, war.mp3 savaş; ~0,8–0,9 MB). `client/src/audio.ts`: kayıtlar ilk tıklamada yüklenir, yüklenemeyen ya da kaydı olmayan ses (ok, zafer, yenilgi) prosedürel kalır; müzik çapraz geçişli (2,5 sn); müzik ve efekt ses düzeyi ayrı (varsayılan müzik 0,2, efekt 0,3). Ses kontrolü: `node tools/audio-check.mjs` (dev sunucu + Vite gerekir). ffmpeg: `winget install Gyan.FFmpeg` ile kuruldu (yeni kabukta PATH'e girer).
+
+## Zor bot
+- `BotDifficulty.Hard`, `bots.hard` (balance.json): düşünme 0,7–1,2 sn, tepki 1–2 sn, hata 0, `holdWeapons` (silahı depoda tutar, `BotContext.ArmFromStore` ile saldırı/orman akınında kuşanır), `counterUnits` (`BotContext.CounterPick`), `opportunist` (başkasının kuşattığı kapı), `scoutFactor` 0,5, `upgradeEarly`. Ölçüm: `python tools/bot-zor.py` (`KF_PLAYERS=3` ile 3 oyuncu); `BattleSim bot --zorluk zor-orta`. Sonuç: Zor vs Orta ~%78 (hedef %75–85); 3 oyunculu maçlarda Zor ≈ eşit pay. Asıl kazanç silahı depoda tutmaktan.

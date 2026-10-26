@@ -132,9 +132,62 @@ public sealed class BotContext(GameRules rules, BotInput input, BotMemory memory
     public double PrepProgress => Castle.PrepSeconds <= 0 ? 1 : Math.Clamp(Castle.ElapsedSeconds / Castle.PrepSeconds, 0, 1);
     public bool AtWar => Castle.Phase == MatchPhase.War;
     /// <summary>Late in the preparation, and in the war: stored weapons are turned into soldiers.</summary>
-    public bool ArmingTime => AtWar || PrepProgress >= Rules.Bots.ArmFrom;
+    public bool ArmingTime => !Level.HoldWeapons && (AtWar || PrepProgress >= Rules.Bots.ArmFrom);
     /// <summary>The army is being built: the preparation is past its first stretch.</summary>
     public bool ForgingTime => AtWar || PrepProgress >= Rules.Bots.WeaponsFrom;
+
+    private int _idleTaken;
+
+    /// <summary>
+    /// Turns <paramref name="n"/> stored weapons of one unit type into soldiers now (people leave their jobs for it if nobody is idle).
+    /// The commands go first in the think, so a soldier armed here can be sent out in the same go.
+    /// </summary>
+    public void ArmFromStore(string unitId, int n)
+    {
+        n = Math.Min(n, Unit(unitId).Weapons);
+        if (n <= 0) return;
+        int idle = Math.Max(0, Count(Job.Idle) - _idleTaken);
+        int pull = n - idle;
+        if (pull > 0)
+        {
+            var from = Jobs.Working.Where(j => j != Job.Farmer).OrderByDescending(Count).FirstOrDefault();
+            int take = Math.Min(pull, Count(from));
+            if (take > 0) { Wish(112, new MoveWorkers(from, Job.Idle, take)); idle += take; }
+        }
+        n = Math.Min(n, idle);
+        if (n <= 0) return;
+        _idleTaken += n;
+        Wish(110, new ArmWorkers(unitId, n, Job.Idle));
+    }
+
+    /// <summary>
+    /// The unit type that does best against the soldiers its rivals have as the scout reports show them (the biggest rival it has a report on):
+    /// each type is tried added to what the bot has, in the game's own fight calculator. Null for a bot that does not do this, or with nothing to go on.
+    /// It is worked out now and then, not every think.
+    /// </summary>
+    public string? CounterPick()
+    {
+        if (!Level.CounterUnits) return null;
+        if (Now - Memory.CounterAt < 25) return Memory.CounterPick;
+        Memory.CounterAt = Now;
+        Memory.CounterPick = null;
+        RivalEstimate? rival = null;
+        foreach (var r in Rivals)
+            if (EstimateOf(r.Seat) is { } e && Now - e.At < Rules.Bots.StaleReportSeconds * 3 && e.Total > (rival?.Total ?? 0)) rival = e;
+        if (rival is null) return null;
+        var theirs = Tactics.Setup(this, "Rakip", rival.Units);
+        var mine = Castle.Units.ToDictionary(u => u.Id, u => Owned(u.Id));
+        string? best = null;
+        double bestRate = -1;
+        foreach (var u in Castle.Units.OrderBy(_ => Rng.Next()))
+        {
+            var with = new Dictionary<string, int>(mine);
+            with[u.Id] += 4;
+            double rate = Tactics.Win(this, Tactics.Setup(this, "Biz", with), theirs).Rate;
+            if (rate > bestRate + 1e-9) { bestRate = rate; best = u.Id; }
+        }
+        return Memory.CounterPick = best;
+    }
 
     /// <summary>Ask for a command: higher <paramref name="priority"/> goes first; it only goes out if what it costs is still there.</summary>
     public void Wish(double priority, GameCommand command, double wood = 0, double iron = 0, double gold = 0)
