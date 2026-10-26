@@ -38,7 +38,7 @@ public class BotIsolationTests
         "Keepfall.Core.Match.MatchPhase", "Keepfall.Core.Match.MissionKind", "Keepfall.Core.Match.BattleWinner", "Keepfall.Core.Match.BattleKind",
         "Keepfall.Core.Match.ArmyState", "Keepfall.Core.Lobby.PlayerColor", "Keepfall.Core.Lobby.RoomPhase",
         // Public maths: the fight calculator works on rules and armies made up on the spot.
-        "Keepfall.Core.World.MoverKind", "Keepfall.Core.Combat.BattleSimulator", "Keepfall.Core.Combat.ArmySetup", "Keepfall.Core.Combat.TargetPriority",
+        "Keepfall.Core.World.MoverKind", "Keepfall.Core.Economy.MatchRules", "Keepfall.Core.Combat.BattleSimulator", "Keepfall.Core.Combat.ArmySetup", "Keepfall.Core.Combat.TargetPriority",
         "Keepfall.Core.Combat.BattleResult", "Keepfall.Core.Combat.BattleOutcome", "Keepfall.Core.Combat.SideReport",
         "Keepfall.Core.World.MapRules", "Keepfall.Core.Economy.WarRules", "Keepfall.Core.Units.AttackRange",
     };

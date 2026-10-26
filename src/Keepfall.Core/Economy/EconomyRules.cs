@@ -13,7 +13,9 @@ public sealed record MatchRules(
     double StartingIron,
     double SpectatorDelaySeconds,
     double SpectatorWaitSeconds,
-    double SpectatorMinSeconds = 0);
+    double SpectatorMinSeconds = 0,
+    /// <summary>Turning a worker into a soldier takes this long: in between they neither work nor fight (0: at once). Hiring a mercenary is always at once.</summary>
+    double ArmSeconds = 0);
 
 /// <summary>War phase ("Maç" and "Binalar" sheets): famine, castle and siege.</summary>
 public sealed record WarRules(

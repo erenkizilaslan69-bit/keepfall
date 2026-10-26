@@ -118,7 +118,7 @@ public sealed class BotContext(GameRules rules, BotInput input, BotMemory memory
     }
 
     /// <summary>Soldiers at home and on the road.</summary>
-    public int SoldiersTotal => Castle.Soldiers + Castle.War.SoldiersAway;
+    public int SoldiersTotal => Castle.Soldiers + Castle.War.SoldiersAway + Castle.Units.Sum(u => u.Arming);
 
     /// <summary>Soldiers, weapons and queued weapons of one unit type, wherever they are.</summary>
     public int Owned(string unitId) =>
@@ -137,6 +137,23 @@ public sealed class BotContext(GameRules rules, BotInput input, BotMemory memory
     public bool ForgingTime => AtWar || PrepProgress >= Rules.Bots.WeaponsFrom;
 
     private int _idleTaken;
+
+    /// <summary>
+    /// For a bot that keeps its weapons in the store: gets <paramref name="units"/> ready to be sent. Arms what is still a weapon in the store (a person is
+    /// already on the way to being a soldier does not count again) and says whether the army can leave now (false: soldiers are still being armed).
+    /// </summary>
+    public bool ReadyToSend(IReadOnlyDictionary<string, int> units)
+    {
+        bool ready = true;
+        foreach (var (id, n) in units)
+        {
+            int short_ = n - HomeSoldiers(id);
+            if (short_ <= 0) continue;
+            ArmFromStore(id, short_ - Unit(id).Arming);
+            if (Rules.Match.ArmSeconds > 0) ready = false; // not soldiers until they are armed
+        }
+        return ready;
+    }
 
     /// <summary>
     /// Turns <paramref name="n"/> stored weapons of one unit type into soldiers now (people leave their jobs for it if nobody is idle).

@@ -116,7 +116,11 @@ public sealed class Castle
     public int SoldierCount => _soldiers.Values.Sum();
     /// <summary>People away on scout missions: they count and eat, but do not work.</summary>
     public int ScoutsAway { get; private set; }
-    public int Population => WorkerCount + ScoutsAway + SoldierCount + SoldiersAway + SoldiersDefending;
+    /// <summary>People being armed (match.armSeconds): out of their jobs, not soldiers yet.</summary>
+    public int Arming => _arming.Sum((a) => a.Count);
+    public int ArmingOf(UnitType type) => _arming.Where((a) => a.Type == type).Sum((a) => a.Count);
+    private readonly List<(UnitType Type, int Count, double Left)> _arming = [];
+    public int Population => WorkerCount + ScoutsAway + Arming + SoldierCount + SoldiersAway + SoldiersDefending;
     public double NextPersonCost => _rules.Economy.NewPersonCost(Population);
 
     public Building Building(BuildingType type) => _buildings[type];
@@ -160,7 +164,7 @@ public sealed class Castle
     public double GrowthThreshold => NextPersonCost + GrowthReserve;
 
     public double FoodConsumptionPerMinute =>
-        (WorkerCount + ScoutsAway) * _rules.Economy.WorkerFoodPerMinute
+        (WorkerCount + ScoutsAway + Arming) * _rules.Economy.WorkerFoodPerMinute
         + (SoldierCount + SoldiersAway + SoldiersDefending) * _rules.Economy.SoldierFoodPerMinute;
 
     /// <summary>Sends one person from <paramref name="from"/> out as a scout (see <see cref="Match.GameState"/>).</summary>
@@ -318,6 +322,15 @@ public sealed class Castle
 
         RunForge(ForgeSpeed * dt);
 
+        for (int i = _arming.Count - 1; i >= 0; i--)
+        {
+            var (type, count, left) = _arming[i];
+            left -= dt;
+            if (left > 1e-9) { _arming[i] = (type, count, left); continue; }
+            _soldiers[type] += count;
+            _arming.RemoveAt(i);
+        }
+
         foreach (var b in _buildings.Values)
         {
             if (b.UpgradeRemaining is not { } left) continue;
@@ -420,7 +433,8 @@ public sealed class Castle
         if (_workers[c.From] < c.Count) return CommandResult.Fail($"{Jobs.Name(c.From)} olarak sadece {_workers[c.From]} kişi var.");
         _weapons[type] -= c.Count;
         _workers[c.From] -= c.Count;
-        _soldiers[type] += c.Count;
+        if (_rules.Match.ArmSeconds > 0) _arming.Add((type, c.Count, _rules.Match.ArmSeconds));
+        else _soldiers[type] += c.Count;
         return CommandResult.Success;
     }
 

@@ -40,6 +40,8 @@ public sealed class MatchConfig
     public double SpectatorWaitSeconds { get; set; } = 5;
     /// <summary>When the last human falls with bots still playing, the match runs at least this much longer (game seconds), so the host can choose to keep watching or end it.</summary>
     public double SpectatorMinSeconds { get; set; } = 120;
+    /// <summary>Seconds it takes to turn a worker into a soldier (0 = at once).</summary>
+    public double ArmSeconds { get; set; }
     public int StartingPopulation { get; set; } = 10;
     public ProductionConfig StartingResources { get; set; } = new();
 }
@@ -309,6 +311,7 @@ public static class BalanceConfigLoader
         if (mc.SpectatorDelaySeconds < 0) errors.Add("match.spectatorDelaySeconds negatif olamaz.");
         if (mc.SpectatorWaitSeconds < 0) errors.Add("match.spectatorWaitSeconds negatif olamaz.");
         if (mc.SpectatorMinSeconds < 0) errors.Add("match.spectatorMinSeconds negatif olamaz.");
+        if (mc.ArmSeconds < 0) errors.Add("match.armSeconds negatif olamaz.");
         if (mc.StartingPopulation < 0) errors.Add("match.startingPopulation negatif olamaz.");
         var sr = mc.StartingResources;
         if (sr.Food < 0 || sr.Wood < 0 || sr.Iron < 0) errors.Add("match.startingResources negatif olamaz.");
@@ -452,7 +455,7 @@ public static class BalanceConfigLoader
                 mc.ShortModePrepMinutes * 60, mc.LongModePrepMinutes * 60,
                 (mc.ShortModeMinutes - mc.ShortModePrepMinutes) * 60,
                 (mc.LongModeMinutes - mc.LongModePrepMinutes) * 60,
-                mc.ServerTickSeconds, mc.StartingPopulation, sr.Food, sr.Wood, sr.Iron, mc.SpectatorDelaySeconds, mc.SpectatorWaitSeconds, mc.SpectatorMinSeconds),
+                mc.ServerTickSeconds, mc.StartingPopulation, sr.Food, sr.Wood, sr.Iron, mc.SpectatorDelaySeconds, mc.SpectatorWaitSeconds, mc.SpectatorMinSeconds, mc.ArmSeconds),
             new EconomyRules(
                 e.WorkerFoodPerMinute, e.SoldierFoodPerMinute, e.StarvationMultiplier,
                 e.NewPersonBaseCost, e.NewPersonCostGrowth, e.NewPersonBasePopulation, e.GrowthReserveSeconds,

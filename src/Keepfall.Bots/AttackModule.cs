@@ -95,8 +95,7 @@ public sealed class AttackModule : IBotModule
         if (medium) send = Math.Max(send, SoldiersToBreak(ctx, spare, GateHp(ctx, pick.Seat)));
         var units = Tactics.Take(spare, Math.Min(send, spareTotal));
         if (units.Count == 0) return;
-        if (ctx.Level.HoldWeapons)
-            foreach (var (id, n) in units) ctx.ArmFromStore(id, n - ctx.HomeSoldiers(id));
+        if (ctx.Level.HoldWeapons && !ctx.ReadyToSend(units)) { ctx.Stats.Count("armingWaits"); return; }
         ctx.Wish(80, new SendArmy(CastleKeys.Of(pick.Seat), units, null, null, ArmyMode.Attack));
         ctx.Commit(units);
         ctx.Stats.Count("attacks");

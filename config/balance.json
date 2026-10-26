@@ -16,6 +16,8 @@
     "spectatorWaitSeconds": 5,
     // Son insan elenip botlar oynamaya devam ediyorsa maç en az bu kadar oyun saniyesi daha sürer; oda sahibi bu sürede "İzlemeye devam" ya da "Maçı bitir" seçer.
     "spectatorMinSeconds": 120,
+    // Bir işçiyi askere çevirmek (silah kuşanmak) bu kadar saniye sürer: bu sürede ne çalışır ne savaşır; 0 = anında (şimdiki oyun). Paralı asker her zaman anında.
+    "armSeconds": 0,
     "spectatorDelaySeconds": 0,
     "startingPopulation": 12,
     "startingResources": { "food": 30, "wood": 40, "iron": 20 }

@@ -46,13 +46,26 @@ VARIANTS = [
     ('N3', 'evde bırakma payı %15', lambda t: hard(t, keepHome='0.15')),
     ('N4', 'N1 + N2', lambda t: hard(t, thinkMin='0.7', thinkMax='1.2', reactMin='1', reactMax='2', queueDepth='6')),
 ]
+# Kuşanma süresi (match.armSeconds): Zor vs Orta, silahı depoda tutmakla ve tutmadan, ve Orta vs Orta (saldırısız maç oranı, nüfus için)
+for _n in (0, 10, 15, 20):
+    VARIANTS.append((f'A{_n}', f'kuşanma {_n} sn: Zor vs Orta', lambda t, n=_n: match(t, armSeconds=n)))
+    VARIANTS.append((f'A{_n}h', f'kuşanma {_n} sn: Zor vs Orta, silahı depoda tutma KAPALI', lambda t, n=_n: hard(match(t, armSeconds=n), holdWeapons='false')))
+    VARIANTS.append((f'A{_n}o', f'kuşanma {_n} sn: Orta vs Orta', lambda t, n=_n: match(t, armSeconds=n)))
 
 
-def run(name, transform):
+def match(text, **kw):
+    """"match" bölümündeki tek sayıları değiştirir."""
+    for name, value in kw.items():
+        text, n = re.subn(r'("' + name + r'":\s*)[^,\n}]+', lambda m: f'{m.group(1)}{value}', text, count=1)
+        assert n == 1, name
+    return text
+
+
+def run(name, transform, level='zor-orta'):
     path = os.path.join(TMP, name + '.json')
     open(path, 'w', encoding='utf-8').write(transform(BASE))
     cmd = ['dotnet', 'run', '--project', os.path.join(ROOT, 'src', 'BattleSim'), '-c', 'Release', '--no-build', '--',
-           'bot', '--config', path, '--mac', str(MATCHES), '--ozet', '1', '--zorluk', 'zor-orta', '--seed', SEED, '--oyuncu', os.environ.get('KF_PLAYERS', '2')]
+           'bot', '--config', path, '--mac', str(MATCHES), '--ozet', '1', '--zorluk', level, '--seed', SEED, '--oyuncu', os.environ.get('KF_PLAYERS', '2')]
     r = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', cwd=ROOT)
     line = next((l for l in r.stdout.split('\n') if l.startswith('ÖZET\t')), None)
     if line is None:
@@ -66,7 +79,7 @@ rows = []
 for name, what, tf in VARIANTS:
     if ONLY and name not in ONLY:
         continue
-    f = run(name, tf)
+    f = run(name, tf, 'orta' if name.endswith('o') else 'zor-orta')
     rows.append([name, what] + f)
     print(name, what, f, flush=True)
 lines = ['| ' + ' | '.join(head) + ' |', '|' + '---|' * len(head)] + ['| ' + ' | '.join(r) + ' |' for r in rows]

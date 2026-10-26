@@ -62,8 +62,7 @@ public sealed class ForestModule : IBotModule
         var ready = candidates.Where(x => x.Army is not null).OrderByDescending(x => x.Score).FirstOrDefault();
         if (ready.Site is not null)
         {
-            if (ctx.Level.HoldWeapons)
-                foreach (var (id, n) in ready.Army!) ctx.ArmFromStore(id, n - ctx.HomeSoldiers(id));
+            if (ctx.Level.HoldWeapons && !ctx.ReadyToSend(ready.Army!)) { ctx.Stats.Count("armingWaits"); return; }
             ctx.Wish(75, new SendArmyToSite(ready.Site.Id, ready.Army!, null, null));
             ctx.Commit(ready.Army!);
             ctx.Stats.Count(ready.Site.Kind == SiteKind.Village ? "villageRaids" : ready.Site.Kind == SiteKind.BigCamp ? "bigCampAttacks" : "campAttacks");

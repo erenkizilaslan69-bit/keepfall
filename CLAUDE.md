@@ -73,3 +73,6 @@ Görev 0–6 ve kullanıcı istekleri bitti, hepsi push edildi; Production (5080
 
 ## Zor bot
 - `BotDifficulty.Hard`, `bots.hard` (balance.json): düşünme 0,7–1,2 sn, tepki 1–2 sn, hata 0, `holdWeapons` (silahı depoda tutar, `BotContext.ArmFromStore` ile saldırı/orman akınında kuşanır), `counterUnits` (`BotContext.CounterPick`), `opportunist` (başkasının kuşattığı kapı), `scoutFactor` 0,5, `upgradeEarly`. Ölçüm: `python tools/bot-zor.py` (`KF_PLAYERS=3` ile 3 oyuncu); `BattleSim bot --zorluk zor-orta`. Sonuç: Zor vs Orta ~%78 (hedef %75–85); 3 oyunculu maçlarda Zor ≈ eşit pay. Asıl kazanç silahı depoda tutmaktan.
+
+## Kuşanma süresi (karar bekliyor)
+- `match.armSeconds` (varsayılan 0 = anında; oyun DEĞİŞMEDİ) işçiyi askere çevirmeyi N sn sürdürür (bu sürede ne çalışır ne savaşır; `Castle.Arming`, `UnitView.Arming`; paralı asker anında). Ölçüm: `docs/bot-kusanma-tablo.md` (`python tools/bot-zor.py 300 <dosya> 4 A0,A0h,A0o,…`). Sonuç: 0 sn Zor %78,8; 10 sn %75,7; 15 sn %55,2; 20 sn %56,8; depoda tutmanın katkısı +28,5 → +22,7 → +5,5 → +3,6 puan. Kullanıcı karar verecek; istenirse değeri balance.json'da değiştir ve arayüzde kuşanan işçileri göster.

@@ -27,7 +27,7 @@ public sealed record BuildingView(
 /// <param name="Price">Gold to hire one soldier (0 = cannot be hired).</param>
 /// <param name="Hired">How many of the soldiers were hired (they cannot become workers).</param>
 public sealed record UnitView(string Id, string Name, double Wood, double Iron, double BuildSeconds, int Weapons, int Soldiers,
-    double Price = 0, int Hired = 0);
+    double Price = 0, int Hired = 0, int Arming = 0);
 
 public sealed record OrderView(string UnitId, string Name, int Remaining, double Progress, double BuildSeconds);
 
@@ -251,7 +251,7 @@ public static class ViewMapper
 
     public static List<UnitView> UnitsOf(Castle c) =>
         c.UnitTypes.Select(u => new UnitView(u.Id, u.Name, u.Cost.Wood, u.Cost.Iron, u.BuildSeconds,
-            c.Weapons[u], c.Soldiers[u], c.MercenaryPrice(u), c.Mercenaries[u])).ToList();
+            c.Weapons[u], c.Soldiers[u], c.MercenaryPrice(u), c.Mercenaries[u], c.ArmingOf(u))).ToList();
 
     private static SummaryView ToView(EconomySummary s, Castle c) => new(
         s.DurationSeconds, s.StartPopulation, s.FinalPopulation, s.PeakPopulation, s.PeopleBorn,
