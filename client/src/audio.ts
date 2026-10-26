@@ -6,7 +6,7 @@
 
 export type SoundName =
   | 'click' | 'sword' | 'arrow' | 'death' | 'castleHit' | 'castleFall'
-  | 'warning' | 'scoutBack' | 'battleStart' | 'win' | 'lose'
+  | 'warning' | 'scoutBack' | 'envoy' | 'battleStart' | 'win' | 'lose'
   | 'shield' | 'uiConfirm' | 'uiError' | 'uiOpen' | 'uiClose';
 
 interface Prefs { muted: boolean; volume: number; music: number }
@@ -37,13 +37,15 @@ const SAMPLES: Partial<Record<SoundName, Bank>> = {
   castleFall: { files: ['castleFall-1', 'castleFall-2', 'castleFall-3'], gain: 1, layers: true },
   battleStart: { files: ['battleStart'], gain: 0.9 },
   warning: { files: ['warning'], gain: 0.9 },
+  // An envoy's arrival: a bell (Kenney Interface Sounds, bong_001), not the scout's chime.
+  envoy: { files: ['envoy'], gain: 0.9 },
 };
 /** At most this many sounds at once; a crowded battle plays the first few and drops the rest. */
 const MAX_VOICES = 8;
 /** The same sound is not played again within this many ms (hundreds of hits in a big battle would be a roar of clicks). */
 const MIN_GAP_MS: Record<SoundName, number> = {
   click: 25, sword: 70, arrow: 110, death: 120, castleHit: 300, castleFall: 1500,
-  warning: 2500, scoutBack: 800, battleStart: 2000, win: 3000, lose: 3000,
+  warning: 2500, scoutBack: 800, envoy: 1500, battleStart: 2000, win: 3000, lose: 3000,
   shield: 90, uiConfirm: 80, uiError: 150, uiOpen: 60, uiClose: 60,
 };
 
@@ -223,6 +225,10 @@ class Sfx {
         this.tone(ctx, 392, 392, 0.4, 'sawtooth', 0.2 * v, 0, 900);
         this.tone(ctx, 294, 294, 0.5, 'sawtooth', 0.2 * v, 0.45, 800);
         return 1;
+      case 'envoy': // fallback if the bell did not load: two low bell-like strokes
+        this.tone(ctx, 392, 392, 0.7, 'sine', 0.3 * v);
+        this.tone(ctx, 588, 588, 0.9, 'sine', 0.2 * v, 0.02);
+        return 0.9;
       case 'scoutBack':
         [523, 659, 784].forEach((f, i) => this.tone(ctx, f, f, 0.12, 'triangle', 0.2 * v, i * 0.09));
         return 0.4;

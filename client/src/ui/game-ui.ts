@@ -216,7 +216,7 @@ export class GameUi {
     const letters = s.letters ?? [];
     if (this.lettersSeen) {
       const fresh = letters.filter((l) => !this.lettersSeen!.has(l.id));
-      if (fresh.length) { sfx.play('scoutBack'); this.reports.showLetter(fresh[fresh.length - 1]); }
+      if (fresh.length) { sfx.play('envoy'); this.reports.showLetter(fresh[fresh.length - 1]); }
     }
     this.lettersSeen = new Set(letters.map((l) => l.id));
 
