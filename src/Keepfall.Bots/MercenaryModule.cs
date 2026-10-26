@@ -15,7 +15,9 @@ public sealed class MercenaryModule : IBotModule
         var c = ctx.Castle;
         double gold = c.Resources.Gold;
         if (gold <= 0 || c.Eliminated) return;
-        bool needed = ctx.ArmingTime || ctx.UnderThreat || ctx.Memory.WantSoldiers > ctx.Castle.Soldiers;
+        // A bot that prepares on sight hires the moment an army is seen coming (hiring is instant; arming is not).
+        bool sighted = ctx.Level.Foresight && ctx.Rules.Match.ArmSeconds > 0 && ctx.Memory.Sighted(ctx.Now);
+        bool needed = ctx.ArmingTime || ctx.UnderThreat || sighted || ctx.Memory.WantSoldiers > ctx.Castle.Soldiers;
         if (!needed) return;
         if (c.Starving || (c.Resources.Food < 25 && c.Rates.FoodIn < c.Rates.FoodOut)) return;
         if (ctx.Difficulty == BotDifficulty.Easy && ctx.SlipEco()) return;
@@ -29,7 +31,7 @@ public sealed class MercenaryModule : IBotModule
         if (ctx.CounterPick() is { } counter && ctx.Owned(counter) < 0.5 * total && ctx.Unit(counter).Price > 0) pick = (counter, 0);
 
         var price = ctx.Unit(pick.Id).Price;
-        int n = Math.Min((int)Math.Floor(gold / price), ctx.UnderThreat ? ctx.Level.MercThreatBatch : ctx.Level.MercBatch);
+        int n = Math.Min((int)Math.Floor(gold / price), ctx.UnderThreat || sighted ? ctx.Level.MercThreatBatch : ctx.Level.MercBatch);
         if (n > 0) ctx.Wish(75, new HireMercenary(pick.Id, n), gold: price * n);
     }
 }

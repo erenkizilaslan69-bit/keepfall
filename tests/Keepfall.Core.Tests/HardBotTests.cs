@@ -60,6 +60,31 @@ public class HardBotTests
     }
 
     [Fact]
+    public void The_hard_level_prepares_ahead_where_arming_takes_time_and_the_others_do_not()
+    {
+        Assert.True(Rules.Match.ArmSeconds > 0);
+        var hard = Rules.Bots.Of(BotDifficulty.Hard);
+        Assert.True(hard.Foresight && hard.GarrisonShare > 0);
+        Assert.False(Rules.Bots.Of(BotDifficulty.Medium).Foresight);
+        Assert.Equal(0, Rules.Bots.Of(BotDifficulty.Medium).GarrisonShare);
+    }
+
+    [Fact]
+    public void A_hard_bot_keeps_a_garrison_armed_from_what_it_knows_of_the_biggest_rival_and_the_rest_stays_in_the_store()
+    {
+        var (room, game, bot, me, rival) = War(BotDifficulty.Hard);
+        var castle = game.CastleOf(me.CastleKey)!;
+        castle.AddWeapons(Sword, 30);
+        castle.AddPeople(30);
+        game.CastleOf(rival.CastleKey)!.AddSoldiers(Sword, 30); // too strong to attack
+        Assert.True(game.Execute(me.CastleKey, new SendScout(rival.CastleKey)).Ok);
+        Run(room, bot, me, 250);
+        int garrison = (int)Math.Ceiling(30 * Rules.Bots.Of(BotDifficulty.Hard).GarrisonShare);
+        Assert.True(castle.SoldierCount >= garrison, $"{castle.SoldierCount} soldiers at home, wanted {garrison}");
+        Assert.True(castle.Weapons[Sword] > 0, "the rest of the weapons should stay in the store");
+    }
+
+    [Fact]
     public void A_hard_bot_arms_only_the_weapons_it_sends_out_where_a_medium_one_arms_them_all()
     {
         foreach (var level in new[] { BotDifficulty.Medium, BotDifficulty.Hard })
@@ -68,7 +93,7 @@ public class HardBotTests
             var castle = game.CastleOf(me.CastleKey)!;
             castle.AddWeapons(Sword, 6);
             castle.AddPeople(6);
-            var log = Run(room, bot, me, 25);
+            var log = Run(room, bot, me, 25 + (int)Rules.Match.ArmSeconds);
             int armed = log.Where(x => x.Command is ArmWorkers).Sum(x => ((ArmWorkers)x.Command).Count);
             int sent = log.Sum(x => x.Command switch { SendArmyToSite s => s.Units.Values.Sum(), SendArmy a => a.Units.Values.Sum(), _ => 0 });
             if (level == BotDifficulty.Medium) Assert.True(armed >= 6, $"medium armed {armed}");

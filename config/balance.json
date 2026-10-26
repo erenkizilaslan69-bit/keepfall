@@ -128,7 +128,7 @@
     // Zor: hile yok (aynı görünümler, aynı komutlar); fark karar kalitesi. Hızlı düşünür ve tepki verir, boşta işçi bırakmaz, yükseltmeyi erken başlatır,
     // rakip raporlarına göre karşı birlik üretir (counterUnits), silahları depoda tutup (holdWeapons) saldırı gelince ya da saldırırken kuşanır,
     // rakiplerin zayıfladığı anı kollar (opportunist) ve gözcü raporlarını taze tutar (scoutFactor).
-    "hard":   { "thinkMin": 0.7, "thinkMax": 1.2, "reactMin": 1, "reactMax": 2, "commands": 6, "mistake": 0, "slack": 0, "ecoMistake": 0, "scoreAware": true, "queueDepth": 4, "holdWeapons": true, "counterUnits": true, "opportunist": true, "scoutFactor": 0.5, "upgradeEarly": true },
+    "hard":   { "thinkMin": 0.7, "thinkMax": 1.2, "reactMin": 1, "reactMax": 2, "commands": 6, "mistake": 0, "slack": 0, "ecoMistake": 0, "scoreAware": true, "queueDepth": 4, "holdWeapons": true, "counterUnits": true, "opportunist": true, "scoutFactor": 0.5, "upgradeEarly": true, "foresight": true, "garrisonShare": 0.2 },
     "mix": { "kilicli": 0.35, "kalkanli": 0.25, "okcu": 0.25, "mizrakci": 0.15 },
     "weaponsFrom": 0.3,
     "armFrom": 0.75,

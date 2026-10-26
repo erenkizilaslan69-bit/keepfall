@@ -27,7 +27,7 @@ public sealed class ForestModule : IBotModule
         // At war the castle keeps a share of its soldiers at home; in the preparation nobody can attack it.
         if (ctx.UnderThreat) return; // an army is coming: everybody stays
         // A bot that keeps its weapons in the store counts them as soldiers it can have at once.
-        var home = c.Units.ToDictionary(u => u.Id, u => ctx.HomeSoldiers(u.Id) + (ctx.Level.HoldWeapons ? u.Weapons : 0));
+        var home = c.Units.ToDictionary(u => u.Id, u => ctx.HomeSoldiers(u.Id) + (ctx.Level.HoldWeapons ? u.Weapons + u.Arming : 0));
         double keep = ctx.AtWar ? 0.4 : 0.0;
         var spare = home.ToDictionary(kv => kv.Key, kv => (int)Math.Floor(kv.Value * (1 - keep)));
         int spareTotal = spare.Values.Sum();

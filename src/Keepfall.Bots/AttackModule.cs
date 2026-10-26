@@ -26,9 +26,12 @@ public sealed class AttackModule : IBotModule
         bool blindWaits = ctx.Castle.ElapsedSeconds - ctx.Castle.PrepSeconds < botRules.BlindAfterWarSeconds; // the first stretch of the war
         double keep = ctx.Level.KeepHome;
         // A bot that keeps its weapons in the store counts them as soldiers it can have at once.
-        var home = c.Units.ToDictionary(u => u.Id, u => ctx.HomeSoldiers(u.Id) + (ctx.Level.HoldWeapons ? c.Units.First(x => x.Id == u.Id).Weapons : 0));
+        // (Those being armed will be soldiers soon: they count too, or the plan would fall apart while they are being armed.)
+        var home = c.Units.ToDictionary(u => u.Id, u => ctx.HomeSoldiers(u.Id) + (ctx.Level.HoldWeapons ? c.Units.First(x => x.Id == u.Id).Weapons + c.Units.First(x => x.Id == u.Id).Arming : 0));
         int homeTotal = home.Values.Sum();
         if (homeTotal == 0) return;
+        // A foresighted bot always leaves a garrison at home.
+        keep = Math.Max(keep, Math.Min(1.0, ctx.Garrison() / (double)homeTotal));
         var spare = home.ToDictionary(kv => kv.Key, kv => (int)Math.Floor(kv.Value * (1 - keep)));
         int spareTotal = spare.Values.Sum();
 

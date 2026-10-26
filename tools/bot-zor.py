@@ -51,6 +51,23 @@ for _n in (0, 10, 15, 20):
     VARIANTS.append((f'A{_n}', f'kuşanma {_n} sn: Zor vs Orta', lambda t, n=_n: match(t, armSeconds=n)))
     VARIANTS.append((f'A{_n}h', f'kuşanma {_n} sn: Zor vs Orta, silahı depoda tutma KAPALI', lambda t, n=_n: hard(match(t, armSeconds=n), holdWeapons='false')))
     VARIANTS.append((f'A{_n}o', f'kuşanma {_n} sn: Orta vs Orta', lambda t, n=_n: match(t, armSeconds=n)))
+# Öngörü (armSeconds = balance.json'daki değer, 15): Zor'un hazırlığı
+for _name, _what, _kw in [('F0', 'öngörü KAPALI', dict(foresight='false', garrisonShare='0')),
+                          ('F1', 'görüşte kuşanma açık, garnizon yok', dict(foresight='true', garrisonShare='0')),
+                          ('F2', 'garnizon %30', dict(foresight='true', garrisonShare='0.3')),
+                          ('F3', 'garnizon %50', dict(foresight='true', garrisonShare='0.5')),
+                          ('F6', 'garnizon %40', dict(foresight='true', garrisonShare='0.4')),
+                          ('F7', 'garnizon %60', dict(foresight='true', garrisonShare='0.6')),
+                          ('G1', 'garnizon %20', dict(foresight='true', garrisonShare='0.2')),
+                          ('G2', 'garnizon %30, evde bırakma %15', dict(foresight='true', garrisonShare='0.3', keepHome='0.15')),
+                          ('G3', 'garnizon yok, evde bırakma %15', dict(foresight='true', garrisonShare='0', keepHome='0.15')),
+                          ('G4', 'garnizon %25, evde bırakma %10', dict(foresight='true', garrisonShare='0.25', keepHome='0.1')),
+                          ('F4', 'garnizon %70', dict(foresight='true', garrisonShare='0.7')),
+                          ('F5', 'garnizon %50, tutma KAPALI', dict(foresight='true', garrisonShare='0.5', holdWeapons='false'))]:
+    VARIANTS.append((_name, _what, lambda t, kw=_kw: hard(t, **kw)))
+VARIANTS.append(('Fz', 'şimdiki Zor ayarı (öngörü + garnizon %20)', lambda t: t))
+VARIANTS.append(('Fh', 'öngörü ayarı, depoda tutma KAPALI', lambda t: hard(t, holdWeapons='false')))
+VARIANTS.append(('Fo', 'Orta vs Orta (şimdiki ayar)', lambda t: t))
 
 
 def match(text, **kw):

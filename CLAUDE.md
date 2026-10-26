@@ -74,5 +74,8 @@ Görev 0–6 ve kullanıcı istekleri bitti, hepsi push edildi; Production (5080
 ## Zor bot
 - `BotDifficulty.Hard`, `bots.hard` (balance.json): düşünme 0,7–1,2 sn, tepki 1–2 sn, hata 0, `holdWeapons` (silahı depoda tutar, `BotContext.ArmFromStore` ile saldırı/orman akınında kuşanır), `counterUnits` (`BotContext.CounterPick`), `opportunist` (başkasının kuşattığı kapı), `scoutFactor` 0,5, `upgradeEarly`. Ölçüm: `python tools/bot-zor.py` (`KF_PLAYERS=3` ile 3 oyuncu); `BattleSim bot --zorluk zor-orta`. Sonuç: Zor vs Orta ~%78 (hedef %75–85); 3 oyunculu maçlarda Zor ≈ eşit pay. Asıl kazanç silahı depoda tutmaktan.
 
-## Kuşanma süresi (karar bekliyor)
-- `match.armSeconds` (varsayılan 0 = anında; oyun DEĞİŞMEDİ) işçiyi askere çevirmeyi N sn sürdürür (bu sürede ne çalışır ne savaşır; `Castle.Arming`, `UnitView.Arming`; paralı asker anında). Ölçüm: `docs/bot-kusanma-tablo.md` (`python tools/bot-zor.py 300 <dosya> 4 A0,A0h,A0o,…`). Sonuç: 0 sn Zor %78,8; 10 sn %75,7; 15 sn %55,2; 20 sn %56,8; depoda tutmanın katkısı +28,5 → +22,7 → +5,5 → +3,6 puan. Kullanıcı karar verecek; istenirse değeri balance.json'da değiştir ve arayüzde kuşanan işçileri göster.
+## Kuşanma süresi (karar verildi: 15 sn)
+- `match.armSeconds` = 15 (kullanıcı kararı): işçiyi askere çevirmek 15 sn sürer; bu sürede ne çalışır ne savaşır, nüfusa sayılır ve işçi gibi yemek yer (`Castle.Arming`, `UnitView.Arming`, `CastleView.ArmSeconds`). Paralı asker anında. Arayüz: kale penceresinde "Kuşanıyor: N" satırı ve birlik başına "kuşanıyor N", +1/+5 düğmelerinde süre ipucu, haritada kale avlusunda "Kuşanıyor: N" tabelası.
+- Ölçüm: `docs/bot-kusanma-tablo.md` (süre karşılaştırması: 0/10/15/20 sn) ve `docs/bot-ongoru-tablo.md` (öngörülü Zor, 15 sn).
+- Zor botun öngörüsü (`bots.hard`: `foresight`, `garrisonShare`; `ForesightModule`): ordu görüşe girer girmez (tepki süresini beklemeden) depodaki silahları kuşanır ve paralı asker kiralar; savaşta evde, bildiği en büyük rakip ordusunun `garrisonShare` kadarını (0,2) kuşanmış tutar; saldırı kararında kuşananları sayar, kuşanma bitince yola çıkar. Zor vs Orta ~%71 (hedef %75–85'in biraz altında; garnizon 0 iken ~%74, fark hata payı içinde).
+

@@ -178,6 +178,18 @@ public sealed class BotContext(GameRules rules, BotInput input, BotMemory memory
     }
 
     /// <summary>
+    /// Soldiers a foresighted bot keeps armed at home in the war: a share of what the biggest rival is thought to have (from a report that is not too old).
+    /// </summary>
+    public int Garrison()
+    {
+        if (Level.GarrisonShare <= 0 || !AtWar && PrepProgress < 0.9) return 0;
+        int biggest = 0;
+        foreach (var r in Rivals)
+            if (EstimateOf(r.Seat) is { } e && Now - e.At < Rules.Bots.StaleReportSeconds * 3) biggest = Math.Max(biggest, e.Total);
+        return (int)Math.Ceiling(biggest * Level.GarrisonShare);
+    }
+
+    /// <summary>
     /// The unit type that does best against the soldiers its rivals have as the scout reports show them (the biggest rival it has a report on):
     /// each type is tried added to what the bot has, in the game's own fight calculator. Null for a bot that does not do this, or with nothing to go on.
     /// It is worked out now and then, not every think.
