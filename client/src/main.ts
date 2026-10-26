@@ -19,7 +19,7 @@ import '@fontsource/atkinson-hyperlegible-next/latin-ext-700.css';
 import { Minimap } from './minimap';
 import { EndScreen, HomeScreen, LobbyScreen } from './screens';
 import { setBotSeats } from './format';
-import { sfx } from './audio';
+import { music, sfx } from './audio';
 import { mountGuideButton } from './ui/guide';
 import { guarded, installErrorReporting } from './error-report';
 import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
@@ -104,6 +104,7 @@ const net = new GameConnection({
 
 // Dev only: lets the console (and browser tests) send commands as this tab's player.
 if (import.meta.env.DEV) (window as unknown as { keepfallNet: GameConnection }).keepfallNet = net;
+if (import.meta.env.DEV) (window as unknown as { keepfallAudio: unknown }).keepfallAudio = { sfx, music };
 
 // ---- room events ---------------------------------------------------------------------------
 
@@ -127,6 +128,7 @@ function onCastle(c: CastleView): void {
   lastCastle = c;
   if (c.summary) { summary = c.summary; end?.setSummary(c.summary); }
   if (screen === 'game') {
+    music.scene(c.phase === 'war' ? 'war' : 'prep'); // the lively track for the war, the calm one before it
     guarded('castle-state', () => ui?.update(c), 'ui');
     guarded('castle-state', () => { if (!scene && lastLayout) startScene(c.color, lastLayout); }, 'start scene');
     guarded('castle-state', () => scene?.setState(c), 'scene');
@@ -148,6 +150,7 @@ function clear(): void {
 }
 
 function showHome(defaults: { code?: string; error?: string } = {}): void {
+  music.scene('prep');
   clear();
   document.documentElement.classList.add('in-menu');
   screen = 'home';
@@ -172,6 +175,7 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
 }
 
 function showLobby(r: RoomView): void {
+  music.scene('prep');
   setBotSeats(r.players);
   clear();
   document.documentElement.classList.add('in-menu');
@@ -239,6 +243,7 @@ function startScene(color: CastleView['color'], layout: MapLayoutView): void {
 }
 
 function showEnd(r: RoomView): void {
+  music.scene('prep');
   clear();
   document.documentElement.classList.add('in-menu');
   screen = 'end';

@@ -176,7 +176,7 @@ export class BattlePlayer {
     if (!a || a.dead || !a.sprite.active) return;
     if (b) a.sprite.setFlipX(b.sprite.x < a.sprite.x);
     const look = LOOK[a.unit] ?? LOOK.kilicli;
-    sfx.play(a.ranged ? 'arrow' : 'sword', this.loudness(a.sprite.x, a.sprite.y));
+    sfx.play(a.ranged ? 'arrow' : look.attack ? 'sword' : 'shield', this.loudness(a.sprite.x, a.sprite.y));
     if (look.attack) {
       const key = colorKey(r.view.sides[a.side].color, this.ownColor, look.attack);
       if (this.scene.anims.exists(key)) {

@@ -1,3 +1,4 @@
+import { sfx } from '../audio';
 import type { GameConnection } from '../net';
 import type { ArmyView, BuildingType, CastleView, RoomView, SiteView } from '../types';
 
@@ -86,7 +87,8 @@ export class WindowManager {
   get isOpen(): boolean { return this.win !== null; }
 
   open(target: Target, win: Win, anchor: () => Anchor | null): void {
-    this.close();
+    if (this.win === null) sfx.play('uiOpen'); // moving from one window to another is not an opening
+    this.close(true);
     this.target = target;
     this.win = win;
     this.anchor = anchor;
@@ -95,7 +97,8 @@ export class WindowManager {
     this.reposition();
   }
 
-  close(): void {
+  close(silent = false): void {
+    if (this.win && !silent) sfx.play('uiClose');
     this.win?.el.remove();
     this.win = null;
     this.target = null;

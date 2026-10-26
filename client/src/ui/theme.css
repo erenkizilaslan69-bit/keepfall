@@ -388,3 +388,4 @@ html.in-menu .guide-fab.btn-round { display: inline-grid; }
 .tb-c { container-type: inline-size; }
 @container (max-width: 150px) { .tb-hp { display: none; } }
 .tb-players[data-n="2"] .chip-name, .tb-players[data-n="1"] .chip-name { max-width: 10em; }
+.tb-menu-label { font-size: .85em; margin-bottom: calc(-4px * var(--u, 1)); }

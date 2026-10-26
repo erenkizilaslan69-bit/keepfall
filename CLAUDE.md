@@ -22,7 +22,7 @@ Kullanıcıyla **Türkçe** konuş. Kısa ve öz raporla. Kod, yorum ve commit m
 4. Commit sonu: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`; git e-postası noreply.
 5. **Production** sunucusunu yalnız kullanıcı söyleyince / iş bitince yeniden başlat. Production `bin/Debug`'dan DEĞİL `publish/` klasöründen çalışır (git'e girmez), bu yüzden derleme ve testler onu kilitlemez, durdurmak gerekmez. Yeniden başlatmak için: `npm --prefix client run build`; çalışan Production'ı durdur (publish/ kilitli kalır); `dotnet publish src/Keepfall.Server -c Release -o publish`; depo KÖKÜNDEN `$env:ASPNETCORE_ENVIRONMENT='Production'; dotnet publish/Keepfall.Server.dll --urls http://localhost:5080` (açılışta "Hosting environment: Production" yazmalı). Test için açtığın sunucuları (5081, Vite 5174) işin sonunda KAPAT.
 6. **Tünel** yalnız istenince: `cloudflared tunnel --url http://localhost:5080` (Vite'a değil, 5080'e).
-7. **Asset'ler repoda değil** (`client/public/assets/` .gitignore'da, Tiny Swords paketi). Ekleme/commit etme.
+7. **Tiny Swords asset'leri repoda değil** (`client/public/assets/` .gitignore'da). Ekleme/commit etme. İSTİSNA: CC0 sesler repoda (`client/public/audio/`: Kenney arayüz/etki sesleri, RandomMind müzikleri; kaynaklar README'de); başka lisanslı bir şeyi repoya koyma.
 8. Satır sonu: dosyaların mevcut biçimini koru (çoğu LF; BOM ekleme). Python ile dosya düzenlerken BOM/CRLF değiştirme.
 9. Test sunucusunda tarayıcı bölmesi gizliyken Phaser çizmez; ekran testi için başsız Chrome (CDP) kullan (örnek: `tools/replay-check.mjs`).
 
@@ -67,3 +67,6 @@ Görev 0–6 ve kullanıcı istekleri bitti, hepsi push edildi; Production (5080
 ## Görsel yenileme durumu
 - Aşama 1 (arayüz) ve 2 (harita) bitti. Harita düzeltmeleri (toprak lekeleri, ormanda seçilebilirlik, yollar bir kez dokuya) bitti.
 - Aşama 3 (efektler): `client/src/scene/Effects.ts` (kıvılcım, toz, ok izi, hasarlı kalede duman/alev, çöküş, kamera sarsıntısı; `?fx=0` kapatır, azaltılmış hareket tercihinde sarsıntı yok), ekran geçişleri (kamera fadeIn, savaş başlangıcında parlama, ekran değişiminde CSS kayma). Ölçüm/ekran görüntüsü araçları: `tools/shot-fx.mjs`, `tools/shot-forest.mjs`, `tools/shot-map.mjs`, `tools/fps.mjs`.
+
+## Ses durumu
+- Gerçek sesler: `client/public/audio/sfx` (OGG + MP3 yedek), `music` (prep.mp3 hazırlık/lobi/maç sonu, war.mp3 savaş; ~0,8–0,9 MB). `client/src/audio.ts`: kayıtlar ilk tıklamada yüklenir, yüklenemeyen ya da kaydı olmayan ses (ok, zafer, yenilgi) prosedürel kalır; müzik çapraz geçişli (2,5 sn); müzik ve efekt ses düzeyi ayrı (varsayılan müzik 0,2, efekt 0,3). Ses kontrolü: `node tools/audio-check.mjs` (dev sunucu + Vite gerekir). ffmpeg: `winget install Gyan.FFmpeg` ile kuruldu (yeni kabukta PATH'e girer).

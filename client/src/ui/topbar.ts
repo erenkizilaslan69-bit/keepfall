@@ -55,7 +55,10 @@ export class TopBar {
           <button class="btn-round" data-guide title="Nasıl oynanır?" aria-label="Nasıl oynanır?"><b>?</b></button>
           <div class="tb-menu paper hit hidden" data-f="soundmenu" role="menu">
             <div class="tb-menu-row"><b>Ses</b><button class="kf-btn" data-sound="mute"></button></div>
-            <input type="range" min="0" max="100" step="5" data-sound="volume" aria-label="Ses düzeyi" title="Ses düzeyi">
+            <label class="tb-menu-label">Efektler</label>
+            <input type="range" min="0" max="100" step="5" data-sound="volume" aria-label="Efekt ses düzeyi" title="Efekt ses düzeyi">
+            <label class="tb-menu-label">Müzik</label>
+            <input type="range" min="0" max="100" step="5" data-sound="music" aria-label="Müzik ses düzeyi" title="Müzik ses düzeyi">
           </div>
         </div>
         <div class="strip hit tb-speed hidden" data-f="speed"></div>
@@ -83,12 +86,15 @@ export class TopBar {
     const menu = this.q('[data-f="soundmenu"]');
     const mute = this.q<HTMLButtonElement>('[data-sound="mute"]');
     const slider = this.q<HTMLInputElement>('[data-sound="volume"]');
+    const musicSlider = this.q<HTMLInputElement>('[data-sound="music"]');
     const show = () => {
       icon.classList.toggle('off', sfx.muted);
       icon.title = sfx.muted ? 'Ses kapalı' : 'Ses';
       mute.textContent = sfx.muted ? 'Aç' : 'Kapat';
       slider.value = String(Math.round(sfx.volume * 100));
       slider.disabled = sfx.muted;
+      musicSlider.value = String(Math.round(sfx.musicVolume * 100));
+      musicSlider.disabled = sfx.muted;
     };
     const setOpen = (open: boolean) => {
       menu.classList.toggle('hidden', !open);
@@ -101,6 +107,7 @@ export class TopBar {
     mute.addEventListener('click', () => { sfx.setMuted(!sfx.muted); show(); });
     this.q('[data-guide]').addEventListener('click', toggleGuide);
     slider.addEventListener('input', () => { sfx.setVolume(Number(slider.value) / 100); });
+    musicSlider.addEventListener('input', () => { sfx.setMusicVolume(Number(musicSlider.value) / 100); });
     slider.addEventListener('change', () => sfx.play('sword')); // a sample at the new level
     show();
   }
