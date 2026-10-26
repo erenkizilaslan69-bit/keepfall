@@ -19,7 +19,7 @@ public sealed class ScoutModule : IBotModule
         bool medium = ctx.Difficulty != BotDifficulty.Easy;
         if (sc.Missions.Count >= Math.Min(ctx.Level.Scouts, sc.MaxScouts)) return;
         if (ctx.Now < 15 || ctx.SlipEco()) return;
-        if (ctx.Castle.Eliminated) return;
+        if (ctx.Castle.Eliminated || sc.Locked) return;
         if (ctx.ScoutSource() is not { } from) return;
 
         var own = sc.Quarters.FirstOrDefault(q => q.Seat == ctx.Seat);

@@ -173,6 +173,8 @@ export interface ScoutingView {
   quarters: QuarterView[];
   /** Most scouts out at once (one: a new one cannot leave before the one out is home). */
   maxScouts: number;
+  /** The last stretch of the preparation: no scout can leave until the war begins. */
+  locked: boolean;
 }
 
 export interface CastleView {

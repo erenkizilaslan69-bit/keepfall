@@ -145,7 +145,7 @@ public class VisionTests
     [Fact]
     public void A_scout_leaves_open_ground_behind_it_for_its_owner_only()
     {
-        Assert.Equal(120, Rules.Map.ScoutTrailSeconds);
+        Assert.Equal(60, Rules.Map.ScoutTrailSeconds);
         var game = War();
         Ok(game.Execute(A, new SendScout(C)));
         for (int t = 0; t < 10; t++) game.Tick(1);
@@ -173,7 +173,56 @@ public class VisionTests
         }
         Assert.Empty(game.TrailOf(A));
         Assert.InRange(fading, GameState.TrailFadeSeconds, 95); // points close one after the other, each fading for its last seconds
-        Assert.True(game.ElapsedSeconds < 1 + 2 * 31 + 120 + 30, "closed far too late");
+        Assert.True(game.ElapsedSeconds < 1 + 2 * 31 + 60 + 30, "closed far too late");
+    }
+
+    private static GameState Prep(double prepSeconds)
+    {
+        var game = new GameState(Rules, [A, B, C], prepSeconds: prepSeconds, warSeconds: 1000, rng: new Random(1),
+            corners: new Dictionary<string, Corner> { [A] = Corner.NorthWest, [B] = Corner.SouthEast, [C] = Corner.NorthEast });
+        foreach (var p in new[] { A, B, C }) Ok(game.Execute(p, new SetGrowth(false)));
+        return game;
+    }
+
+    [Fact]
+    public void No_scout_of_any_kind_can_leave_in_the_last_stretch_of_the_preparation_but_any_can_once_the_war_begins()
+    {
+        double lastSeconds = Rules.Scouting.NoScoutLastPrepSeconds;
+        Assert.Equal(60, lastSeconds);
+        var game = Prep(200);
+        for (int t = 0; t < 10; t++) game.Tick(1);
+        Assert.False(game.ScoutingLocked);
+        Ok(game.Execute(A, new SendScout(C))); // still allowed
+        while (game.MissionsOf(A).Count > 0) game.Tick(1);
+        while (game.PrepSeconds - game.ElapsedSeconds > lastSeconds - 0.5) game.Tick(1);
+        Assert.True(game.ScoutingLocked);
+        foreach (GameCommand c in new GameCommand[] { new SendScout(C), new SendExplore(Corner.NorthEast), new SendExplore(Corner.SouthWest) })
+        {
+            var r = game.Execute(A, c);
+            Assert.False(r.Ok);
+            Assert.Contains("savaş başlayınca", r.Error);
+        }
+        while (game.Phase == MatchPhase.Preparation) game.Tick(1);
+        Assert.False(game.ScoutingLocked);
+        Ok(game.Execute(A, new SendScout(C)));
+    }
+
+    [Fact]
+    public void The_war_begins_with_every_scout_trail_closed_and_a_scout_still_out_goes_on_with_its_mission()
+    {
+        var game = Prep(100);
+        for (int t = 0; t < 39; t++) game.Tick(1); // 61 s of preparation left: the last scout that may leave
+        Ok(game.Execute(A, new SendScout(C)));
+        while (game.Phase == MatchPhase.Preparation && game.ElapsedSeconds < 99) game.Tick(1);
+        Assert.Equal(MatchPhase.Preparation, game.Phase);
+        Assert.NotEmpty(game.TrailOf(A));
+        Assert.Single(game.MissionsOf(A)); // still on its way
+        game.Tick(1);
+        Assert.Equal(MatchPhase.War, game.Phase);
+        Assert.Empty(game.TrailOf(A));
+        Assert.Single(game.MissionsOf(A)); // the mission goes on
+        game.Tick(1);
+        Assert.NotEmpty(game.TrailOf(A)); // and lays new ground as it walks
     }
 
     [Fact]
@@ -209,7 +258,7 @@ public class VisionTests
     {
         var path = Path.Combine(Path.GetTempPath(), $"balance-{Guid.NewGuid():N}.json");
         File.WriteAllText(path, File.ReadAllText(BalanceConfigLoader.FindDefaultPath(AppContext.BaseDirectory)!)
-            .Replace("\"scoutTrailSeconds\": 120", "\"scoutTrailSeconds\": 0"));
+            .Replace("\"scoutTrailSeconds\": 60", "\"scoutTrailSeconds\": 0"));
         var rules = BalanceConfigLoader.LoadFromFile(path);
         File.Delete(path);
         Assert.Equal(0, rules.Map.ScoutTrailSeconds);

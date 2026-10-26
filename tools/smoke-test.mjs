@@ -105,6 +105,7 @@ check('cannot scout yourself', !(await A.call('SendScout', 1, 'idle')).ok);
 check('hiring needs gold, and nobody has any yet', !(await A.call('HireMercenary', 'kilicli', 1)).ok
   && A.of('CastleState').at(-1).resources.gold === 0);
 check('units carry their hiring price', A.of('CastleState').at(-1).units.every((u) => u.price > 0 && u.hired === 0));
+check('the picture says whether scouting is locked (the last stretch of the preparation)', A.of('CastleState').at(-1).scouting.locked === false);
 check('A sends a scout to B', (await A.call('SendScout', 2, 'idle')).ok);
 check('only one scout per target', !(await A.call('SendScout', 2, 'idle')).ok);
 await sleep(5500); // the scout walks at 1.8 tiles/s: give it time to come home with the report

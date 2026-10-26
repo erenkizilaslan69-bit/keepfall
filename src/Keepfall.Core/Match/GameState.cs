@@ -322,7 +322,11 @@ public sealed class GameState
         if (ElapsedSeconds + 1e-9 >= _nextSample) TakeSamples();
         if (RemainingSeconds <= 1e-9)
         {
-            if (Phase == MatchPhase.Preparation) Phase = MatchPhase.War;
+            if (Phase == MatchPhase.Preparation)
+            {
+                Phase = MatchPhase.War;
+                _trail.Clear(); // everybody starts the war in the same dark: the ground scouted in the preparation closes (scouts still out go on)
+            }
             else
             {
                 FinishAllBattles();
@@ -352,9 +356,14 @@ public sealed class GameState
 
     // ---- scouting ----------------------------------------------------------------------------
 
+    /// <summary>The last stretch of the preparation (scouting.noScoutLastPrepSeconds): nobody can send a scout until the war begins.</summary>
+    public bool ScoutingLocked =>
+        Phase == MatchPhase.Preparation && Rules.Scouting.NoScoutLastPrepSeconds > 0 && PrepSeconds - ElapsedSeconds <= Rules.Scouting.NoScoutLastPrepSeconds + 1e-9;
+
     /// <summary>One scout at a time (scouting.maxScouts): a new one cannot leave until the one out is home again.</summary>
     private CommandResult ScoutsAvailable(string from)
     {
+        if (ScoutingLocked) return CommandResult.Fail($"Hazırlığın son {Rules.Scouting.NoScoutLastPrepSeconds:0} saniyesinde gözcü gönderilemez; savaş başlayınca gönderilebilir.");
         var away = _missions.Where(m => m.From == from).ToList();
         if (away.Count < Rules.Scouting.MaxScouts) return CommandResult.Success;
         return CommandResult.Fail($"Gözcün henüz dönmedi (yaklaşık {Math.Ceiling(away.Min(m => m.SecondsLeft))} sn).");

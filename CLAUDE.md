@@ -53,6 +53,7 @@ Durum: [x] bitti, [ ] açık.
 - [ ] 7 (SONRAYA, kodlama yok) Fikir: gözcüyle erzak, para ve mesaj gönderme
 
 ## Fikirler (kodlanmadı)
+- Maç olayları: yalnız sis kaldı (haydut baskını, rastgele kıtlık ve göçmenler fikirden çıkarıldı).
 - Gözcüyle erzak, para ve mesaj gönderme (başka oyuncuya).
 - Geri dönüş sorunu: savaş kaybeden oyuncu toparlanamıyor, nüfus ve ordular az. Aday çözümler: kale muhafızları, sığınan köylüler, son çiftçi uyarısı, büyüme maliyet artışını %8'den %6'ya çekmek. Detaylı düşünülecek.
 

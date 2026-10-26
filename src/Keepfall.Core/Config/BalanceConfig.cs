@@ -193,6 +193,7 @@ public sealed class ScoutingConfig
 {
     public double ReportError { get; set; } = 0.2;
     public int MaxScouts { get; set; } = 1;
+    public double NoScoutLastPrepSeconds { get; set; }
 }
 
 public sealed class BuildingLevelConfig
@@ -382,6 +383,7 @@ public static class BalanceConfigLoader
         if (mp.Vision.Castle < 0 || mp.Vision.Army < 0 || mp.Vision.Scout < 0) errors.Add("map.vision: görüş yarıçapları negatif olamaz.");
         if (sc.ReportError < 0 || sc.ReportError >= 1) errors.Add("scouting.reportError 0 ile 1 arasında olmalı.");
         if (sc.MaxScouts < 1) errors.Add("scouting.maxScouts en az 1 olmalı.");
+        if (sc.NoScoutLastPrepSeconds < 0) errors.Add("scouting.noScoutLastPrepSeconds negatif olamaz.");
 
         if (config.BuildingLevels.Count == 0) errors.Add("buildingLevels: en az bir seviye tanımlanmalı.");
         for (int i = 0; i < config.BuildingLevels.Count; i++)
@@ -463,7 +465,7 @@ public static class BalanceConfigLoader
                 e.NewPersonBaseCost, e.NewPersonCostGrowth, e.NewPersonBasePopulation, e.GrowthReserveSeconds,
                 config.BuildingLevels.Select((l, i) => new BuildingLevel(
                     i + 1, l.Capacity, l.Multiplier, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList()),
-            new ScoutingRules(sc.ReportError, sc.MaxScouts),
+            new ScoutingRules(sc.ReportError, sc.MaxScouts, sc.NoScoutLastPrepSeconds),
             new WarRules(w.FamineStart, w.FamineFoodMultiplier,
                 w.CastleHp, w.SiegeSeconds, w.ArcherSiegeMultiplier, w.BattlePlayback, w.EncounterRadius, w.FallLootShare, w.FallWorkerShare),
             new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout, mp.ScoutTrailSeconds),

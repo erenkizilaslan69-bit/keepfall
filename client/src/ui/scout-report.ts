@@ -18,9 +18,10 @@ export const scoutKey = (r: ScoutReportView) => `${r.targetSeat}:${r.deliveredAt
 export function scoutButton(button: HTMLButtonElement, label: string, s: CastleView, blocked: boolean, taken = false): void {
   const away = s.scouting.missions;
   const busy = away.length >= s.scouting.maxScouts;
-  const text = busy && !blocked ? `Gözcü dönüyor · ${Math.ceil(Math.min(...away.map((m) => m.remainingSeconds)))} sn` : label;
+  const locked = s.scouting.locked && !blocked;
+  const text = locked ? 'Savaş başlayınca gönderilebilir' : busy && !blocked ? `Gözcü dönüyor · ${Math.ceil(Math.min(...away.map((m) => m.remainingSeconds)))} sn` : label;
   if (button.textContent !== text) button.textContent = text;
-  button.disabled = blocked || busy || taken;
+  button.disabled = blocked || busy || taken || s.scouting.locked;
 }
 
 /** How old the report is, in minutes of game time ("az önce" below the first). */

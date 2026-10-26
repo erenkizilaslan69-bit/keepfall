@@ -48,7 +48,7 @@
     "scoutSpeed": 1.8,
     // Gözcünün yürüdüğü yolun çevresi (görüş yarıçapı kadar) geçtikten sonra bu kadar saniye canlı görüşte kalır
     // (son 10 sn soluklaşır); 0 = maç sonuna kadar. Rakibin kale bölgesinin içini açmaz.
-    "scoutTrailSeconds": 120,
+    "scoutTrailSeconds": 60,
     // Savaş sisi: oyuncu sadece bu yarıçaplar (karo) içindekileri görür; gerisi sunucudan hiç gelmez.
     // Kale görüşü kapıdan ölçülür; düşman ordusu buna girince "X'den bir ordu yaklaşıyor!" uyarısı çıkar
     // (komşudan gelen ordu için varıştan ~18 sn, çaprazdan ~17 sn önce).
@@ -157,7 +157,9 @@
     // (asker yoksa 0, varsa en az 1 görünür).
     "reportError": 0.2,
     // Bir oyuncunun aynı anda en fazla bu kadar gözcüsü olur (kale gözetleme, çeyrek keşfi ve sandık gözcüsü hepsi sayılır); gözcü dönmeden yenisi çıkamaz.
-    "maxScouts": 1
+    "maxScouts": 1,
+    // Hazırlığın son bu kadar saniyesinde hiçbir gözcü gönderilemez (rakip, orman keşfi, sandık; botlar da); 0 = hep serbest. Savaş başlayınca hazırlıkta açılan tüm gözcü izleri kapanır.
+    "noScoutLastPrepSeconds": 60
   },
 
   // Excel "Binalar" sekmesi: tarla, oduncu kampı, maden ve demirhane aynı tabloyu kullanır.
