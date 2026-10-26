@@ -35,6 +35,8 @@ html.in-game body { background: #47aba9; }
   font-size: calc(15px * var(--u)); line-height: 1.25;
 }
 .ui-root * { box-sizing: border-box; }
+/* The signs on the map: above the canvas, below the minimap (2) and the UI layer (10). */
+.ui-root.ui-labels { z-index: 1; }
 .ui-root .hit { pointer-events: auto; }
 .ui-root button, .ui-root select, .ui-root input { font-family: inherit; font-size: inherit; }
 

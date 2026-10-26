@@ -55,11 +55,17 @@ export class GameUi {
   private camKey = '';
   private finishDismissed = false;
   private readonly mySeat: number;
+  private readonly labelRoot: HTMLElement;
 
   constructor(root: HTMLElement, net: GameConnection, seat: number, home: () => void) {
     root.innerHTML = '';
     this.mySeat = seat;
-    this.labels = new WorldLabels(root); // first, so every window is drawn over the signs
+    // The signs on the map get a layer of their own UNDER the minimap (z-index 2) and under the top bar, the buttons and the windows (the UI layer, 10),
+    // so nothing on the map can ever be drawn over the HUD.
+    this.labelRoot = document.createElement('div');
+    this.labelRoot.className = 'ui-root ui-labels';
+    root.parentElement?.insertBefore(this.labelRoot, root);
+    this.labels = new WorldLabels(this.labelRoot);
     this.wait = document.createElement('div');
     this.wait.className = 'spec-wait hit hidden';
     this.wait.innerHTML = `
@@ -183,6 +189,7 @@ export class GameUi {
     window.removeEventListener('keydown', this.onKey);
     window.clearInterval(this.waitTimer);
     this.labels.destroy();
+    this.labelRoot.remove();
   }
 
   update(s: CastleView): void {
