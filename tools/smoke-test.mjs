@@ -425,14 +425,8 @@ check("Y's castle falls", fallen());
 const fall = X.of('CastleState').at(-1).war.battles.find((b) => b.defenderEliminated);
 check('the report of the fall says what X took', !!fall?.loot && fall.loot.gold >= 0 && fall.loot.people > 0, JSON.stringify(fall?.loot));
 check('Y sees it too (its own report)', Y.of('CastleState').at(-1).war.battles.some((b) => b.defenderEliminated && b.loot !== null));
-// The match is only 300 s of war: if Y falls so late that it runs out before the army is home, there is no ribbon to wait for.
-const timeIsUp = () => X.of('RoomState').at(-1)?.phase === 'ended';
-const ribbon = await waitFor(() => timeIsUp() || X.of('Notification').some((t) => t.includes('ganimet') && t.includes('kişi')), 30000);
-if (timeIsUp() && !X.of('Notification').some((t) => t.includes('ganimet'))) console.log('skip  the ribbon: the match ran out of time before the army was home (test timing)');
-else check('a ribbon says what came home', ribbon);
+check('a ribbon says what came home', await waitFor(() => X.of('Notification').some((t) => t.includes('ganimet') && t.includes('kişi')), 30000));
 check('Z never hears of the loot', !Z.of('Notification').some((t) => t.includes('ganimet')));
-if (timeIsUp()) console.log('skip  the spectator checks: the match ran out of time right after Y fell (test timing)');
-else {
 await X.call('SetSpeed', 5);
 const fellAt = Y.of('CastleState').find((c) => c.eliminated).elapsedSeconds;
 check('a countdown comes before the first picture', await waitFor(() => Y.of('SpectatorWait').length > 0, 8000));
@@ -465,7 +459,6 @@ check('nobody still playing got a spectator picture or countdown',
 check("X's and Z's traffic never mentions the other castles' insides",
   !Z.msgs.some((m) => m.target === 'CastleState' && m.arg.color !== 'yellow'));
 check('Y only ever got its own castle state', Y.of('CastleState').every((c) => c.color === 'red'));
-}
 
 // ---- a bot takes a seat: public facts only, no token, no castle sent to anyone ----------------------------------
 const P = client(), Q = client();

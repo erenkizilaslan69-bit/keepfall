@@ -28,7 +28,7 @@ Kullanıcıyla **Türkçe** konuş. Kısa ve öz raporla. Kod, yorum ve commit m
 9. Test sunucusunda tarayıcı bölmesi gizliyken Phaser çizmez; ekran testi için başsız Chrome (CDP) kullan (örnek: `tools/replay-check.mjs`).
 
 ## Test rutini
-`dotnet test -c Release` (198 test) → geliştirme sunucusu (5081) + `node tools/smoke-test.mjs http://localhost:5081` (~2 dk) → istemci için `npm --prefix client run build` (tsc dahil).
+`dotnet test -c Release` (198 test) → `node tools/run-smoke.mjs` (~2–3 dk; kendi test sunucusunu 5081'de, savaşı 15 dk olan geçici bir config kopyasıyla açar ve kapatır; çalışan Production sunucusunu önce durdur, `bin/Debug` kilitli kalır) → istemci için `npm --prefix client run build` (tsc dahil).
 Bot dengesi: `python tools/bot-deney.py 200 docs/bot-deney-son.md` (tablo `docs/`'ta).
 
 ## Son durum (2026-10-26)
@@ -38,7 +38,7 @@ Bot dengesi: `python tools/bot-deney.py 200 docs/bot-deney-son.md` (tablo `docs/
 
 ## Bilinen açık konular
 - Duman testinde izleyici bölümündeki "every picture is of the live game (no delay)" denetimi ara sıra düşüyor (iki bağlantıdan gelen mesajların sırasına bağlı zamanlama; bot/oyun hatası değil).
-- Duman testi ikinci turda X yalnız ~4 askerle Y'nin kalesini (500 can) 3 turda düşürüyor ve maç 900 oyun sn'de bitiyor: düşüş sınıra çok yakın. Bu yüzden ganimet şeridi ve izleyici denetimleri maç süresi dolmuşsa "skip" yazıp atlanır (eski sürümde de aynı rastgele düşme vardı, kural/oyun hatası değil). Z'yi de saldırtmak işe yaramaz: farklı oyuncuların orduları yolda çarpışır.
+- Duman testinin ikinci turu savaşı uzun (15 dk) bir geçici config'le koşar (`tools/run-smoke.mjs`; balance.json'a dokunmaz), böylece kale düşüşü hep maç süresinden önce olur ve ganimet/izleyici denetimleri her seferinde çalışır. Testi doğrudan `smoke-test.mjs` ile gerçek (5 dk savaşlı) sunucuya koşarsan o bölüm zamanlamadan düşebilir.
 - Saldırısız maç oranı yüksek (Orta vs Orta ~%39 saldırısız); `scoreAware` ve zafer puanı deneyi sonuçları `docs/bot-deney-son.md`'de. Zafer puanı kuralı oyuna EKLENMEDİ (kullanıcı kararı: nüfus kuralı değişmedi).
 - Kolay'ın düşünme süresi 7–12 sn'de bırakıldı (Orta kazanma ~%71, hedef ~%80); kullanıcı yeniden ayar isterse 8–12 / 8–14 ölçüldü.
 
@@ -58,7 +58,7 @@ Durum: [x] bitti, [ ] açık.
 - Geri dönüş sorunu: savaş kaybeden oyuncu toparlanamıyor, nüfus ve ordular az. Aday çözümler: kale muhafızları, sığınan köylüler, son çiftçi uyarısı, büyüme maliyet artışını %8'den %6'ya çekmek. Detaylı düşünülecek.
 
 ## KALDIĞIM YER (2026-10-27, gece işleri bitti)
-Görev 0–6 ve kullanıcı istekleri bitti, hepsi push edildi; Production (5080) son commit'le çalışıyor, test sunucuları (5081, 5174) kapalı, tünel açık.
+Görev 0–6 ve kullanıcı istekleri bitti, hepsi push edildi; Production (5080) son commit'le çalışıyor, test sunucuları (5081, 5174) kapalı, tünel KAPALI (kullanıcı 'tüneli aç' diyene kadar kapalı kalsın; oynamadığı zamanlarda da kapat).
 - **Ordu yeniden yönlendirme**: yürüyen/dönen (savaşta olmayan) ordu haritada tıklanınca ordu penceresinde "Yeni emir": başka rakip kale (yalnız savaş fazı) ya da ormandaki yer (köy ≥3 asker). `RedirectArmy` komutu, `WorldMap.RouteFrom` (bulunduğu yoldan en kısa), dönen ordu da yeniden çıkabilir ve ganimeti taşır. Orta bot: saldırıdan dönen ordu uzak yarıdayken zayıf bildiği bir hedefe yönelir (`regroups`). Ölçüm: Orta vs Orta saldırısız %14, nüfus 23,6; ama eleme ile biten maç %17 → %41 (botlar daha çok bitiriyor; fazla görünürse `blindMargin`/`attackMargin` yeniden ölçülür, sayılara kullanıcı onayıyla dokun).
 - **Tümü / Yarısı** butonları (kale ve orman yeri saldırı pencereleri).
 - **Gece işleri (kullanıcı uyurken)**: (1) hata taraması: `guarded()` ile kare döngüsü/UI/mesaj işleyicileri bölüm bölüm korumalı (`client/src/error-report.ts`), `client-errors.log` yoktu; (2) ses efektleri: `client/src/audio.ts` (Web Audio, dosya yok; üst şeritte ♪ ve ses düzeyi, localStorage `keepfall.sound`, varsayılan 0,3, en çok 8 eşzamanlı ses, aynı ses için bekleme süresi, savaş sesleri yalnız kamerada görünen yerde); (3) "Nasıl oynanır" rehberi: `?` butonu (menülerde sağ üst, oyunda üst şerit), sayılar `/api/guide` (`GuideMapper`, balance.json'dan).
