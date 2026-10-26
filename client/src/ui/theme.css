@@ -1,0 +1,334 @@
+/* Keepfall look: chunky wood, parchment and cloth, drawn with CSS only (no image files). See docs/gorsel-yon.md.
+   Loaded after ui.css and style.css: the old class names (.paper, .btn, .btn-round, .ribbon, .strip, .wl-sign …) are restyled here, and
+   the new names (.kf-panel, .kf-btn …) are the same components for new markup.
+
+   Two building blocks:
+   - BasePanel (.kf-panel / .paper): a thick wooden frame round parchment. The frame is the element's border, so a real 9-slice picture can
+     replace it later by setting `border-image` (and dropping the wood layers) in ONE place: the rule below.
+   - TactileButton (.kf-btn / .btn / .btn-round): a raised key. Its colour is --c (face), --c-lo (the slab under it) and --edge (outline);
+     pressing it sinks it and thins the slab. */
+
+:root {
+  --kf-wood-hi: #a8723a; --kf-wood: #7a4a25; --kf-wood-lo: #4b2e17; --kf-wood-edge: #2c1a0c;
+  --kf-parch: #e4d6a7; --kf-parch-hi: #f0e6c2; --kf-parch-lo: #cdbb86;
+  --kf-navy: #2b4580; --kf-navy-hi: #4262ad; --kf-navy-lo: #17264a;
+  --kf-gold: #e0b040; --kf-gold-hi: #f5d77a; --kf-gold-lo: #9a7220;
+  --kf-red: #c0392b; --kf-red-hi: #de5a4a; --kf-red-lo: #7d2018;
+  --kf-cream: #fff4d2;
+  --kf-frame: calc(8px * var(--u, 1));
+  --kf-depth: calc(5px * var(--u, 1));
+  --kf-line: rgba(75, 46, 23, .35);
+  --parchment: var(--kf-parch);
+  --parchment-dark: #29335a;
+  --ink: #3a2a18;
+  --ink-soft: #6b5434;
+  --gold: var(--kf-gold-hi);
+  /* The size of the round minimap (the camera buttons stack above it). */
+  --kf-map: min(calc(236px * var(--u, 1)), 30vw, 42vh);
+}
+
+/* ---- BasePanel ------------------------------------------------------------------------------------ */
+.kf-panel, .paper, .paper-dark {
+  --nail: radial-gradient(circle at 50% 50%, var(--kf-gold-hi) 0 24%, var(--kf-gold-lo) 28% 56%, transparent 60%);
+  --nail-size: calc(14px * var(--u, 1));
+  --nail-at: calc(2px * var(--u, 1));
+  --face: radial-gradient(ellipse at 50% 22%, var(--kf-parch-hi), var(--kf-parch) 58%, var(--kf-parch-lo));
+  position: relative; color: var(--ink);
+  border: var(--kf-frame) solid var(--kf-wood); border-radius: calc(11px * var(--u, 1));
+  padding: calc(10px * var(--u, 1));
+  background:
+    var(--nail) left var(--nail-at) top var(--nail-at) / var(--nail-size) var(--nail-size) no-repeat border-box,
+    var(--nail) right var(--nail-at) top var(--nail-at) / var(--nail-size) var(--nail-size) no-repeat border-box,
+    var(--nail) left var(--nail-at) bottom var(--nail-at) / var(--nail-size) var(--nail-size) no-repeat border-box,
+    var(--nail) right var(--nail-at) bottom var(--nail-at) / var(--nail-size) var(--nail-size) no-repeat border-box,
+    var(--face) padding-box,
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, .1) 0 calc(2px * var(--u, 1)), transparent calc(2px * var(--u, 1)) calc(11px * var(--u, 1))) border-box,
+    linear-gradient(var(--kf-wood-hi), var(--kf-wood) 55%, var(--kf-wood-lo)) border-box;
+  box-shadow:
+    inset 0 0 0 calc(2px * var(--u, 1)) var(--kf-wood-lo),
+    inset 0 calc(4px * var(--u, 1)) calc(14px * var(--u, 1)) rgba(120, 80, 30, .3),
+    0 0 0 calc(2px * var(--u, 1)) var(--kf-wood-edge),
+    0 calc(6px * var(--u, 1)) 0 calc(0px * var(--u, 1)) var(--kf-wood-edge),
+    0 calc(12px * var(--u, 1)) calc(18px * var(--u, 1)) rgba(0, 0, 0, .35);
+}
+.kf-panel--dark, .paper-dark {
+  --face: radial-gradient(ellipse at 50% 20%, #3a4a7c, var(--parchment-dark) 65%, #1b2342);
+  color: var(--kf-cream);
+}
+.paper-dark .muted-ink, .paper-dark .small { color: #c6d0e6; }
+
+/* Windows over the map: the map stays readable, so no blur and only a soft shadow. Big windows that stop the game (the guide, a battle
+   report, the countdown of a fallen castle) dim and blur what is behind them. */
+.guide-overlay, .modal-shade, .spec-wait {
+  background: rgba(8, 10, 16, .22);
+  -webkit-backdrop-filter: blur(2px) brightness(.7); backdrop-filter: blur(2px) brightness(.7);
+}
+
+/* ---- TactileButton -------------------------------------------------------------------------------- */
+.kf-btn, .btn, .btn-round {
+  --c: #3f86c7; --c-hi: #70b4ee; --c-lo: #1f4f80; --edge: #0e2742;
+  --d: var(--kf-depth);
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: calc(6px * var(--u, 1));
+  min-height: calc(36px * var(--u, 1)); padding: 0 calc(14px * var(--u, 1)); cursor: pointer; font-family: var(--font-pixel); font-weight: 700;
+  color: #fff; text-shadow: 0 calc(2px * var(--u, 1)) 0 rgba(0, 0, 0, .5);
+  border: calc(3px * var(--u, 1)) solid var(--edge); border-radius: calc(9px * var(--u, 1));
+  background: linear-gradient(var(--c-hi), var(--c) 42%, var(--c));
+  box-shadow:
+    inset 0 calc(2px * var(--u, 1)) 0 rgba(255, 255, 255, .38),
+    inset 0 calc(-3px * var(--u, 1)) 0 rgba(0, 0, 0, .16),
+    0 var(--d) 0 var(--c-lo),
+    0 var(--d) 0 calc(3px * var(--u, 1)) var(--edge),
+    0 calc(var(--d) + 5px) calc(9px * var(--u, 1)) rgba(0, 0, 0, .35);
+  transform: translateY(0);
+  transition: transform .06s ease-out, box-shadow .06s ease-out, filter .12s;
+  -webkit-tap-highlight-color: transparent; user-select: none;
+}
+.kf-btn:hover:not(:disabled), .btn:hover:not(:disabled), .btn-round:hover:not(:disabled) { filter: brightness(1.1) saturate(1.06); }
+.kf-btn:active:not(:disabled), .btn:active:not(:disabled), .btn-round:active:not(:disabled) {
+  transform: translateY(calc(var(--d) - 2px * var(--u, 1)));
+  box-shadow:
+    inset 0 calc(2px * var(--u, 1)) 0 rgba(255, 255, 255, .25),
+    inset 0 calc(-2px * var(--u, 1)) 0 rgba(0, 0, 0, .2),
+    0 calc(2px * var(--u, 1)) 0 var(--c-lo),
+    0 calc(2px * var(--u, 1)) 0 calc(3px * var(--u, 1)) var(--edge);
+  filter: brightness(.96);
+}
+.kf-btn:focus-visible, .btn:focus-visible, .btn-round:focus-visible { outline: calc(3px * var(--u, 1)) solid var(--kf-gold-hi); outline-offset: calc(3px * var(--u, 1)); }
+.kf-btn:disabled, .btn:disabled, .btn-round:disabled {
+  cursor: default; filter: grayscale(.85) brightness(.8); opacity: .8; transform: none; text-shadow: none;
+  box-shadow: inset 0 calc(2px * var(--u, 1)) 0 rgba(255, 255, 255, .15), 0 calc(var(--d) / 2) 0 var(--c-lo), 0 calc(var(--d) / 2) 0 calc(3px * var(--u, 1)) var(--edge);
+}
+/* colours: the face, its light top, the slab under it and the outline */
+.btn-red, .kf-btn--danger { --c: #c4503f; --c-hi: #ee7f6c; --c-lo: #7d2018; --edge: #3d0f0a; }
+.kf-btn--green { --c: #4f9a3a; --c-hi: #86cf62; --c-lo: #2c5f1f; --edge: #12310b; }
+.kf-btn--gold { --c: #d9a031; --c-hi: #f6d278; --c-lo: #8d6218; --edge: #4a300a; color: #3a2a18; text-shadow: 0 calc(1px * var(--u, 1)) 0 rgba(255, 240, 190, .6); }
+.kf-btn[data-color="blue"], .cam-rival[data-color="blue"] { --c: #3f86c7; --c-hi: #70b4ee; --c-lo: #1f4f80; --edge: #0e2742; }
+.kf-btn[data-color="red"], .cam-rival[data-color="red"] { --c: #c4503f; --c-hi: #ee7f6c; --c-lo: #7d2018; --edge: #3d0f0a; }
+.kf-btn[data-color="yellow"], .cam-rival[data-color="yellow"] { --c: #d9a82e; --c-hi: #f7d675; --c-lo: #8d6a14; --edge: #4a3408; color: #3a2a18; text-shadow: 0 calc(1px * var(--u, 1)) 0 rgba(255, 240, 190, .6); }
+.kf-btn[data-color="purple"], .cam-rival[data-color="purple"] { --c: #8a62b8; --c-hi: #b894e2; --c-lo: #503673; --edge: #261638; }
+.kf-btn--wide { width: 100%; }
+.kf-btn--sq { min-width: calc(44px * var(--u, 1)); min-height: calc(44px * var(--u, 1)); padding: 0; font-size: 1.5em; line-height: 1; }
+.kf-btn--big { min-height: calc(46px * var(--u, 1)); font-size: 1.1em; padding: 0 calc(20px * var(--u, 1)); }
+/* round buttons: plus, minus, close, speed */
+.btn-round {
+  --d: calc(3px * var(--u, 1)); min-height: 0; width: calc(30px * var(--u, 1)); height: calc(30px * var(--u, 1)); padding: 0; border-radius: 50%;
+  display: inline-grid; place-items: center; line-height: 1; border-width: calc(2px * var(--u, 1));
+  box-shadow:
+    inset 0 calc(2px * var(--u, 1)) 0 rgba(255, 255, 255, .38), inset 0 calc(-2px * var(--u, 1)) 0 rgba(0, 0, 0, .16),
+    0 var(--d) 0 var(--c-lo), 0 var(--d) 0 calc(2px * var(--u, 1)) var(--edge), 0 calc(var(--d) + 3px) calc(6px * var(--u, 1)) rgba(0, 0, 0, .3);
+}
+.btn-round:active:not(:disabled) { transform: translateY(calc(var(--d) - 1px)); box-shadow: inset 0 calc(2px * var(--u, 1)) 0 rgba(255, 255, 255, .2), 0 calc(1px * var(--u, 1)) 0 var(--c-lo), 0 calc(1px * var(--u, 1)) 0 calc(2px * var(--u, 1)) var(--edge); }
+.btn-round .ico { filter: drop-shadow(0 1px 0 rgba(0, 0, 0, .5)); }
+
+/* ---- cloth ribbons: window titles, notes, the clock --------------------------------------------- */
+.ribbon {
+  --cloth: #2f55a3; --cloth-hi: #5280d0; --cloth-lo: #1f3a78; --trim: var(--kf-gold);
+  --notch: calc(12px * var(--u, 1));
+  display: inline-flex; align-items: center; justify-content: center; gap: calc(6px * var(--u, 1)); min-height: calc(36px * var(--u, 1));
+  padding: calc(2px * var(--u, 1)) calc(26px * var(--u, 1)); color: var(--kf-cream); text-shadow: 0 calc(2px * var(--u, 1)) 0 rgba(0, 0, 0, .55);
+  white-space: nowrap; border-radius: 0; font-weight: 700;
+  background:
+    linear-gradient(var(--trim), var(--trim)) 0 0 / 100% calc(3px * var(--u, 1)) no-repeat,
+    linear-gradient(var(--trim), var(--trim)) 0 100% / 100% calc(3px * var(--u, 1)) no-repeat,
+    linear-gradient(var(--cloth-hi), var(--cloth) 45%, var(--cloth-lo));
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--notch)) 50%, 100% 100%, 0 100%, var(--notch) 50%);
+}
+.ribbon-sm { --notch: calc(9px * var(--u, 1)); min-height: calc(28px * var(--u, 1)); padding: 0 calc(20px * var(--u, 1)); }
+.ribbon-red { --cloth: #b9403a; --cloth-hi: #e0675e; --cloth-lo: #842620; }
+.ribbon-yellow { --cloth: #d4a233; --cloth-hi: #f4cf6e; --cloth-lo: #98701a; --trim: #7a5410; color: #3a2a18; text-shadow: 0 calc(1px * var(--u, 1)) 0 rgba(255, 240, 190, .6); }
+.ribbon-purple { --cloth: #7c5aa6; --cloth-hi: #a381cd; --cloth-lo: #523876; }
+.ribbon-black { --cloth: #3d4256; --cloth-hi: #5b627c; --cloth-lo: #262a3a; }
+
+/* ---- bars ------------------------------------------------------------------------------------------ */
+.gbar {
+  background: linear-gradient(#14110d, #28221a); border: calc(3px * var(--u, 1)) solid var(--kf-wood); border-radius: calc(7px * var(--u, 1));
+  box-shadow: 0 0 0 calc(2px * var(--u, 1)) var(--kf-wood-edge), inset 0 calc(2px * var(--u, 1)) 0 rgba(0, 0, 0, .5);
+}
+.gbar > .fill { box-shadow: inset 0 calc(2px * var(--u, 1)) 0 rgba(255, 255, 255, .35); }
+
+/* ---- form controls on parchment ------------------------------------------------------------------ */
+.win select, .win input[type="number"], .field input, .share input {
+  color: var(--ink); background: linear-gradient(#fbf3d6, #efe3b8); border: calc(2px * var(--u, 1)) solid var(--kf-wood); border-radius: calc(6px * var(--u, 1));
+  box-shadow: inset 0 calc(2px * var(--u, 1)) 0 rgba(120, 80, 30, .25);
+}
+.field input:focus, .share input:focus, .win select:focus, .win input[type="number"]:focus { outline: calc(3px * var(--u, 1)) solid var(--kf-navy-hi); outline-offset: 0; }
+.tab { background: rgba(75, 46, 23, .12); border: calc(2px * var(--u, 1)) solid rgba(75, 46, 23, .45); border-radius: calc(8px * var(--u, 1)); }
+.tab.on { background: linear-gradient(#4f93d4, #2f6ca8); border-color: #12365a; }
+.site-row { background: linear-gradient(#fbf3d6, #efe3b8); border: calc(2px * var(--u, 1)) solid var(--kf-wood); border-radius: calc(8px * var(--u, 1)); }
+.site-row:hover { background: #fff3c9; }
+.players li, .ranking li { background: rgba(255, 248, 224, .5); border: calc(2px * var(--u, 1)) solid rgba(75, 46, 23, .5); border-radius: calc(10px * var(--u, 1)); }
+.avatar { border: calc(3px * var(--u, 1)) solid var(--kf-wood); box-shadow: 0 0 0 calc(1px * var(--u, 1)) var(--kf-wood-edge); }
+.win h4 { border-top: calc(2px * var(--u, 1)) dashed var(--kf-line); }
+.win .row.sub { color: var(--ink-soft); }
+
+/* ---- the top of the screen: planks and banners that hang from the edge ------------------------- */
+.ui-top { top: 0; left: calc(8px * var(--u, 1)); right: calc(8px * var(--u, 1)); }
+.topbar { align-items: flex-start; }
+.strip {
+  position: relative; gap: calc(12px * var(--u, 1)); min-height: calc(42px * var(--u, 1)); padding: 0 calc(14px * var(--u, 1)); color: var(--ink);
+  border: calc(5px * var(--u, 1)) solid var(--kf-wood); border-top: 0; border-radius: 0 0 calc(14px * var(--u, 1)) calc(14px * var(--u, 1));
+  background:
+    radial-gradient(ellipse at 50% 20%, var(--kf-parch-hi), var(--kf-parch) 60%, var(--kf-parch-lo)) padding-box,
+    linear-gradient(var(--kf-wood-hi), var(--kf-wood)) border-box;
+  box-shadow:
+    inset 0 calc(-2px * var(--u, 1)) 0 rgba(75, 46, 23, .55), 0 0 0 calc(2px * var(--u, 1)) var(--kf-wood-edge), 0 calc(5px * var(--u, 1)) 0 var(--kf-wood-edge),
+    0 calc(9px * var(--u, 1)) calc(12px * var(--u, 1)) rgba(0, 0, 0, .3);
+  clip-path: none;
+}
+/* Population: a cloth banner on a rod, with a swallow tail. */
+.strip.tb-pop {
+  --tail: calc(16px * var(--u, 1)); min-height: calc(62px * var(--u, 1)); align-items: flex-start; padding: calc(9px * var(--u, 1)) calc(22px * var(--u, 1)) calc(24px * var(--u, 1));
+  color: var(--kf-cream); border: 0; border-radius: 0; box-shadow: none; text-shadow: 0 calc(2px * var(--u, 1)) 0 rgba(0, 0, 0, .55);
+  background:
+    linear-gradient(var(--kf-wood-hi), var(--kf-wood)) 0 0 / 100% calc(7px * var(--u, 1)) no-repeat,
+    linear-gradient(var(--kf-gold), var(--kf-gold)) 0 calc(7px * var(--u, 1)) / 100% calc(3px * var(--u, 1)) no-repeat,
+    linear-gradient(var(--kf-navy-hi), var(--kf-navy) 45%, var(--kf-navy-lo));
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--tail)), 50% 100%, 0 calc(100% - var(--tail)));
+  filter: drop-shadow(0 calc(5px * var(--u, 1)) 0 rgba(20, 10, 4, .55));
+}
+.strip.tb-pop .lbl { color: var(--kf-gold-hi); }
+.strip.tb-pop .idle-warn { transform: scale(.92); }
+.tb-clock { gap: calc(8px * var(--u, 1)); padding-left: calc(44px * var(--u, 1)); min-height: calc(40px * var(--u, 1)); position: relative; }
+.tb-clock::before {
+  content: ''; position: absolute; left: calc(12px * var(--u, 1)); top: 50%; width: calc(26px * var(--u, 1)); height: calc(26px * var(--u, 1)); transform: translateY(-50%);
+  background: no-repeat center / contain url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%23f5d77a' stroke='%239a7220' stroke-width='3'/><circle cx='16' cy='16' r='10.5' fill='%23fff4d2'/><path d='M16 8v8l5 3' fill='none' stroke='%233a2a18' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/><rect x='13' y='0.5' width='6' height='3' rx='1' fill='%239a7220'/></svg>");
+}
+.tb-clock b { font-size: 1.55em; letter-spacing: .02em; }
+.tb-hp .gbar { margin: 0 calc(4px * var(--u, 1)); }
+.tb-hp .lbl, .tb-hp::before { color: var(--ink); }
+.tb-sound, .tb-speed { padding: 0 calc(10px * var(--u, 1)); }
+.tb-sound input[type="range"] { accent-color: var(--kf-navy-hi); }
+.res small.up { color: #2c7a22; } .res small.down { color: #b0352a; }
+.chip { border-bottom-width: calc(4px * var(--u, 1)); border-radius: 2px; }
+
+/* ---- the camera buttons next to the minimap: player-coloured, chunky ---------------------------------- */
+.cam-btns { bottom: calc(8px * var(--u, 1) + var(--kf-map) + calc(16px * var(--u, 1))); gap: calc(8px * var(--u, 1)); }
+.cam-btns .btn { min-height: calc(38px * var(--u, 1)); padding: 0 calc(12px * var(--u, 1)); justify-content: flex-start; min-width: calc(150px * var(--u, 1)); }
+.cam-btns .btn .ico { width: calc(22px * var(--u, 1)); height: calc(22px * var(--u, 1)); }
+.cam-btns [data-cam="forest"] { --c: #4f9a3a; --c-hi: #86cf62; --c-lo: #2c5f1f; --edge: #12310b; }
+.cam-btns [data-cam="forest"]::before {
+  content: ''; width: calc(20px * var(--u, 1)); height: calc(22px * var(--u, 1)); flex: none; background: var(--kf-cream);
+  -webkit-mask: center / contain no-repeat url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 28'><path d='M12 1l7 9h-4l6 8h-5l4 6H4l4-6H3l6-8H5z'/><rect x='10.5' y='23' width='3' height='4'/></svg>");
+          mask: center / contain no-repeat url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 28'><path d='M12 1l7 9h-4l6 8h-5l4 6H4l4-6H3l6-8H5z'/><rect x='10.5' y='23' width='3' height='4'/></svg>");
+}
+.cam-rival .dot {
+  width: calc(18px * var(--u, 1)); height: calc(18px * var(--u, 1)); border-radius: 50%; margin: 0; flex: none; background: var(--kf-cream);
+  border: calc(3px * var(--u, 1)) solid rgba(0, 0, 0, .35); box-shadow: inset 0 0 0 calc(3px * var(--u, 1)) var(--c, #888);
+}
+
+/* ---- the round minimap in an ornate frame ------------------------------------------------------------- */
+.kf-minimap {
+  position: absolute; right: calc(10px * var(--u, 1)); bottom: calc(12px * var(--u, 1)); z-index: 2; width: var(--kf-map); aspect-ratio: 1; border-radius: 50%;
+  display: grid; place-items: center;
+  border: calc(11px * var(--u, 1)) solid var(--kf-wood);
+  background:
+    radial-gradient(circle at 50% 40%, #2c7ea0, #1a4d68 70%, #12354a) padding-box,
+    repeating-conic-gradient(var(--kf-wood-hi) 0 6deg, var(--kf-wood) 6deg 12deg) border-box;
+  box-shadow:
+    inset 0 0 0 calc(3px * var(--u, 1)) var(--kf-gold-lo), inset 0 0 calc(22px * var(--u, 1)) rgba(0, 0, 0, .65),
+    0 0 0 calc(3px * var(--u, 1)) var(--kf-wood-edge), 0 calc(7px * var(--u, 1)) 0 var(--kf-wood-edge), 0 calc(14px * var(--u, 1)) calc(20px * var(--u, 1)) rgba(0, 0, 0, .4);
+}
+/* compass studs at the four points */
+.kf-minimap::before, .kf-minimap::after {
+  content: ''; position: absolute; left: 50%; width: calc(16px * var(--u, 1)); height: calc(16px * var(--u, 1)); margin-left: calc(-8px * var(--u, 1));
+  border-radius: 50%; background: radial-gradient(circle at 40% 35%, var(--kf-gold-hi), var(--kf-gold) 55%, var(--kf-gold-lo)); border: calc(2px * var(--u, 1)) solid var(--kf-wood-edge);
+}
+.kf-minimap::before { top: calc(-17px * var(--u, 1)); }
+.kf-minimap::after { bottom: calc(-17px * var(--u, 1)); }
+.kf-minimap > .minimap {
+  position: static; width: 64%; max-width: none; aspect-ratio: 1; border: calc(2px * var(--u, 1)) solid var(--kf-wood-edge); border-radius: calc(5px * var(--u, 1));
+  box-shadow: 0 0 calc(10px * var(--u, 1)) rgba(0, 0, 0, .5);
+}
+
+/* ---- signs nailed to posts: building names, castle health, army sizes -------------------------------- */
+.wl-sign {
+  --plank: repeating-linear-gradient(0deg, transparent 0 calc(10px * var(--u, 1)), rgba(40, 20, 6, .28) calc(10px * var(--u, 1)) calc(11px * var(--u, 1)));
+  --nail: radial-gradient(circle, var(--kf-gold-hi) 0 30%, var(--kf-gold-lo) 36% 62%, transparent 68%);
+  position: relative; gap: calc(7px * var(--u, 1)); min-height: calc(32px * var(--u, 1)); padding: calc(2px * var(--u, 1)) calc(18px * var(--u, 1));
+  color: var(--kf-cream); text-shadow: 0 calc(2px * var(--u, 1)) 0 rgba(30, 14, 4, .75);
+  border: calc(3px * var(--u, 1)) solid var(--kf-wood-lo); border-radius: calc(6px * var(--u, 1));
+  background:
+    var(--nail) left calc(4px * var(--u, 1)) center / calc(8px * var(--u, 1)) calc(8px * var(--u, 1)) no-repeat,
+    var(--nail) right calc(4px * var(--u, 1)) center / calc(8px * var(--u, 1)) calc(8px * var(--u, 1)) no-repeat,
+    var(--plank), linear-gradient(var(--kf-wood-hi), var(--kf-wood) 60%, #6a3f1f);
+  box-shadow: inset 0 calc(2px * var(--u, 1)) 0 rgba(255, 220, 160, .4), 0 0 0 calc(2px * var(--u, 1)) var(--kf-wood-edge), 0 calc(4px * var(--u, 1)) 0 var(--kf-wood-edge);
+}
+/* the post (building signs) */
+.wl-sign.post::after {
+  content: ''; position: absolute; left: 50%; top: calc(100% + 2px * var(--u, 1)); width: calc(10px * var(--u, 1)); height: calc(26px * var(--u, 1)); transform: translateX(-50%); z-index: -1;
+  background: linear-gradient(90deg, var(--kf-wood-hi), var(--kf-wood) 55%, var(--kf-wood-lo)); border: calc(2px * var(--u, 1)) solid var(--kf-wood-edge); border-top: 0;
+}
+.wl-sign b { color: var(--kf-cream); }
+.wl-sign .ico { filter: drop-shadow(0 calc(1px * var(--u, 1)) 0 rgba(0, 0, 0, .6)); }
+.wl-lv {
+  background: radial-gradient(circle at 38% 32%, #ffc765, #f08e23 55%, #b9570f); border: calc(2px * var(--u, 1)) solid #5c2c08; color: var(--kf-cream);
+  text-shadow: 0 calc(1px * var(--u, 1)) 0 rgba(60, 25, 0, .8); min-width: calc(22px * var(--u, 1)); height: calc(22px * var(--u, 1));
+}
+.wl-workers.full b { color: #b8f08e; }
+.wl-workers.empty b { color: #ffb1a3; }
+.wl-warn .wl-sign b, .wl-fight .wl-sign b { color: #ffd25a; }
+.wl-prog { background: #1a120a; border: calc(1px * var(--u, 1)) solid var(--kf-wood-edge); }
+.wl-report small { color: #f0dfb0; }
+
+/* ---- report tags and notices ---------------------------------------------------------------------- */
+.report-tag { color: var(--ink); border: calc(4px * var(--u, 1)) solid var(--kf-wood); border-radius: calc(10px * var(--u, 1));
+  background: radial-gradient(ellipse at 50% 20%, var(--kf-parch-hi), var(--kf-parch) 60%, var(--kf-parch-lo));
+  box-shadow: 0 0 0 calc(2px * var(--u, 1)) var(--kf-wood-edge), 0 calc(4px * var(--u, 1)) 0 var(--kf-wood-edge); }
+.report-tag.won b { color: #2c7a22; } .report-tag.lost b { color: #b0352a; }
+
+/* ---- the guide ------------------------------------------------------------------------------------ */
+.guide-close, .win-close { z-index: 3; }
+.guide h3 { border-bottom: calc(3px * var(--u, 1)) double var(--kf-line); }
+
+/* ---- the logo ------------------------------------------------------------------------------------- */
+.kf-logo { display: flex; flex-direction: column; align-items: center; gap: 0; margin: calc(-6px * var(--u, 1)) auto calc(6px * var(--u, 1)); user-select: none; }
+.kf-logo-crest { width: calc(72px * var(--u, 1)); height: auto; margin-bottom: calc(-6px * var(--u, 1)); filter: drop-shadow(0 calc(3px * var(--u, 1)) 0 rgba(44, 26, 12, .8)); }
+.kf-logo-word {
+  display: flex; font: 700 calc(58px * var(--u, 1)) / 1 'Pixelify Sans', var(--font-pixel); letter-spacing: .02em;
+  /* the dark outline: the silhouette of the letters shifted a few pixels every way, then the slab under them */
+  filter: drop-shadow(calc(3px * var(--u, 1)) 0 0 var(--kf-wood-edge)) drop-shadow(calc(-3px * var(--u, 1)) 0 0 var(--kf-wood-edge))
+    drop-shadow(0 calc(-3px * var(--u, 1)) 0 var(--kf-wood-edge)) drop-shadow(0 calc(3px * var(--u, 1)) 0 var(--kf-wood-edge))
+    drop-shadow(0 calc(7px * var(--u, 1)) 0 var(--kf-wood-edge)) drop-shadow(0 calc(12px * var(--u, 1)) calc(8px * var(--u, 1)) rgba(0, 0, 0, .35));
+}
+.kf-logo-word span { background-clip: text; -webkit-background-clip: text; color: transparent; }
+.kf-logo-word .keep { background-image: linear-gradient(var(--kf-gold-hi), var(--kf-gold) 55%, var(--kf-gold-lo)); }
+.kf-logo-word .fall { background-image: linear-gradient(#ff9a86, var(--kf-red) 55%, var(--kf-red-lo)); }
+.kf-logo-sub { margin-top: calc(10px * var(--u, 1)); }
+.screen .kf-logo-word { font-size: calc(54px * var(--u, 1)); }
+.screen .title-ribbon { margin-top: calc(-34px * var(--u, 1)); }
+
+/* ---- building windows: what it makes, who works in it, the upgrade ------------------------------------ */
+.kf-prod { display: flex; align-items: center; gap: calc(12px * var(--u, 1)); padding: calc(8px * var(--u, 1)); margin-bottom: calc(8px * var(--u, 1));
+  background: rgba(75, 46, 23, .1); border: calc(2px * var(--u, 1)) solid var(--kf-line); border-radius: calc(10px * var(--u, 1)); }
+.kf-prod-ico { display: grid; place-items: center; flex: none; width: calc(54px * var(--u, 1)); height: calc(54px * var(--u, 1)); border-radius: 50%;
+  background: radial-gradient(circle at 38% 30%, #fff6d8, #ecdba6 60%, #cdb47a); border: calc(3px * var(--u, 1)) solid var(--kf-wood); box-shadow: 0 0 0 calc(2px * var(--u, 1)) var(--kf-wood-edge), inset 0 calc(-3px * var(--u, 1)) 0 rgba(120, 80, 30, .3); }
+.kf-prod-ico .ico { width: calc(36px * var(--u, 1)); height: calc(36px * var(--u, 1)); }
+.kf-prod-txt { display: flex; flex-direction: column; min-width: 0; }
+.kf-prod-txt b { font-size: 1.3em; font-variant-numeric: tabular-nums; }
+.kf-prod-txt small, .kf-crew-mid small { color: var(--ink-soft); font-family: var(--font-text); }
+.kf-crew { display: flex; align-items: center; justify-content: space-between; gap: calc(10px * var(--u, 1)); margin: calc(4px * var(--u, 1)) 0 calc(10px * var(--u, 1)); }
+.kf-crew-mid { flex: 1; display: flex; flex-direction: column; align-items: center; gap: calc(2px * var(--u, 1)); }
+.kf-crew-mid b { font-size: 1.25em; font-variant-numeric: tabular-nums; }
+.kf-slots { display: flex; gap: calc(5px * var(--u, 1)); flex-wrap: wrap; justify-content: center; }
+.kf-pip { width: calc(14px * var(--u, 1)); height: calc(14px * var(--u, 1)); border-radius: 50%; background: rgba(75, 46, 23, .18); border: calc(2px * var(--u, 1)) solid var(--kf-wood); box-shadow: inset 0 calc(2px * var(--u, 1)) 0 rgba(0, 0, 0, .2); }
+.kf-pip.on { background: radial-gradient(circle at 38% 30%, #ffe08a, #e0a82a 60%, #a8741a); box-shadow: inset 0 calc(-2px * var(--u, 1)) 0 rgba(120, 70, 0, .35); }
+.upgrade-box .kf-btn { flex-direction: column; gap: 0; padding-top: calc(4px * var(--u, 1)); padding-bottom: calc(4px * var(--u, 1)); min-height: calc(54px * var(--u, 1)); }
+.upgrade-box .kf-btn { --c: #d9a031; --c-hi: #f6d278; --c-lo: #8d6218; --edge: #4a300a; color: #3a2a18; text-shadow: 0 calc(1px * var(--u, 1)) 0 rgba(255, 240, 190, .6); }
+.upgrade-box .kf-btn .cost .ico { filter: drop-shadow(0 1px 0 rgba(255, 240, 190, .6)); }
+
+/* the "?" of the menus floats in the corner (a round button, but not in the flow) */
+.guide-fab.btn-round { position: fixed; display: none; }
+html.in-menu .guide-fab.btn-round { display: inline-grid; }
+.kf-logo + .title-ribbon { margin-top: 0; }
+
+/* round buttons that hang off a window's corner keep their absolute place (the button rules above make buttons `relative`) */
+.btn-round.win-close { position: absolute; top: calc(-43px * var(--u, 1)); right: calc(-46px * var(--u, 1)); width: calc(36px * var(--u, 1)); height: calc(36px * var(--u, 1)); }
+.btn-round.guide-close { position: absolute; top: calc(-8px * var(--u, 1)); right: calc(-8px * var(--u, 1)); width: calc(40px * var(--u, 1)); height: calc(40px * var(--u, 1)); }
+
+/* the close cross is drawn here (the pack's icon is a dark cross meant for light buttons) */
+.btn-round .ico-close, .btn-round.win-close .ico, .btn-round.guide-close .ico {
+  background: var(--kf-cream); filter: drop-shadow(0 1px 0 rgba(0, 0, 0, .55)); width: calc(16px * var(--u, 1)); height: calc(16px * var(--u, 1));
+  -webkit-mask: center / contain no-repeat url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3 1.5L8 6.5l5-5 1.5 1.5-5 5 5 5-1.5 1.5-5-5-5 5L1.5 13l5-5-5-5z'/></svg>");
+          mask: center / contain no-repeat url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3 1.5L8 6.5l5-5 1.5 1.5-5 5 5 5-1.5 1.5-5-5-5 5L1.5 13l5-5-5-5z'/></svg>");
+}
+.kf-prod-txt b { font-size: 1.15em; }

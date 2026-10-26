@@ -36,10 +36,9 @@ html.in-menu body::before {
   background: radial-gradient(ellipse at center, transparent 45%, rgba(10, 30, 40, .45) 100%);
 }
 .screen { position: relative; max-width: 600px; margin: calc(56px * var(--u, 1)) auto calc(32px * var(--u, 1)); font-size: calc(16px * var(--u, 1)); }
-html.ui-art .screen { padding: calc(10px * var(--u, 1)) calc(14px * var(--u, 1)); }
 .screen.end { max-width: 720px; }
 .screen .title-ribbon { display: flex; margin: calc(-62px * var(--u, 1)) auto calc(10px * var(--u, 1)); width: fit-content; font-size: 1.5em; }
-html:not(.ui-art) .screen .title-ribbon { margin-top: -30px; }
+.screen .title-ribbon { margin-top: -30px; }
 .hero { display: block; margin: calc(-6px * var(--u, 1)) auto 0; max-width: 70%; max-height: calc(150px * var(--u, 1)); object-fit: contain; }
 .center { text-align: center; }
 .muted { color: var(--ink-soft, #6b5434); }

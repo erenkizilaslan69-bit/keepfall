@@ -44,14 +44,6 @@ html.in-game body { background: #47aba9; }
   border: 3px solid #8a6a3a; border-radius: 6px; padding: calc(10px * var(--u));
 }
 .paper-dark { background: var(--parchment-dark); color: #f1ead6; border-color: #14171f; }
-html.ui-art .paper {
-  background: transparent; border: calc(28px * var(--u)) solid transparent; border-radius: 0; padding: 0;
-  border-image: var(--paper) 64 fill / calc(28px * var(--u)) stretch;
-}
-html.ui-art .paper-dark {
-  background: transparent; border: calc(28px * var(--u)) solid transparent; border-radius: 0; padding: 0;
-  border-image: var(--paper-dark) 64 fill / calc(28px * var(--u)) stretch;
-}
 
 /* ---- ribbons (titles, notifications, the clock) --------------------------------------------- */
 .ribbon {
@@ -63,27 +55,8 @@ html.ui-art .paper-dark {
 .ribbon-yellow { background: #cfa23a; color: #3a2a18; text-shadow: none; }
 .ribbon-purple { background: #7c5aa6; }
 .ribbon-black { background: #3a3f4d; }
-html.ui-art .ribbon {
-  background: transparent; border-radius: 0; padding: 0; min-height: calc(64px * var(--u)); height: calc(64px * var(--u));
-  border: solid transparent; border-width: 0 calc(64px * var(--u));
-  border-image-slice: 0 128 0 128 fill; border-image-width: 0 calc(64px * var(--u)); border-image-repeat: stretch;
-}
-html.ui-art .ribbon-blue { border-image-source: var(--ribbon-blue); }
-html.ui-art .ribbon-red { border-image-source: var(--ribbon-red); }
-html.ui-art .ribbon-yellow { border-image-source: var(--ribbon-yellow); }
-html.ui-art .ribbon-purple { border-image-source: var(--ribbon-purple); }
-html.ui-art .ribbon-black { border-image-source: var(--ribbon-black); }
 /* The small ribbons: window titles and notifications. */
 .ribbon-sm { min-height: calc(26px * var(--u)); }
-html.ui-art .ribbon-sm {
-  min-height: calc(32px * var(--u)); height: calc(32px * var(--u)); border-width: 0 calc(32px * var(--u));
-  border-image-slice: 0 64 0 64 fill; border-image-width: 0 calc(32px * var(--u));
-}
-html.ui-art .ribbon-sm.ribbon-blue { border-image-source: var(--ribbon-small-blue); }
-html.ui-art .ribbon-sm.ribbon-red { border-image-source: var(--ribbon-small-red); }
-html.ui-art .ribbon-sm.ribbon-yellow { border-image-source: var(--ribbon-small-yellow); }
-html.ui-art .ribbon-sm.ribbon-purple { border-image-source: var(--ribbon-small-purple); }
-html.ui-art .ribbon-sm.ribbon-black { border-image-source: var(--ribbon-small-black); }
 
 /* ---- buttons ---------------------------------------------------------------------------------- */
 .btn {
@@ -92,13 +65,6 @@ html.ui-art .ribbon-sm.ribbon-black { border-image-source: var(--ribbon-small-bl
 }
 .btn-red { background: #c4503f; border-color: #6e2118; }
 .btn:disabled { opacity: .5; cursor: default; filter: grayscale(.6); }
-html.ui-art .btn {
-  background: transparent; border: calc(20px * var(--u)) solid transparent; border-radius: 0; padding: 0 calc(6px * var(--u)); min-height: calc(40px * var(--u));
-  border-image: var(--btn-blue) 64 fill / calc(20px * var(--u)) stretch;
-}
-html.ui-art .btn-red { border-image-source: var(--btn-red); }
-html.ui-art .btn:not(:disabled):active { border-image-source: var(--btn-blue-down); }
-html.ui-art .btn-red:not(:disabled):active { border-image-source: var(--btn-red-down); }
 
 /* Small round buttons: plus, minus and close. */
 .btn-round {
@@ -107,10 +73,6 @@ html.ui-art .btn-red:not(:disabled):active { border-image-source: var(--btn-red-
 }
 .btn-round.btn-red { background: #c4503f; border-color: #6e2118; }
 .btn-round:disabled { opacity: .45; cursor: default; filter: grayscale(.6); }
-html.ui-art .btn-round { border: 0; border-radius: 0; background: var(--round-blue) center / contain no-repeat; }
-html.ui-art .btn-round.btn-red { background-image: var(--round-red); }
-html.ui-art .btn-round:not(:disabled):active { background-image: var(--round-blue-down); }
-html.ui-art .btn-round.btn-red:not(:disabled):active { background-image: var(--round-red-down); }
 
 /* ---- bars: a dark slot in a wooden frame, a gradient fill and the text centred over it --------- */
 .gbar {
@@ -137,7 +99,7 @@ html.ui-art .btn-round.btn-red:not(:disabled):active { background-image: var(--r
   background-image: url('/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/Terrain/Resources/Gold/Gold%20Stones/Gold%20Stone%202.png');
   background-size: 380%; background-position: 51% 47%; filter: grayscale(1) contrast(1.15) brightness(.92);
 }
-html:not(.ui-art) .ico { background-color: rgba(0,0,0,.12); border-radius: 50%; }
+.ico { background-color: rgba(0,0,0,.12); border-radius: 50%; }
 
 .muted-ink { color: var(--ink-soft); }
 
@@ -154,10 +116,6 @@ html:not(.ui-art) .ico { background-color: rgba(0,0,0,.12); border-radius: 50%; 
 .strip {
   display: flex; align-items: center; gap: calc(12px * var(--u)); min-height: calc(36px * var(--u)); padding: 0 calc(10px * var(--u));
   background: var(--parchment); border: 3px solid #8a6a3a; border-radius: 6px; color: var(--ink); white-space: nowrap;
-}
-html.ui-art .strip {
-  background: transparent; border: calc(14px * var(--u)) solid transparent; border-radius: 0; padding: 0 calc(6px * var(--u));
-  min-height: calc(46px * var(--u)); border-image: var(--paper) 64 fill / calc(14px * var(--u)) stretch;
 }
 .lbl { color: var(--ink-soft); margin-right: calc(4px * var(--u)); }
 .strip b { font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -235,8 +193,7 @@ html.in-menu .guide-fab { display: inline-grid; }
 .report-tag.won b { color: #2f7a2a; } .report-tag.lost b { color: #b23a2e; }
 .report-tag.fresh { animation: tag-flash 1s ease-in-out 3; }
 @keyframes tag-flash { 50% { transform: scale(1.08); filter: brightness(1.25); } }
-html.ui-art .report-tag { background: transparent; border: calc(14px * var(--u)) solid transparent; border-image: var(--paper) 64 fill / calc(14px * var(--u)) stretch; padding: 0 calc(6px * var(--u)); min-height: calc(44px * var(--u)); }
-html:not(.ui-art) .report-tag { padding: 4px 8px; }
+.report-tag { padding: 4px 8px; }
 .dot { display: inline-block; width: .7em; height: .7em; border-radius: 50%; margin-right: .3em; border: 1px solid rgba(0,0,0,.4); vertical-align: baseline; }
 
 .modal-shade { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(10, 14, 22, .45); }
@@ -247,7 +204,6 @@ html:not(.ui-art) .report-tag { padding: 4px 8px; }
 .win-foot { display: flex; justify-content: center; margin-top: calc(10px * var(--u)); }
 .report-win { padding: calc(4px * var(--u)); }
 .rep-title { display: flex; margin: 0 auto calc(10px * var(--u)); max-width: 100%; white-space: normal; text-align: center; height: auto; }
-html.ui-art .rep-title { height: calc(64px * var(--u)); white-space: nowrap; }
 .rep-sides { display: grid; grid-template-columns: 1fr 1fr; gap: calc(12px * var(--u)); margin-bottom: calc(10px * var(--u)); }
 .rep-side h3 { margin: 0 0 4px; font-size: 1em; color: var(--gold); }
 .rep-none { margin: 0; opacity: .7; }
@@ -259,9 +215,8 @@ html.ui-art .rep-title { height: calc(64px * var(--u)); white-space: nowrap; }
 .win { position: absolute; width: calc(330px * var(--u)); max-width: 94vw; overflow: visible; }
 .win.paper { padding: 0; }
 .win-title { position: absolute; left: 50%; top: calc(-34px * var(--u)); transform: translateX(-50%); z-index: 1; }
-html.ui-art .win-title { top: calc(-44px * var(--u)); }
 .win-body { padding: calc(14px * var(--u)) calc(14px * var(--u)) calc(10px * var(--u)); max-height: calc(var(--win-max, 80vh) - 60px * var(--u)); overflow-y: auto; overflow-x: hidden; }
-html:not(.ui-art) .win.paper { border-radius: 8px; }
+.win.paper { border-radius: 8px; }
 .win .row { display: flex; align-items: center; justify-content: space-between; gap: calc(8px * var(--u)); padding: calc(3px * var(--u)) 0; }
 .win .row.sub { padding-top: 0; color: var(--ink-soft); font-size: .9em; }
 .win .warn { color: #b23a2e; font-weight: 700; }
@@ -280,7 +235,6 @@ html:not(.ui-art) .win.paper { border-radius: 8px; }
 .unit-cost { grid-column: 1; font-size: .9em; }
 .unit-row .stepper { grid-column: 2; grid-row: 1 / span 2; }
 .unit-row .btn { min-height: calc(30px * var(--u)); padding: 0 calc(2px * var(--u)); }
-html.ui-art .unit-row .btn { border-width: calc(12px * var(--u)); border-image-width: calc(12px * var(--u)); min-height: calc(32px * var(--u)); }
 .queue { margin-top: calc(6px * var(--u)); }
 .order { display: grid; grid-template-columns: auto 1fr auto; gap: calc(8px * var(--u)); align-items: center; padding: calc(2px * var(--u)) 0; }
 .order .gbar { min-width: calc(60px * var(--u)); }
@@ -335,10 +289,6 @@ html.ui-art .unit-row .btn { border-width: calc(12px * var(--u)); border-image-w
   padding: 0 calc(8px * var(--u)); background: var(--parchment); color: var(--ink); border: 3px solid #8a6a3a; border-radius: 6px;
   box-shadow: 0 2px 0 rgba(40, 25, 10, .45);
 }
-html.ui-art .wl-sign {
-  background: transparent; border: calc(10px * var(--u)) solid transparent; border-radius: 0; box-shadow: none; padding: 0 calc(4px * var(--u));
-  min-height: calc(40px * var(--u)); border-image: var(--paper) 64 fill / calc(10px * var(--u)) stretch;
-}
 .wl-sign b { font-weight: 700; }
 .wl-sign .ico { width: calc(18px * var(--u)); height: calc(18px * var(--u)); }
 .wl-sign .dot { margin-right: 0; }
@@ -363,7 +313,7 @@ html.ui-art .wl-sign {
 }
 .spec-wait .paper { width: min(calc(440px * var(--u)), 92vw); }
 .spec-wait .ribbon { display: flex; width: fit-content; margin: calc(-50px * var(--u)) auto calc(8px * var(--u)); font-size: 1.3em; }
-html:not(.ui-art) .spec-wait .ribbon { margin-top: 0; }
+.spec-wait .ribbon { margin-top: 0; }
 .spec-body { padding: 0 calc(14px * var(--u)) calc(8px * var(--u)); text-align: center; }
 .spec-body p { margin: calc(8px * var(--u)) 0; }
 .spec-body p:first-child { font-size: 1.35em; }
@@ -428,5 +378,5 @@ html:not(.ui-art) .spec-wait .ribbon { margin-top: 0; }
 .bot-end.hidden { display: none; }
 .bot-end .paper { width: min(calc(460px * var(--u)), 92vw); }
 .bot-end .ribbon { display: flex; width: fit-content; margin: calc(-50px * var(--u)) auto calc(8px * var(--u)); font-size: 1.2em; }
-html:not(.ui-art) .bot-end .ribbon { margin-top: 0; }
+.bot-end .ribbon { margin-top: 0; }
 .bot-end-btns { display: flex; gap: calc(10px * var(--u)); justify-content: center; margin-top: calc(10px * var(--u)); }
