@@ -28,7 +28,7 @@ Kullanıcıyla **Türkçe** konuş. Kısa ve öz raporla. Kod, yorum ve commit m
 9. Test sunucusunda tarayıcı bölmesi gizliyken Phaser çizmez; ekran testi için başsız Chrome (CDP) kullan (örnek: `tools/replay-check.mjs`).
 
 ## Test rutini
-`dotnet test -c Release` (189 test) → geliştirme sunucusu (5081) + `node tools/smoke-test.mjs http://localhost:5081` (~2 dk) → istemci için `npm --prefix client run build` (tsc dahil).
+`dotnet test -c Release` (198 test) → geliştirme sunucusu (5081) + `node tools/smoke-test.mjs http://localhost:5081` (~2 dk) → istemci için `npm --prefix client run build` (tsc dahil).
 Bot dengesi: `python tools/bot-deney.py 200 docs/bot-deney-son.md` (tablo `docs/`'ta).
 
 ## Son durum (2026-10-26)
@@ -38,6 +38,7 @@ Bot dengesi: `python tools/bot-deney.py 200 docs/bot-deney-son.md` (tablo `docs/
 
 ## Bilinen açık konular
 - Duman testinde izleyici bölümündeki "every picture is of the live game (no delay)" denetimi ara sıra düşüyor (iki bağlantıdan gelen mesajların sırasına bağlı zamanlama; bot/oyun hatası değil).
+- Duman testi ikinci turda X yalnız ~4 askerle Y'nin kalesini (500 can) 3 turda düşürüyor ve maç 900 oyun sn'de bitiyor: düşüş sınıra çok yakın. Bu yüzden ganimet şeridi ve izleyici denetimleri maç süresi dolmuşsa "skip" yazıp atlanır (eski sürümde de aynı rastgele düşme vardı, kural/oyun hatası değil). Z'yi de saldırtmak işe yaramaz: farklı oyuncuların orduları yolda çarpışır.
 - Saldırısız maç oranı yüksek (Orta vs Orta ~%39 saldırısız); `scoreAware` ve zafer puanı deneyi sonuçları `docs/bot-deney-son.md`'de. Zafer puanı kuralı oyuna EKLENMEDİ (kullanıcı kararı: nüfus kuralı değişmedi).
 - Kolay'ın düşünme süresi 7–12 sn'de bırakıldı (Orta kazanma ~%71, hedef ~%80); kullanıcı yeniden ayar isterse 8–12 / 8–14 ölçüldü.
 
@@ -56,5 +57,10 @@ Durum: [x] bitti, [ ] açık.
 - Gözcüyle erzak, para ve mesaj gönderme (başka oyuncuya).
 - Geri dönüş sorunu: savaş kaybeden oyuncu toparlanamıyor, nüfus ve ordular az. Aday çözümler: kale muhafızları, sığınan köylüler, son çiftçi uyarısı, büyüme maliyet artışını %8'den %6'ya çekmek. Detaylı düşünülecek.
 
-## KALDIĞIM YER (2026-10-26)
-Görev 0–6 bitti; ayrıca Orta bot eski/eksik raporla da saldırabiliyor: `bots.staleReportSeconds` 160, `blindMargin` 1,05, `blindAfterWarSeconds` 60 (savaşın ilk 60 sn'sinde körlemesine saldırmaz, rapor almaya çalışır). Ölçüm `docs/bot-deney-yumusat.md`: Orta vs Orta saldırısız %14, maç sonu nüfus 23,3, eleme %17 (blindMargin 1,0→1,1 arası eşik gibi sıçrıyor; 160/1,05 hedefi tutturdu). Kale ganimeti savaş raporunda (`loot`) ve eve dönünce şeritte görünüyor. Production (5080) son commit'le çalışıyor, test sunucuları kapalı. Açık: Görev 7 (yalnız fikir, kodlama yok). Bot saldırganlığı biraz fazla görünürse `blindMargin`/`attackMargin` yeniden ölçülür (sayılara kullanıcı onayıyla dokun).
+## KALDIĞIM YER (2026-10-27, gece işleri bitti)
+Görev 0–6 ve kullanıcı istekleri bitti, hepsi push edildi; Production (5080) son commit'le çalışıyor, test sunucuları (5081, 5174) kapalı, tünel açık.
+- **Ordu yeniden yönlendirme**: yürüyen/dönen (savaşta olmayan) ordu haritada tıklanınca ordu penceresinde "Yeni emir": başka rakip kale (yalnız savaş fazı) ya da ormandaki yer (köy ≥3 asker). `RedirectArmy` komutu, `WorldMap.RouteFrom` (bulunduğu yoldan en kısa), dönen ordu da yeniden çıkabilir ve ganimeti taşır. Orta bot: saldırıdan dönen ordu uzak yarıdayken zayıf bildiği bir hedefe yönelir (`regroups`). Ölçüm: Orta vs Orta saldırısız %14, nüfus 23,6; ama eleme ile biten maç %17 → %41 (botlar daha çok bitiriyor; fazla görünürse `blindMargin`/`attackMargin` yeniden ölçülür, sayılara kullanıcı onayıyla dokun).
+- **Tümü / Yarısı** butonları (kale ve orman yeri saldırı pencereleri).
+- **Gece işleri (kullanıcı uyurken)**: (1) hata taraması: `guarded()` ile kare döngüsü/UI/mesaj işleyicileri bölüm bölüm korumalı (`client/src/error-report.ts`), `client-errors.log` yoktu; (2) ses efektleri: `client/src/audio.ts` (Web Audio, dosya yok; üst şeritte ♪ ve ses düzeyi, localStorage `keepfall.sound`, varsayılan 0,3, en çok 8 eşzamanlı ses, aynı ses için bekleme süresi, savaş sesleri yalnız kamerada görünen yerde); (3) "Nasıl oynanır" rehberi: `?` butonu (menülerde sağ üst, oyunda üst şerit), sayılar `/api/guide` (`GuideMapper`, balance.json'dan).
+- Kararlar/notlar: ses kancaları ve ribbon metinleri Türkçe; rehber metni kısa tutuldu; `?` Esc ile kapanır. Atlanan iş yok.
+- Açık: Görev 7 (yalnız fikir). "Geri dönüş sorunu" fikir listesinde (büyüme maliyeti %8 → %6 dahil).
