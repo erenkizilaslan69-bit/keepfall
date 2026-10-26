@@ -53,6 +53,6 @@ export function scoutReportHtml(r: ScoutReportView, now: number): string {
     <div class="scout-soldiers">${soldiersHtml(r)}</div>
     <div class="scout-names small muted-ink">${r.soldiers.map((u) => `${esc(u.name)} ${count(u.count)}`).join(' · ')}</div>
     <h3 class="rep-h">Binalar</h3>
-    <div class="small">${r.buildings.map((b) => `${esc(b.name)} <b>Sv ${b.level}</b>`).join(' · ')}</div>
+    <div class="small">${r.buildings.map((b) => `${esc(b.name)} <b>Sv ${b.level}</b>`).join(' · ')} · Sur <b>Sv ${r.wallLevel}</b></div>
     <p class="rep-note muted-ink small">Gözcü yalnızca asker türlerini (sayılar ±%20 sapabilir) ve bina seviyelerini görür; işçi, kaynak ve silah deposu görünmez.</p>`;
 }

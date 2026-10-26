@@ -36,6 +36,7 @@ const STONE = { 2: { scale: 0.42, tower: 0.5 }, 3: { scale: 0.55, tower: 0.62 } 
 
 export class WallRing {
   private level = 0;
+  private fallen = false;
   private rt: Phaser.GameObjects.RenderTexture | null = null;
   private towers: Phaser.GameObjects.Image[] = [];
 
@@ -61,6 +62,20 @@ export class WallRing {
     if (level === 1) this.fence(g); else this.stone(rt, g, level as 2 | 3);
     rt.draw(g, 0, 0);
     g.destroy();
+  }
+
+  /** Where the siege is fought: just outside the gate in the side wall (scene pixels). */
+  gatePoint(): Point {
+    return { x: this.origin.x + (this.gateOnEast ? REGION_W - 24 : 24), y: this.origin.y + GATE_Y };
+  }
+
+  /** The castle has fallen: the wall greys out, the towers are gone (with dust). */
+  ruin(fx?: { dust(x: number, y: number, scale: number, tint: number): void }): void {
+    if (this.fallen) return;
+    this.fallen = true;
+    this.rt?.setAlpha(0.45).setTint(0x888888);
+    for (const t of this.towers) { fx?.dust(t.x, t.y - 30, 1.6, 0x8a7a66); t.destroy(); }
+    this.towers = [];
   }
 
   destroy(): void {
@@ -142,7 +157,7 @@ export class WallRing {
     // towers: the corners, and (level 3) either side of the gate; level 2 has two stone posts at the gate
     const gx = east ? R - side : L + side;
     const key = colorKey(this.color, this.own, 'tower');
-    const put = (x: number, baseY: number, towerScale = tower) => {
+    const put = (x: number, baseY: number, towerScale: number = tower) => {
       if (!this.scene.textures.exists(key)) return;
       const img = this.scene.add.image(this.origin.x + x, this.origin.y + baseY, key).setOrigin(0.5, 0.92).setScale(towerScale).setDepth(this.origin.y + baseY);
       this.towers.push(img);

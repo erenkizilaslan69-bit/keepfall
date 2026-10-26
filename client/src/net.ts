@@ -97,6 +97,7 @@ export class GameConnection {
   cancelWeapon = (index: number) => this.call('CancelWeapon', index);
   armWorkers = (unitId: string, count: number, from: Job) => this.call('ArmWorkers', unitId, count, from);
   disarmSoldiers = (unitId: string, count: number) => this.call('DisarmSoldiers', unitId, count);
+  upgradeWall = () => this.call('UpgradeWall');
   upgradeBuilding = (building: BuildingType) => this.call('UpgradeBuilding', building);
   sendEnvoy = (targetSeat: number, food: number, wood: number, iron: number, gold: number, message: string, from: Job) =>
     this.call('SendEnvoy', targetSeat, food, wood, iron, gold, message || null, from);

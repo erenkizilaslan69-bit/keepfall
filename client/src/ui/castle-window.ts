@@ -53,6 +53,12 @@ export class CastleWin extends Win {
         <div class="row center"><button class="btn" data-act="growth"></button></div>
       </div>
       <div class="pane" data-pane="defense">
+        <div class="wall-box" data-f="wall-box">
+          <div class="row"><b data-f="wall-title"></b><span data-f="wall-hp"></span></div>
+          <div class="gbar hidden" data-f="wall-bar"><div class="fill"></div></div>
+          <div class="row"><small class="muted-ink" data-f="wall-note"></small>
+            <button class="btn" data-act="wall" data-f="wall-button">Suru yükselt</button></div>
+        </div>
         <p class="muted-ink small">Kale saldırıya uğrayınca evdeki askerler böyle dizilir.</p>
         ${rows}
         <div class="row"><span>Okçu hedefi</span><select data-d="priority">${priority}</select></div>
@@ -104,6 +110,20 @@ export class CastleWin extends Win {
     this.q('[data-f="arming-row"]').classList.toggle('hidden', arming === 0);
     this.q('[data-f="arming-n"]').textContent = String(arming);
 
+    // wall
+    const up = s.war.wallUpgrade;
+    this.q('[data-f="wall-title"]').textContent = `Sur · Sv ${s.war.wallLevel}`;
+    this.q('[data-f="wall-hp"]').textContent = `${Math.ceil(s.war.wallHp)} / ${s.war.maxWallHp} can`;
+    const wallBar = this.q('[data-f="wall-bar"]');
+    wallBar.classList.toggle('hidden', up.remaining === null);
+    if (up.remaining !== null) wallBar.querySelector<HTMLElement>('.fill')!.style.width = `${100 * (1 - up.remaining / Math.max(up.total, 1))}%`;
+    const wallButton = this.q<HTMLButtonElement>('[data-f="wall-button"]');
+    const canPay = up.nextLevel !== null && s.resources.wood + 1e-6 >= up.nextWood && s.resources.iron + 1e-6 >= up.nextIron;
+    wallButton.textContent = up.nextLevel === null ? 'En üst seviye' : up.remaining !== null ? `Yükseltiliyor · ${Math.ceil(up.remaining)} sn` : `Suru yükselt (Sv ${up.nextLevel})`;
+    wallButton.disabled = dead || up.nextLevel === null || up.remaining !== null || !canPay || s.war.wallHp <= 0;
+    this.q('[data-f="wall-note"]').textContent = up.nextLevel === null ? 'Sur tam güçte; kapıdaki okçular %25 fazla hasar verir.'
+      : `Sv ${up.nextLevel}: +${Math.round(up.nextHp - s.war.maxWallHp)} can (${up.nextHp} toplam) · ${up.nextWood} odun, ${up.nextIron} demir, ${up.nextSeconds} sn. Sur ayaktayken kapıdaki okçular %25 fazla hasar verir.`;
+
     // growth
     this.q('[data-f="pop"]').textContent = String(s.population);
     this.q('[data-f="next"]').innerHTML = `<span class="cost"><i class="ico ico-meat"></i>${s.nextPersonCost}</span> yemek`;
@@ -140,6 +160,7 @@ export class CastleWin extends Win {
         break;
       case 'disarm': r = await net.disarmSoldiers(unit!, Number(btn.dataset.n)); break;
       case 'growth': r = await net.setGrowth(!this.growthOn); break;
+      case 'wall': r = await net.upgradeWall(); if (r.ok) this.ctx.info('Sur yükseltmesi başladı.'); break;
       case 'save-defense': {
         const rows: Record<string, Row> = {};
         for (const sel of this.body.querySelectorAll<HTMLSelectElement>('[data-d-row]')) rows[sel.dataset.dRow!] = sel.value as Row;

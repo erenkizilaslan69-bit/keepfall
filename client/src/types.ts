@@ -131,7 +131,11 @@ export interface WarView {
   incoming: IncomingView[];
   battles: BattleReportView[];
   defense: { rows: Record<string, Row>; archerPriority: string | null };
+  /** The wall's level (1–3) and the upgrade: the one under way and what the next level costs. */
+  wallLevel: number;
+  wallUpgrade: WallUpgradeView;
 }
+export interface WallUpgradeView { remaining: number | null; total: number; nextLevel: number | null; nextHp: number; nextWood: number; nextIron: number; nextSeconds: number }
 export interface WarStats {
   attacksLaunched: number;
   soldiersLost: number;
@@ -157,6 +161,7 @@ export interface ScoutMissionView {
 /** One quarter of the forest as a place to send a scout (named by its corner). */
 export interface QuarterView { corner: Corner; seat: number | null; name: string | null; color: PlayerColor | null; explored: boolean; busy: boolean; seconds: number }
 export interface ScoutReportView {
+  wallLevel: number;
   targetSeat: number;
   targetName: string;
   targetColor: PlayerColor;
@@ -251,6 +256,8 @@ export interface MapStateView {
   elapsedSeconds: number; vision: VisionView[]; own: OwnMoverView[]; seen: SeenMoverView[]; battles: BattleMarkerView[]; trail: TrailView[];
   /** The places of the forest we have found, as we last saw them. */
   sites: SiteView[];
+  /** The wall level of the rival castles whose gate we can see right now. */
+  walls: { seat: number; level: number }[];
 }
 
 export type SiteKind = 'chest' | 'village' | 'camp' | 'bigCamp';
@@ -276,7 +283,7 @@ export interface BattleStartedView {
 // What a fallen player watches (see the server's SpectatorViews): the whole map without fog, a fixed delay behind the game.
 export interface SpectatorCastleView {
   seat: number; eliminated: boolean; wallHp: number; maxWallHp: number;
-  buildings: BuildingView[]; jobs: JobView[]; units: UnitView[];
+  buildings: BuildingView[]; jobs: JobView[]; units: UnitView[]; wallLevel: number;
 }
 export interface SpectatorStateView {
   elapsedSeconds: number; castles: SpectatorCastleView[]; movers: SeenMoverView[]; battles: BattleMarkerView[]; started: BattleStartedView[];

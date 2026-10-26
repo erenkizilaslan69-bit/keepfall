@@ -121,6 +121,33 @@ export class Effects {
     this.burning.set(id, list);
   }
 
+  /**
+   * The wall at the gate (where a siege is fought): smoke when it has lost a third of its hit points, flames below a third.
+   * `ratio` is wallHp / maxWallHp; the spots are along the wall either side of (x, y). Like <see cref="damage"/>, it changes nothing between stages.
+   */
+  wallDamage(id: string, x: number, y: number, ratio: number, fallen: boolean): void {
+    if (!this.enabled) return;
+    const stage = fallen ? 3 : ratio < 0.34 ? 2 : ratio < 0.67 ? 1 : 0;
+    const have = this.burning.get(id);
+    if ((have?.length ?? 0) === [0, 1, 3, 4][stage]) return;
+    have?.forEach((s) => s.destroy());
+    const list: Phaser.GameObjects.Sprite[] = [];
+    const smoke = (dy: number, scale: number) => {
+      const s = this.scene.add.sprite(x, y + dy, 'dust').setScale(scale).setDepth(DEPTH_FX).setTint(0x3a3a3a).setAlpha(0.85);
+      s.play({ key: 'dust', repeat: -1, startFrame: Phaser.Math.Between(0, 7) });
+      list.push(s);
+    };
+    const flame = (dy: number, scale: number) => {
+      const s = this.scene.add.sprite(x, y + dy, 'fire').setScale(scale).setDepth(DEPTH_FX).setOrigin(0.5, 0.85);
+      s.play({ key: 'fire', repeat: -1, startFrame: Phaser.Math.Between(0, 5) });
+      list.push(s);
+    };
+    if (stage >= 1) smoke(-70, 2.6);
+    if (stage >= 2) { flame(-30, 1.8); flame(70, 1.6); }
+    if (stage === 3) { list.forEach((s) => s.setAlpha(0.4)); smoke(40, 3); }
+    this.burning.set(id, list);
+  }
+
   /** The castle falls: fireballs along its walls, dust, a hard shake, and the stone sinks and goes dark. */
   collapse(image: Phaser.GameObjects.Image, x: number, y: number, restScale: number): void {
     const blasts: [number, number, number][] = [[-120, -100, 1.3], [110, -130, 1.5], [0, -190, 1.7], [-50, -60, 1.2], [70, -50, 1.4]];
