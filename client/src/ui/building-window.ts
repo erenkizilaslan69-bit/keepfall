@@ -22,13 +22,17 @@ export class BuildingWin extends Win {
     super(ctx, 'blue');
     const b = this.building(s);
     this.body.innerHTML = `
-      <div class="row"><span>Çalışan</span>
-        <span class="stepper"><button class="btn-round btn-red" data-act="out" title="Bir işçiyi boşa al">−</button><b data-f="workers"></b>
-          <button class="btn-round" data-act="in" title="Boştan bir işçi ata">+</button></span></div>
-      <div class="row sub"><span data-f="idle"></span></div>
-      <div class="row"><span>Üretim</span><b data-f="output"></b></div>
-      <div class="row sub"><span data-f="capacity"></span></div>
-      <div class="upgrade-box"><button class="btn" data-act="upgrade"></button>
+      <div class="kf-prod">
+        <span class="kf-prod-ico" data-f="icon"></span>
+        <div class="kf-prod-txt"><small>Üretim</small><b data-f="output"></b><small data-f="capacity"></small></div>
+      </div>
+      <div class="kf-crew">
+        <button class="kf-btn kf-btn--danger kf-btn--sq" data-act="out" title="Bir işçiyi boşa al" aria-label="Bir işçiyi boşa al">−</button>
+        <div class="kf-crew-mid"><small>Çalışan</small><b data-f="workers"></b><div class="kf-slots" data-f="slots"></div></div>
+        <button class="kf-btn kf-btn--green kf-btn--sq" data-act="in" title="Boştan bir işçi ata" aria-label="Boştan bir işçi ata">+</button>
+      </div>
+      <div class="row sub center"><span data-f="idle"></span></div>
+      <div class="upgrade-box"><button class="kf-btn kf-btn--big kf-btn--wide" data-act="upgrade"></button>
         <div class="gbar hidden" data-f="progress"><div class="fill"></div></div></div>
       ${b.product === null ? `
       <h4>Silah üretimi <small data-f="speed"></small></h4>
@@ -48,6 +52,9 @@ export class BuildingWin extends Win {
     const workers = s.jobs.find((j) => j.job === b.worker)?.count ?? 0;
     const idle = s.jobs.find((j) => j.job === 'idle')?.count ?? 0;
     this.q('[data-f="workers"]').textContent = `${workers} / ${b.capacity}`;
+    const slots = Array.from({ length: b.capacity }, (_, i) => `<i class="kf-pip${i < workers ? ' on' : ''}"></i>`).join('');
+    const slotBox = this.q('[data-f="slots"]');
+    if (slotBox.dataset.html !== slots) { slotBox.innerHTML = slots; slotBox.dataset.html = slots; }
     this.q('[data-f="idle"]').textContent = idle > 0 ? `Boştaki işçi: ${idle}` : 'Boşta işçi yok';
     this.q('[data-f="idle"]').classList.toggle('warn', idle > 0 && b.product !== null);
     this.q<HTMLButtonElement>('[data-act="in"]').disabled = idle === 0 || workers >= b.capacity || s.eliminated;
@@ -57,9 +64,11 @@ export class BuildingWin extends Win {
     if (b.product) {
       const p = PRODUCT[b.product];
       const perMinute = b.product === 'food' ? s.rates.foodIn : b.product === 'wood' ? s.rates.wood : s.rates.iron;
-      out.innerHTML = `<i class="ico ${p.icon}"></i> +${perMinute.toFixed(1)} ${p.name}/dk`;
+      out.textContent = `+${perMinute.toFixed(1)} ${p.name}/dk`;
+      this.q('[data-f="icon"]').innerHTML = `<i class="ico ${p.icon}"></i>`;
     } else {
-      out.innerHTML = s.rates.forgeSpeed > 0 ? `<i class="ico ico-hammer"></i> hız ×${s.rates.forgeSpeed.toFixed(2)}` : 'demirci yok, sıra duruyor';
+      out.textContent = s.rates.forgeSpeed > 0 ? `hız ×${s.rates.forgeSpeed.toFixed(2)}` : 'demirci yok, sıra duruyor';
+      this.q('[data-f="icon"]').innerHTML = '<i class="ico ico-hammer"></i>';
     }
     this.q('[data-f="capacity"]').textContent = `Kapasite ${b.capacity} · çarpan ×${b.multiplier}`;
 
