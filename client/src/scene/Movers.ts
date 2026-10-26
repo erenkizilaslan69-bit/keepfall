@@ -4,6 +4,7 @@ import { SHIELD_SCALE, UNIT_SCALE, colorKey, unitOriginY } from './assets';
 import type { Target } from '../ui/windows';
 import type { WorldLabels } from '../ui/world-labels';
 import { COLOR_CSS } from '../format';
+import { reportError } from '../error-report';
 import { toWorld } from './world';
 
 // Armies and scouts walking on the map: our own (we know their road) and the others the server lets
@@ -73,6 +74,7 @@ export class Movers {
       const t = this.track(`own:${o.id}`, this.ownColor, o.kind === 'scout', o.units, o.position);
       t.position = o.position;
       t.velocity = o.velocity;
+      if (o.route.length === 0) o.route = [o.position]; // a road always has at least where the army stands
       const last = o.route.length - 1;
       if (t.route?.length !== o.route.length || t.route[0].x !== o.route[0].x || t.route[0].y !== o.route[0].y
         || t.route[last].x !== o.route[last].x || t.route[last].y !== o.route[last].y) { // a new order changes where the road ends
@@ -124,7 +126,26 @@ export class Movers {
 
   update(dt: number): void {
     const now = performance.now();
-    for (const t of this.tracks.values()) {
+    for (const t of [...this.tracks.values()]) {
+      try {
+        this.advance(t, now, dt);
+      } catch (e) {
+        reportError('movers', e, { source: t.key.startsWith('own:') ? 'own mover' : 'seen mover' });
+        this.remove(t);
+      }
+    }
+  }
+
+  /** A column that cannot be drawn is taken off the map; the next server tick makes a fresh one. */
+  private remove(t: Track): void {
+    for (const s of t.sprites) if (s.active) s.destroy();
+    t.zone?.destroy();
+    this.labels.remove(`army:${t.key}`);
+    this.tracks.delete(t.key);
+  }
+
+  private advance(t: Track, now: number, dt: number): void {
+    {
       const ahead = Math.min((now - t.receivedAt) / 1000, MAX_AHEAD_TICKS) * this.gameSpeed;
       let target: Vec, heading: Vec;
       if (t.route) {

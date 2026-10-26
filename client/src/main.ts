@@ -18,7 +18,7 @@ import '@fontsource/atkinson-hyperlegible-next/latin-ext-700.css';
 import { Minimap } from './minimap';
 import { EndScreen, HomeScreen, LobbyScreen } from './screens';
 import { setBotSeats } from './format';
-import { installErrorReporting } from './error-report';
+import { guarded, installErrorReporting } from './error-report';
 import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 
 // Routes: "/" is the home screen, "/oda/ABCD" is a room. Inside a room the screen follows the
@@ -70,8 +70,8 @@ const net = new GameConnection({
   },
   mapState: (state) => {
     lastMap = state;
-    scene?.setMap(state);
-    ui?.setSites(state.sites);
+    guarded('map-state', () => scene?.setMap(state), 'scene');
+    guarded('map-state', () => ui?.setSites(state.sites), 'ui');
   },
   spectatorState: (frame) => {
     lastSpectator = frame;
@@ -79,8 +79,8 @@ const net = new GameConnection({
       if (scene) scene.playBattle(b);
       else pendingBattles.push(b);
     }
-    ui?.setSpectating(lastCastle ? Math.max(0, lastCastle.elapsedSeconds - frame.elapsedSeconds) : 0);
-    scene?.setSpectator(frame);
+    guarded('spectator-state', () => ui?.setSpectating(lastCastle ? Math.max(0, lastCastle.elapsedSeconds - frame.elapsedSeconds) : 0), 'ui');
+    guarded('spectator-state', () => scene?.setSpectator(frame), 'scene');
   },
   spectatorWait: (wait) => ui?.setSpectatorWait(wait.startsIn),
   matchEnded: (s) => { summary = s; end?.setSummary(s); },
@@ -117,9 +117,9 @@ function onCastle(c: CastleView): void {
   lastCastle = c;
   if (c.summary) { summary = c.summary; end?.setSummary(c.summary); }
   if (screen === 'game') {
-    ui?.update(c);
-    if (!scene && lastLayout) startScene(c.color, lastLayout);
-    scene?.setState(c);
+    guarded('castle-state', () => ui?.update(c), 'ui');
+    guarded('castle-state', () => { if (!scene && lastLayout) startScene(c.color, lastLayout); }, 'start scene');
+    guarded('castle-state', () => scene?.setState(c), 'scene');
   }
 }
 

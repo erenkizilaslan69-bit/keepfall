@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { reportError } from '../error-report';
 import type { BuildingType, Job, JobView } from '../types';
 import type { WorldLabels } from '../ui/world-labels';
 import { UNIT_SCALE, unitOriginY } from './assets';
@@ -81,11 +82,19 @@ export class Workers {
   }
 
   update(dt: number): void {
-    for (const pawn of this.pawns) {
-      if (pawn.path.length > 0) this.walk(pawn, dt);
-      else if (pawn.state === 'working' || pawn.state === 'dropping') {
-        pawn.timer -= dt;
-        if (pawn.timer <= 0) this.nextStep(pawn);
+    for (const pawn of [...this.pawns]) {
+      if (!pawn.sprite.active) continue; // already gone (left the castle)
+      try {
+        if (pawn.path.length > 0) this.walk(pawn, dt);
+        else if (pawn.state === 'working' || pawn.state === 'dropping') {
+          pawn.timer -= dt;
+          if (pawn.timer <= 0) this.nextStep(pawn);
+        }
+      } catch (e) {
+        // This one pawn stands still; the rest go on (and the error is reported once).
+        reportError('workers', e, { source: `pawn ${pawn.job}/${pawn.state}` });
+        pawn.path = [];
+        pawn.state = 'waiting';
       }
     }
   }

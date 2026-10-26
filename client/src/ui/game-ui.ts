@@ -1,4 +1,5 @@
 import { botMark, esc } from '../format';
+import { guarded } from '../error-report';
 import type { GameConnection } from '../net';
 import type { CastleView, Corner, RoomView, SiteView } from '../types';
 import type { WorldScene } from '../scene/WorldScene';
@@ -185,10 +186,16 @@ export class GameUi {
 
   update(s: CastleView): void {
     this.castle = s;
-    this.windows.update({ castle: s, room: this.room });
-    this.bar.update(s);
-    this.renderScroll();
-    this.reports.update(s.war.battles, s.elapsedSeconds);
+    // Each part on its own: one that fails must not keep the rest of the screen from updating.
+    guarded('ui-update', () => this.windows.update({ castle: s, room: this.room }), 'windows');
+    guarded('ui-update', () => this.bar.update(s), 'top bar');
+    guarded('ui-update', () => this.renderScroll(), 'scroll');
+    guarded('ui-update', () => this.reports.update(s.war.battles, s.elapsedSeconds), 'report tags');
+    guarded('ui-update', () => this.updateNotes(s), 'ribbons');
+  }
+
+  /** The ribbons that follow from a new state: scouts home, gold, a toured quarter, hunger, the war, a fallen castle. */
+  private updateNotes(s: CastleView): void {
     const reports = s.scouting.reports;
     if (this.scoutsSeen) {
       for (const r of reports.filter((x) => !this.scoutsSeen!.has(scoutKey(x))))

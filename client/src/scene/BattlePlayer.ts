@@ -163,14 +163,14 @@ export class BattlePlayer {
 
   private strike(r: Replay, attacker: number, target: number, speed: number): void {
     const a = r.fighters[attacker], b = r.fighters[target];
-    if (!a || a.dead) return;
+    if (!a || a.dead || !a.sprite.active) return;
     if (b) a.sprite.setFlipX(b.sprite.x < a.sprite.x);
     const look = LOOK[a.unit] ?? LOOK.kilicli;
     if (look.attack) {
       const key = colorKey(r.view.sides[a.side].color, this.ownColor, look.attack);
       if (this.scene.anims.exists(key)) {
         a.sprite.play({ key, timeScale: Math.min(3, speed) });
-        a.sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => { if (!a.dead) a.sprite.anims.stop(); });
+        a.sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => { if (!a.dead && a.sprite.active) a.sprite.anims.stop(); });
       }
     } else if (b) {
       // Shield bearers keep their guard up and shove.
@@ -185,21 +185,22 @@ export class BattlePlayer {
         onComplete: () => arrow.destroy(),
       });
     }
-    if (b && !b.dead) {
+    if (b && !b.dead && b.sprite.active) {
       b.sprite.setTintFill(0xffffff);
-      this.scene.time.delayedCall(70, () => { if (!b.dead) b.sprite.clearTint(); });
+      this.scene.time.delayedCall(70, () => { if (!b.dead && b.sprite.active) b.sprite.clearTint(); });
     }
   }
 
   private fall(f: Fighter | null | undefined, speed: number): void {
     if (!f || f.dead) return;
     f.dead = true;
+    if (!f.sprite.active) return;
     f.sprite.anims.stop();
     f.sprite.setTint(0xff6b5e);
     this.scene.tweens.killTweensOf(f.sprite);
     this.scene.tweens.add({
       targets: f.sprite, angle: f.sprite.flipX ? -80 : 80, alpha: 0, y: f.sprite.y + 6, duration: 650 / Math.min(speed, 4),
-      onComplete: () => f.sprite.destroy(),
+      onComplete: () => { if (f.sprite.active) f.sprite.destroy(); },
     });
   }
 

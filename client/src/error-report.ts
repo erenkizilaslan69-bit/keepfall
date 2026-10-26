@@ -33,6 +33,19 @@ export function reportError(kind: string, error: unknown, extra: { source?: stri
   } catch { /* offline: nothing to do */ }
 }
 
+/**
+ * Run one step of a frame or of a server message so that a failure in it cannot stop the rest: an error that escapes a Phaser scene's
+ * update ends the frame loop for good (the picture freezes), and one that escapes a message handler skips everything after it.
+ * The error is reported (once) and the step is simply skipped this time.
+ */
+export function guarded(kind: string, step: () => void, source?: string): void {
+  try {
+    step();
+  } catch (e) {
+    reportError(kind, e, { source });
+  }
+}
+
 export function installErrorReporting(context: () => ErrorContext): void {
   contextOf = context;
   window.addEventListener('error', (ev) => {

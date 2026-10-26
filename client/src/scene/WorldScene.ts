@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { ArmyView, Rect, ScoutReportView, SpectatorCastleView, SpectatorStateView, BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
+import { guarded } from '../error-report';
 import type { Minimap } from '../minimap';
 import type { Anchor, Target } from '../ui/windows';
 import type { WorldLabels } from '../ui/world-labels';
@@ -421,23 +422,27 @@ export class WorldScene extends Phaser.Scene {
     // The canvas is the whole window: follow it (Phaser does not always notice a window that shrinks).
     if (this.scale.gameSize.width !== window.innerWidth || this.scale.gameSize.height !== window.innerHeight)
       this.scale.resize(window.innerWidth, window.innerHeight);
-    this.workers.update(dt);
-    for (const r of this.regions.values()) r.update(dt);
-    this.movers.update(dt);
-    this.battles.update();
-    this.onFrame();
-    this.clearTreesAroundBattles(dt);
-    this.panWithKeys(dt);
+    // Each part on its own: a failure in one must not end the frame loop (the whole picture would freeze).
+    guarded('scene-update', () => this.workers.update(dt), 'workers');
+    guarded('scene-update', () => { for (const r of this.regions.values()) r.update(dt); }, 'regions');
+    guarded('scene-update', () => this.movers.update(dt), 'movers');
+    guarded('scene-update', () => this.battles.update(), 'battles');
+    guarded('scene-update', () => this.onFrame(), 'onFrame');
+    guarded('scene-update', () => this.clearTreesAroundBattles(dt), 'trees');
+    guarded('scene-update', () => this.panWithKeys(dt), 'keys');
     if (this.map) {
+      const map = this.map;
       // The castle's circle comes from the server; the walking circles follow the drawn armies and scouts.
-      const fixed = this.map.vision.slice(0, 1);
+      const fixed = map.vision.slice(0, 1);
       const moving = this.movers.ownVision();
-      if (!this.spectating) this.fog.draw(fixed, moving, this.map.trail, this.foreignRegions);
-      const view = this.cameras.main.worldView;
-      const tl = toTiles({ x: view.x, y: view.y });
-      const battles = [...this.map.battles.map((b) => b.at), ...this.battles.active.map((b) => b.at)];
-      this.minimap?.draw([...fixed, ...moving], this.movers.all(), { x: tl.x, y: tl.y, w: view.width / TILE, h: view.height / TILE }, battles, this.map.trail, this.foreignRegions,
-        this.map.sites.map((s) => ({ position: s.position, kind: s.kind, gone: s.gone })));
+      guarded('scene-update', () => { if (!this.spectating) this.fog.draw(fixed, moving, map.trail, this.foreignRegions); }, 'fog');
+      guarded('scene-update', () => {
+        const view = this.cameras.main.worldView;
+        const tl = toTiles({ x: view.x, y: view.y });
+        const battles = [...map.battles.map((b) => b.at), ...this.battles.active.map((b) => b.at)];
+        this.minimap?.draw([...fixed, ...moving], this.movers.all(), { x: tl.x, y: tl.y, w: view.width / TILE, h: view.height / TILE }, battles, map.trail, this.foreignRegions,
+          map.sites.map((s) => ({ position: s.position, kind: s.kind, gone: s.gone })));
+      }, 'minimap');
     }
   }
 
