@@ -28,6 +28,8 @@ public sealed class ArmySetup
 
     public string Name { get; set; }
     public TargetPriority Targeting { get; set; } = TargetPriority.Front;
+    /// <summary>The ranged soldiers of this side hit this many times as hard (1.25: the archers behind a wall).</summary>
+    public double RangedDamageFactor { get; set; } = 1;
 
     public IReadOnlyDictionary<UnitType, int> Counts => _counts;
     public int TotalCount => _counts.Values.Sum();
@@ -54,7 +56,7 @@ public sealed class ArmySetup
     /// <summary>Same composition and formation, with a new name and target priority.</summary>
     public ArmySetup Clone(string name, TargetPriority targeting)
     {
-        var copy = new ArmySetup(name) { Targeting = targeting };
+        var copy = new ArmySetup(name) { Targeting = targeting, RangedDamageFactor = RangedDamageFactor };
         foreach (var (type, count) in _counts) copy._counts[type] = count;
         foreach (var (type, row) in _rowOverrides) copy._rowOverrides[type] = row;
         return copy;

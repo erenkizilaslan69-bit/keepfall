@@ -83,6 +83,19 @@ check('the map carries no token and no castle contents',
 check('lobby command refused in the match', !(await B.call('SetReady', false)).ok);
 check('host sets ×20', (await A.call('SetSpeed', 20)).ok);
 
+// ---- the wall: C raises it (the start has just enough wood and iron); only C's own picture says so ----------------------
+{
+  const until = async (pred, ms) => { for (let t = 0; t < ms; t += 250) { if (pred()) return true; await sleep(250); } return false; };
+  const c0 = C.of('CastleState').at(-1);
+  check('every castle picture carries the wall level and what the next level costs', c0.war.wallLevel === 1
+    && c0.war.wallUpgrade.nextLevel === 2 && c0.war.wallUpgrade.nextWood === 40 && c0.war.wallUpgrade.nextIron === 20 && c0.war.wallUpgrade.nextSeconds === 90);
+  check('C raises its wall', (await C.call('UpgradeWall')).ok);
+  check('one wall upgrade at a time', !(await C.call('UpgradeWall')).ok);
+  check('the wall rises to level 2 with 1000 hit points', await until(() => { const w = C.of('CastleState').at(-1).war; return w.wallLevel === 2 && w.maxWallHp === 1000 && w.wallHp === 1000; }, 20000));
+  check('nobody else is told of it', [A, B].every((x) => x.of('CastleState').every((c) => c.war.wallLevel === 1)));
+  check('a rival that has not seen the gate learns nothing of the wall', [A, B].every((x) => x.of('MapState').every((m) => m.walls.every((w) => w.seat !== 3))));
+}
+
 // ---- B builds an army and keeps bows in storage; A forges swords; A scouts B -----------------
 await A.call('MoveWorkers', 'idle', 'blacksmith', 4);
 await A.call('QueueWeapon', 'kilicli', 4);
@@ -124,8 +137,8 @@ const realSpears = realB.units.find((u) => u.id === 'mizrakci').soldiers;
 const report = castlesA.at(-1).scouting.reports.find((r) => r.targetSeat === 2);
 check('A has a report on B', !!report);
 if (report) {
-  check('report has only target, time, soldiers and buildings',
-    JSON.stringify(Object.keys(report).sort()) === JSON.stringify(['buildings', 'deliveredAt', 'observedAt', 'soldiers', 'targetColor', 'targetName', 'targetSeat']));
+  check('report has only target, time, soldiers, buildings and the wall level',
+    JSON.stringify(Object.keys(report).sort()) === JSON.stringify(['buildings', 'deliveredAt', 'observedAt', 'soldiers', 'targetColor', 'targetName', 'targetSeat', 'wallLevel']) && report.wallLevel === 1);
   check('report soldiers have only id, name and count',
     report.soldiers.every((s) => JSON.stringify(Object.keys(s).sort()) === '["count","name","unitId"]'));
   const seen = report.soldiers.find((s) => s.unitId === 'mizrakci').count;

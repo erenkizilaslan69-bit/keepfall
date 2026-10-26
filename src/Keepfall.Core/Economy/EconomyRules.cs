@@ -29,6 +29,22 @@ public sealed record WarRules(
     double FallLootShare = 0,
     double FallWorkerShare = 0);
 
+/// <summary>What it takes to raise the wall to a level: the wall's hit points at that level and the wood, iron and seconds of the upgrade.</summary>
+public sealed record WallLevelRules(double Hp, double UpgradeWood, double UpgradeIron, double UpgradeSeconds);
+
+/// <summary>
+/// The wall round the castle ("Binalar" sheet, Sur): level 1 has <see cref="Level1Hp"/> (war.castleHp) and exists from the start; the upgrades are levels 2, 3…
+/// The wall's hit points are what a siege has to bring down. <see cref="ArcherDefenseBonus"/>: the archers defending the gate shoot this much harder
+/// (0.25 = +25 %) while the wall stands.
+/// </summary>
+public sealed record WallRules(double Level1Hp, IReadOnlyList<WallLevelRules> Upgrades, double ArcherDefenseBonus = 0)
+{
+    public int MaxLevel => 1 + Upgrades.Count;
+    public double HpOf(int level) => level <= 1 ? Level1Hp : Upgrades[Math.Min(level, MaxLevel) - 2].Hp;
+    /// <summary>The cost of raising the wall to <paramref name="level"/> (2 or more).</summary>
+    public WallLevelRules UpgradeTo(int level) => Upgrades[level - 2];
+}
+
 /// <summary>Scout reports ("Maç" sheet): how wrong the soldier counts are. How long a mission takes depends on the map.</summary>
 /// <param name="MaxScouts">Most scouts one player can have out at once (a spy, a tour of a quarter and a chest run all count).</param>
 /// <param name="MaxCargo">An envoy carries at most this many goods in all (food, wood, iron and gold together).</param>

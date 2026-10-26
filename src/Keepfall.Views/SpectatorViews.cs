@@ -13,7 +13,7 @@ namespace Keepfall.Views;
 /// <summary>One castle as a spectator sees it: what its owner would see of the inside (buildings, workers, soldiers) and its walls.</summary>
 public sealed record SpectatorCastleView(
     int Seat, bool Eliminated, double WallHp, double MaxWallHp,
-    IReadOnlyList<BuildingView> Buildings, IReadOnlyList<JobView> Jobs, IReadOnlyList<UnitView> Units);
+    IReadOnlyList<BuildingView> Buildings, IReadOnlyList<JobView> Jobs, IReadOnlyList<UnitView> Units, int WallLevel = 1);
 
 /// <param name="ElapsedSeconds">The game time this picture is of (the live game, or match.spectatorDelaySeconds behind it).</param>
 /// <param name="Movers">Every army and scout; they carry no route, like what a player sees of others.</param>
@@ -38,7 +38,7 @@ public static class SpectatorMapper
         {
             if (game.CastleOf(p.CastleKey) is not { } c) continue;
             castles.Add(new SpectatorCastleView(p.Seat, game.IsEliminated(p.CastleKey), c.WallHp, c.MaxWallHp,
-                ViewMapper.BuildingsOf(c), ViewMapper.JobsOf(c), ViewMapper.UnitsOf(c)));
+                ViewMapper.BuildingsOf(c), ViewMapper.JobsOf(c), ViewMapper.UnitsOf(c), c.WallLevel));
         }
         var movers = game.AllMovers().Select(s =>
         {

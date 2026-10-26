@@ -22,6 +22,7 @@ public sealed class BalanceConfig
     public ForestConfig Forest { get; set; } = new();
     public BotsConfig Bots { get; set; } = new();
     public EnvoyConfig Envoy { get; set; } = new();
+    public WallsConfig Walls { get; set; } = new();
     /// <summary>Gold price of hiring one soldier of each unit type (by unit id).</summary>
     public Dictionary<string, double> Mercenary { get; set; } = [];
     public List<UnitConfig> Units { get; set; } = [];
@@ -190,6 +191,21 @@ public sealed class WarConfig
     public double FallLootShare { get; set; }
     /// <summary>The share of a fallen castle's surviving workers who join its conqueror.</summary>
     public double FallWorkerShare { get; set; }
+}
+
+public sealed class WallsConfig
+{
+    public double ArcherDefenseBonus { get; set; }
+    /// <summary>The upgrades: level 2, level 3… (level 1 is war.castleHp).</summary>
+    public List<WallLevelConfig> Levels { get; set; } = [];
+}
+
+public sealed class WallLevelConfig
+{
+    public double Hp { get; set; }
+    public double UpgradeWood { get; set; }
+    public double UpgradeIron { get; set; }
+    public double UpgradeSeconds { get; set; }
 }
 
 public sealed class EnvoyConfig
@@ -394,6 +410,15 @@ public static class BalanceConfigLoader
         if (mp.Vision.Castle < 0 || mp.Vision.Army < 0 || mp.Vision.Scout < 0) errors.Add("map.vision: görüş yarıçapları negatif olamaz.");
         if (sc.ReportError < 0 || sc.ReportError >= 1) errors.Add("scouting.reportError 0 ile 1 arasında olmalı.");
         if (sc.MaxScouts < 1) errors.Add("scouting.maxScouts en az 1 olmalı.");
+        if (config.Walls.ArcherDefenseBonus < 0) errors.Add("walls.archerDefenseBonus negatif olamaz.");
+        double previousHp = w.CastleHp;
+        for (int i = 0; i < config.Walls.Levels.Count; i++)
+        {
+            var l = config.Walls.Levels[i];
+            if (l.Hp <= previousHp) errors.Add($"walls.levels[{i}].hp bir önceki seviyeden büyük olmalı.");
+            if (l.UpgradeWood < 0 || l.UpgradeIron < 0 || l.UpgradeSeconds < 0) errors.Add($"walls.levels[{i}]: maliyet ve süre negatif olamaz.");
+            previousHp = l.Hp;
+        }
         if (config.Envoy.MaxCargo < 0) errors.Add("envoy.maxCargo negatif olamaz.");
         if (config.Envoy.MaxMessageLength is < 0 or > 500) errors.Add("envoy.maxMessageLength 0 ile 500 arasında olmalı.");
         if (sc.NoScoutLastPrepSeconds < 0) errors.Add("scouting.noScoutLastPrepSeconds negatif olamaz.");
@@ -494,7 +519,8 @@ public static class BalanceConfigLoader
                 config.Bots.AttackMargin, config.Bots.AttackRate, config.Bots.OtherQuartersFrom,
                 config.Bots.StaleReportSeconds, config.Bots.BlindMargin, config.Bots.BlindRivalShare, config.Bots.BlindAfterWarSeconds,
                 config.Bots.Hard is null ? null : BotLevel(config.Bots.Hard, true), config.Bots.GiftThreshold, config.Bots.GiftPeaceSeconds),
-            new EnvoyRules(config.Envoy.MaxCargo, config.Envoy.MaxMessageLength, config.Envoy.ProfanityFilter));
+            new EnvoyRules(config.Envoy.MaxCargo, config.Envoy.MaxMessageLength, config.Envoy.ProfanityFilter),
+            new WallRules(w.CastleHp, config.Walls.Levels.Select(l => new WallLevelRules(l.Hp, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList(), config.Walls.ArcherDefenseBonus));
     }
 
     private static BotLevelRules BotLevel(BotLevelConfig c, bool good) => new(c.ThinkMin, c.ThinkMax, c.ReactMin, c.ReactMax, c.Commands, c.Mistake, c.Slack, c.EcoMistake < 0 ? c.Mistake : c.EcoMistake,

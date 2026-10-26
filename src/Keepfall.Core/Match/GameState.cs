@@ -225,6 +225,21 @@ public sealed class GameState
         return seen;
     }
 
+    /// <summary>
+    /// The wall level of every other castle whose gate is inside this player's vision right now (their castle, an army or a scout of theirs is there).
+    /// A wall is a thing you can see from outside; what is inside the walls still needs a scout's report.
+    /// </summary>
+    public IReadOnlyList<(string Castle, int Level)> WallsSeenBy(string playerKey)
+    {
+        var vision = VisionOf(playerKey);
+        if (vision.Count == 0) return [];
+        var seen = new List<(string, int)>();
+        foreach (var (other, corner) in _corners)
+            if (other != playerKey && _players.ContainsKey(other) && vision.Any(c => c.Contains(Map.RegionOf(corner).Gate)))
+                seen.Add((other, _players[other].Castle.WallLevel));
+        return seen;
+    }
+
     /// <summary>Battles being fought right now that this player is part of (a fallen castle keeps watching its own).</summary>
     public IReadOnlyList<ActiveBattle> ActiveBattlesOf(string playerKey) => _active.Where(b => b.Involves(playerKey)).ToList();
 
@@ -646,7 +661,7 @@ public sealed class GameState
             return new ScoutedUnit(u.Id, u.Name, seen);
         }).ToList();
         var levels = Jobs.Buildings.ToDictionary(b => b, b => castle.Building(b).Level);
-        return new ScoutReport(target, now, now, soldiers, levels);
+        return new ScoutReport(target, now, now, soldiers, levels, castle.WallLevel);
     }
 
     // ---- war ---------------------------------------------------------------------------------
@@ -933,7 +948,9 @@ public sealed class GameState
         var battle = new ActiveBattle(_nextId++, NewPublicId(), BattleKind.Siege, Map.RegionOf(_corners[a.Target]).Gate,
             a.Out.Direction, ElapsedSeconds, a, null, a.Target);
 
-        var defendSetup = new ArmySetup("Savunan") { Targeting = castle.DefensePriority is { } d ? TargetPriority.Prefer(d) : TargetPriority.Front };
+        // While the wall stands the archers at the gate shoot from behind it.
+        var defendSetup = new ArmySetup("Savunan") { Targeting = castle.DefensePriority is { } d ? TargetPriority.Prefer(d) : TargetPriority.Front,
+            RangedDamageFactor = castle.WallHp > 1e-9 ? 1 + Rules.Walls.ArcherDefenseBonus : 1 };
         foreach (var (type, n) in defenders) defendSetup.Add(type, n);
         foreach (var (type, row) in castle.DefenseRows) defendSetup.PlaceIn(type, row);
         Fight(battle, defendSetup, defenders);

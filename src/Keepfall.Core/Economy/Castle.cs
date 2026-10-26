@@ -74,7 +74,7 @@ public sealed class Castle
         Wood = m.StartingWood;
         Iron = m.StartingIron;
         foreach (var u in rules.Units) { _weapons[u] = 0; _soldiers[u] = 0; _mercenaries[u] = 0; _away[u] = 0; }
-        WallHp = MaxWallHp = rules.War.CastleHp;
+        WallHp = MaxWallHp = rules.Walls.HpOf(1);
         Stats.PeakPopulation = Population;
     }
 
@@ -89,7 +89,12 @@ public sealed class Castle
     public CastleStats Stats { get; } = new();
 
     public double WallHp { get; private set; }
-    public double MaxWallHp { get; }
+    public double MaxWallHp { get; private set; }
+    /// <summary>The wall's level (1 from the start); a higher one has more hit points.</summary>
+    public int WallLevel { get; private set; } = 1;
+    /// <summary>Seconds left of the wall upgrade under way (null: none).</summary>
+    public double? WallUpgradeRemaining { get; private set; }
+    public double WallUpgradeTotal { get; private set; }
     /// <summary>Food production factor set by the match (famine late in the war); 1 otherwise.</summary>
     public double FoodFactor { get; internal set; } = 1;
     /// <summary>Soldiers marching with an army: they count and eat like soldiers, but do not defend.</summary>
@@ -342,6 +347,13 @@ public sealed class Castle
             _arming.RemoveAt(i);
         }
 
+        if (WallUpgradeRemaining is { } wallLeft)
+        {
+            wallLeft -= dt;
+            if (wallLeft <= 1e-9) FinishWallUpgrade();
+            else WallUpgradeRemaining = wallLeft;
+        }
+
         foreach (var b in _buildings.Values)
         {
             if (b.UpgradeRemaining is not { } left) continue;
@@ -393,6 +405,7 @@ public sealed class Castle
         ArmWorkers c => Arm(c),
         DisarmSoldiers c => Disarm(c),
         UpgradeBuilding c => Upgrade(c),
+        UpgradeWall => UpgradeWallCommand(),
         SetGrowth c => ToggleGrowth(c),
         SetDefense c => SetDefense_(c),
         HireMercenary c => Hire(c),
@@ -459,6 +472,30 @@ public sealed class Castle
         _soldiers[type] -= c.Count;
         _weapons[type] += c.Count;
         _workers[Job.Idle] += c.Count;
+        return CommandResult.Success;
+    }
+
+    /// <summary>The next wall level is built: more hit points, and the difference is added to what the wall has left.</summary>
+    private void FinishWallUpgrade()
+    {
+        WallLevel++;
+        WallUpgradeRemaining = null;
+        double max = _rules.Walls.HpOf(WallLevel);
+        WallHp += max - MaxWallHp;
+        MaxWallHp = max;
+    }
+
+    private CommandResult UpgradeWallCommand()
+    {
+        if (WallUpgradeRemaining is not null) return CommandResult.Fail("Sur zaten yükseltiliyor.");
+        if (WallLevel >= _rules.Walls.MaxLevel) return CommandResult.Fail("Sur en üst seviyede.");
+        if (WallHp <= 1e-9) return CommandResult.Fail("Sur yıkıldı.");
+        var next = _rules.Walls.UpgradeTo(WallLevel + 1);
+        if (!CanAfford(next.UpgradeWood, next.UpgradeIron, 0))
+            return CommandResult.Fail($"Sur yükseltmesi için {next.UpgradeWood:0} odun ve {next.UpgradeIron:0} demir gerekiyor.");
+        Pay(next.UpgradeWood, next.UpgradeIron, 0);
+        if (next.UpgradeSeconds <= 0) { WallUpgradeRemaining = 0; FinishWallUpgrade(); }
+        else { WallUpgradeRemaining = next.UpgradeSeconds; WallUpgradeTotal = next.UpgradeSeconds; }
         return CommandResult.Success;
     }
 

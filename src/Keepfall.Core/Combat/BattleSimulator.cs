@@ -76,7 +76,8 @@ public sealed class BattleSimulator
                         target = soldier.Target = ChooseTarget(soldier, enemies, aim, candidates, rng);
                     if (target is null) { soldier.Cooldown = 0; continue; }
 
-                    double damage = soldier.Type.Damage * _rules.Counters.Get(soldier.Type, target.Type);
+                    double damage = soldier.Type.Damage * _rules.Counters.Get(soldier.Type, target.Type)
+                        * (soldier.Type.Range == AttackRange.Ranged ? setups[s].RangedDamageFactor : 1);
                     target.PendingDamage += damage;
                     soldier.DamageDealt += damage;
                     record?.Hit(tick, soldier.Index, target.Index);

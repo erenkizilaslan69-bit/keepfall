@@ -50,7 +50,11 @@ public sealed record SiteView(
 
 public sealed record MapStateView(
     double ElapsedSeconds, IReadOnlyList<VisionView> Vision, IReadOnlyList<OwnMoverView> Own, IReadOnlyList<SeenMoverView> Seen,
-    IReadOnlyList<BattleMarkerView> Battles, IReadOnlyList<TrailView> Trail, IReadOnlyList<SiteView> Sites);
+    IReadOnlyList<BattleMarkerView> Battles, IReadOnlyList<TrailView> Trail, IReadOnlyList<SiteView> Sites,
+    IReadOnlyList<WallSeenView>? Walls = null);
+
+/// <summary>The wall of a rival's castle the player can see from where their army, scout or castle stands (a physical thing: what it looks like is no secret to whoever sees it).</summary>
+public sealed record WallSeenView(int Seat, int Level);
 
 // A battle, for the two sides fighting it and nobody else: both armies soldier by soldier and the whole
 // record (hits [tick, attacker, target], deaths [tick, soldier], advances [tick, soldier]; soldiers are
@@ -110,7 +114,8 @@ public static class MapViewMapper
             game.TrailOf(key).Select(t => new TrailView(VecView.Of(t.Center), t.Radius, t.Fade)).ToList(),
             game.KnownSitesOf(key).Select(k => new SiteView(k.Site.Id, k.Site.Kind, VecView.Of(k.Site.Position),
                 k.Site.Spur.Select(VecView.Of).ToList(), k.Site.Quadrant, k.Gone, Units(k.BanditsSeen), k.DiscoveredAt, k.SeenAt,
-                k.Site.Kind == SiteKind.Village ? game.Rules.Forest.Village.MinSoldiers : 0)).ToList());
+                k.Site.Kind == SiteKind.Village ? game.Rules.Forest.Village.MinSoldiers : 0)).ToList(),
+            game.WallsSeenBy(key).Select(w => new WallSeenView(SeatOf(w.Castle), w.Level)).ToList());
     }
 
     /// <summary>More hits than this and only the deaths are sent (the client then animates attacks loosely).</summary>

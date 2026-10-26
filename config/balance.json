@@ -165,6 +165,17 @@
     "noScoutLastPrepSeconds": 60
   },
 
+  // Sur (Excel "Binalar" sekmesi, Sur): kale canı = sur canı. Sv1 canı war.castleHp (500), başlangıçta var. Aşağıdakiler yükseltmeler (Sv2, Sv3):
+  // can, maliyet (odun, demir) ve süre (sn). Yükseltme bitince can kadar fark (yeni can − eski can) mevcut cana eklenir.
+  // archerDefenseBonus: sur ayaktayken kapıyı savunan okçular bu kadar fazla hasar verir (0,25 = +%25).
+  "walls": {
+    "archerDefenseBonus": 0.25,
+    "levels": [
+      { "hp": 1000, "upgradeWood": 40, "upgradeIron": 20, "upgradeSeconds": 90 },
+      { "hp": 1800, "upgradeWood": 80, "upgradeIron": 50, "upgradeSeconds": 120 }
+    ]
+  },
+
   // Ulak: bir rakip kaleye yemek, odun, demir, altın ve/veya kısa bir mesaj taşır. Gözcüyle aynı hakkı (maxScouts) ve hızı kullanır, bilgi toplamaz,
   // yakalanamaz, hazırlık sonu gözcü yasağına tabi değildir. Yük gönderilirken kasadan düşer, varınca alıcıya girer.
   "envoy": {
