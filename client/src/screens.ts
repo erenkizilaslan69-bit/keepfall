@@ -24,6 +24,20 @@ const avatar = (seat: number) =>
 
 // ---- home ----------------------------------------------------------------------------------
 
+/** The Keepfall logo: a little castle with a flag over the name (drawn with CSS and SVG, no image file). */
+export const logoHtml = (): string => `
+  <div class="kf-logo" role="img" aria-label="Keepfall">
+    <svg class="kf-logo-crest" viewBox="0 0 64 60" aria-hidden="true">
+      <path d="M31 3h19l-4.5 6.5L50 16H31z" fill="#c0392b" stroke="#2c1a0c" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M31 2v24" stroke="#2c1a0c" stroke-width="3.2" stroke-linecap="round"/>
+      <path d="M9 57V26h8v-5.5h6V26h18v-5.5h6V26h8v31z" fill="#8795b5" stroke="#2c1a0c" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M9 57V45h46v12z" fill="#6f7d9f"/>
+      <path d="M26 57V43a6 6 0 0 1 12 0v14z" fill="#4b2e17" stroke="#2c1a0c" stroke-width="2.6" stroke-linejoin="round"/>
+      <rect x="13.5" y="31" width="4.5" height="8" rx="1" fill="#2c1a0c"/><rect x="46" y="31" width="4.5" height="8" rx="1" fill="#2c1a0c"/>
+    </svg>
+    <div class="kf-logo-word"><span class="keep" data-t="Keep">Keep</span><span class="fall" data-t="fall">fall</span></div>
+  </div>`;
+
 export class HomeScreen {
   constructor(
     parent: HTMLElement,
@@ -32,9 +46,8 @@ export class HomeScreen {
   ) {
     const root = mount(parent, `
       <div class="screen menu paper home">
-        <img class="hero" src="${ART}Buildings/Blue%20Buildings/Castle.png" alt="" onerror="this.remove()">
-        <div class="title-ribbon ribbon ribbon-blue">Keepfall</div>
-        <p class="muted center">2–4 kişilik kale savunma ve fetih oyunu</p>
+        ${logoHtml()}
+        <p class="muted center kf-logo-sub">2–4 kişilik kale savunma ve fetih oyunu</p>
         <label class="field">Adın <input id="name" maxlength="16" autocomplete="nickname" value="${esc(defaults.name)}" placeholder="Oyuncu"></label>
         <button id="create" class="btn wide">Oda kur</button>
         <div class="or">ya da</div>
@@ -70,6 +83,7 @@ export class LobbyScreen {
     const link = `${location.origin}/oda/${room.code}`;
     const root = this.root = mount(parent, `
       <div class="screen menu paper lobby">
+        ${logoHtml()}
         <div class="title-ribbon ribbon ribbon-blue">Oda <span class="code">${esc(room.code)}</span></div>
         <div class="share">
           <input readonly value="${esc(link)}" aria-label="Oda linki">
