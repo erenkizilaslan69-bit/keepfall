@@ -212,6 +212,14 @@ export class GameUi {
     }
     this.scoutsSeen = new Set(reports.map(scoutKey));
 
+    // An envoy left something at our castle: a decree opens (the letter is ours alone), and a sound.
+    const letters = s.letters ?? [];
+    if (this.lettersSeen) {
+      const fresh = letters.filter((l) => !this.lettersSeen!.has(l.id));
+      if (fresh.length) { sfx.play('scoutBack'); this.reports.showLetter(fresh[fresh.length - 1]); }
+    }
+    this.lettersSeen = new Set(letters.map((l) => l.id));
+
     // Gold that came home, and a quarter of the forest that has been toured.
     const gold = s.resources.gold;
     if (this.lastGold !== null && gold > this.lastGold + 1e-6) this.notes.push(`+${Math.round(gold - this.lastGold)} altın kasaya girdi`, 'info', 5000);
@@ -325,6 +333,8 @@ export class GameUi {
     const show = !!this.room?.allHumansOut && host && !this.finishDismissed && (this.spectating || this.wait.classList.contains('hidden'));
     this.finish.classList.toggle('hidden', !show);
   }
+
+  private lettersSeen: Set<number> | null = null;
 
   /** Something that happened to us (a server notification). */
   notify(text: string): void {

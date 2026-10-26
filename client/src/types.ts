@@ -148,7 +148,7 @@ export interface JoinView { ok: boolean; error: string | null; code: string | nu
 // Scouting: a report is all we ever learn about another castle.
 /** scoutSeconds / marchSeconds: one way along the roads to that castle. */
 export interface ScoutTargetView { seat: number; name: string; color: PlayerColor; busy: boolean; scoutSeconds: number; marchSeconds: number }
-export type MissionKind = 'spy' | 'explore' | 'chest';
+export type MissionKind = 'spy' | 'explore' | 'chest' | 'envoy';
 /** `quarter`: for a forest tour; `siteId`: for a chest. */
 export interface ScoutMissionView {
   targetSeat: number; progress: number; arrived: boolean; remainingSeconds: number;
@@ -205,6 +205,14 @@ export interface CastleView {
   summary: SummaryView | null;
   /** Seconds it takes to turn a worker into a soldier (0 = at once). */
   armSeconds: number;
+  /** What envoys left at our castle (newest last). Plain text only: show the message with textContent. */
+  letters: LetterView[];
+  envoy: { maxCargo: number; maxMessageLength: number };
+}
+
+export interface LetterView {
+  id: number; fromSeat: number; fromName: string; fromColor: PlayerColor; at: number;
+  food: number; wood: number; iron: number; gold: number; message: string | null;
 }
 
 export interface CommandResult { ok: boolean; error: string | null }
@@ -218,7 +226,7 @@ export interface FeatureView { id: string; kind: 'forest'; center: Vec; radius: 
 /** Public and the same for everyone: terrain, roads and whose castle is in which corner. */
 export interface MapLayoutView { size: number; regions: RegionView[]; roads: RoadView[]; features: FeatureView[] }
 
-export type MoverKind = 'army' | 'scout';
+export type MoverKind = 'army' | 'scout' | 'envoy';
 export interface MoverUnit { unitId: string; name: string; count: number }
 export interface VisionView { center: Vec; radius: number }
 /** Ground one of our scouts walked over that is still in view; `fade` goes 1 → 0 as it closes. */

@@ -34,6 +34,18 @@ export class EnemyWin extends Win {
       <div class="row sub"><span data-f="scout-info"></span></div>
       <div class="gbar hidden" data-f="scout-bar"><div class="fill"></div></div>
       <div data-f="report"></div>
+      <h4>Ulak</h4>
+      <p class="muted-ink small">Ulak yük ve mesaj taşır; bilgi toplamaz, yakalanamaz. Yükü ve mesajı yalnız sen ve alıcı görür. Gözcüyle aynı hakkı kullanır.</p>
+      <div class="envoy-goods">
+        <label><i class="ico ico-meat"></i><input type="number" min="0" value="0" data-env="food" aria-label="Yemek"><small data-f="env-have-food"></small></label>
+        <label><i class="ico ico-wood"></i><input type="number" min="0" value="0" data-env="wood" aria-label="Odun"><small data-f="env-have-wood"></small></label>
+        <label><i class="ico ico-iron"></i><input type="number" min="0" value="0" data-env="iron" aria-label="Demir"><small data-f="env-have-iron"></small></label>
+        <label><i class="ico ico-coin"></i><input type="number" min="0" value="0" data-env="gold" aria-label="Altın"><small data-f="env-have-gold"></small></label>
+      </div>
+      <textarea class="envoy-text" data-f="env-text" rows="2" placeholder="Mesaj (isteğe bağlı)" aria-label="Ulak mesajı"></textarea>
+      <div class="row"><small class="muted-ink" data-f="env-total"></small>
+        <button class="btn" data-act="envoy">Ulak gönder</button></div>
+      <div class="row sub"><span data-f="env-info"></span></div>
       <h4>Saldır</h4>
       <p class="muted-ink small hidden" data-f="locked"></p>
       <div data-f="attack">
@@ -50,7 +62,7 @@ export class EnemyWin extends Win {
           <button class="btn btn-red" data-act="send">Saldır</button></div>
       </div>`;
     this.body.addEventListener('click', (e) => void this.click(e));
-    this.body.addEventListener('input', () => this.refreshSend());
+    this.body.addEventListener('input', () => { this.refreshSend(); if (this.last) this.updateEnvoy(this.last.castle, !!this.player(this.last.room)?.eliminated); });
     this.last = { castle: s, room };
     this.update({ castle: s, room });
   }
@@ -83,7 +95,7 @@ export class EnemyWin extends Win {
       const text = `${j.name} (${j.count})`;
       if (opt.textContent !== text) opt.textContent = text;
     }
-    const mission = s.scouting.missions.find((m) => m.targetSeat === this.seat);
+    const mission = s.scouting.missions.find((m) => m.kind === 'spy' && m.targetSeat === this.seat);
     const send = this.q<HTMLButtonElement>('[data-act="scout"]');
     scoutButton(send, 'Gözcü gönder', s, !t || out || s.eliminated, !!t?.busy);
     const bar = this.q('[data-f="scout-bar"]');
@@ -93,6 +105,7 @@ export class EnemyWin extends Win {
       ? (mission.arrived ? `Gözcü gözetledi, dönüyor · ${Math.ceil(mission.remainingSeconds)} sn` : `Gözcü yolda · ${Math.ceil(mission.remainingSeconds)} sn`)
       : t ? `Gidiş-dönüş ${Math.ceil(2 * t.scoutSeconds)} sn` : '';
     this.renderReport(s.scouting.reports.find((r) => r.targetSeat === this.seat), s.elapsedSeconds);
+    this.updateEnvoy(s, out);
 
     // attack
     const preparing = s.phase === 'preparation';
@@ -109,6 +122,33 @@ export class EnemyWin extends Win {
       if (Number(input.value) > u.soldiers) input.value = String(u.soldiers);
     }
     this.refreshSend();
+  }
+
+  /** The load an envoy may carry: what the stores hold, and no more than the envoy can take in all. */
+  private updateEnvoy(s: CastleView, out: boolean): void {
+    const goods = ['food', 'wood', 'iron', 'gold'] as const;
+    const left = s.envoy.maxCargo;
+    let total = 0;
+    for (const g of goods) {
+      const input = this.q<HTMLInputElement>(`[data-env="${g}"]`);
+      const have = Math.floor(s.resources[g]);
+      this.q(`[data-f="env-have-${g}"]`).textContent = `/ ${have}`;
+      input.max = String(Math.min(have, left));
+      if (Number(input.value) > Number(input.max)) input.value = input.max;
+      total += Number(input.value) || 0;
+    }
+    const text = this.q<HTMLTextAreaElement>('[data-f="env-text"]');
+    text.maxLength = s.envoy.maxMessageLength;
+    const message = text.value.trim();
+    const mission = s.scouting.missions.find((m) => m.kind === 'envoy' && m.targetSeat === this.seat);
+    const busy = s.scouting.missions.length >= s.scouting.maxScouts;
+    this.q('[data-f="env-total"]').textContent = `Yük ${total} / ${s.envoy.maxCargo} · mesaj ${message.length} / ${s.envoy.maxMessageLength}`;
+    const button = this.q<HTMLButtonElement>('[data-act="envoy"]');
+    const label = busy && !mission ? `${s.scouting.missions.some((m) => m.kind === 'envoy') ? 'Ulak' : 'Gözcü'} dönüyor · ${Math.ceil(Math.min(...s.scouting.missions.map((m) => m.remainingSeconds)))} sn` : 'Ulak gönder';
+    if (button.textContent !== label) button.textContent = label;
+    button.disabled = busy || out || s.eliminated || (total === 0 && message === '') || total > s.envoy.maxCargo;
+    this.q('[data-f="env-info"]').textContent = mission
+      ? (mission.arrived ? `Ulak yükünü bıraktı, dönüyor · ${Math.ceil(mission.remainingSeconds)} sn` : `Ulak yolda · ${Math.ceil(mission.remainingSeconds)} sn`) : '';
   }
 
   private refreshSend(): void {
@@ -157,6 +197,17 @@ export class EnemyWin extends Win {
     if (btn.dataset.act === 'scout') {
       const r = await net.sendScout(this.seat, this.q<HTMLSelectElement>('[data-f="source"]').value as Job);
       if (!r.ok) this.ctx.say(r.error ?? 'Gözcü gönderilemedi.');
+      return;
+    }
+    if (btn.dataset.act === 'envoy') {
+      const n = (g: string) => Math.max(0, Math.floor(Number(this.q<HTMLInputElement>(`[data-env="${g}"]`).value) || 0));
+      const textBox = this.q<HTMLTextAreaElement>('[data-f="env-text"]');
+      const r = await net.sendEnvoy(this.seat, n('food'), n('wood'), n('iron'), n('gold'), textBox.value.trim(), this.q<HTMLSelectElement>('[data-f="source"]').value as Job);
+      if (!r.ok) { this.ctx.say(r.error ?? 'Ulak gönderilemedi.'); return; }
+      for (const i of this.body.querySelectorAll<HTMLInputElement>('[data-env]')) i.value = '0';
+      textBox.value = '';
+      this.ctx.info('Ulak yola çıktı.');
+      this.updateEnvoy(s, false);
       return;
     }
     const units: Record<string, number> = {};

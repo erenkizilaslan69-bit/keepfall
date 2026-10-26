@@ -1,5 +1,5 @@
-import { botMark, esc } from '../format';
-import type { BattleReportView, ScoutReportView } from '../types';
+import { COLOR_CSS, botMark, esc } from '../format';
+import type { BattleReportView, LetterView, ScoutReportView } from '../types';
 import { dot, reportHtml, resultWord } from './report-html';
 import { scoutReportHtml } from './scout-report';
 
@@ -66,6 +66,62 @@ export class ReportTags {
   /** A scout's report in the middle of the screen (from the top bar, or from the "scout is back" ribbon). */
   showScout(r: ScoutReportView): void {
     this.open(scoutReportHtml(r, this.now));
+  }
+
+  /**
+   * What an envoy left at our castle, as a decree: who from, the goods and the message. Built with DOM nodes and textContent
+   * so the message (written by another player) is always shown as plain text, never as markup.
+   */
+  showLetter(l: LetterView): void {
+    const win = document.createElement('div');
+    win.className = 'win paper-dark report-win letter-win';
+    const close = document.createElement('button');
+    close.className = 'btn-round btn-red win-close';
+    close.dataset.close = '';
+    close.title = 'Kapat (Esc)';
+    close.innerHTML = '<i class="ico ico-close"></i>';
+    const title = document.createElement('div');
+    title.className = 'rep-title ribbon ribbon-yellow';
+    title.textContent = 'Ulak geldi';
+    const from = document.createElement('p');
+    from.className = 'letter-from';
+    const dotEl = document.createElement('i');
+    dotEl.className = 'dot';
+    dotEl.style.background = COLOR_CSS[l.fromColor] ?? '#888';
+    const who = document.createElement('b');
+    who.textContent = l.fromName;
+    from.append('Kimden: ', dotEl, ' ', who);
+    const goods = document.createElement('div');
+    goods.className = 'letter-goods';
+    const parts: [string, number][] = [['ico-meat', l.food], ['ico-wood', l.wood], ['ico-iron', l.iron], ['ico-coin', l.gold]];
+    for (const [icon, n] of parts) {
+      if (n <= 0) continue;
+      const span = document.createElement('span');
+      span.className = 'cost';
+      span.innerHTML = `<i class="ico ${icon}"></i>`;
+      const num = document.createElement('b');
+      num.textContent = String(n);
+      span.append(num);
+      goods.append(span);
+    }
+    if (!goods.children.length) goods.textContent = 'Yük yok, yalnız mesaj.';
+    win.append(close, title, from, goods);
+    if (l.message) {
+      const quote = document.createElement('blockquote');
+      quote.className = 'letter-text';
+      quote.textContent = l.message; // plain text, whatever it contains
+      win.append(quote);
+    }
+    const foot = document.createElement('div');
+    foot.className = 'win-foot';
+    const ok = document.createElement('button');
+    ok.className = 'btn';
+    ok.dataset.close = '';
+    ok.textContent = 'Tamam';
+    foot.append(ok);
+    win.append(foot);
+    this.modal.replaceChildren(win);
+    this.modal.classList.remove('hidden');
   }
 
   private open(content: string): void {

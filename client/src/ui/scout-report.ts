@@ -19,7 +19,8 @@ export function scoutButton(button: HTMLButtonElement, label: string, s: CastleV
   const away = s.scouting.missions;
   const busy = away.length >= s.scouting.maxScouts;
   const locked = s.scouting.locked && !blocked;
-  const text = locked ? 'Savaş başlayınca gönderilebilir' : busy && !blocked ? `Gözcü dönüyor · ${Math.ceil(Math.min(...away.map((m) => m.remainingSeconds)))} sn` : label;
+  const who = away.some((m) => m.kind === 'envoy') ? 'Ulak' : 'Gözcü';
+  const text = locked ? 'Savaş başlayınca gönderilebilir' : busy && !blocked ? `${who} dönüyor · ${Math.ceil(Math.min(...away.map((m) => m.remainingSeconds)))} sn` : label;
   if (button.textContent !== text) button.textContent = text;
   button.disabled = blocked || busy || taken || s.scouting.locked;
 }

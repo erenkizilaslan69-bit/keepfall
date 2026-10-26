@@ -31,7 +31,10 @@ const MAX_AHEAD_TICKS = 1.5;
 interface Track {
   key: string;
   color: PlayerColor;
+  /** A scout or an envoy (one walker, no soldiers). */
   scout: boolean;
+  /** An envoy: marked with a letter sign; nobody can tell whose it is. */
+  envoy: boolean;
   units: MoverUnit[];
   // From the latest tick:
   position: Vec;
@@ -71,7 +74,7 @@ export class Movers {
     const now = performance.now();
     const alive = new Set<string>();
     for (const o of state.own) {
-      const t = this.track(`own:${o.id}`, this.ownColor, o.kind === 'scout', o.units, o.position);
+      const t = this.track(`own:${o.id}`, this.ownColor, o.kind !== 'army', o.units, o.position, o.kind === 'envoy');
       t.position = o.position;
       t.velocity = o.velocity;
       if (o.route.length === 0) o.route = [o.position]; // a road always has at least where the army stands
@@ -85,7 +88,7 @@ export class Movers {
       t.speed = o.speed;
       t.vision = o.visionRadius;
       t.fighting = o.fighting;
-      t.select = o.kind === 'scout'
+      t.select = o.kind === 'envoy' ? null : o.kind === 'scout'
         ? { kind: 'scout', id: o.missionKind === 'explore' ? `q:${o.quarter}` : o.missionKind === 'chest' ? `c:${o.siteId}` : String(o.targetSeat) }
         : { kind: 'army', id: o.id };
       if (!t.zone) {
@@ -97,7 +100,8 @@ export class Movers {
       alive.add(t.key);
     }
     for (const s of state.seen) {
-      const t = this.track(`seen:${s.id}`, s.ownerColor, s.kind === 'scout', s.units, s.position);
+      // An envoy shows no colour: it is drawn in ours, with the letter sign, and says nothing about whose it is.
+      const t = this.track(`seen:${s.id}`, s.kind === 'envoy' ? this.ownColor : s.ownerColor, s.kind !== 'army', s.units, s.position, s.kind === 'envoy');
       t.position = s.position;
       t.velocity = s.velocity;
       t.route = null;
@@ -166,9 +170,9 @@ export class Movers {
     }
   }
 
-  private track(key: string, color: PlayerColor, scout: boolean, units: MoverUnit[], position: Vec): Track {
+  private track(key: string, color: PlayerColor, scout: boolean, units: MoverUnit[], position: Vec, envoy = false): Track {
     let t = this.tracks.get(key);
-    const signature = scout ? 'scout' : units.map((u) => `${u.unitId}:${u.count}`).join(',');
+    const signature = envoy ? 'envoy' : scout ? 'scout' : units.map((u) => `${u.unitId}:${u.count}`).join(',');
     if (t && t.sprites.map((s) => s.getData('sig'))[0] === signature) return t;
     if (t) { for (const s of t.sprites) s.destroy(); t.zone?.destroy(); }
 
@@ -181,7 +185,7 @@ export class Movers {
       return s;
     });
     const fresh: Track = {
-      key, color, scout, units, position, velocity: { x: 0, y: 0 }, route: null, cumulative: [], travelled: 0, speed: 0, vision: 0, fighting: false,
+      key, color, scout, envoy, units, position, velocity: { x: 0, y: 0 }, route: null, cumulative: [], travelled: 0, speed: 0, vision: 0, fighting: false,
       receivedAt: performance.now(), shown: t?.shown ?? position, heading: t?.heading ?? { x: 1, y: 0 }, sprites,
       select: null, zone: null,
     };
@@ -204,7 +208,8 @@ export class Movers {
     });
     // A sign with the number of soldiers over the column (scouts have none); hidden while the fight is replayed.
     const total = t.units.reduce((n, u) => n + u.count, 0);
-    if (t.scout || t.fighting) this.labels.remove(`army:${t.key}`);
+    if (t.envoy) this.labels.set(`army:${t.key}`, { x: lead.x, y: lead.y - 44, anchor: 'bottom', minZoom: 0.45, cls: 'wl-small', html: '<div class="wl-sign">✉</div>' });
+    else if (t.scout || t.fighting) this.labels.remove(`army:${t.key}`);
     else this.labels.set(`army:${t.key}`, {
       x: lead.x, y: lead.y - 44, anchor: 'bottom', minZoom: 0.45, cls: 'wl-small',
       html: `<div class="wl-sign"><i class="dot" style="background:${COLOR_CSS[t.color] ?? '#888'}"></i><i class="ico ico-sword"></i><b>${total}</b></div>`,
