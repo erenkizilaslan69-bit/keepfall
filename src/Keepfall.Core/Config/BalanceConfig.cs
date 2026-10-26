@@ -21,6 +21,7 @@ public sealed class BalanceConfig
     public CombatConfig Combat { get; set; } = new();
     public ForestConfig Forest { get; set; } = new();
     public BotsConfig Bots { get; set; } = new();
+    public EnvoyConfig Envoy { get; set; } = new();
     /// <summary>Gold price of hiring one soldier of each unit type (by unit id).</summary>
     public Dictionary<string, double> Mercenary { get; set; } = [];
     public List<UnitConfig> Units { get; set; } = [];
@@ -187,6 +188,13 @@ public sealed class WarConfig
     public double FallLootShare { get; set; }
     /// <summary>The share of a fallen castle's surviving workers who join its conqueror.</summary>
     public double FallWorkerShare { get; set; }
+}
+
+public sealed class EnvoyConfig
+{
+    public int MaxCargo { get; set; } = 40;
+    public int MaxMessageLength { get; set; } = 140;
+    public bool ProfanityFilter { get; set; }
 }
 
 public sealed class ScoutingConfig
@@ -383,6 +391,8 @@ public static class BalanceConfigLoader
         if (mp.Vision.Castle < 0 || mp.Vision.Army < 0 || mp.Vision.Scout < 0) errors.Add("map.vision: görüş yarıçapları negatif olamaz.");
         if (sc.ReportError < 0 || sc.ReportError >= 1) errors.Add("scouting.reportError 0 ile 1 arasında olmalı.");
         if (sc.MaxScouts < 1) errors.Add("scouting.maxScouts en az 1 olmalı.");
+        if (config.Envoy.MaxCargo < 0) errors.Add("envoy.maxCargo negatif olamaz.");
+        if (config.Envoy.MaxMessageLength is < 0 or > 500) errors.Add("envoy.maxMessageLength 0 ile 500 arasında olmalı.");
         if (sc.NoScoutLastPrepSeconds < 0) errors.Add("scouting.noScoutLastPrepSeconds negatif olamaz.");
 
         if (config.BuildingLevels.Count == 0) errors.Add("buildingLevels: en az bir seviye tanımlanmalı.");
@@ -480,7 +490,8 @@ public static class BalanceConfigLoader
             new BotRules(BotLevel(config.Bots.Easy, false), BotLevel(config.Bots.Medium, true), config.Bots.Mix, config.Bots.WeaponsFrom, config.Bots.ArmFrom, config.Bots.ArmyShare,
                 config.Bots.AttackMargin, config.Bots.AttackRate, config.Bots.OtherQuartersFrom,
                 config.Bots.StaleReportSeconds, config.Bots.BlindMargin, config.Bots.BlindRivalShare, config.Bots.BlindAfterWarSeconds,
-                config.Bots.Hard is null ? null : BotLevel(config.Bots.Hard, true)));
+                config.Bots.Hard is null ? null : BotLevel(config.Bots.Hard, true)),
+            new EnvoyRules(config.Envoy.MaxCargo, config.Envoy.MaxMessageLength, config.Envoy.ProfanityFilter));
     }
 
     private static BotLevelRules BotLevel(BotLevelConfig c, bool good) => new(c.ThinkMin, c.ThinkMax, c.ReactMin, c.ReactMax, c.Commands, c.Mistake, c.Slack, c.EcoMistake < 0 ? c.Mistake : c.EcoMistake,

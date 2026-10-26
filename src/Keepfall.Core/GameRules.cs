@@ -18,8 +18,9 @@ public sealed class GameRules
 {
     public GameRules(IReadOnlyList<UnitType> units, CounterMatrix counters, CombatSettings combat, ProductionRates production,
         MatchRules match, EconomyRules economy, ScoutingRules scouting, WarRules war, MapRules map,
-        IReadOnlyDictionary<string, double>? mercenaryPrices = null, ForestRules? forest = null, BotRules? bots = null)
+        IReadOnlyDictionary<string, double>? mercenaryPrices = null, ForestRules? forest = null, BotRules? bots = null, EnvoyRules? envoy = null)
     {
+        Envoy = envoy ?? EnvoyRules.Default;
         Bots = bots ?? BotRules.Default;
         Forest = forest ?? ForestRules.None;
         MercenaryPrices = mercenaryPrices ?? new Dictionary<string, double>();
@@ -45,6 +46,7 @@ public sealed class GameRules
     public MapRules Map { get; }
     public ForestRules Forest { get; }
     public BotRules Bots { get; }
+    public EnvoyRules Envoy { get; }
     /// <summary>Gold per soldier when hiring (by unit id); a unit without a price cannot be hired.</summary>
     public IReadOnlyDictionary<string, double> MercenaryPrices { get; }
 

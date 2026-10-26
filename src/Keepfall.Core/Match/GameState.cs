@@ -68,6 +68,10 @@ public sealed class GameState
     private readonly Dictionary<string, HashSet<Corner>> _explored = [];
     private readonly Dictionary<string, double> _eliminated = [];
     private readonly Dictionary<string, List<GameNotification>> _notifications = [];
+    /// <summary>What envoys left at each castle, newest last (only that castle's owner ever sees it).</summary>
+    private readonly Dictionary<string, List<Letter>> _letters = [];
+    private int _nextLetter = 1;
+    public const int MaxLetters = 30;
     private readonly BattleSimulator _simulator;
     private readonly Random _rng;
     private double _nextSample;
@@ -198,7 +202,7 @@ public sealed class GameState
         if (!_players.ContainsKey(playerKey) || _eliminated.ContainsKey(playerKey)) return [];
         var circles = new List<VisionCircle> { CastleVisionOf(playerKey) };
         circles.AddRange(_armies.Where(a => a.From == playerKey).Select(a => new VisionCircle(a.Position, Rules.Map.ArmyVision)));
-        circles.AddRange(_missions.Where(m => m.From == playerKey).Select(m => new VisionCircle(m.Position, Rules.Map.ScoutVision)));
+        circles.AddRange(_missions.Where(m => m.From == playerKey && m.Kind != MissionKind.Envoy).Select(m => new VisionCircle(m.Position, Rules.Map.ScoutVision)));
         return circles;
     }
 
@@ -216,7 +220,8 @@ public sealed class GameState
             seen.Add(new SeenMover(a.PublicId, MoverKind.Army, a.From, a.Position, a.Velocity,
                 a.Walking.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value)));
         foreach (var m in _missions.Where(m => m.From != playerKey && Visible(m.Position)))
-            seen.Add(new SeenMover(m.PublicId, MoverKind.Scout, m.From, m.Position, m.Velocity, new Dictionary<UnitType, int>()));
+            seen.Add(new SeenMover(m.PublicId, m.Kind == MissionKind.Envoy ? MoverKind.Envoy : MoverKind.Scout, m.Kind == MissionKind.Envoy ? "" : m.From,
+                m.Position, m.Velocity, new Dictionary<UnitType, int>())); // an envoy shows who it belongs to to nobody
         return seen;
     }
 
@@ -289,7 +294,7 @@ public sealed class GameState
             all.Add(new SeenMover(a.PublicId, MoverKind.Army, a.From, a.Position, a.Velocity,
                 a.Walking.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value)));
         foreach (var m in _missions)
-            all.Add(new SeenMover(m.PublicId, MoverKind.Scout, m.From, m.Position, m.Velocity, new Dictionary<UnitType, int>()));
+            all.Add(new SeenMover(m.PublicId, m.Kind == MissionKind.Envoy ? MoverKind.Envoy : MoverKind.Scout, m.Kind == MissionKind.Envoy ? "" : m.From, m.Position, m.Velocity, new Dictionary<UnitType, int>()));
         return all;
     }
 
@@ -346,6 +351,7 @@ public sealed class GameState
             SendScout scout => LaunchScout(playerKey, player, scout),
             SendExplore explore => LaunchExplore(playerKey, player, explore),
             SendChestScout chest => LaunchChestScout(playerKey, player, chest),
+            SendEnvoy envoy => LaunchEnvoy(playerKey, player, envoy),
             SendArmyToSite raid => LaunchRaid(playerKey, player, raid),
             SendArmy army => LaunchArmy(playerKey, player, army),
             RecallArmy recall => Recall(playerKey, recall.ArmyId),
@@ -361,9 +367,9 @@ public sealed class GameState
         Phase == MatchPhase.Preparation && Rules.Scouting.NoScoutLastPrepSeconds > 0 && PrepSeconds - ElapsedSeconds <= Rules.Scouting.NoScoutLastPrepSeconds + 1e-9;
 
     /// <summary>One scout at a time (scouting.maxScouts): a new one cannot leave until the one out is home again.</summary>
-    private CommandResult ScoutsAvailable(string from)
+    private CommandResult ScoutsAvailable(string from, bool envoy = false)
     {
-        if (ScoutingLocked) return CommandResult.Fail($"Hazırlığın son {Rules.Scouting.NoScoutLastPrepSeconds:0} saniyesinde gözcü gönderilemez; savaş başlayınca gönderilebilir.");
+        if (ScoutingLocked && !envoy) return CommandResult.Fail($"Hazırlığın son {Rules.Scouting.NoScoutLastPrepSeconds:0} saniyesinde gözcü gönderilemez; savaş başlayınca gönderilebilir.");
         var away = _missions.Where(m => m.From == from).ToList();
         if (away.Count < Rules.Scouting.MaxScouts) return CommandResult.Success;
         return CommandResult.Fail($"Gözcün henüz dönmedi (yaklaşık {Math.Ceiling(away.Min(m => m.SecondsLeft))} sn).");
@@ -374,7 +380,7 @@ public sealed class GameState
         if (c.TargetKey == from) return CommandResult.Fail("Kendi kaleni gözetleyemezsin.");
         if (!_players.ContainsKey(c.TargetKey)) return CommandResult.Fail("Böyle bir rakip yok.");
         if (_eliminated.ContainsKey(c.TargetKey)) return CommandResult.Fail("Bu oyuncu elendi.");
-        if (_missions.Any(m => m.From == from && m.Target == c.TargetKey))
+        if (_missions.Any(m => m.From == from && m.Kind == MissionKind.Spy && m.Target == c.TargetKey))
             return CommandResult.Fail("Bu rakibe zaten bir gözcün gidiyor.");
         if (ScoutsAvailable(from) is { Ok: false } busy) return busy;
         var sent = player.Castle.SendScout(c.From);
@@ -396,6 +402,48 @@ public sealed class GameState
         _missions.Add(new ScoutMission(NewPublicId(), from, target, ElapsedSeconds, Map.RouteToSite(_corners[from], site.Site),
             Rules.Map.ScoutSpeed, MissionKind.Chest) { Site = site });
         return CommandResult.Success;
+    }
+
+    private CommandResult LaunchEnvoy(string from, PlayerEconomy player, SendEnvoy c)
+    {
+        if (c.TargetKey == from) return CommandResult.Fail("Kendine ulak gönderemezsin.");
+        if (!_players.ContainsKey(c.TargetKey)) return CommandResult.Fail("Böyle bir rakip yok.");
+        if (_eliminated.ContainsKey(c.TargetKey)) return CommandResult.Fail("Bu oyuncu elendi.");
+        if (c.Food < 0 || c.Wood < 0 || c.Iron < 0 || c.Gold < 0) return CommandResult.Fail("Yük negatif olamaz.");
+        long total = (long)c.Food + c.Wood + c.Iron + c.Gold;
+        if (total > Rules.Envoy.MaxCargo) return CommandResult.Fail($"Ulak en fazla {Rules.Envoy.MaxCargo} yük taşır.");
+        var message = EnvoyMessage.Check(c.Message, Rules.Envoy);
+        if (!message.Ok) return CommandResult.Fail(message.Error!);
+        if (total == 0 && message.Text is null) return CommandResult.Fail("Ulağın taşıyacak bir şeyi yok: yük ya da mesaj ekle.");
+        if (ScoutsAvailable(from, envoy: true) is { Ok: false } busy) return busy;
+        var castle = player.Castle;
+        if (castle.Food + 1e-9 < c.Food || castle.Wood + 1e-9 < c.Wood || castle.Iron + 1e-9 < c.Iron || castle.Gold + 1e-9 < c.Gold)
+            return CommandResult.Fail("Kasada bu kadar yok.");
+        var sent = castle.SendScout(c.From);
+        if (!sent.Ok) return sent;
+        castle.TrySpendCargo(c.Food, c.Wood, c.Iron, c.Gold);
+        _missions.Add(new ScoutMission(NewPublicId(), from, c.TargetKey, ElapsedSeconds, RouteBetween(from, c.TargetKey), Rules.Map.ScoutSpeed, MissionKind.Envoy)
+        {
+            GiftFood = c.Food, GiftWood = c.Wood, GiftIron = c.Iron, GiftGold = c.Gold, Message = message.Text,
+        });
+        return CommandResult.Success;
+    }
+
+    /// <summary>What envoys left at this castle (newest last). Only its owner is ever shown it.</summary>
+    public IReadOnlyList<Letter> LettersOf(string playerKey) => _letters.TryGetValue(playerKey, out var l) ? l : [];
+
+    /// <summary>The envoy reached the gate: the goods go into the receiver's stores and the message is filed; both are told.</summary>
+    private void DeliverEnvoy(ScoutMission m)
+    {
+        if (_eliminated.ContainsKey(m.Target)) { m.Refund = true; return; } // the receiver fell on the way: the goods go home again
+        var castle = _players[m.Target].Castle;
+        castle.AddGoods(m.GiftFood, m.GiftWood, m.GiftIron);
+        castle.AddGold(m.GiftGold);
+        if (!_letters.TryGetValue(m.Target, out var list)) _letters[m.Target] = list = [];
+        list.Add(new Letter(_nextLetter++, m.From, ElapsedSeconds, m.GiftFood, m.GiftWood, m.GiftIron, m.GiftGold, m.Message));
+        if (list.Count > MaxLetters) list.RemoveAt(0);
+        Notify(m.Target, new GameNotification(NotificationKind.EnvoyArrived, m.From, ElapsedSeconds));
+        Notify(m.From, new GameNotification(NotificationKind.EnvoyDelivered, m.Target, ElapsedSeconds));
     }
 
     private bool Knows(string player, string siteId) => _knowledge.TryGetValue(player, out var k) && k.ContainsKey(siteId);
@@ -457,6 +505,28 @@ public sealed class GameState
                 if (!m.Out.Arrived) continue;
                 if (!_explored.TryGetValue(m.From, out var done)) _explored[m.From] = done = [];
                 done.Add(m.Quarter!.Value);
+                _players[m.From].Castle.ReturnScout();
+                _missions.Remove(m);
+                continue;
+            }
+            if (m.Kind == MissionKind.Envoy)
+            {
+                // Gathers nothing: no trail, no report. At the gate it leaves its load and walks home.
+                if (m.Back is null)
+                {
+                    m.Out.Advance(dt);
+                    if (!m.Out.Arrived) continue;
+                    DeliverEnvoy(m);
+                    m.Back = new Traveller(m.Out.Route.Reversed(), m.Out.Speed);
+                    continue;
+                }
+                m.Back.Advance(dt);
+                if (!m.Back.Arrived) continue;
+                if (m.Refund)
+                {
+                    _players[m.From].Castle.AddGoods(m.GiftFood, m.GiftWood, m.GiftIron);
+                    _players[m.From].Castle.AddGold(m.GiftGold);
+                }
                 _players[m.From].Castle.ReturnScout();
                 _missions.Remove(m);
                 continue;

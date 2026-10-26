@@ -162,6 +162,17 @@
     "noScoutLastPrepSeconds": 60
   },
 
+  // Ulak: bir rakip kaleye yemek, odun, demir, altın ve/veya kısa bir mesaj taşır. Gözcüyle aynı hakkı (maxScouts) ve hızı kullanır, bilgi toplamaz,
+  // yakalanamaz, hazırlık sonu gözcü yasağına tabi değildir. Yük gönderilirken kasadan düşer, varınca alıcıya girer.
+  "envoy": {
+    // Bir ulağın taşıyabileceği toplam yük (yemek + odun + demir + altın).
+    "maxCargo": 40,
+    // Mesajın en uzun hali (karakter); denetim karakteri içeremez.
+    "maxMessageLength": 140,
+    // Kısa bir küfür listesi yıldızla maskelenir (Türkçe + İngilizce). Varsayılan kapalı.
+    "profanityFilter": false
+  },
+
   // Excel "Binalar" sekmesi: tarla, oduncu kampı, maden ve demirhane aynı tabloyu kullanır.
   // Sıra = seviye (ilki seviye 1). upgrade* = o seviyeye çıkmanın maliyeti ve süresi (sn).
   // Demirhanede multiplier = silah üretim hızı.

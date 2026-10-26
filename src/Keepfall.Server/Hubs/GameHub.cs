@@ -139,6 +139,10 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     /// <summary>The target is named by public seat; the castle itself is never addressed by the client.</summary>
     public Task<CommandResultView> SendScout(int targetSeat, Job from) => Economy(new SendScout(Room.CastleKeyOf(targetSeat), from));
 
+    /// <summary>An envoy to another player with goods and/or a message; the server checks the load and the text.</summary>
+    public Task<CommandResultView> SendEnvoy(int targetSeat, int food, int wood, int iron, int gold, string? message, Job from) =>
+        Economy(new SendEnvoy(Room.CastleKeyOf(targetSeat), food, wood, iron, gold, message, from));
+
     /// <param name="units">Unit id → how many soldiers to send.</param>
     /// <param name="rows">Optional row per unit id ("front" / "back").</param>
     /// <param name="archerPriority">Optional unit id the archers aim at first.</param>

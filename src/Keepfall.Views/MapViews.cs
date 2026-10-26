@@ -92,9 +92,9 @@ public static class MapViewMapper
                 VecView.Of(a.Position), VecView.Of(a.Velocity), Units(a.Walking),
                 a.Leg.Route.Points.Select(VecView.Of).ToList(), a.Leg.Travelled, a.Leg.Speed, game.Rules.Map.ArmyVision, a.Battle is not null));
         foreach (var m in game.MissionsOf(key))
-            own.Add(new OwnMoverView(m.PublicId, MoverKind.Scout, SeatOf(m.Target), m.Back is not null,
+            own.Add(new OwnMoverView(m.PublicId, m.Kind == MissionKind.Envoy ? MoverKind.Envoy : MoverKind.Scout, SeatOf(m.Target), m.Back is not null,
                 VecView.Of(m.Position), VecView.Of(m.Velocity), [],
-                m.Leg.Route.Points.Select(VecView.Of).ToList(), m.Leg.Travelled, m.Leg.Speed, game.Rules.Map.ScoutVision, false,
+                m.Leg.Route.Points.Select(VecView.Of).ToList(), m.Leg.Travelled, m.Leg.Speed, m.Kind == MissionKind.Envoy ? 0 : game.Rules.Map.ScoutVision, false,
                 m.Kind, m.Quarter, m.Site?.Site.Id));
 
         var seen = game.SeenBy(key).Select(s =>

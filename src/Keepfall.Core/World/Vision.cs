@@ -14,7 +14,7 @@ public sealed record VisionCircle(Vec Center, double Radius)
 /// </summary>
 public sealed record TrailCircle(Vec Center, double Radius, double Fade);
 
-public enum MoverKind { Army, Scout }
+public enum MoverKind { Army, Scout, Envoy }
 
 /// <summary>
 /// Another player's army or scout as somebody who can see it: who it belongs to, where it is, which

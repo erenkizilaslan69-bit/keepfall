@@ -11,6 +11,8 @@ public enum MissionKind
     Explore,
     /// <summary>To a chest in the forest and home with its gold.</summary>
     Chest,
+    /// <summary>To a rival's gate with goods and/or a message, and home again. Gathers no information.</summary>
+    Envoy,
 }
 
 /// <summary>A scout on the road from <see cref="From"/>'s gate to <see cref="Target"/>'s and back (or on a tour of a forest quarter).</summary>
@@ -34,6 +36,14 @@ public sealed class ScoutMission
     /// <summary>Gold picked up, delivered when the scout is home.</summary>
     public int LootGold { get; internal set; }
     public int LootIron { get; internal set; }
+    /// <summary>For an envoy: what it carries (taken out of the sender's stores), and the message.</summary>
+    public int GiftFood { get; internal set; }
+    public int GiftWood { get; internal set; }
+    public int GiftIron { get; internal set; }
+    public int GiftGold { get; internal set; }
+    public string? Message { get; internal set; }
+    /// <summary>For an envoy: the cargo could not be delivered (the receiver fell meanwhile) and walks home again.</summary>
+    internal bool Refund { get; set; }
     /// <summary>For a tour: which quarter of the forest (named by its corner).</summary>
     public Corner? Quarter { get; }
 
@@ -50,7 +60,7 @@ public sealed class ScoutMission
     public Vec Velocity => Leg.Arrived ? new Vec(0, 0) : Leg.Direction * Leg.Speed;
     /// <summary>Taken when the scout arrives; handed to <see cref="From"/> only when the scout is back.</summary>
     public ScoutReport? Report { get; internal set; }
-    public bool Arrived => Report is not null || (Kind == MissionKind.Chest && Back is not null);
+    public bool Arrived => Report is not null || ((Kind == MissionKind.Chest || Kind == MissionKind.Envoy) && Back is not null);
     /// <summary>Where the last trail point was laid (the next one comes a little further on).</summary>
     internal Vec? LastTrail { get; set; }
 
@@ -87,7 +97,14 @@ public enum NotificationKind
     Eliminated,
     /// <summary>The army that brought OtherPlayer's castle down is home with its loot (Detail says what).</summary>
     LootHome,
+    /// <summary>OtherPlayer's envoy arrived at our castle.</summary>
+    EnvoyArrived,
+    /// <summary>Our envoy reached OtherPlayer.</summary>
+    EnvoyDelivered,
 }
+
+/// <summary>What an envoy left at a castle: who from, the goods and the message. Only the receiver ever sees it.</summary>
+public sealed record Letter(int Id, string From, double At, int Food, int Wood, int Iron, int Gold, string? Message);
 
 /// <summary>Something that happened to a player because of another one.</summary>
 public sealed record GameNotification(NotificationKind Kind, string OtherPlayer, double At,

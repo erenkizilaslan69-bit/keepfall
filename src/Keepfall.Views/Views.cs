@@ -89,7 +89,15 @@ public sealed record CastleView(
     WarView War,
     bool Eliminated,
     SummaryView? Summary,
-    double ArmSeconds = 0);
+    double ArmSeconds = 0,
+    IReadOnlyList<LetterView>? Letters = null,
+    EnvoyRulesView? Envoy = null);
+
+/// <summary>What an envoy left at our castle: who from, the goods and the message (plain text, shown as plain text). Only ever sent to the receiver.</summary>
+public sealed record LetterView(int Id, int FromSeat, string FromName, PlayerColor FromColor, double At, int Food, int Wood, int Iron, int Gold, string? Message);
+
+/// <summary>The envoy limits the client shows in its form.</summary>
+public sealed record EnvoyRulesView(int MaxCargo, int MaxMessageLength);
 
 public sealed record CommandResultView(bool Ok, string? Error);
 
@@ -153,7 +161,13 @@ public static class ViewMapper
             WarOf(room, game, player, c),
             game.IsEliminated(player.CastleKey),
             game.SummaryOf(player.CastleKey) is { } s ? ToView(s, c) : null,
-            game.Rules.Match.ArmSeconds);
+            game.Rules.Match.ArmSeconds,
+            game.LettersOf(player.CastleKey).Select(l =>
+            {
+                var from = room.PlayerOfCastle(l.From);
+                return new LetterView(l.Id, from?.Seat ?? 0, from?.Name ?? "?", from?.Color ?? PlayerColor.Blue, l.At, l.Food, l.Wood, l.Iron, l.Gold, l.Message);
+            }).ToList(),
+            new EnvoyRulesView(game.Rules.Envoy.MaxCargo, game.Rules.Envoy.MaxMessageLength));
     }
 
     private static WarView WarOf(Room room, GameState game, RoomPlayer player, Castle c)
@@ -214,7 +228,7 @@ public static class ViewMapper
         return new ScoutingView(
             c.ScoutsAway,
             room.Players.Where(p => p.Seat != player.Seat)
-                .Select(p => new ScoutTargetView(p.Seat, p.Name, p.Color, missions.Any(m => m.Target == p.CastleKey),
+                .Select(p => new ScoutTargetView(p.Seat, p.Name, p.Color, missions.Any(m => m.Kind == MissionKind.Spy && m.Target == p.CastleKey),
                     game.ScoutSeconds(player.CastleKey, p.CastleKey), game.MarchSeconds(player.CastleKey, p.CastleKey)))
                 .ToList(),
             missions.Select(m => new ScoutMissionView(SeatOf(m.Target), m.Progress, m.Arrived, m.SecondsLeft, m.Kind, m.Quarter, m.Site?.Site.Id)).ToList(),

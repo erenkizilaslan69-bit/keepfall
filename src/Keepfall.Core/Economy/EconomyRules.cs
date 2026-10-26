@@ -31,6 +31,14 @@ public sealed record WarRules(
 
 /// <summary>Scout reports ("Maç" sheet): how wrong the soldier counts are. How long a mission takes depends on the map.</summary>
 /// <param name="MaxScouts">Most scouts one player can have out at once (a spy, a tour of a quarter and a chest run all count).</param>
+/// <param name="MaxCargo">An envoy carries at most this many goods in all (food, wood, iron and gold together).</param>
+/// <param name="MaxMessageLength">Longest message an envoy carries (characters).</param>
+/// <param name="ProfanityFilter">Messages have a short list of swear words masked with stars (off by default).</param>
+public sealed record EnvoyRules(int MaxCargo = 40, int MaxMessageLength = 140, bool ProfanityFilter = false)
+{
+    public static EnvoyRules Default { get; } = new();
+}
+
 /// <param name="NoScoutLastPrepSeconds">No scout (spying, touring a quarter, a chest run) can leave in the last this many seconds of the preparation (0 = always allowed).</param>
 public sealed record ScoutingRules(double ReportError, int MaxScouts = 1, double NoScoutLastPrepSeconds = 0);
 

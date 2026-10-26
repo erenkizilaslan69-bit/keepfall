@@ -140,6 +140,9 @@ public sealed class Room
                 NotificationKind.Eliminated => other == player
                     ? "Kalen düştü, elendin. Artık izleyicisin."
                     : $"{other?.Name ?? "Bir oyuncu"} ({ColorName(other?.Color)}) elendi.",
+                // The goods and the message are in the letter (the receiver's picture), not in this text.
+                NotificationKind.EnvoyArrived => $"{ColorGenitive(other?.Color)} ulağı kaleye geldi: yük ve mesaj fermanda.",
+                NotificationKind.EnvoyDelivered => "Ulağın ulaştı.",
                 NotificationKind.LootHome => $"{ColorAblative(other?.Color)} aldığın ganimet kaleye ulaştı: {n.Detail}.",
                 _ => n.Kind.ToString(),
             };

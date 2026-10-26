@@ -250,6 +250,17 @@ public sealed class Castle
             if (n > 0) Fell(type, n, _soldiers[type] + n + _away[type]);
     }
 
+    /// <summary>Takes goods out of the stores for an envoy; false (and nothing taken) when the castle does not have them.</summary>
+    internal bool TrySpendCargo(int food, int wood, int iron, int gold)
+    {
+        if (Food + 1e-9 < food || Wood + 1e-9 < wood || Iron + 1e-9 < iron || Gold + 1e-9 < gold) return false;
+        Food = Math.Max(0, Food - food);
+        Wood = Math.Max(0, Wood - wood);
+        Iron = Math.Max(0, Iron - iron);
+        Gold = Math.Max(0, Gold - gold);
+        return true;
+    }
+
     /// <summary>Loot arrives: gold is added to the treasury.</summary>
     internal void AddGold(double amount)
     {

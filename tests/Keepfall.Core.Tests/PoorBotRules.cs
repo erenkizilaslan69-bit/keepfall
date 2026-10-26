@@ -18,6 +18,6 @@ internal static class PoorBotRules
             QueueDepth = 2, KeepHome = 0.1, HeadCountRatio = 1.0, Calculates = false, SmartDefense = false,
         };
         return new GameRules(rules.Units, rules.Counters, rules.Combat, rules.Production, rules.Match, rules.Economy, rules.Scouting, rules.War,
-            rules.Map, rules.MercenaryPrices, rules.Forest, rules.Bots with { Easy = easy });
+            rules.Map, rules.MercenaryPrices, rules.Forest, rules.Bots with { Easy = easy }, rules.Envoy);
     }
 }

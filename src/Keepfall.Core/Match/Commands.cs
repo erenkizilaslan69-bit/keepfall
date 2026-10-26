@@ -26,6 +26,9 @@ public sealed record UpgradeBuilding(BuildingType Building) : GameCommand;
 /// <summary>Send one person from <paramref name="From"/> to scout <paramref name="TargetKey"/>'s castle.</summary>
 public sealed record SendScout(string TargetKey, Job From = Job.Idle) : GameCommand;
 
+/// <summary>Send one person from <paramref name="From"/> as an envoy to <paramref name="TargetKey"/>'s castle with goods and/or a message.</summary>
+public sealed record SendEnvoy(string TargetKey, int Food, int Wood, int Iron, int Gold, string? Message = null, Job From = Job.Idle) : GameCommand;
+
 /// <summary>Send one person from <paramref name="From"/> to explore one quarter of the forest (named by its corner): they walk its road, find its places and come home.</summary>
 public sealed record SendExplore(World.Corner Quarter, Job From = Job.Idle) : GameCommand;
 

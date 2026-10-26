@@ -324,6 +324,33 @@ check('nobody but the scouts owner gets a trail',
   [Y, Z].every((c) => c.of('MapState').every((m) => m.trail.length === 0)));
 check('the trail closes again after its time', await waitFor(() => X.of('MapState').at(-1).trail.length === 0, 30000));
 
+// ---- the envoy: goods and a message that only the sender and the receiver ever see -------------------------------
+const note = 'Barış? <b>evet</b> & "belki" ışık';
+check('the castle picture carries the envoy limits', JSON.stringify(X.of('CastleState').at(-1).envoy) === '{"maxCargo":40,"maxMessageLength":140}');
+check('an envoy needs a load or a message', !(await X.call('SendEnvoy', 2, 0, 0, 0, 0, '  ', 'idle')).ok);
+check('a message with a line break is refused', !(await X.call('SendEnvoy', 2, 0, 0, 0, 0, 'iki' + String.fromCharCode(10) + 'satir', 'idle')).ok);
+check('too much is refused', !(await X.call('SendEnvoy', 2, 30, 30, 0, 0, note, 'idle')).ok);
+const reportsBefore = X.of('CastleState').at(-1).scouting.reports.length;
+const stock = X.of('CastleState').at(-1).resources;
+const giftFood = Math.min(2, Math.floor(stock.food)), giftWood = Math.min(3, Math.floor(stock.wood));
+const sentEnvoy = await X.call('SendEnvoy', 2, giftFood, giftWood, 0, 0, note, 'idle');
+check('X sends an envoy to Y', sentEnvoy.ok, sentEnvoy.error);
+check('the envoy takes the scouts place', !(await X.call('SendScout', 3, 'idle')).ok);
+check('X sees its own envoy, with no sight', await waitFor(() => X.of('MapState').at(-1).own.some((o) => o.kind === 'envoy' && o.visionRadius === 0), 5000));
+check('Y gets the letter: who from, what and the message exactly', await waitFor(() => {
+  const l = Y.of('CastleState').at(-1).letters;
+  return l.length === 1 && l[0].fromSeat === 1 && l[0].wood === giftWood && l[0].food === giftFood && l[0].message === note;
+}, 30000));
+check('the envoy comes home', await waitFor(() => X.of('CastleState').at(-1).scouting.missions.length === 0, 30000));
+check('the sender is told it arrived', X.of('Notification').includes('Ulağın ulaştı.'));
+check('the receiver is told, without the contents', Y.of('Notification').some((t) => t.includes('ulağı') && !t.includes('evet')));
+check('the sender and the third player have no letter', X.of('CastleState').at(-1).letters.length === 0 && Z.of('CastleState').at(-1).letters.length === 0);
+check('the message reached nobody but Y', ![X, Z].some((c) => c.msgs.some((m) => m.raw.includes('evet'))));
+check('an envoy brings no report and leaves no trail', X.of('CastleState').at(-1).scouting.reports.length === reportsBefore
+  && X.of('MapState').at(-1).trail.length === 0);
+check('whoever sees an envoy sees it as an envoy with no owner and no colour',
+  [X, Y, Z].every((c) => c.of('MapState').every((m) => m.seen.filter((e) => e.kind === 'envoy').every((e) => e.ownerSeat === 0 && e.units.length === 0))));
+
 // ---- the forest: what a scout finds is its owner's alone -----------------------------------------------------
 const quarters = X.of('CastleState').at(-1).scouting.quarters;
 check('four quarters to explore, one of them X own', quarters.length === 4 && quarters.filter((q) => q.seat === 1).length === 1
