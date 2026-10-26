@@ -120,6 +120,7 @@ export function preloadAssets(scene: Phaser.Scene, color: PlayerColor, others: P
   for (const name of COLORED_IMAGES) scene.load.image(`black-${name}`, url(buildingImages('black')[name]));
   // The wall of every region: the stone sheet is CC0 (public/cc0, in the repo), and the towers come in everybody's colour.
   scene.load.image('wall-elev', '/cc0/Tilemap_Elevation.png');
+  scene.load.image('signpost', '/cc0/Signpost.png');
   for (const c of others) if (c !== 'black') scene.load.image(`${c}-tower`, url(buildingImages(c).tower));
   // Everyone's castle, for the other corners of the map.
   for (const [c, folder] of Object.entries(COLOR_FOLDER)) scene.load.image(`castle-${c}`, url(`Buildings/${folder} Buildings/Castle.png`));

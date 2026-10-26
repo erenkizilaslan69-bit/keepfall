@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { Corner, PlayerColor } from '../types';
 import { colorKey } from './assets';
 import { TILE, type Point } from './layout';
+import { GatePaving } from './Roads';
 
 // The wall around a castle's region (16×12 tiles), on the region's edge so every building and worker is inside. It is only a picture of the
 // castle's wall level (the server decides the level): 1 a wooden fence, 2 a stone wall, 3 a thick stone wall with towers. The road leaves
@@ -39,13 +40,16 @@ export class WallRing {
   private fallen = false;
   private rt: Phaser.GameObjects.RenderTexture | null = null;
   private towers: Phaser.GameObjects.Image[] = [];
+  private readonly paving: GatePaving;
 
   /**
    * `origin`: the region's top-left corner in scene pixels. `corner`: which corner of the map the region is in (decides which side the gate is on).
    * `color`: the owner's colour; `own`: our colour (whose images have plain keys).
    */
   constructor(private readonly scene: Phaser.Scene, private readonly origin: Point, private readonly corner: Corner,
-    private readonly color: PlayerColor, private readonly own: PlayerColor) {}
+    private readonly color: PlayerColor, private readonly own: PlayerColor) {
+    this.paving = new GatePaving(scene, origin, this.gateOnEast, `${corner}-${color}`, GATE_Y, 512, REGION_W);
+  }
 
   /** The gate is on the east side for the western regions, on the west side for the eastern ones. */
   private get gateOnEast(): boolean { return this.corner === 'northWest' || this.corner === 'southWest'; }
@@ -56,6 +60,7 @@ export class WallRing {
     this.level = level;
     this.destroy();
     cutWallFrames(this.scene);
+    this.paving.setLevel(level); // a strong wall has a paved way to its gate
     const rt = this.scene.add.renderTexture(this.origin.x, this.origin.y, REGION_W, REGION_H).setOrigin(0).setDepth(DEPTH_WALL);
     this.rt = rt;
     const g = this.scene.make.graphics({ x: 0, y: 0 }, false);

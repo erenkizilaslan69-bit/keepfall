@@ -19,12 +19,12 @@ import { Fog } from './Fog';
 import { Movers } from './Movers';
 import { Soldiers } from './Soldiers';
 import { Terrain } from './Terrain';
+import { bakeRoads, placeSignposts } from './Roads';
 import { WallRing } from './Walls';
 import { Workers } from './Workers';
 
 const MAX_ZOOM = 1.5;
 const PAN_SPEED = 900; // px per second at zoom 1 (keyboard)
-const ROAD_COLOR = 0xd8b779, ROAD_EDGE = 0xa98b57;
 // Things stand in front of each other by their y; parts of the map lie at negative y, so the ground
 // layers sit far below anything that can stand on them.
 /** Trees this close (tiles) to a battle turn see-through so the fighting stays visible. */
@@ -82,7 +82,6 @@ export class WorldScene extends Phaser.Scene {
   private fog!: Fog;
   private terrain!: Terrain;
   /** The roads, baked into textures once (see drawRoads). */
-  private readonly roadTextures: Phaser.GameObjects.RenderTexture[] = [];
   private battles!: BattlePlayer;
   private pendingBattles: BattleStartedView[] = [];
   /** Battles we can see but are not in: just a cloud of dust and crossed swords where they are. */
@@ -556,31 +555,11 @@ export class WorldScene extends Phaser.Scene {
    * re-running hundreds of path commands.
    */
   private drawRoads(): void {
-    const g = this.make.graphics({ x: 0, y: 0 }, false);
-    // outline (soft, under), edge, surface, and a lighter worn strip down the middle; the geometry is the server's roads, unchanged
-    for (const [width, color, alpha] of [[62, 0x4a3418, 0.2], [54, ROAD_EDGE, 1], [42, ROAD_COLOR, 1], [16, 0xe9d29b, 0.5]] as const) {
-      g.lineStyle(width, color, alpha);
-      for (const road of this.layout.roads) {
-        const pts = road.points.map(toWorld);
-        g.strokePoints(pts.map((p) => new Phaser.Math.Vector2(p.x, p.y)), false, false);
-        g.fillStyle(color, alpha);
-        for (const p of pts) g.fillCircle(p.x, p.y, width / 2); // round corners
-      }
-    }
-    const origin = toWorld({ x: 0, y: 0 }), size = this.layout.size * TILE, CHUNK = 512;
-    const segments = this.layout.roads.flatMap((road) => road.points.slice(1).map((b, j) => [toWorld(road.points[j]), toWorld(b)] as const));
-    for (let cy = 0; cy * CHUNK < size; cy++) {
-      for (let cx = 0; cx * CHUNK < size; cx++) {
-        const x0 = origin.x + cx * CHUNK, y0 = origin.y + cy * CHUNK, mid = { x: x0 + CHUNK / 2, y: y0 + CHUNK / 2 };
-        // a square is baked only if a road passes within reach of it (half the diagonal plus the road's half width and outline)
-        if (!segments.some(([a, b]) => distanceToSegment(mid, a, b) < CHUNK * 0.71 + 36)) continue;
-        const rt = this.add.renderTexture(x0, y0, CHUNK, CHUNK).setOrigin(0).setDepth(DEPTH_ROAD);
-        rt.draw(g, -x0, -y0);
-        this.roadTextures.push(rt);
-      }
-    }
-    g.destroy();
-    this.terrain.roadEdges(this.layout.roads, 27);
+    const forest = this.layout.features.find((f) => f.kind === 'forest');
+    const centre = forest ? toWorld(forest.center) : null;
+    bakeRoads(this, this.layout.roads, this.layout.size, forest && centre ? { center: centre, radius: forest.radius * TILE } : null, DEPTH_ROAD);
+    placeSignposts(this, this.layout.roads, this.seed);
+    this.terrain.roadEdges(this.layout.roads, 28);
   }
 
   /** Trees fill the forest, leaving the roads through it clear. Seeded, so everyone sees the same forest. */
