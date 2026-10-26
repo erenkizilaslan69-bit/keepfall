@@ -1,4 +1,5 @@
 import { botMark, esc } from '../format';
+import { sfx } from '../audio';
 import { guarded } from '../error-report';
 import type { GameConnection } from '../net';
 import type { CastleView, Corner, RoomView, SiteView } from '../types';
@@ -198,6 +199,7 @@ export class GameUi {
   private updateNotes(s: CastleView): void {
     const reports = s.scouting.reports;
     if (this.scoutsSeen) {
+      if (reports.some((x) => !this.scoutsSeen!.has(scoutKey(x)))) sfx.play('scoutBack');
       for (const r of reports.filter((x) => !this.scoutsSeen!.has(scoutKey(x))))
         this.notes.push(`Gözcün döndü: ${GENITIVE[r.targetColor] ?? 'rakibin'} raporu`, 'battle', 15000, () => this.reports.showScout(r));
     }
@@ -216,8 +218,8 @@ export class GameUi {
     this.notes.setIncoming(s.eliminated ? [] : s.war.incoming, s.speed);
     this.notes.setSticky('hunger', s.starving && !s.eliminated, 'Açlık! Yemek bitti, tüm üretim yarıya indi.');
     this.notes.setSticky('out', s.eliminated, 'Kalen düştü — elendin. Artık sadece izleyicisin.', 'info');
-    if (this.phase === 'preparation' && s.phase === 'war') this.notes.push('Savaş başladı! Orduların yola çıkabilir.', 'battle', 6000);
-    if (!this.eliminated && s.eliminated) this.notes.push('Kalen düştü!', 'danger', 6000);
+    if (this.phase === 'preparation' && s.phase === 'war') { sfx.play('battleStart'); this.notes.push('Savaş başladı! Orduların yola çıkabilir.', 'battle', 6000); }
+    if (!this.eliminated && s.eliminated) { sfx.play('castleFall'); this.notes.push('Kalen düştü!', 'danger', 6000); }
     this.phase = s.phase;
     this.eliminated = s.eliminated;
   }
@@ -320,7 +322,8 @@ export class GameUi {
   /** Something that happened to us (a server notification). */
   notify(text: string): void {
     // The ribbon with the countdown already says an army is coming.
-    if (text.includes('yaklaşıyor')) return;
+    if (text.includes('yaklaşıyor')) { sfx.play('warning'); return; }
+    if (/elendi/.test(text)) sfx.play('castleFall');
     const kind: NoteKind = /düştü|elendi/.test(text) ? 'danger' : /saldır|çarpış|yendin|yenildin|püskürt|savaş/i.test(text) ? 'battle' : 'info';
     this.notes.push(text, kind, 6000);
   }

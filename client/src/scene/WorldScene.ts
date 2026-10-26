@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { ArmyView, Rect, ScoutReportView, SpectatorCastleView, SpectatorStateView, BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
+import { sfx } from '../audio';
 import { guarded } from '../error-report';
 import type { Minimap } from '../minimap';
 import type { Anchor, Target } from '../ui/windows';
@@ -467,6 +468,7 @@ export class WorldScene extends Phaser.Scene {
     });
     if (this.lastWallHp !== null && wallHp < this.lastWallHp - 1e-6) {
       this.castleSprite.setTint(0xff6b5e);
+      sfx.play('castleHit');
       this.cameras.main.shake(250, 0.004);
       this.time.delayedCall(400, () => this.castleSprite.clearTint());
     }

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { sfx } from '../audio';
 import { reportError } from '../error-report';
 import type { BattleStartedView, PlayerColor, Vec } from '../types';
 import { SHIELD_SCALE, UNIT_SCALE, colorKey, unitOriginY } from './assets';
@@ -105,6 +106,7 @@ export class BattlePlayer {
         });
       }
     });
+    sfx.play('battleStart');
     this.replays.set(view.id, { view, fighters, hit: 0, death: 0, advance: 0, sieging: false, gate: toWorld(view.at), ended: false });
   }
 
@@ -154,6 +156,12 @@ export class BattlePlayer {
     if (now >= v.startedAt + v.fightSeconds + v.siegeSeconds) this.end(id, r);
   }
 
+  /** Only fights the player can see are heard: full volume in view, nothing outside it (a battle elsewhere would just be noise). */
+  private loudness(x: number, y: number): number {
+    const view = this.scene.cameras.main.worldView;
+    return view.contains(x, y) ? 1 : 0;
+  }
+
   /** Remove a replay whose code failed: its sprites go, it is not drawn or counted as active again. */
   private drop(id: string, r: Replay): void {
     r.ended = true;
@@ -166,6 +174,7 @@ export class BattlePlayer {
     if (!a || a.dead || !a.sprite.active) return;
     if (b) a.sprite.setFlipX(b.sprite.x < a.sprite.x);
     const look = LOOK[a.unit] ?? LOOK.kilicli;
+    sfx.play(a.ranged ? 'arrow' : 'sword', this.loudness(a.sprite.x, a.sprite.y));
     if (look.attack) {
       const key = colorKey(r.view.sides[a.side].color, this.ownColor, look.attack);
       if (this.scene.anims.exists(key)) {
@@ -195,6 +204,7 @@ export class BattlePlayer {
     if (!f || f.dead) return;
     f.dead = true;
     if (!f.sprite.active) return;
+    sfx.play('death', this.loudness(f.sprite.x, f.sprite.y));
     f.sprite.anims.stop();
     f.sprite.setTint(0xff6b5e);
     this.scene.tweens.killTweensOf(f.sprite);

@@ -1,3 +1,4 @@
+import { sfx } from './audio';
 import { botMark, clock, COLOR_CSS, esc, fmt } from './format';
 import type { GameConnection } from './net';
 import type { BotLevel, RoomView, SummaryView } from './types';
@@ -205,6 +206,7 @@ export class EndScreen {
     if (r && !this.resultShown) {
       this.resultShown = true;
       const won = r.winners.includes(this.mySeat);
+      sfx.play(won ? 'win' : 'lose');
       const names = r.ranking.filter((x) => r.winners.includes(x.seat)).map((x) => `${dot(x.color)}${esc(x.name)}`).join(', ');
       const title = this.root.querySelector<HTMLElement>('#end-title')!;
       title.innerHTML = won

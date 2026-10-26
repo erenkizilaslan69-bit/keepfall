@@ -1,3 +1,4 @@
+import { sfx } from '../audio';
 import { botMark, clock, esc, fmt, rate } from '../format';
 import type { CastleView, PlayerView, RoomView } from '../types';
 
@@ -42,10 +43,15 @@ export class TopBar {
       <div class="tb-r">
         <div class="strip hit tb-hp" title="Kale canı"><span class="lbl">Kale</span>
           <div class="gbar"><div class="fill"></div><span class="gbar-text"></span></div></div>
+        <div class="strip hit tb-sound" title="Ses">
+          <button class="btn-round" data-sound="toggle" aria-label="Sesi aç / kapat"><b>♪</b></button>
+          <input type="range" min="0" max="100" step="5" data-sound="volume" aria-label="Ses düzeyi" title="Ses düzeyi">
+        </div>
         <div class="strip hit tb-players" data-f="players"></div>
         <div class="strip hit tb-speed hidden" data-f="speed"></div>
       </div>`;
     parent.appendChild(this.el);
+    this.wireSound();
     this.el.addEventListener('click', (e) => {
       const t = e.target as HTMLElement;
       const speed = t.closest<HTMLElement>('[data-speed]');
@@ -56,6 +62,22 @@ export class TopBar {
       if (seat === this.mySeat) this.events.player(seat);
       else this.events.rival(seat, player.getBoundingClientRect());
     });
+  }
+
+  /** The speaker button and the volume slider: the choice is kept by the sound module (localStorage, when it works). */
+  private wireSound(): void {
+    const button = this.q<HTMLButtonElement>('[data-sound="toggle"]');
+    const slider = this.q<HTMLInputElement>('[data-sound="volume"]');
+    const show = () => {
+      button.classList.toggle('off', sfx.muted);
+      button.title = sfx.muted ? 'Ses kapalı (aç)' : 'Ses açık (kapat)';
+      slider.value = String(Math.round(sfx.volume * 100));
+      slider.disabled = sfx.muted;
+    };
+    button.addEventListener('click', () => { sfx.setMuted(!sfx.muted); show(); });
+    slider.addEventListener('input', () => { sfx.setVolume(Number(slider.value) / 100); });
+    slider.addEventListener('change', () => sfx.play('sword')); // a sample at the new level
+    show();
   }
 
   /** Where under the bar things (ribbons) may start: the bar's bottom edge. */
