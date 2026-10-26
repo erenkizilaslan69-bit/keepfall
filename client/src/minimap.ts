@@ -11,6 +11,7 @@ const REDRAW_MS = 200;
 export interface MinimapMover { position: Vec; color: PlayerColor; own: boolean; scout: boolean }
 
 export class Minimap {
+  private readonly frame: HTMLElement;
   private readonly canvas: HTMLCanvasElement;
   private readonly base: HTMLCanvasElement;
   private readonly fog: HTMLCanvasElement;
@@ -25,7 +26,10 @@ export class Minimap {
     this.canvas.className = 'minimap';
     this.canvas.width = this.canvas.height = SIZE;
     this.canvas.title = 'Mini harita: tıkladığın yere bakar';
-    parent.appendChild(this.canvas);
+    this.frame = document.createElement('div');
+    this.frame.className = 'kf-minimap';
+    this.frame.appendChild(this.canvas);
+    parent.appendChild(this.frame);
     this.base = this.drawBase();
     this.fog = document.createElement('canvas');
     this.fog.width = this.fog.height = SIZE;
@@ -38,7 +42,7 @@ export class Minimap {
   }
 
   destroy(): void {
-    this.canvas.remove();
+    this.frame.remove();
   }
 
   /** <paramref name="view"/>: the camera's rectangle, in tiles. */
