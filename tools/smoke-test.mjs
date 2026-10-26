@@ -92,6 +92,14 @@ await B.call('QueueWeapon', 'okcu', 2);
 await sleep(3500);
 check('B arms 6 spearmen', (await B.call('ArmWorkers', 'mizrakci', 6, 'idle')).ok);
 check('A arms 4 swordsmen', (await A.call('ArmWorkers', 'kilicli', 4, 'idle')).ok);
+await sleep(150); // ×20: about 3 game seconds into the 15 s of arming
+{
+  const armingNow = A.of('CastleState').at(-1);
+  const sword = armingNow.units.find((u) => u.id === 'kilicli');
+  check('the arming time is part of the picture (15 s) and the four swordsmen are still being armed',
+    armingNow.armSeconds === 15 && sword.arming === 4 && sword.soldiers === 0);
+  check('people being armed count in the population but are not soldiers yet', armingNow.soldiers === 0);
+}
 check('attacks refused in preparation', !(await A.call('SendArmy', 2, { kilicli: 1 }, null, null, 'attack')).ok);
 check('cannot scout yourself', !(await A.call('SendScout', 1, 'idle')).ok);
 check('hiring needs gold, and nobody has any yet', !(await A.call('HireMercenary', 'kilicli', 1)).ok

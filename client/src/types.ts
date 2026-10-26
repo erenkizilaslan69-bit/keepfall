@@ -28,7 +28,7 @@ export interface BuildingView {
 }
 
 /** `price`: gold to hire one soldier (0 = cannot); `hired`: how many of the soldiers were hired (they cannot become workers). */
-export interface UnitView { id: string; name: string; wood: number; iron: number; buildSeconds: number; weapons: number; soldiers: number; price: number; hired: number }
+export interface UnitView { id: string; name: string; wood: number; iron: number; buildSeconds: number; weapons: number; soldiers: number; price: number; hired: number; arming: number }
 export interface OrderView { unitId: string; name: string; remaining: number; progress: number; buildSeconds: number }
 export interface EconomySample { seconds: number; population: number; soldiers: number; food: number; wood: number; iron: number }
 
@@ -201,6 +201,8 @@ export interface CastleView {
   /** Our castle has fallen: we only watch. */
   eliminated: boolean;
   summary: SummaryView | null;
+  /** Seconds it takes to turn a worker into a soldier (0 = at once). */
+  armSeconds: number;
 }
 
 export interface CommandResult { ok: boolean; error: string | null }

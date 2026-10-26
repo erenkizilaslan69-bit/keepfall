@@ -18,8 +18,8 @@ export class CastleWin extends Win {
     const sources = s.jobs.map((j) => `<option value="${j.job}"></option>`).join('');
     const units = s.units.map((u) => `
       <div class="unit-row" data-unit="${u.id}">
-        <div class="unit-head"><b>${esc(u.name)}</b> <span data-f="stock"></span></div>
-        <span class="stepper"><button class="btn" data-act="arm" data-n="1">+1</button><button class="btn" data-act="arm" data-n="5">+5</button>
+        <div class="unit-head"><b>${esc(u.name)}</b> <span data-f="stock"></span> <small class="muted-ink" data-f="arming"></small></div>
+        <span class="stepper"><button class="btn" data-act="arm" data-n="1" title="">+1</button><button class="btn" data-act="arm" data-n="5">+5</button>
           <button class="btn btn-red" data-act="disarm" data-n="1" title="Silahı bırak, boşa dön">−1</button></span>
       </div>`).join('');
     const hire = s.units.map((u) => `
@@ -37,6 +37,7 @@ export class CastleWin extends Win {
       <div class="pane" data-pane="soldiers">
         <div class="row"><span>Hangi meslekten</span><select data-f="source" title="Silah verilen kişi hangi meslekten alınsın">${sources}</select></div>
         ${units}
+        <div class="row" data-f="arming-row"><span>Kuşanıyor</span><b data-f="arming-n"></b></div>
         <p class="muted-ink small" data-f="soldier-note"></p>
       </div>
       <div class="pane" data-pane="hire">
@@ -84,6 +85,9 @@ export class CastleWin extends Win {
     for (const u of s.units) {
       const row = this.q(`[data-unit="${u.id}"]`);
       row.querySelector('[data-f="stock"]')!.textContent = `asker ${u.soldiers} · silah ${u.weapons}`;
+      row.querySelector('[data-f="arming"]')!.textContent = u.arming > 0 ? `· kuşanıyor ${u.arming}` : '';
+      const wait = s.armSeconds > 0 ? `Kuşanması ${fmt(s.armSeconds)} sn sürer (bu sürede çalışmaz, savaşmaz)` : '';
+      for (const b of row.querySelectorAll<HTMLButtonElement>('[data-act="arm"]')) b.title = wait;
       for (const b of row.querySelectorAll<HTMLButtonElement>('[data-act="arm"]')) b.disabled = u.weapons < Number(b.dataset.n) || dead;
       row.querySelector<HTMLButtonElement>('[data-act="disarm"]')!.disabled = u.soldiers - u.hired <= 0 || dead;
       row.querySelector<HTMLButtonElement>('[data-act="disarm"]')!.title = u.hired > 0 ? `${u.hired} paralı asker işçiye dönemez` : 'Silahı bırak, boşa dön';
@@ -93,7 +97,12 @@ export class CastleWin extends Win {
         b.disabled = dead || u.price <= 0 || s.resources.gold + 1e-6 < u.price * Number(b.dataset.n);
     }
     this.q('[data-f="gold"]').textContent = fmt(s.resources.gold);
-    this.q('[data-f="soldier-note"]').textContent = `Asker ${s.soldiers} / nüfus ${s.population}. Silahı demirhanede üret, burada işçiye ver.`;
+    const arming = s.units.reduce((n, u) => n + u.arming, 0);
+    this.q('[data-f="soldier-note"]').textContent = `Asker ${s.soldiers} / nüfus ${s.population}. Silahı demirhanede üret, burada işçiye ver.`
+      + (s.armSeconds > 0 ? ` Silah kuşanmak ${fmt(s.armSeconds)} sn sürer; paralı asker anında gelir.` : '')
+      + (arming > 0 ? ` Kuşanıyor: ${arming}.` : '');
+    this.q('[data-f="arming-row"]').classList.toggle('hidden', arming === 0);
+    this.q('[data-f="arming-n"]').textContent = String(arming);
 
     // growth
     this.q('[data-f="pop"]').textContent = String(s.population);

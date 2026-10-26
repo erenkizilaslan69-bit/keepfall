@@ -88,7 +88,8 @@ public sealed record CastleView(
     ScoutingView Scouting,
     WarView War,
     bool Eliminated,
-    SummaryView? Summary);
+    SummaryView? Summary,
+    double ArmSeconds = 0);
 
 public sealed record CommandResultView(bool Ok, string? Error);
 
@@ -151,7 +152,8 @@ public static class ViewMapper
             ScoutingOf(room, game, player, c),
             WarOf(room, game, player, c),
             game.IsEliminated(player.CastleKey),
-            game.SummaryOf(player.CastleKey) is { } s ? ToView(s, c) : null);
+            game.SummaryOf(player.CastleKey) is { } s ? ToView(s, c) : null,
+            game.Rules.Match.ArmSeconds);
     }
 
     private static WarView WarOf(Room room, GameState game, RoomPlayer player, Castle c)

@@ -83,7 +83,8 @@ public class BotWarTests
         // The stored weapons were armed as soon as the war began; lining up for this attack waits for the bot to notice it.
         Assert.True(line.Min(x => x.At) >= warned + level.ReactMin - 1, $"lined up at {line.Min(x => x.At)}, warned at {warned}");
         Assert.True(line.Min(x => x.At) <= warned + level.ReactMax + level.ThinkMax + 2, $"lined up too late: {line.Min(x => x.At)} (warned {warned})");
-        Assert.Equal(6, game.CastleOf(me.CastleKey)!.Soldiers.Values.Sum() - 0); // all the stored weapons are soldiers now
+        var mine = game.CastleOf(me.CastleKey)!;
+        Assert.Equal(6, mine.Soldiers.Values.Sum() + mine.Arming); // all the stored weapons are soldiers now (or being armed)
     }
 
     [Fact]

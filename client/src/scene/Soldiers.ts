@@ -39,10 +39,19 @@ export class Soldiers {
   destroy(): void {
     for (const sprites of this.blocks.values()) for (const s of sprites) s.destroy();
     for (const id of this.blocks.keys()) this.labels.remove(`soldiers:${this.key}${id}`);
+    this.labels.remove(`arming:${this.key}`);
     this.blocks.clear();
   }
 
   sync(units: UnitView[]): void {
+    // People being armed (workers on their way to becoming soldiers) wait in the courtyard under a sign.
+    const arming = units.reduce((n, u) => n + u.arming, 0);
+    if (arming > 0)
+      this.labels.set(`arming:${this.key}`, {
+        x: (COURTYARD.left + COURTYARD.right) / 2 + this.off.x, y: COURTYARD.top - 10 + this.off.y, anchor: 'bottom', minZoom: 0.6, cls: 'wl-small',
+        html: `<div class="wl-sign"><i class="ico ico-sword"></i> Kuşanıyor: <b>${arming}</b></div>`,
+      });
+    else this.labels.remove(`arming:${this.key}`);
     const ids = [...BLOCK_ORDER.filter((id) => units.some((u) => u.id === id)),
       ...units.map((u) => u.id).filter((id) => !BLOCK_ORDER.includes(id))];
     const blockWidth = (COURTYARD.right - COURTYARD.left) / Math.max(ids.length, 1);

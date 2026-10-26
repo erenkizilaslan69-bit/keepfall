@@ -48,6 +48,7 @@ public class ScoutingTests
         int fromIdle = Math.Min(spearmen, game.CastleOf(player)!.Workers[Job.Idle]);
         if (fromIdle > 0) Ok(game.Execute(player, new ArmWorkers("mizrakci", fromIdle)));
         if (spearmen > fromIdle) Ok(game.Execute(player, new ArmWorkers("mizrakci", spearmen - fromIdle, Job.Blacksmith)));
+        Run(game, Rules.Match.ArmSeconds); // arming takes its time
     }
 
     private static GameState GameWithGrowthOff(int players = 2, int seed = 1)

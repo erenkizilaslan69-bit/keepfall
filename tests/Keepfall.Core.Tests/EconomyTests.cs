@@ -142,6 +142,8 @@ public class EconomyTests
         Assert.Equal(12, castle.FoodConsumptionPerMinute);
 
         Ok(castle.Execute(new ArmWorkers("okcu", 2)));
+        Assert.Equal(12, castle.FoodConsumptionPerMinute); // being armed: they still eat as workers
+        Run(castle, Rules.Match.ArmSeconds);
         Assert.Equal(10 * 1 + 2 * 1.5, castle.FoodConsumptionPerMinute);
     }
 
@@ -239,14 +241,37 @@ public class EconomyTests
         Assert.False(castle.Execute(new ArmWorkers("mizrakci", 2, Job.Farmer)).Ok); // only 1 spear
         Ok(castle.Execute(new ArmWorkers("mizrakci", 1, Job.Farmer)));
         Assert.Equal(2, castle.Workers[Job.Farmer]);
-        Assert.Equal(1, castle.Soldiers[spear]);
         Assert.Equal(0, castle.Weapons[spear]);
+        Assert.Equal(12, castle.Population);
+        Run(castle, Rules.Match.ArmSeconds); // arming takes its time
+        Assert.Equal(1, castle.Soldiers[spear]);
         Assert.Equal(12, castle.Population);
 
         Ok(castle.Execute(new DisarmSoldiers("mizrakci", 1)));
         Assert.Equal(0, castle.Soldiers[spear]);
         Assert.Equal(1, castle.Weapons[spear]);
         Assert.Equal(8, castle.Workers[Job.Idle]);
+    }
+
+    [Fact]
+    public void Arming_takes_the_arm_time_and_in_between_nobody_works_or_fights_but_they_count_and_eat()
+    {
+        Assert.Equal(15, Rules.Match.ArmSeconds);
+        var castle = NewCastle();
+        var spear = Rules.FindUnit("mizrakci")!;
+        castle.AddWeapons(spear, 3);
+        int population = castle.Population;
+        Ok(castle.Execute(new ArmWorkers("mizrakci", 3, Job.Idle)));
+        Assert.Equal(3, castle.Arming);
+        Assert.Equal(3, castle.ArmingOf(spear));
+        Assert.Equal(0, castle.Soldiers[spear]);
+        Assert.Equal(population, castle.Population);
+        Run(castle, Rules.Match.ArmSeconds - 2);
+        Assert.Equal(0, castle.Soldiers[spear]);
+        Run(castle, 3);
+        Assert.Equal(3, castle.Soldiers[spear]);
+        Assert.Equal(0, castle.Arming);
+        Assert.Equal(population, castle.Population);
     }
 
     [Fact]
