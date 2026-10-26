@@ -149,11 +149,6 @@ html.in-game body { background: #47aba9; }
 .chip.out { opacity: .45; text-decoration: line-through; } .chip.away { opacity: .6; }
 .avatar { width: calc(28px * var(--u)); height: calc(28px * var(--u)); border-radius: 50%; background: #cfc0a0 center / cover no-repeat; border: 2px solid #8a6a3a; flex: none; }
 .tb-speed { gap: calc(4px * var(--u)); }
-.tb-sound { display: flex; align-items: center; gap: calc(6px * var(--u)); }
-.tb-sound .btn-round { width: calc(30px * var(--u)); height: calc(30px * var(--u)); font-size: calc(15px * var(--u)); line-height: 1; padding: 0; }
-.tb-sound .btn-round.off b { text-decoration: line-through; opacity: .6; }
-.tb-sound input[type="range"] { width: calc(70px * var(--u)); accent-color: #3f7fb5; cursor: pointer; }
-.tb-sound input[type="range"]:disabled { opacity: .4; cursor: default; }
 
 /* ---- the "how to play" decree --------------------------------------------------------------- */
 .guide-fab { position: fixed; top: 12px; right: 12px; z-index: 60; width: 40px; height: 40px; display: none; font: 700 20px var(--font-pixel); }

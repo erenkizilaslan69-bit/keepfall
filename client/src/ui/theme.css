@@ -196,8 +196,6 @@
 .tb-clock b { font-size: 1.55em; letter-spacing: .02em; }
 .tb-hp .gbar { margin: 0 calc(4px * var(--u, 1)); }
 .tb-hp .lbl, .tb-hp::before { color: var(--ink); }
-.tb-sound, .tb-speed { padding: 0 calc(10px * var(--u, 1)); }
-.tb-sound input[type="range"] { accent-color: var(--kf-navy-hi); }
 .res small.up { color: #2c7a22; } .res small.down { color: #b0352a; }
 .chip { border-bottom-width: calc(4px * var(--u, 1)); border-radius: 2px; }
 
@@ -332,3 +330,61 @@ html.in-menu .guide-fab.btn-round { display: inline-grid; }
           mask: center / contain no-repeat url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3 1.5L8 6.5l5-5 1.5 1.5-5 5 5 5-1.5 1.5-5-5-5 5L1.5 13l5-5-5-5z'/></svg>");
 }
 .kf-prod-txt b { font-size: 1.15em; }
+
+/* ---- the top bar's layout ----------------------------------------------------------------------------
+   1280 px and wider, one row:  [resources + population banner] [castle health, in the middle] [players] [clock + icons]
+   Narrower, two defined rows:  [resources + population] [clock + icons]  over  [castle health] [players] */
+.topbar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "l c p k"; column-gap: calc(8px * var(--u, 1)); row-gap: calc(8px * var(--u, 1)); align-items: start; }
+.tb-l { grid-area: l; display: flex; gap: calc(8px * var(--u, 1)); align-items: flex-start; }
+.tb-c { grid-area: c; display: flex; justify-content: center; min-width: 0; margin-top: 0; }
+.tb-p { grid-area: p; display: flex; justify-content: flex-end; min-width: 0; }
+.tb-k { grid-area: k; display: flex; gap: calc(8px * var(--u, 1)); align-items: flex-start; justify-content: flex-end; }
+.tb-hp { min-width: 0; max-width: 100%; gap: calc(8px * var(--u, 1)); }
+.tb-hp .ico { flex: none; }
+.tb-hp .gbar { width: clamp(calc(90px * var(--u, 1)), 16vw, calc(220px * var(--u, 1))); min-width: 0; }
+.tb-res { gap: calc(8px * var(--u, 1)); padding: 0 calc(12px * var(--u, 1)); }
+.res small { min-width: 2.7em; font-size: .74em; }
+.strip.tb-pop { gap: calc(8px * var(--u, 1)); padding-left: calc(18px * var(--u, 1)); padding-right: calc(18px * var(--u, 1)); }
+.tb-players .chip-name { max-width: 6.5em; overflow: hidden; text-overflow: ellipsis; }
+.tb-players { gap: calc(8px * var(--u, 1)); }
+@media (max-width: 1500px) { .tb-players .chip-name { max-width: 4.8em; } }
+@media (max-width: 1279px) {
+  .topbar { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "l . k" "c . p"; }
+  .tb-c { justify-content: flex-start; }
+  /* the second row hangs from nothing: its planks get a full frame */
+  .tb-c .strip, .tb-p .strip { border-top: calc(5px * var(--u, 1)) solid var(--kf-wood); border-radius: calc(14px * var(--u, 1)); margin-top: calc(2px * var(--u, 1)); }
+  .tb-players .chip-name { max-width: 7em; }
+  .tb-hp .gbar { width: clamp(calc(110px * var(--u, 1)), 22vw, calc(200px * var(--u, 1))); }
+}
+@media (max-width: 760px) { .tb-players .chip-name { display: none; } .res small { display: none; } }
+
+/* icons: sound and guide */
+.tb-icons { position: relative; gap: calc(6px * var(--u, 1)); padding: 0 calc(10px * var(--u, 1)); min-height: calc(40px * var(--u, 1)); }
+.tb-icons .btn-round { width: calc(28px * var(--u, 1)); height: calc(28px * var(--u, 1)); font-size: calc(14px * var(--u, 1)); }
+.tb-icons .btn-round svg .slash { display: none; }
+.tb-icons .btn-round.off svg .slash { display: inline; }
+.tb-icons .btn-round.off svg .wave { display: none; }
+.tb-menu { position: absolute; right: 0; top: calc(100% + 10px * var(--u, 1)); width: calc(190px * var(--u, 1)); z-index: 30; display: flex; flex-direction: column; gap: calc(8px * var(--u, 1)); }
+.tb-menu-row { display: flex; align-items: center; justify-content: space-between; gap: calc(8px * var(--u, 1)); }
+.tb-menu .kf-btn { min-height: calc(30px * var(--u, 1)); padding: 0 calc(12px * var(--u, 1)); }
+.tb-menu input[type="range"] { width: 100%; accent-color: var(--kf-navy-hi); }
+
+/* a report's title may be long: its ribbon wraps instead of cutting the text */
+.rep-title.ribbon { white-space: normal; height: auto; min-height: calc(36px * var(--u, 1)); padding: calc(6px * var(--u, 1)) calc(28px * var(--u, 1)); line-height: 1.2; text-align: center; }
+
+
+/* fitting everything in one row at 1280: the idle warning goes under the population numbers, with three or four players only avatars show,
+   the clock and the resource strip are a little tighter */
+.strip.tb-pop { display: grid; grid-template-columns: auto auto; justify-content: center; column-gap: calc(12px * var(--u, 1)); row-gap: calc(2px * var(--u, 1)); align-content: start; padding-left: calc(16px * var(--u, 1)); padding-right: calc(16px * var(--u, 1)); }
+.strip.tb-pop .idle-warn { grid-column: 1 / -1; justify-self: center; transform: none; }
+.tb-res { gap: calc(6px * var(--u, 1)); padding: 0 calc(10px * var(--u, 1)); }
+.tb-clock { padding-right: calc(22px * var(--u, 1)); }
+.tb-players[data-n="3"] .chip-name, .tb-players[data-n="4"] .chip-name { display: none; }
+.tb-players[data-n="3"], .tb-players[data-n="4"] { gap: calc(10px * var(--u, 1)); }
+.tb-speed { gap: calc(4px * var(--u, 1)); padding: 0 calc(8px * var(--u, 1)); }
+.tb-speed .btn-round { width: calc(28px * var(--u, 1)); height: calc(28px * var(--u, 1)); }
+
+/* the castle-health plank in the middle only shows when it has room (a squeezed bar would be unreadable) */
+.tb-c { container-type: inline-size; }
+@container (max-width: 150px) { .tb-hp { display: none; } }
+.tb-players[data-n="2"] .chip-name, .tb-players[data-n="1"] .chip-name { max-width: 10em; }
