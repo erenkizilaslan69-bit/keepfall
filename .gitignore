@@ -34,3 +34,6 @@ client/public/assets/
 
 # Server logs (client errors)
 logs/
+
+# Production build (dotnet publish -c Release -o publish)
+publish/

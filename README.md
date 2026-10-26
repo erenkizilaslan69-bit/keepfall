@@ -101,12 +101,17 @@ node tools/smoke-test.mjs
 
 Arkadaşlar için tek bir adres yeter: sunucu, derlenmiş istemciyi ve oyun bağlantısını (`/hub`) aynı portta (5080) sunar. Tüneli **Vite'a (5173) değil, sunucuya (5080)** yönelt; Vite yabancı alan adlarını reddeder.
 
+Production sunucusu `bin/Debug` yerine ayrı bir yayın klasöründen (`publish/`, git'e girmez) çalışır; böylece geliştirirken derlemek ve test koşmak çalışan oyunu kilitlemez. Depo kökünden:
+
 ```bash
 npm --prefix client run build
-ASPNETCORE_ENVIRONMENT=Production dotnet run --project src/Keepfall.Server --no-launch-profile --urls http://localhost:5080
+dotnet publish src/Keepfall.Server -c Release -o publish
+ASPNETCORE_ENVIRONMENT=Production dotnet publish/Keepfall.Server.dll --urls http://localhost:5080
 ```
 
-PowerShell'de: `$env:ASPNETCORE_ENVIRONMENT = 'Production'` yazıp `dotnet run --project src/Keepfall.Server --no-launch-profile --urls http://localhost:5080` çalıştır. `--no-launch-profile` şart: yoksa `dotnet run` kendi profilini kullanır ve sunucu yine `Development` açılır (açılışta yazılan "Hosting environment" satırından kontrol edebilirsin).
+PowerShell'de: `$env:ASPNETCORE_ENVIRONMENT = 'Production'` yazıp `dotnet publish/Keepfall.Server.dll --urls http://localhost:5080` çalıştır. Komutu **depo kökünden** çalıştır (sunucu `config/balance.json` ve `client/dist`'i oradan bulur). Açılışta yazılan "Hosting environment" satırı `Production` olmalı.
+
+Yeni sürümü yayınlamak için sunucuyu durdur, `dotnet publish` komutunu yeniden çalıştır (çalışan sunucu `publish/` dosyalarını kilitler) ve tekrar başlat; derleme ve testler için durdurmak gerekmez.
 
 Sonra tüneli 5080'e aç. Hesapsız, geçici bir adres için Cloudflare Quick Tunnel:
 

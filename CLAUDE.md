@@ -20,15 +20,14 @@ Kullanıcıyla **Türkçe** konuş. Kısa ve öz raporla. Kod, yorum ve commit m
 2. **Sayılar `config/balance.json`'da** ve kullanıcının onayı olmadan DEĞİŞTİRİLMEZ. Önce ölç (BattleSim / `tools/bot-deney.py`, geçici config ile `--config`), sonra öner. Yeni ayar anahtarı eklemek serbest (varsayılan = eski davranış).
 3. **Her parça ayrı commit + push** (sormadan). Büyük adımlarda önce plan çıkar ve onay bekle. Belirsizlikte sor.
 4. Commit sonu: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`; git e-postası noreply.
-5. **Production** sunucusunu yalnız kullanıcı söyleyince / iş bitince yeniden başlat. Önce `npm --prefix client run build`. PowerShell:
-   `$env:ASPNETCORE_ENVIRONMENT='Production'; dotnet run --project src/Keepfall.Server --no-launch-profile --urls http://localhost:5080` (`--no-launch-profile` şart, yoksa Development açılır). Çalışan sunucu `bin/Debug` dosyalarını kilitler: başka sunucu derlemeden önce onu durdur. Test için açtığın sunucuları (5081, Vite 5174) işin sonunda KAPAT.
+5. **Production** sunucusunu yalnız kullanıcı söyleyince / iş bitince yeniden başlat. Production `bin/Debug`'dan DEĞİL `publish/` klasöründen çalışır (git'e girmez), bu yüzden derleme ve testler onu kilitlemez, durdurmak gerekmez. Yeniden başlatmak için: `npm --prefix client run build`; çalışan Production'ı durdur (publish/ kilitli kalır); `dotnet publish src/Keepfall.Server -c Release -o publish`; depo KÖKÜNDEN `$env:ASPNETCORE_ENVIRONMENT='Production'; dotnet publish/Keepfall.Server.dll --urls http://localhost:5080` (açılışta "Hosting environment: Production" yazmalı). Test için açtığın sunucuları (5081, Vite 5174) işin sonunda KAPAT.
 6. **Tünel** yalnız istenince: `cloudflared tunnel --url http://localhost:5080` (Vite'a değil, 5080'e).
 7. **Asset'ler repoda değil** (`client/public/assets/` .gitignore'da, Tiny Swords paketi). Ekleme/commit etme.
 8. Satır sonu: dosyaların mevcut biçimini koru (çoğu LF; BOM ekleme). Python ile dosya düzenlerken BOM/CRLF değiştirme.
 9. Test sunucusunda tarayıcı bölmesi gizliyken Phaser çizmez; ekran testi için başsız Chrome (CDP) kullan (örnek: `tools/replay-check.mjs`).
 
 ## Test rutini
-`dotnet test -c Release` (198 test) → `node tools/run-smoke.mjs` (~2–3 dk; kendi test sunucusunu 5081'de, savaşı 15 dk olan geçici bir config kopyasıyla açar ve kapatır; çalışan Production sunucusunu önce durdur, `bin/Debug` kilitli kalır) → istemci için `npm --prefix client run build` (tsc dahil).
+`dotnet test -c Release` (198 test) → `node tools/run-smoke.mjs` (~2–3 dk; kendi test sunucusunu 5081'de, savaşı 15 dk olan geçici bir config kopyasıyla açar ve kapatır; Production çalışırken de koşar, kilitlemez) → istemci için `npm --prefix client run build` (tsc dahil).
 Bot dengesi: `python tools/bot-deney.py 200 docs/bot-deney-son.md` (tablo `docs/`'ta).
 
 ## Son durum (2026-10-26)
