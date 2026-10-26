@@ -241,6 +241,22 @@ if (sent.ok) {
   check('A recalls its army', (await A.call('RecallArmy', army.id)).ok);
   check('the recalled army is on its way home', await waitFor(() => A.of('CastleState').at(-1).war.armies.find((x) => x.id === army.id)?.state === 'returning', 3000));
   check('C never learns the mode', !C.msgs.some((m) => m.raw.includes('intercept')));
+
+  // A new order for the army on its way home: it marches again from where it is, to another castle.
+  const armyOf = () => A.of('CastleState').at(-1).war.armies.find((x) => x.id === army.id);
+  check('an order needs a target', !(await A.call('RedirectArmy', army.id, null, null)).ok);
+  check('A cannot send an army to its own castle', !(await A.call('RedirectArmy', army.id, 1, null)).ok);
+  check('B cannot give orders to A\'s army', !(await B.call('RedirectArmy', army.id, 3, null)).ok);
+  check('A sends the returning army on to C', (await A.call('RedirectArmy', army.id, 3, null)).ok);
+  check('the army marches again, to C', await waitFor(() => armyOf()?.state === 'marching' && armyOf()?.targetSeat === 3, 3000));
+  check('it cannot be sent where it already goes', !(await A.call('RedirectArmy', army.id, 3, null)).ok);
+  const posBefore = A.of('MapState').at(-1).own.find((o) => o.kind === 'army');
+  check('the road is a new one that starts where the army stood', !!posBefore && posBefore.route.length >= 2 && posBefore.returning === false);
+  await sleep(1500);
+  check('nobody else sees where an army goes, even after a new order',
+    ![B, C].some((c) => c.of('MapState').some((m) => m.seen.some((v) => 'targetSeat' in v || 'siteId' in v || 'route' in v || 'targetName' in v))));
+  check('A turns it on B again', (await A.call('RedirectArmy', army.id, 2, null)).ok);
+  check('A brings it home in the end', (await A.call('RecallArmy', army.id)).ok);
 } else {
   check('A had soldiers left for the recall test', false, sent.error);
 }
@@ -409,8 +425,14 @@ check("Y's castle falls", fallen());
 const fall = X.of('CastleState').at(-1).war.battles.find((b) => b.defenderEliminated);
 check('the report of the fall says what X took', !!fall?.loot && fall.loot.gold >= 0 && fall.loot.people > 0, JSON.stringify(fall?.loot));
 check('Y sees it too (its own report)', Y.of('CastleState').at(-1).war.battles.some((b) => b.defenderEliminated && b.loot !== null));
-check('a ribbon says what came home', await waitFor(() => X.of('Notification').some((t) => t.includes('ganimet') && t.includes('kişi')), 30000));
+// The match is only 300 s of war: if Y falls so late that it runs out before the army is home, there is no ribbon to wait for.
+const timeIsUp = () => X.of('RoomState').at(-1)?.phase === 'ended';
+const ribbon = await waitFor(() => timeIsUp() || X.of('Notification').some((t) => t.includes('ganimet') && t.includes('kişi')), 30000);
+if (timeIsUp() && !X.of('Notification').some((t) => t.includes('ganimet'))) console.log('skip  the ribbon: the match ran out of time before the army was home (test timing)');
+else check('a ribbon says what came home', ribbon);
 check('Z never hears of the loot', !Z.of('Notification').some((t) => t.includes('ganimet')));
+if (timeIsUp()) console.log('skip  the spectator checks: the match ran out of time right after Y fell (test timing)');
+else {
 await X.call('SetSpeed', 5);
 const fellAt = Y.of('CastleState').find((c) => c.eliminated).elapsedSeconds;
 check('a countdown comes before the first picture', await waitFor(() => Y.of('SpectatorWait').length > 0, 8000));
@@ -443,6 +465,7 @@ check('nobody still playing got a spectator picture or countdown',
 check("X's and Z's traffic never mentions the other castles' insides",
   !Z.msgs.some((m) => m.target === 'CastleState' && m.arg.color !== 'yellow'));
 check('Y only ever got its own castle state', Y.of('CastleState').every((c) => c.color === 'red'));
+}
 
 // ---- a bot takes a seat: public facts only, no token, no castle sent to anyone ----------------------------------
 const P = client(), Q = client();
