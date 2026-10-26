@@ -171,8 +171,8 @@
   "walls": {
     "archerDefenseBonus": 0.25,
     "levels": [
-      { "hp": 1000, "upgradeWood": 40, "upgradeIron": 20, "upgradeSeconds": 90 },
-      { "hp": 1800, "upgradeWood": 80, "upgradeIron": 50, "upgradeSeconds": 120 }
+      { "hp": 750, "upgradeWood": 40, "upgradeIron": 20, "upgradeSeconds": 90 },
+      { "hp": 1100, "upgradeWood": 80, "upgradeIron": 50, "upgradeSeconds": 120 }
     ]
   },
 

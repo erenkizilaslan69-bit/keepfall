@@ -30,7 +30,7 @@ Tarayıcıda oynanır. Tüm oyun mantığı sunucudadır; istemci yalnızca komu
 - **Savaş sisi:** Yalnızca kalenin, kendi ordularının ve gözcülerinin gördüğü yeri görürsün. Sis sunucu tarafındadır: görüş dışındaki hiçbir şey istemciye gönderilmez. Düşman ordusu kalenin görüşüne girince uyarı çıkar ve askerleri görünür.
 - Yolda karşılaşan iki ordu (farklı oyunculara ait) durup savaşır. Yoldaki orduyu **geri çağırabilir** ya da ordu göndermek yerine **önünü kesme** emri verebilirsin.
 - Savaşlar görünürdür ve gerçek zamanlı oynar: askerler karşı karşıya gelir, okçular ok atar, düşenler kayıttaki anda düşer. Kale savaşında savunanlar kapıya iner; saldıran kazanırsa kapıya vurur.
-- Kale canı = sur canıdır: bölgenin etrafında bir sur var (Sv1 ahşap çit 500 can, Sv2 taş duvar 1000, Sv3 kuleli kalın sur 1800; kale penceresinde "Suru yükselt"); sur ayaktayken kapıdaki okçular %25 fazla hasar verir. Rakibin sur seviyesini kapısını görünce ya da gözcü raporundan öğrenirsin. Sayılar `config/balance.json` `walls`.
+- Kale canı = sur canıdır: bölgenin etrafında bir sur var (Sv1 ahşap çit 500 can, Sv2 taş duvar 750, Sv3 kuleli kalın sur 1100; kale penceresinde "Suru yükselt"); sur ayaktayken kapıdaki okçular %25 fazla hasar verir. Rakibin sur seviyesini kapısını görünce ya da gözcü raporundan öğrenirsin. Sayılar `config/balance.json` `walls`.
 - Kale canı 500'dür (Sv1); sıfırlanan oyuncu elenir ve izleyici olur: önce "izleme N sn sonra başlıyor" geçiş ekranını görür (`match.spectatorWaitSeconds`, varsayılan 5 oyun sn), sonra tüm haritayı canlı ve sissiz izler (her kalenin içi, bütün ordular, gözcüler ve savaşlar). İstenirse `match.spectatorDelaySeconds` ile gecikme eklenebilir (`config/balance.json`, varsayılan 0). Bu görünüm yalnızca elenen oyuncuya gönderilir; hâlâ oynayan kimse bunu alamaz (duman testi bunu denetler). Savaşın son %30'unda kıtlık başlar (yemek üretimi yarıya iner).
 
 **Arayüz:** Oyun tam ekrandır, sayfa kaymaz; her şey haritanın üstünde Tiny Swords parçalarıyla (kağıt, ribbon, düğme, çubuk) çizilir.
@@ -47,7 +47,7 @@ Tarayıcıda oynanır. Tüm oyun mantığı sunucudadır; istemci yalnızca komu
 | `config/balance.json` | Tüm denge sayıları: süreler, ekonomi, bina seviyeleri, harita hızları ve görüş, savaş, birlikler, karşılık matrisi. Kaynak: `docs/kale_oyunu_sayilar.xlsx`. |
 | `src/Keepfall.Core` | Oyun mantığı: `Combat` (savaş simülatörü ve kaydı), `Economy` (kale), `Match` (maç, ordular, savaşlar), `World` (harita, yollar, görüş), `Lobby` (oda). |
 | `src/Keepfall.Server` | ASP.NET Core + SignalR. Tick döngüsü ve gizli bilgi kuralı burada. |
-| `src/Keepfall.Views` | Oyuncuya gösterilen görünüm kayıtları ve onları oyundan üreten eşleyiciler (`ViewMapper`, `MapViewMapper`). Sunucu istemcilere, botlar kendi karar girdisi olarak bunu kullanır. |
+| `src/Keepfall.Views` | Oyuncuya gösterilen görünüm kayıtları ve onları oyundan üreten eşleyiciler (`ViewMapper`, `MapViewMapper`). Sunucu istemcilere, botlar kendi karar girdisi olarak bunu kullanır. |
 | `src/Keepfall.Bots` | Botların beyni. Sadece oyuncuya gösterilen görünümleri (`Keepfall.Views`) ve herkese açık kuralları görür; `GameState`/`Room` tiplerine başvuramaz (`BotIsolationTests` derlemenin başvurduğu tipleri denetler). |
 | `src/Keepfall.BotHost` | Botları odaya oturtur: her bota insanla aynı görünümleri verir, komutlarını `Room.Execute` ile çalıştırır. Sunucu ve simülatör aynı sınıfı kullanır. |
 | `src/BattleSim` | Konsol aracı: tek savaş ve denge raporu. |

@@ -86,10 +86,10 @@ Görev 0–6 ve kullanıcı istekleri bitti, hepsi push edildi; Production (5080
 - Botlar ulak göndermez; yük toplamı `bots.giftThreshold` (30) ve üstündeki hediyeyi alınca göndereni `bots.giftPeaceSeconds` (90) sn hedeflemez (mesajı okumaz).
 
 ## Sur
-- Kale canı = sur canı. `walls` bölümü (balance.json): Sv1 = `war.castleHp` (500), Sv2 1000 (40 odun, 20 demir, 90 sn), Sv3 1800 (80 odun, 50 demir, 120 sn) — Excel "Binalar/Sur"; yükseltme bitince can farkı mevcut cana eklenir. `UpgradeWall` komutu (kale penceresi, Savunma sekmesi). Sur ayaktayken kapıdaki savunan okçular `walls.archerDefenseBonus` (+%25) fazla hasar verir (`ArmySetup.RangedDamageFactor`; botların dövüş hesabı da bilir).
+- Kale canı = sur canı. `walls` bölümü (balance.json): Sv1 = `war.castleHp` (500), Sv2 750 (40 odun, 20 demir, 90 sn), Sv3 1100 (80 odun, 50 demir, 120 sn) — Excel "Binalar/Sur"; yükseltme bitince can farkı mevcut cana eklenir. `UpgradeWall` komutu (kale penceresi, Savunma sekmesi). Sur ayaktayken kapıdaki savunan okçular `walls.archerDefenseBonus` (+%25) fazla hasar verir (`ArmySetup.RangedDamageFactor`; botların dövüş hesabı da bilir).
 - Gizlilik: kendi sur seviyesi kendi görünümünde; rakibinki yalnız kapısı görüşteyken (`MapState.Walls`) ve gözcü raporunda (`WallLevel`); istemci en yüksek bildiğini tutar.
 - Görsel: `client/src/scene/Walls.ts` bölgenin kenarını çevirir (Sv1 kodla çizilmiş ahşap çit, Sv2 taş duvar, Sv3 kalın duvar + köşe ve kapı kuleleri; taş = CC0 Tilemap_Elevation). Kapı, yolun bölgeden çıktığı yanda (batı kaleleri doğu yanda, doğu kaleleri batı yanda): yol geometrisi sunucuda sabit. `?sur=1..3` ile önizleme; `tools/shot-walls.mjs`.
-- Botlar: Orta ve Zor `WallModule` ile yükseltir (`wallUpgrade`). Ölçüm: `docs/bot-sur-tablo.md`: sur ve bot yükseltmesi eleme ile biten maçı %60'tan %16'ya düşürdü (bkz. öneri tablosu `docs/bot-sur-oneri-tablo.md`); canlar kullanıcı kararına bırakıldı.
+- Botlar: Orta ve Zor `WallModule` ile yükseltir (`wallUpgrade`). Ölçüm: `docs/bot-sur-tablo.md`: sur ve bot yükseltmesi eleme ile biten maçı %60'tan %16'ya düşürdü (bkz. öneri tablosu `docs/bot-sur-oneri-tablo.md`); kullanıcı kararı: Sv2 750, Sv3 1100 (öneri tablosu `docs/bot-sur-oneri-tablo.md`; eleme ile biten maç ~%33).
 
 ## Yollar (görünüm)
 - `client/src/scene/Roads.ts`: yol geometrisi sunucununki (değişmedi); zemin 4 px hücrelerle bir kez canvas dokularına çizilir (ragged kenar, tekerlek izi, çakıl, ormanda dar patika), kavşaklarda CC0 yön tabelası, kapı önü taş döşeme sur seviyesine göre (`GatePaving`). `tools/shot-roads.mjs`.

@@ -32,7 +32,7 @@ public class WallTests
     {
         var w = Rules.Walls;
         Assert.Equal(3, w.MaxLevel);
-        Assert.Equal((500.0, 1000.0, 1800.0), (w.HpOf(1), w.HpOf(2), w.HpOf(3)));
+        Assert.Equal((500.0, 750.0, 1100.0), (w.HpOf(1), w.HpOf(2), w.HpOf(3)));
         Assert.Equal((40.0, 20.0, 90.0), (w.UpgradeTo(2).UpgradeWood, w.UpgradeTo(2).UpgradeIron, w.UpgradeTo(2).UpgradeSeconds));
         Assert.Equal((80.0, 50.0, 120.0), (w.UpgradeTo(3).UpgradeWood, w.UpgradeTo(3).UpgradeIron, w.UpgradeTo(3).UpgradeSeconds));
         Assert.Equal(0.25, w.ArcherDefenseBonus);
@@ -58,7 +58,7 @@ public class WallTests
         game.Tick(2);
         Assert.Equal(2, castle.WallLevel);
         Assert.Null(castle.WallUpgradeRemaining);
-        Assert.Equal((1000.0, 800.0), (castle.MaxWallHp, castle.WallHp)); // 300 + 500: what it lost stays lost
+        Assert.Equal((750.0, 550.0), (castle.MaxWallHp, castle.WallHp)); // 300 + 500: what it lost stays lost
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public class WallTests
         castle.AddGoods(0, 500, 500);
         Ok(game.Execute(A, new UpgradeWall()));
         for (int t = 0; t < 125; t++) game.Tick(1);
-        Assert.Equal((3, 1800.0), (castle.WallLevel, castle.MaxWallHp));
+        Assert.Equal((3, 1100.0), (castle.WallLevel, castle.MaxWallHp));
         Assert.False(game.Execute(A, new UpgradeWall()).Ok);
         var other = game.CastleOf(B)!;
         other.AddGoods(0, 500, 500);
@@ -144,7 +144,7 @@ public class WallTests
         var view = ViewMapper.CastleOf(room, me)!;
         Assert.Equal(1, view.War.WallLevel);
         var next = view.War.WallUpgrade!;
-        Assert.Equal((2, 1000.0, 40.0, 20.0, 90.0), (next.NextLevel, next.NextHp, next.NextWood, next.NextIron, next.NextSeconds));
+        Assert.Equal((2, 750.0, 40.0, 20.0, 90.0), (next.NextLevel, next.NextHp, next.NextWood, next.NextIron, next.NextSeconds));
         Assert.Empty(MapViewMapper.StateOf(room, me)!.Walls ?? []);
     }
 }
