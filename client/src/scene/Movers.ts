@@ -65,6 +65,8 @@ export class Movers {
 
   /** Set by the scene: a click on one of our armies or scouts. */
   onSelect: (target: Target) => void = () => {};
+  /** Set by the scene: a battle replay is being played at this place (tiles). The column that walked into it stays hidden meanwhile. */
+  inReplay: (at: Vec) => boolean = () => false;
 
   constructor(private readonly scene: Phaser.Scene, private readonly ownColor: PlayerColor, private readonly labels: WorldLabels) {}
 
@@ -120,6 +122,28 @@ export class Movers {
     }
   }
 
+  /**
+   * One army, one drawing: every column sprite on the scene must belong to the track of its key, and a key has one track.
+   * Returns what is wrong (empty when all is well); the scene reports it, so a doubled army is caught instead of just seen.
+   */
+  audit(): string[] {
+    const problems: string[] = [];
+    const owned = new Set<Phaser.GameObjects.GameObject>();
+    for (const t of this.tracks.values()) for (const s of t.sprites) owned.add(s);
+    const perKey = new Map<string, number>();
+    for (const o of this.scene.children.list) {
+      const key = o.getData?.('track') as string | undefined;
+      if (!key) continue;
+      if (!owned.has(o)) problems.push(`stray sprite of ${key}`);
+      else perKey.set(key, (perKey.get(key) ?? 0) + 1);
+    }
+    for (const [key, t] of this.tracks) {
+      const drawn = perKey.get(key) ?? 0;
+      if (drawn !== t.sprites.length) problems.push(`${key}: ${drawn} drawn, ${t.sprites.length} expected`);
+    }
+    return problems;
+  }
+
   /** What our own armies and scouts see from where they are drawn right now (tiles). */
   ownVision(): { center: Vec; radius: number }[] {
     return [...this.tracks.values()].filter((t) => t.key.startsWith('own:')).map((t) => ({ center: t.shown, radius: t.vision }));
@@ -167,7 +191,8 @@ export class Movers {
       const jump = Math.hypot(target.x - t.shown.x, target.y - t.shown.y) > 3;
       t.shown = jump ? target : { x: t.shown.x + (target.x - t.shown.x) * k, y: t.shown.y + (target.y - t.shown.y) * k };
       if (heading.x !== 0 || heading.y !== 0) t.heading = heading;
-      for (const s of t.sprites) s.setVisible(!t.fighting);
+      const hidden = t.fighting || (!t.scout && this.inReplay(t.shown));
+      for (const s of t.sprites) s.setVisible(!hidden);
       this.place(t);
     }
   }
@@ -182,7 +207,7 @@ export class Movers {
     const sprites = kinds.map((unit) => {
       const look = unit === 'pawn' ? { anim: 'pawn-run', scale: UNIT_SCALE } : RUN[unit] ?? { anim: 'pawn-run', scale: UNIT_SCALE };
       const anim = colorKey(color, this.ownColor, look.anim);
-      const s = this.scene.add.sprite(0, 0, anim).setScale(look.scale).setOrigin(0.5, unitOriginY(look.anim)).setData('sig', signature);
+      const s = this.scene.add.sprite(0, 0, anim).setScale(look.scale).setOrigin(0.5, unitOriginY(look.anim)).setData('sig', signature).setData('track', key);
       s.play({ key: anim, startFrame: Phaser.Math.Between(0, 3) });
       return s;
     });

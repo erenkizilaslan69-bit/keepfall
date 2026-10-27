@@ -96,6 +96,9 @@ public class ContinuityTests
                 }
             }
             game.Tick(dt);
+            // One army, one entry: an id is never in the game twice.
+            var ids = all.SelectMany(p => game.ArmiesOf(p)).Select(a => a.PublicId).ToList();
+            Assert.Equal(ids.Count, ids.Distinct().Count());
         }
         Assert.True(game.ContinuityViolations == 0, $"{game.ContinuityViolations} jumps, worst {game.WorstJump:F2} tiles beyond walking");
     }

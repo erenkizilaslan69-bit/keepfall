@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { ArmyView, Rect, ScoutReportView, SpectatorCastleView, SpectatorStateView, BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
-import { guarded } from '../error-report';
+import { guarded, reportError } from '../error-report';
 import type { Minimap } from '../minimap';
 import type { Anchor, Target } from '../ui/windows';
 import type { WorldLabels } from '../ui/world-labels';
@@ -152,6 +152,7 @@ export class WorldScene extends Phaser.Scene {
     this.movers = new Movers(this, this.color, this.labels);
     this.sites = new SiteLayer(this, this.labels, (id) => this.select({ kind: 'site', id }));
     this.movers.onSelect = (t) => this.select(t);
+    this.movers.inReplay = (at) => this.battles?.active.some((b) => Math.hypot(b.at.x - at.x, b.at.y - at.y) < 2.5) ?? false;
     this.fog = new Fog(this, this.layout.size);
     this.fx = new Effects(this);
     this.battles = new BattlePlayer(this, this.color, () => this.gameNow(), (seat) => this.courtyardOf(seat), this.fx);
@@ -198,6 +199,21 @@ export class WorldScene extends Phaser.Scene {
   playBattle(battle: BattleStartedView): void {
     if (this.ready) this.battles.start(battle);
     else this.pendingBattles.push(battle);
+  }
+
+  private auditIn = 1;
+  private auditReported = new Set<string>();
+
+  /** Once a second: one army, one drawing. A doubled or stray column is reported once (and shows in the dev console). */
+  private auditMovers(dt: number): void {
+    this.auditIn -= dt;
+    if (this.auditIn > 0) return;
+    this.auditIn = 1;
+    for (const p of this.movers.audit()) {
+      if (this.auditReported.has(p)) continue;
+      this.auditReported.add(p);
+      reportError('mover-audit', new Error(p), { source: 'movers' });
+    }
   }
 
   /** The server's game time right now, run on from the last castle state at the game speed. */
@@ -450,6 +466,7 @@ export class WorldScene extends Phaser.Scene {
     guarded('scene-update', () => this.workers.update(dt), 'workers');
     guarded('scene-update', () => { for (const r of this.regions.values()) r.update(dt); }, 'regions');
     guarded('scene-update', () => this.movers.update(dt), 'movers');
+    guarded('scene-update', () => this.auditMovers(dt), 'audit');
     guarded('scene-update', () => this.battles.update(), 'battles');
     guarded('scene-update', () => this.onFrame(), 'onFrame');
     guarded('scene-update', () => this.clearTreesAroundBattles(dt), 'trees');
