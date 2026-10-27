@@ -57,6 +57,7 @@ pick(0); pick(3); pick(6); await w(400);
 cards[1]?.classList.add('flipped'); return cards.length;})()`);
 await sleep(2500);
 await shot('lobby');
+console.log('fits:', await evalJs(`JSON.stringify({scrollH:document.documentElement.scrollHeight, innerH:innerHeight, innerW:innerWidth})`));
 await evalJs(`window.scrollTo(0, document.body.scrollHeight)`);
 await sleep(500);
 await shot('lobby-low');

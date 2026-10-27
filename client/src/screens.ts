@@ -85,25 +85,31 @@ export class LobbyScreen {
     const link = `${location.origin}/oda/${room.code}`;
     const root = this.root = mount(parent, `
       <div class="screen menu paper lobby">
-        ${logoHtml()}
-        <div class="title-ribbon ribbon ribbon-blue">Oda <span class="code">${esc(room.code)}</span></div>
-        <div class="share">
-          <input readonly value="${esc(link)}" aria-label="Oda linki">
-          <button class="btn" data-a="copy">Linki kopyala</button>
-        </div>
-        <ul class="players" id="players"></ul>
-        <div class="deck" id="deck" hidden>
-          <h3>Destem <span class="deck-medal" id="deck-count" title="Seçilen birlik"></span></h3>
-          <p class="muted small">Maçta yalnız seçtiğin 4 birliği üretebilirsin. Kartı çevirmek için tıkla, seçmek için <b>Seç</b>'e bas (ya da kartı çift tıkla). Rakip destene yalnız gözcü raporuyla bakabilir. Seçmezsen rastgele verilir.</p>
-          <div class="deck-cards" id="deck-cards"></div>
-        </div>
-        <div class="me">
-          <label class="field">Adın <input id="myname" maxlength="16"></label>
-          <button class="btn" data-a="ready" id="ready"></button>
-        </div>
-        <div class="start">
-          <button data-a="start" id="start" class="btn btn-red wide">Maçı başlat</button>
-          <p class="muted small center" id="start-hint"></p>
+        <div class="lob-grid">
+          <div class="lob-left">
+            ${logoHtml()}
+            <div class="title-ribbon ribbon ribbon-blue">Oda <span class="code">${esc(room.code)}</span></div>
+            <div class="share">
+              <input readonly value="${esc(link)}" aria-label="Oda linki">
+              <button class="btn" data-a="copy">Linki kopyala</button>
+            </div>
+            <ul class="players" id="players"></ul>
+          </div>
+          <div class="lob-right">
+            <div class="deck" id="deck" hidden>
+              <h3>Destem <span class="deck-medal" id="deck-count" title="Seçilen birlik"></span></h3>
+              <p class="muted small">Maçta yalnız seçtiğin 4 birliği üretebilirsin. Kartı çevirmek için tıkla; seçmek için <b>Seç</b>'e bas ya da çift tıkla. Rakip destene yalnız gözcü raporu bakar; seçmezsen rastgele verilir.</p>
+              <div class="deck-cards" id="deck-cards"></div>
+            </div>
+          </div>
+          <div class="lob-bottom">
+            <label class="field">Adın <input id="myname" maxlength="16"></label>
+            <button class="btn" data-a="ready" id="ready"></button>
+            <div class="start">
+              <button data-a="start" id="start" class="btn btn-red wide">Maçı başlat</button>
+            </div>
+            <p class="muted small center" id="start-hint"></p>
+          </div>
         </div>
         <p class="error" id="error"></p>
       </div>`);

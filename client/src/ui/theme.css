@@ -405,3 +405,22 @@ html.in-menu .settings-fab.btn-round { display: inline-grid; }
 .set-about dl { margin: 0; }
 .set-about dt { font-weight: 700; margin-top: calc(6px * var(--u, 1)); }
 .set-about dd { margin: 0; font-family: var(--font-text); font-size: .85em; color: var(--ink-soft); }
+
+/* ---- the lobby on one screen: two columns on a wide window (left: logo, link, players; right: the deck; bottom: name, ready, start) ---- */
+.screen.lobby .lob-grid { display: flex; flex-direction: column; gap: calc(10px * var(--u, 1)); }
+.screen.lobby .lob-bottom { display: flex; flex-wrap: wrap; gap: calc(10px * var(--u, 1)); align-items: flex-end; }
+.screen.lobby .lob-bottom .field { flex: 1 1 calc(160px * var(--u, 1)); margin: 0; }
+.screen.lobby .lob-bottom .start { flex: 1 1 calc(160px * var(--u, 1)); }
+.screen.lobby .lob-bottom #start-hint { flex-basis: 100%; margin: 0; }
+@media (min-width: 1000px) {
+  .screen.lobby { max-width: min(calc(1080px * var(--u, 1)), calc(100vw - 180px)); margin-top: calc(14px * var(--u, 1)); margin-bottom: calc(8px * var(--u, 1)); }
+  .screen.lobby .error:empty { display: none; }
+  .screen.lobby .lob-grid { display: grid; grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); column-gap: calc(20px * var(--u, 1)); row-gap: calc(6px * var(--u, 1)); }
+  .screen.lobby .lob-bottom { grid-column: 1 / -1; flex-wrap: nowrap; padding-top: calc(4px * var(--u, 1)); }
+  .screen.lobby .lob-bottom #start-hint { flex-basis: auto; flex: 1.2; text-align: left; }
+  .screen.lobby .kf-logo-word { font-size: calc(40px * var(--u, 1)); }
+  .screen.lobby .kf-logo-crest { width: calc(52px * var(--u, 1)); }
+  .screen.lobby .deck h3 { margin-top: 0; }
+  .screen.lobby .deck-cards { grid-template-columns: repeat(4, 1fr); gap: calc(8px * var(--u, 1)); padding-bottom: calc(4px * var(--u, 1)); }
+  .screen.lobby .players li { padding-top: calc(4px * var(--u, 1)); padding-bottom: calc(4px * var(--u, 1)); }
+}
