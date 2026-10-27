@@ -64,7 +64,7 @@ export class Movers {
   private tracks = new Map<string, Track>();
   private gameSpeed = 1;
   /** Development: how far a column was from where the server put its army when the news came (tiles), for the debug layer to judge. */
-  readonly corrections: { key: string; tiles: number; speed: number; ageMs: number; shown: Vec; position: Vec; velocity: Vec; before: Vec; beforeVelocity: Vec; onRoad: boolean }[] = [];
+  readonly corrections: { key: string; tiles: number; speed: number; ageMs: number; shown: Vec; position: Vec; velocity: Vec; before: Vec; beforeVelocity: Vec; onRoad: boolean; fighting: boolean }[] = [];
 
   /** Development: what the debug layer reads. */
   debugTracks(): { key: string; own: boolean; scout: boolean; fighting: boolean; position: Vec; shown: Vec; drawn: number; expected: number; route: Vec[] | null; units: number; ageMs: number }[] {
@@ -102,7 +102,7 @@ export class Movers {
     const alive = new Set<string>();
     for (const o of state.own) {
       const t = this.track(`own:${o.id}`, this.ownColor, o.kind !== 'army', o.units, o.position, o.kind === 'envoy');
-      if (t.receivedAt > 0 && t.key === `own:${o.id}`) this.corrections.push({ key: t.key, tiles: Math.hypot(t.shown.x - o.position.x, t.shown.y - o.position.y), speed: this.gameSpeed, ageMs: now - t.receivedAt, shown: { ...t.shown }, position: { ...o.position }, velocity: { ...o.velocity }, before: { ...t.position }, beforeVelocity: { ...t.velocity }, onRoad: true });
+      if (t.receivedAt > 0 && t.key === `own:${o.id}`) this.corrections.push({ key: t.key, tiles: Math.hypot(t.shown.x - o.position.x, t.shown.y - o.position.y), speed: this.gameSpeed, ageMs: now - t.receivedAt, shown: { ...t.shown }, position: { ...o.position }, velocity: { ...o.velocity }, before: { ...t.position }, beforeVelocity: { ...t.velocity }, onRoad: true, fighting: t.fighting || o.fighting });
       if (o.fighting !== t.fighting) trace(o.fighting ? 'fight-flag-on' : 'fight-flag-off', t.key);
       t.position = o.position;
       t.velocity = o.velocity;
@@ -130,7 +130,7 @@ export class Movers {
     }
     for (const s of state.seen) {
       const t = this.track(`seen:${s.id}`, s.ownerColor, s.kind !== 'army', s.units, s.position, s.kind === 'envoy');
-      if (t.receivedAt > 0 && performance.now() - t.receivedAt < 5000) this.corrections.push({ key: t.key, tiles: Math.hypot(t.shown.x - s.position.x, t.shown.y - s.position.y), speed: this.gameSpeed, ageMs: now - t.receivedAt, shown: { ...t.shown }, position: { ...s.position }, velocity: { ...s.velocity }, before: { ...t.position }, beforeVelocity: { ...t.velocity }, onRoad: followRoads(this.roads, t.position, t.velocity, 1) !== null });
+      if (t.receivedAt > 0 && performance.now() - t.receivedAt < 5000) this.corrections.push({ key: t.key, tiles: Math.hypot(t.shown.x - s.position.x, t.shown.y - s.position.y), speed: this.gameSpeed, ageMs: now - t.receivedAt, shown: { ...t.shown }, position: { ...s.position }, velocity: { ...s.velocity }, before: { ...t.position }, beforeVelocity: { ...t.velocity }, onRoad: followRoads(this.roads, t.position, t.velocity, 1) !== null, fighting: false });
       t.position = s.position;
       t.velocity = s.velocity;
       t.route = null;

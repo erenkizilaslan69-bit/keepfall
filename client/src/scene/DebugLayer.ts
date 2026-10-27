@@ -114,10 +114,14 @@ export class DebugLayer {
     // deviation from the server's position
     for (const c of this.movers.corrections.splice(0)) {
       // An army that turned round (a recall, the way home after a battle) or began moving since the last news cannot be guessed: not a fault.
-      const turned = c.beforeVelocity.x * c.velocity.x + c.beforeVelocity.y * c.velocity.y <= 0.01;
-      if (turned) continue;
-      const allowed = 2 + c.speed * 0.6;
-      if (c.tiles > allowed) this.fault('deviation', c.key, `${c.tiles.toFixed(1)} tiles from the server's position (allowed ${allowed.toFixed(1)} at x${c.speed}); last news ${Math.round(c.ageMs)} ms before, drawn ${c.shown.x.toFixed(1)},${c.shown.y.toFixed(1)}, server ${c.position.x.toFixed(1)},${c.position.y.toFixed(1)}, velocity ${c.velocity.x.toFixed(2)},${c.velocity.y.toFixed(2)}, previous news ${c.before.x.toFixed(1)},${c.before.y.toFixed(1)} with velocity ${c.beforeVelocity.x.toFixed(2)},${c.beforeVelocity.y.toFixed(2)}, on a road ${c.onRoad}`);
+      // (A turn at a junction cannot be guessed either: which branch the army takes is not told. And one that is fighting is hidden and stands still.)
+      const a = Math.hypot(c.beforeVelocity.x, c.beforeVelocity.y), b = Math.hypot(c.velocity.x, c.velocity.y);
+      const turned = a < 0.01 || b < 0.01 || (c.beforeVelocity.x * c.velocity.x + c.beforeVelocity.y * c.velocity.y) / (a * b) < 0.95;
+      if (turned || c.fighting) continue;
+      // 2 tiles, plus one server tick of the army's walking (news arrives in bursts when the machine or the network stalls for a moment: the
+      // picture is then one tick behind, which is not a drawing fault): at x5 an army at 2.5 tiles/s moves 12.5 tiles between two news.
+      const allowed = 2 + b * c.speed;
+      if (c.tiles > allowed) this.fault('deviation', c.key, `${c.tiles.toFixed(1)} tiles from the server's position (allowed ${allowed.toFixed(1)} = 2 + one tick at x${c.speed}); last news ${Math.round(c.ageMs)} ms before, drawn ${c.shown.x.toFixed(1)},${c.shown.y.toFixed(1)}, server ${c.position.x.toFixed(1)},${c.position.y.toFixed(1)}, velocity ${c.velocity.x.toFixed(2)},${c.velocity.y.toFixed(2)}, previous news ${c.before.x.toFixed(1)},${c.before.y.toFixed(1)} with velocity ${c.beforeVelocity.x.toFixed(2)},${c.beforeVelocity.y.toFixed(2)}, on a road ${c.onRoad}`);
     }
 
     // off-road: an army away from every road
