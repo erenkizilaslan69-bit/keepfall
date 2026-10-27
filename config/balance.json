@@ -188,12 +188,13 @@
   },
 
   // Excel "Binalar" sekmesi: tarla, oduncu kampı, maden ve demirhane aynı tabloyu kullanır.
-  // Sıra = seviye (ilki seviye 1). upgrade* = o seviyeye çıkmanın maliyeti ve süresi (sn).
+  // Sıra = seviye (ilki seviye 1). upgrade* = o seviyeye çıkmanın maliyeti ve süresi (sn). Süreler yarıya indirildi; Sv4 eklendi (2026-10-27 gece).
   // Demirhanede multiplier = silah üretim hızı.
   "buildingLevels": [
     { "capacity": 4, "multiplier": 1.0, "upgradeWood": 0,  "upgradeIron": 0,  "upgradeSeconds": 0 },
-    { "capacity": 6, "multiplier": 1.5, "upgradeWood": 20, "upgradeIron": 10, "upgradeSeconds": 30 },
-    { "capacity": 8, "multiplier": 2.0, "upgradeWood": 40, "upgradeIron": 25, "upgradeSeconds": 60 }
+    { "capacity": 6, "multiplier": 1.5, "upgradeWood": 20, "upgradeIron": 10, "upgradeSeconds": 15 },
+    { "capacity": 8, "multiplier": 2.0, "upgradeWood": 40, "upgradeIron": 25, "upgradeSeconds": 30 },
+    { "capacity": 10, "multiplier": 2.5, "upgradeWood": 80, "upgradeIron": 50, "upgradeSeconds": 60 }
   ],
 
   "combat": {

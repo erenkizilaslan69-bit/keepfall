@@ -39,7 +39,7 @@ const counts = (list: Count[]) => list.map((c) => `${c.count} ${c.name}`).join('
 
 /** What the decree says: short lists under small headings. */
 export function guideHtml(g: Guide): string {
-  const [l1, l2, l3] = g.levels;
+  const [l1, l2, l3, l4] = g.levels;
   const shortTotal = g.shortPrepSeconds + g.shortWarSeconds, longTotal = g.longPrepSeconds + g.longWarSeconds;
   const sections: [string, string[]][] = [
     ['Amaç', [
@@ -54,8 +54,8 @@ export function guideHtml(g: Guide): string {
       `Yeni kişi yemekle doğar (ilk kişi ${num(g.newPersonBaseCost)} yemek, sonra her kişi ${percent(g.newPersonCostGrowth)} pahalı). Savaşın ${percent(g.famineStart)}'inden sonra kıtlık: yemek üretimi ×${num(g.famineFoodMultiplier)}.`,
     ]],
     ['Binalar ve silah', [
-      `Çiftlik, kereste, maden ve demirci: her birinde en çok ${l1.capacity} kişi çalışır. Yükseltince ${l2 ? `${l2.capacity}` : ''}${l3 ? ` ve ${l3.capacity}` : ''} kişi, üretim ${l2 ? `×${num(l2.multiplier)}` : ''}${l3 ? ` ve ×${num(l3.multiplier)}` : ''}.`,
-      l2 ? `Yükseltme bedeli: ${num(l2.upgradeWood)} odun + ${num(l2.upgradeIron)} demir${l3 ? ` (sonra ${num(l3.upgradeWood)} + ${num(l3.upgradeIron)})` : ''}, ${num(l2.upgradeSeconds)} sn sürer.` : '',
+      `Çiftlik, kereste, maden ve demirci: her birinde en çok ${l1.capacity} kişi çalışır. Yükseltince ${l2 ? `${l2.capacity}` : ''}${l3 ? `, ${l3.capacity}` : ''}${l4 ? ` ve ${l4.capacity}` : ''} kişi, üretim ${l2 ? `×${num(l2.multiplier)}` : ''}${l3 ? `, ×${num(l3.multiplier)}` : ''}${l4 ? ` ve ×${num(l4.multiplier)}` : ''}.`,
+      l2 ? `Yükseltme bedeli: ${num(l2.upgradeWood)} odun + ${num(l2.upgradeIron)} demir${l3 ? ` (sonra ${num(l3.upgradeWood)} + ${num(l3.upgradeIron)}${l4 ? `, en üst seviye ${num(l4.upgradeWood)} + ${num(l4.upgradeIron)}` : ''})` : ''}; ${g.levels.slice(1).map((l) => `${num(l.upgradeSeconds)}`).join(', ')} sn sürer.` : '',
       'Demirci demir ve odundan <b>silah</b> yapar; silahı askere çevirirsin, asker işçiye de geri dönebilir.',
     ]],
     ['Gözcü', [

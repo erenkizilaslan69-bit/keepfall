@@ -159,7 +159,7 @@ public class EconomyTests
         Assert.Equal((20.0, 10.0), (castle.Wood, castle.Iron));
         Assert.True(castle.Building(BuildingType.Farm).IsUpgrading);
 
-        Run(castle, 29);
+        Run(castle, 14);
         Assert.Equal(4, castle.Capacity(BuildingType.Farm)); // still level 1 while upgrading
         castle.Tick(1);
         Assert.Equal(2, castle.Building(BuildingType.Farm).Level);
@@ -170,7 +170,7 @@ public class EconomyTests
 
         // Level 3 costs 40 wood + 25 iron: not affordable with what is left.
         Assert.False(castle.Execute(new UpgradeBuilding(BuildingType.Farm)).Ok);
-        Assert.Equal((40.0, 25.0, 60.0), (Rules.Economy.Level(3).UpgradeWood, Rules.Economy.Level(3).UpgradeIron, Rules.Economy.Level(3).UpgradeSeconds));
+        Assert.Equal((40.0, 25.0, 30.0), (Rules.Economy.Level(3).UpgradeWood, Rules.Economy.Level(3).UpgradeIron, Rules.Economy.Level(3).UpgradeSeconds));
     }
 
     [Fact]
@@ -188,14 +188,22 @@ public class EconomyTests
 
         // The gain ignores starvation: it is what the building adds when people are fed.
         Ok(castle.Execute(new UpgradeBuilding(BuildingType.Farm)));
-        Run(castle, 30);
+        Run(castle, 15);
         Assert.Equal(2, castle.Building(BuildingType.Farm).Level);
         Assert.Equal(4 * 8 * 0.5, castle.UpgradeGain(BuildingType.Farm)); // ×1.5 → ×2
 
         Ok(castle.Execute(new MoveWorkers(Job.Idle, Job.Lumberjack, 2)));
         Run(castle, 120); // gather enough for level 3
         Ok(castle.Execute(new UpgradeBuilding(BuildingType.Farm)));
+        Run(castle, 30);
+        Assert.Equal(3, castle.Building(BuildingType.Farm).Level);
+        Assert.Equal(4 * 8 * 0.5, castle.UpgradeGain(BuildingType.Farm)); // ×2 → ×2,5
+        castle.AddGoods(0, 200, 200); // and level 4
+        Ok(castle.Execute(new UpgradeBuilding(BuildingType.Farm)));
         Run(castle, 60);
+        Assert.Equal(4, castle.Building(BuildingType.Farm).Level);
+        Assert.Equal(10, castle.Capacity(BuildingType.Farm));
+        Assert.Equal(2.5, castle.Multiplier(BuildingType.Farm));
         Assert.Null(castle.UpgradeGain(BuildingType.Farm)); // max level
     }
 
