@@ -237,14 +237,14 @@
       "id": "okcu", "name": "Okçu", "phase": 1,
       "cost": { "iron": 1, "wood": 4, "food": 0, "people": 1 },
       "buildSeconds": 25,
-      "hp": 65, "damage": 9.5, "attackInterval": 1.2,
+      "hp": 68, "damage": 9, "attackInterval": 1.2,
       "range": "ranged", "row": "back"
     },
     {
       "id": "kilicli", "name": "Kılıçlı", "phase": 1,
       "cost": { "iron": 3, "wood": 2, "food": 0, "people": 1 },
       "buildSeconds": 30,
-      "hp": 110, "damage": 9.5, "attackInterval": 1.0,
+      "hp": 100, "damage": 8.5, "attackInterval": 1.0,
       "range": "melee", "row": "front"
     },
     {
@@ -269,7 +269,7 @@
       "buildSeconds": 30,
       "hp": 60, "damage": 0, "attackInterval": 1.5,
       "range": "ranged", "row": "back",
-      "heal": 8, "healInterval": 2.0
+      "heal": 6, "healInterval": 2.0, "healBudget": 90
     },
     // Mancınık: hep düşmanın arka sırasına vurur (yoksa ön sıraya), asıl hedefe tam, aynı sıradan splashTargets kişiye splashFactor kadar.
     // people 2: kuşanırken iki işçi harcar (işçiye dönerken iki işçi geri gelir).
@@ -277,7 +277,7 @@
       "id": "mancinik", "name": "Mancınık", "phase": 1,
       "cost": { "iron": 2, "wood": 5, "food": 0, "people": 2 },
       "buildSeconds": 60,
-      "hp": 50, "damage": 28, "attackInterval": 3.0,
+      "hp": 50, "damage": 17, "attackInterval": 3.0,
       "range": "ranged", "row": "back",
       "splashTargets": 2, "splashFactor": 0.5, "backFirst": true
     },

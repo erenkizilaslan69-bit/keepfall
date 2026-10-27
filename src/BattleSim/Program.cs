@@ -126,7 +126,7 @@ try
         }
 
         case "deste":
-            new DeckReport(rules, Int(flags, "cift", 8), Int(flags, "seed", 1), flags.GetValueOrDefault("cikti"), flags.GetValueOrDefault("zorluk", "orta")).Run();
+            new DeckReport(rules, Int(flags, "cift", 8), Int(flags, "seed", 1), flags.GetValueOrDefault("cikti"), flags.GetValueOrDefault("zorluk", "orta"), Int(flags, "deste-basi", 0)).Run();
             return 0;
 
         case "kontrol":

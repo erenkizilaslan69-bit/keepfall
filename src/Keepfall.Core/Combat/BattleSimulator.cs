@@ -83,8 +83,9 @@ public sealed class BattleSimulator
 
                     if (soldier.Type.Heal > 0)
                     {
-                        var patient = MostWounded(sides[s], soldier);
+                        var patient = soldier.HealLeft > 0 ? MostWounded(sides[s], soldier) : null;
                         if (patient is null) { soldier.Cooldown = 0; continue; }
+                        if (soldier.Type.HealBudget > 0) soldier.HealLeft -= soldier.Type.Heal;
                         patient.PendingHeal += soldier.Type.Heal;
                         record?.Heal(tick, soldier.Index, patient.Index);
                         soldier.Cooldown += soldier.Type.HealInterval;
@@ -282,6 +283,8 @@ public sealed class BattleSimulator
         public double Cooldown { get; set; }
         public double PendingDamage { get; set; }
         public double PendingHeal { get; set; }
+        /// <summary>What a healer may still restore this battle (unlimited when the unit has no budget).</summary>
+        public double HealLeft { get; set; } = type.HealBudget > 0 ? type.HealBudget : double.PositiveInfinity;
         public Soldier? Target { get; set; }
         public double DamageDealt { get; set; }
         public double DamageTaken { get; set; }

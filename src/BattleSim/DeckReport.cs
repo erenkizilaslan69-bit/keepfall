@@ -9,7 +9,7 @@ namespace Keepfall.BattleSim;
 /// Every deck against every other deck, played out by bots (Medium on both sides, seats swapped from match to match):
 /// how often each deck wins on average. The aim: no deck wins much more than half of its matches.
 /// </summary>
-public sealed class DeckReport(GameRules rules, int perPair, int seed, string? outFile, string level = "orta")
+public sealed class DeckReport(GameRules rules, int perPair, int seed, string? outFile, string level = "orta", int perDeck = 0)
 {
     private static IEnumerable<string[]> Combinations(IReadOnlyList<string> ids, int size, int start = 0)
     {
@@ -23,18 +23,32 @@ public sealed class DeckReport(GameRules rules, int perPair, int seed, string? o
     {
         var ids = rules.Units.Select(u => u.Id).ToList();
         var decks = Combinations(ids, rules.Deck.Size).ToList();
+        // Diagnostics: KF_DECKS="a,b,c,d;e,f,g,h" plays only these decks, KF_SERIAL=1 one match at a time (to time them).
+        if (Environment.GetEnvironmentVariable("KF_DECKS") is { Length: > 0 } only)
+            decks = only.Split(';').Select(d => d.Split(',')).ToList();
         var pairs = new List<(int A, int B)>();
-        for (int i = 0; i < decks.Count; i++) for (int j = i + 1; j < decks.Count; j++) pairs.Add((i, j));
+        if (perDeck > 0)
+        {
+            // Sample: every deck plays perDeck matches against random other decks (instead of every pair many times).
+            var pick = new Random(seed);
+            for (int i = 0; i < decks.Count; i++)
+                for (int k = 0; k < perDeck; k++) { int j; do j = pick.Next(decks.Count); while (j == i); pairs.Add((i, j)); }
+            perPair = 1;
+        }
+        else
+            for (int i = 0; i < decks.Count; i++) for (int j = i + 1; j < decks.Count; j++) pairs.Add((i, j));
         Console.WriteLine($"Deste turnuvası: {decks.Count} deste, {pairs.Count} çift × {perPair} maç = {pairs.Count * perPair} maç · bot: {level} · tohum {seed}");
 
         var wins = new double[decks.Count];
         var games = new int[decks.Count];
         var matrix = new double[decks.Count, decks.Count]; // share the row deck took from the column deck
         var lockObj = new object();
+        var slow = new List<(double Seconds, string Pair, int Seed, double Duration, int TimedOut)>();
         double warPrep = rules.Match.ShortModePrepSeconds, war = rules.Match.ShortModeWarSeconds;
         var difficulty = level == "zor" ? BotDifficulty.Hard : BotDifficulty.Medium;
-        int done = 0;
-        Parallel.ForEach(pairs, pair =>
+        int done = 0, counter = 0;
+        var parallel = new ParallelOptions { MaxDegreeOfParallelism = Environment.GetEnvironmentVariable("KF_SERIAL") == "1" ? 1 : -1 };
+        Parallel.ForEach(pairs, parallel, pair =>
         {
             double a = 0, b = 0;
             for (int k = 0; k < perPair; k++)
@@ -42,10 +56,15 @@ public sealed class DeckReport(GameRules rules, int perPair, int seed, string? o
                 bool swap = k % 2 == 1; // who sits where
                 var first = swap ? decks[pair.B] : decks[pair.A];
                 var second = swap ? decks[pair.A] : decks[pair.B];
-                int s = seed * 100_003 + (pair.A * 7919 + pair.B) * 31 + k;
+                int s = seed * 100_003 + (pair.A * 7919 + pair.B) * 31 + k + System.Threading.Interlocked.Increment(ref counter) * 7;
                 var room = Room.StartBotMatch("SIM", rules, new RoomOptions { MinPlayers = 1, PrepSeconds = warPrep, WarSeconds = war, Seed = s },
                     [difficulty, difficulty], [first, second]);
+                var clock = System.Diagnostics.Stopwatch.StartNew();
                 BotMatch.Play(rules, room, s);
+                clock.Stop();
+                if (Environment.GetEnvironmentVariable("KF_SERIAL") == "1") Console.WriteLine($"    {clock.Elapsed.TotalSeconds,5:0.00} sn  {string.Join("+", first)} vs {string.Join("+", second)}");
+                if (clock.Elapsed.TotalSeconds > 2)
+                    lock (lockObj) slow.Add((clock.Elapsed.TotalSeconds, $"{string.Join("+", first)} vs {string.Join("+", second)}", s, room.Game!.ElapsedSeconds, room.Players.SelectMany(p => room.Game.BattlesOf(p.CastleKey)).Distinct().Count(b => b.Winner == BattleWinner.Draw)));
                 var winners = room.Game!.Result!.Winners.Select(w => room.PlayerOfCastle(w)!.Seat).ToList();
                 double credit = winners.Count == 0 ? 0 : 1.0 / winners.Count;
                 bool firstWon = winners.Contains(1), secondWon = winners.Contains(2);
@@ -62,6 +81,9 @@ public sealed class DeckReport(GameRules rules, int perPair, int seed, string? o
         });
         Console.WriteLine();
 
+        Console.WriteLine($"  2 sn'den uzun süren maç: {slow.Count} (toplam {pairs.Count * perPair})");
+        foreach (var x in slow.OrderByDescending(x => x.Seconds).Take(12))
+            Console.WriteLine($"    {x.Seconds,6:0.0} sn · oyun {x.Duration / 60:0.0} dk · berabere savaş {x.TimedOut} · {x.Pair}");
         var rows = Enumerable.Range(0, decks.Count).Select(i => (Index: i, Share: wins[i] / games[i])).OrderByDescending(r => r.Share).ToList();
         string Name(int i) => string.Join(" + ", decks[i].Select(id => rules.FindUnit(id)!.Name));
         Console.WriteLine();

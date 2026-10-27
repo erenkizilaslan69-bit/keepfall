@@ -278,6 +278,8 @@ public sealed class UnitConfig
     public double SpeedFactor { get; set; } = 1;
     /// <summary>An army of nothing but raiders cannot bring a castle down: it burns the rival's fields instead.</summary>
     public bool Raider { get; set; }
+    /// <summary>The most hit points one healer can restore in a single battle (0 = no limit): no army lives for ever behind its healers.</summary>
+    public double HealBudget { get; set; }
 }
 
 public sealed class CostConfig
@@ -469,7 +471,7 @@ public static class BalanceConfigLoader
                 units.Count, u.Id, string.IsNullOrWhiteSpace(u.Name) ? u.Id : u.Name, u.Phase,
                 new ResourceCost(u.Cost.Iron, u.Cost.Wood, u.Cost.Food, u.Cost.People),
                 u.BuildSeconds, u.Hp, u.Damage, u.AttackInterval, range, row,
-                u.Heal, u.HealInterval, u.SplashTargets, u.SplashFactor, u.BackFirst, u.Flank, u.SpeedFactor, u.Raider));
+                u.Heal, u.HealInterval, u.SplashTargets, u.SplashFactor, u.BackFirst, u.Flank, u.SpeedFactor, u.Raider, u.HealBudget));
         }
         if (units.Count == 0) errors.Add("units: en az bir birlik tanımlanmalı.");
 
