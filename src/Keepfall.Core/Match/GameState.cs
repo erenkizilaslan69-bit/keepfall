@@ -337,6 +337,7 @@ public sealed class GameState
         ElapsedSeconds += dt;
         AdvanceScouts(dt);
         AdvanceArmies(dt);
+        CheckContinuity(Rules.Map.ArmySpeed * dt + 1e-6);
         RefreshSight();
         if (Phase == MatchPhase.Ended) return; // the last castle standing ended it
         if (ElapsedSeconds + 1e-9 >= _nextSample) TakeSamples();
@@ -355,8 +356,38 @@ public sealed class GameState
         }
     }
 
+    private readonly Dictionary<int, Vec> _lastPositions = [];
+
+    /// <summary>How many times an army was found further from where it last stood than it can walk (must stay 0: armies never jump).</summary>
+    public int ContinuityViolations { get; private set; }
+
+    /// <summary>Largest jump seen, in tiles beyond what walking allows (for diagnosing).</summary>
+    public double WorstJump { get; private set; }
+
+    private void CheckContinuity(double allowed)
+    {
+        foreach (var a in _armies)
+        {
+            var pos = a.Position;
+            if (_lastPositions.TryGetValue(a.Id, out var before) && before.DistanceTo(pos) > allowed)
+            {
+                ContinuityViolations++;
+                WorstJump = Math.Max(WorstJump, before.DistanceTo(pos) - allowed);
+            }
+            _lastPositions[a.Id] = pos;
+        }
+        foreach (var id in _lastPositions.Keys.Where(id => _armies.All(a => a.Id != id)).ToList()) _lastPositions.Remove(id);
+    }
+
     /// <summary>Applies a command from <paramref name="playerKey"/>; it can only change their own castle.</summary>
     public CommandResult Execute(string playerKey, GameCommand command)
+    {
+        var result = ExecuteCore(playerKey, command);
+        CheckContinuity(1e-6); // an order never moves an army
+        return result;
+    }
+
+    private CommandResult ExecuteCore(string playerKey, GameCommand command)
     {
         if (Phase == MatchPhase.Ended) return CommandResult.Fail("Maç bitti.");
         if (!_players.TryGetValue(playerKey, out var player)) return CommandResult.Fail("Bu maçta böyle bir oyuncu yok.");
@@ -773,12 +804,23 @@ public sealed class GameState
         return CommandResult.Success;
     }
 
+    /// <summary>
+    /// The way home from where the army stands. An army that was never redirected simply walks its road back; a redirected
+    /// one's route starts mid-road, so its way home is found afresh from where it is to its own gate (never a jump).
+    /// </summary>
+    private Traveller WayHome(ArmyMarch a)
+    {
+        var route = a.Out.Route;
+        if (!a.Rerouted) return new Traveller(route.Reversed(), a.Out.Speed, route.Length - a.Out.Travelled);
+        return new Traveller(Map.RouteFrom(route, a.Out.Travelled, WorldMap.GateNode(_corners[a.From])), a.Out.Speed);
+    }
+
     /// <summary>The army turns round where it is and walks home along the same road.</summary>
     private void TurnBack(ArmyMarch a)
     {
         a.State = ArmyState.Returning;
         a.Survivors = a.Units;
-        a.Back = new Traveller(a.Out.Route.Reversed(), a.Out.Speed, a.Out.Route.Length - a.Out.Travelled);
+        a.Back = WayHome(a);
     }
 
     private void AdvanceArmies(double dt)
@@ -813,6 +855,7 @@ public sealed class GameState
         foreach (var a in _armies.Where(a => a.State == ArmyState.Returning && a.Back!.Arrived).ToList())
         {
             var castle = _players[a.From].Castle;
+            if (a.Position.DistanceTo(Map.RegionOf(_corners[a.From]).Gate) > 1.0) ContinuityViolations++; // home means at its own gate
             castle.ArmyReturned(a.Survivors);
             castle.AddGold(a.LootGold);
             castle.AddPeople(a.LootPeople);
@@ -1126,7 +1169,7 @@ public sealed class GameState
         }
         a.State = ArmyState.Returning;
         a.Survivors = survivors;
-        a.Back = new Traveller(a.Out.Route.Reversed(), a.Out.Speed);
+        a.Back = WayHome(a);
     }
 
     private static List<BattleUnitLine> Lines(IReadOnlyDictionary<UnitType, int> present, IReadOnlyDictionary<UnitType, int> lost) =>

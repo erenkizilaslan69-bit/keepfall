@@ -39,10 +39,14 @@ public sealed class ArmyMarch
         Site = site;
         Mode = ArmyMode.Attack;
         Out = new Traveller(route, Out.Speed);
+        Rerouted = true;
         Back = null;
         State = ArmyState.Marching;
         Sighted = false;
     }
+
+    /// <summary>Its route starts somewhere on the road (a new order), so the way home must be worked out from where it stands.</summary>
+    internal bool Rerouted { get; private set; }
 
     public int Id { get; }
     /// <summary>What other players see it as: random, so it gives nothing away.</summary>
