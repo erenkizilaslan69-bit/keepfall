@@ -10,10 +10,10 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const port = 5081;
 const text = readFileSync(join(root, 'config', 'balance.json'), 'utf8').replace(/^﻿/, '');
-if (!/"shortModeMinutes":\s*15\b/.test(text)) throw new Error('config/balance.json: shortModeMinutes is no longer 15, update tools/run-smoke.mjs');
+if (!/"shortModeMinutes":\s*20\b/.test(text)) throw new Error('config/balance.json: shortModeMinutes is no longer 20, update tools/run-smoke.mjs');
 const dir = mkdtempSync(join(tmpdir(), 'kf-smoke-'));
 const configPath = join(dir, 'balance.json');
-writeFileSync(configPath, text.replace(/("shortModeMinutes":\s*)15\b/, '$127').replace(/("shortModePrepMinutes":\s*)10\b/, '$112'), 'utf8'); // 12 minutes of preparation (the last minute has no scouting) + 15 of war
+writeFileSync(configPath, text.replace(/("shortModeMinutes":\s*)20\b/, '$127').replace(/("shortModePrepMinutes":\s*)10\b/, '$112'), 'utf8'); // 12 minutes of preparation (the last minute has no scouting) + 15 of war
 
 const server = spawn('dotnet', ['run', '--project', join(root, 'src', 'Keepfall.Server'), '--no-launch-profile', '--urls', `http://localhost:${port}`], {
   cwd: root, stdio: 'ignore', env: { ...process.env, ASPNETCORE_ENVIRONMENT: 'Development', Keepfall__BalancePath: configPath },

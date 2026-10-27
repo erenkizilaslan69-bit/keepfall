@@ -26,7 +26,7 @@ public sealed record GuideCampView(IReadOnlyList<GuideCount> Bandits, GuideRange
 public sealed record GuideView(
     double ShortPrepSeconds, double ShortWarSeconds, double LongPrepSeconds, double LongWarSeconds, int StartingPopulation,
     double WorkerFoodPerMinute, double SoldierFoodPerMinute, double FoodPerMinute, double WoodPerMinute, double IronPerMinute,
-    double NewPersonBaseCost, double NewPersonCostGrowth, double FamineStart, double FamineFoodMultiplier,
+    double NewPersonBaseCost, double NewPersonCostGrowth, double FamineStartSeconds, double FamineFoodMultiplier,
     IReadOnlyList<GuideLevelView> Levels, IReadOnlyList<GuideUnitView> Units,
     double CastleHp, double SiegeSeconds, double ArcherSiegeMultiplier,
     int MaxScouts, double ScoutErrorPercent, double ArmySpeed, double ScoutSpeed,
@@ -55,7 +55,7 @@ public static class GuideMapper
             rules.Match.ShortModePrepSeconds, rules.Match.ShortModeWarSeconds, rules.Match.LongModePrepSeconds, rules.Match.LongModeWarSeconds,
             rules.Match.StartingPopulation,
             e.WorkerFoodPerMinute, e.SoldierFoodPerMinute, rules.Production.FoodPerMinute, rules.Production.WoodPerMinute, rules.Production.IronPerMinute,
-            e.NewPersonBaseCost, e.NewPersonCostGrowth, rules.War.FamineStart, rules.War.FamineFoodMultiplier,
+            e.NewPersonBaseCost, e.NewPersonCostGrowth, rules.War.FamineStartSeconds >= 0 ? rules.War.FamineStartSeconds : rules.War.FamineStart * rules.Match.ShortModeWarSeconds, rules.War.FamineFoodMultiplier,
             e.BuildingLevels.Select(l => new GuideLevelView(l.Level, l.Capacity, l.Multiplier, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList(), units,
             rules.War.CastleHp, rules.War.SiegeSeconds, rules.War.ArcherSiegeMultiplier,
             rules.Scouting.MaxScouts, Math.Round(rules.Scouting.ReportError * 100), rules.Map.ArmySpeed, rules.Map.ScoutSpeed,

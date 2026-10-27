@@ -27,7 +27,8 @@ public sealed record WarRules(
     double BattlePlayback,
     double EncounterRadius,
     double FallLootShare = 0,
-    double FallWorkerShare = 0);
+    double FallWorkerShare = 0,
+    double FamineStartSeconds = -1);
 
 /// <summary>What it takes to raise the wall to a level: the wall's hit points at that level and the wood, iron and seconds of the upgrade.</summary>
 public sealed record WallLevelRules(double Hp, double UpgradeWood, double UpgradeIron, double UpgradeSeconds);

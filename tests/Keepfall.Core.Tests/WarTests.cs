@@ -64,25 +64,26 @@ public class WarTests
     // ---- phases and famine -------------------------------------------------------------------
 
     [Fact]
-    public void Short_mode_is_ten_minutes_of_preparation_then_five_of_war()
+    public void Short_mode_is_ten_minutes_of_preparation_then_ten_of_war()
     {
         Assert.Equal(600, Rules.Match.ShortModePrepSeconds);
-        Assert.Equal(300, Rules.Match.ShortModeWarSeconds);
+        Assert.Equal(600, Rules.Match.ShortModeWarSeconds);
         var game = new GameState(Rules, [A, B]);
         Run(game, 600);
         Assert.Equal(MatchPhase.War, game.Phase);
-        Assert.Equal(300, game.RemainingSeconds);
-        Run(game, 300);
+        Assert.Equal(600, game.RemainingSeconds);
+        Run(game, 600);
         Assert.Equal(MatchPhase.Ended, game.Phase);
     }
 
     [Fact]
-    public void Famine_halves_food_production_in_the_last_30_percent_of_the_war()
+    public void Famine_halves_food_production_from_four_minutes_into_the_war_to_its_end()
     {
-        var game = War(war: 100);
+        var game = War(war: 600);
         Ok(game.Execute(A, new MoveWorkers(Job.Idle, Job.Farmer, 4)));
         var castle = game.CastleOf(A)!;
-        Run(game, 69);
+        Assert.Equal(240, Rules.War.FamineStartSeconds);
+        Run(game, 239);
         Assert.False(game.Famine);
         Assert.Equal(4 * 8, castle.ProductionPerMinute(Resource.Food));
         Run(game, 1);

@@ -182,6 +182,8 @@ public sealed class VisionConfig
 public sealed class WarConfig
 {
     public double FamineStart { get; set; } = 0.7;
+    /// <summary>The famine starts this many seconds after the war does (overrides famineStart; negative = use the fraction).</summary>
+    public double FamineStartSeconds { get; set; } = -1;
     public double FamineFoodMultiplier { get; set; } = 0.5;
     public double CastleHp { get; set; } = 500;
     public double SiegeSeconds { get; set; } = 5;
@@ -506,7 +508,7 @@ public static class BalanceConfigLoader
                     i + 1, l.Capacity, l.Multiplier, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList()),
             new ScoutingRules(sc.ReportError, sc.MaxScouts, sc.NoScoutLastPrepSeconds),
             new WarRules(w.FamineStart, w.FamineFoodMultiplier,
-                w.CastleHp, w.SiegeSeconds, w.ArcherSiegeMultiplier, w.BattlePlayback, w.EncounterRadius, w.FallLootShare, w.FallWorkerShare),
+                w.CastleHp, w.SiegeSeconds, w.ArcherSiegeMultiplier, w.BattlePlayback, w.EncounterRadius, w.FallLootShare, w.FallWorkerShare, w.FamineStartSeconds),
             new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout, mp.ScoutTrailSeconds),
             config.Mercenary,
             new ForestRules(fo.ChestsPerCorner, fo.VillagesPerCorner, fo.CampsPerCorner, fo.MinSpacing, fo.HubClearing, fo.FootMin, fo.FootMax,

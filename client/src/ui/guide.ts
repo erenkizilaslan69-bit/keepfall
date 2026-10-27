@@ -13,7 +13,7 @@ interface GuideCamp { bandits: Count[]; gold: Range; wood: Range; weapons: Count
 export interface Guide {
   shortPrepSeconds: number; shortWarSeconds: number; longPrepSeconds: number; longWarSeconds: number; startingPopulation: number;
   workerFoodPerMinute: number; soldierFoodPerMinute: number; foodPerMinute: number; woodPerMinute: number; ironPerMinute: number;
-  newPersonBaseCost: number; newPersonCostGrowth: number; famineStart: number; famineFoodMultiplier: number;
+  newPersonBaseCost: number; newPersonCostGrowth: number; famineStartSeconds: number; famineFoodMultiplier: number;
   levels: { level: number; capacity: number; multiplier: number; upgradeWood: number; upgradeIron: number; upgradeSeconds: number }[];
   units: GuideUnit[];
   castleHp: number; siegeSeconds: number; archerSiegeMultiplier: number;
@@ -51,7 +51,7 @@ export function guideHtml(g: Guide): string {
     ['Ekonomi: işçi mi asker mi?', [
       `Her işçi çiftçi, oduncu, madenci ya da demirci olur. Boşta duran üretmez ama yemek yer. Kişi başı dakikada: yemek ${num(g.foodPerMinute)}, odun ${num(g.woodPerMinute)}, demir ${num(g.ironPerMinute)}.`,
       `Herkes yemek yer: işçi ${num(g.workerFoodPerMinute)}, asker ${num(g.soldierFoodPerMinute)} dakikada. <b>Her asker üretimden bir işçi eksiltir</b>: ordu büyüdükçe yemek ve silah azalır.`,
-      `Yeni kişi yemekle doğar (ilk kişi ${num(g.newPersonBaseCost)} yemek, sonra her kişi ${percent(g.newPersonCostGrowth)} pahalı). Savaşın ${percent(g.famineStart)}'inden sonra kıtlık: yemek üretimi ×${num(g.famineFoodMultiplier)}.`,
+      `Yeni kişi yemekle doğar (ilk kişi ${num(g.newPersonBaseCost)} yemek, sonra her kişi ${percent(g.newPersonCostGrowth)} pahalı). Savaş başlayınca ${minutes(g.famineStartSeconds)} sonra kıtlık başlar ve maç sonuna kadar sürer: yemek üretimi ×${num(g.famineFoodMultiplier)}.`,
     ]],
     ['Binalar ve silah', [
       `Çiftlik, kereste, maden ve demirci: her birinde en çok ${l1.capacity} kişi çalışır. Yükseltince ${l2 ? `${l2.capacity}` : ''}${l3 ? `, ${l3.capacity}` : ''}${l4 ? ` ve ${l4.capacity}` : ''} kişi, üretim ${l2 ? `×${num(l2.multiplier)}` : ''}${l3 ? `, ×${num(l3.multiplier)}` : ''}${l4 ? ` ve ×${num(l4.multiplier)}` : ''}.`,

@@ -132,8 +132,11 @@ public sealed class GameState
     public double RemainingSeconds => Math.Max(0, PhaseEndsAt - ElapsedSeconds);
     public double WarElapsedSeconds => Math.Max(0, ElapsedSeconds - PrepSeconds);
     /// <summary>Late in the war food production drops (famine).</summary>
-    public bool Famine => Phase == MatchPhase.War && WarElapsedSeconds + 1e-9 >= Rules.War.FamineStart * WarSeconds;
-    public double FamineStartsIn => Math.Max(0, PrepSeconds + Rules.War.FamineStart * WarSeconds - ElapsedSeconds);
+    public bool Famine => Phase == MatchPhase.War && WarElapsedSeconds + 1e-9 >= FamineAfter;
+    public double FamineStartsIn => Math.Max(0, PrepSeconds + FamineAfter - ElapsedSeconds);
+
+    /// <summary>Seconds into the war when the famine begins (it then lasts to the end).</summary>
+    private double FamineAfter => Rules.War.FamineStartSeconds >= 0 ? Math.Min(Rules.War.FamineStartSeconds, WarSeconds) : Rules.War.FamineStart * WarSeconds;
     public IReadOnlyCollection<string> PlayerKeys => _players.Keys;
     public MatchResult? Result { get; private set; }
 
