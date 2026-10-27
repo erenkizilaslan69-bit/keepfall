@@ -18,6 +18,8 @@ export const REGION_W = 16 * TILE, REGION_H = 12 * TILE;
 export const GATE_Y = 452;
 const GATE_HALF = 40;
 const DEPTH_WALL = -60_000;
+/** The side wall with the gate stands this far inside the region's edge: the north-south road runs along that edge and the wall must not lie on it. */
+const GATE_SIDE_INSET = 40;
 
 const OUTLINE = 0x141a2b;
 const FENCE = { dark: 0x4a2f1b, mid: 0x8a5a34, light: 0xb07a48 };
@@ -93,8 +95,8 @@ export class WallRing {
   // ---- level 1: a wooden fence -------------------------------------------------------------------------------------------------------
 
   private fence(g: Phaser.GameObjects.Graphics): void {
-    const L = 16, R = REGION_W - 16, T = 40, B = REGION_H - 14;
     const east = this.gateOnEast;
+    const L = 16 + (east ? 0 : GATE_SIDE_INSET), R = REGION_W - 16 - (east ? GATE_SIDE_INSET : 0), T = 40, B = REGION_H - 14;
     const gate = [GATE_Y - GATE_HALF, GATE_Y + GATE_HALF];
     const rail = (x1: number, y1: number, x2: number, y2: number) => {
       for (const dy of [-20, -9]) {
@@ -131,8 +133,8 @@ export class WallRing {
     const topH = 48 * scale, faceH = 48 * scale, pieceW = 168 * scale;
     const band = topH + faceH;
     const side = 60 * scale * 0.5; // the side walls show only the cobbled top, as a strip
-    const L = 4, R = REGION_W - 4, T = 4, B = REGION_H - 4;
     const east = this.gateOnEast;
+    const L = 4 + (east ? 0 : GATE_SIDE_INSET), R = REGION_W - 4 - (east ? GATE_SIDE_INSET : 0), T = 4, B = REGION_H - 4;
     const gate = [GATE_Y - GATE_HALF, GATE_Y + GATE_HALF];
     const piece = (key: string, x: number, y: number, w: number, h: number) => {
       const img = this.scene.make.image({ key: WALL_SHEET, frame: key }, false).setOrigin(0).setDisplaySize(w, h);
