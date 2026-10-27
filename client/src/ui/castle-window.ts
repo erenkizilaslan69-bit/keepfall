@@ -1,4 +1,4 @@
-import { esc, fmt } from '../format';
+import { BACK_LINE, SHOOTERS, esc, fmt } from '../format';
 import type { CastleView, Job, Row } from '../types';
 import { Win, type WinContext, type WinData } from './windows';
 
@@ -55,7 +55,7 @@ export class CastleWin extends Win {
       <div class="pane" data-pane="defense">
         <p class="muted-ink small">Kale saldırıya uğrayınca evdeki askerler böyle dizilir. Kapıdaki okçular surun arkasından %25 fazla hasar verir; savaşı kaybedersen kale düşer.</p>
         ${rows}
-        <div class="row"><span>Okçu hedefi</span><select data-d="priority">${priority}</select></div>
+        ${s.units.some((u) => SHOOTERS.includes(u.id)) ? `<div class="row"><span>${s.units.some((u) => u.id === 'okcu') ? 'Okçu hedefi' : 'Mancınık hedefi'}</span><select data-d="priority">${priority}</select></div>` : ''}
         <div class="row center"><button class="btn" data-act="save-defense">Kaydet</button></div>
       </div>`;
     this.body.addEventListener('click', (e) => void this.click(e));
@@ -65,8 +65,9 @@ export class CastleWin extends Win {
   }
 
   private fillDefense(s: CastleView): void {
-    for (const u of s.units) this.q<HTMLSelectElement>(`[data-d-row="${u.id}"]`).value = (s.war.defense.rows[u.id] as Row | undefined) ?? (u.id === 'okcu' ? 'back' : 'front');
-    this.q<HTMLSelectElement>('[data-d="priority"]').value = s.war.defense.archerPriority ?? '';
+    for (const u of s.units) this.q<HTMLSelectElement>(`[data-d-row="${u.id}"]`).value = (s.war.defense.rows[u.id] as Row | undefined) ?? (BACK_LINE.includes(u.id) ? 'back' : 'front');
+    const priority = this.body.querySelector<HTMLSelectElement>('[data-d="priority"]');
+    if (priority) priority.value = s.war.defense.archerPriority ?? '';
   }
 
   update({ castle: s }: WinData): void {
@@ -143,7 +144,7 @@ export class CastleWin extends Win {
       case 'save-defense': {
         const rows: Record<string, Row> = {};
         for (const sel of this.body.querySelectorAll<HTMLSelectElement>('[data-d-row]')) rows[sel.dataset.dRow!] = sel.value as Row;
-        r = await net.setDefense(rows, this.q<HTMLSelectElement>('[data-d="priority"]').value || null);
+        r = await net.setDefense(rows, this.body.querySelector<HTMLSelectElement>('[data-d="priority"]')?.value || null);
         if (r.ok) { this.defenseTouched = false; this.ctx.info('Savunma dizilişi kaydedildi.'); }
         break;
       }

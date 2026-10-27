@@ -1,4 +1,4 @@
-import { COLOR_NAMES, esc } from '../format';
+import { BACK_LINE, COLOR_NAMES, SHOOTERS, esc } from '../format';
 import type { CastleView, Corner, Job, QuarterView, Row, SiteView } from '../types';
 import { SITE_NAME } from '../scene/Sites';
 import { dot } from './report-html';
@@ -117,7 +117,7 @@ export class SiteWin extends Win {
         <span class="stepper"><button class="btn-round" data-act="less" title="Bir eksik">−</button>
           <input type="number" min="0" value="0" data-count="${u.id}" aria-label="${esc(u.name)} sayısı">
           <button class="btn-round" data-act="more" title="Bir fazla">+</button></span>
-        <select data-row="${u.id}"><option value="front"${u.id === 'okcu' ? '' : ' selected'}>ön</option><option value="back"${u.id === 'okcu' ? ' selected' : ''}>arka</option></select>
+        <select data-row="${u.id}"><option value="front"${BACK_LINE.includes(u.id) ? '' : ' selected'}>ön</option><option value="back"${BACK_LINE.includes(u.id) ? ' selected' : ''}>arka</option></select>
       </div>`).join('');
     const priority = `<option value="">ön sıra</option>${s.units.map((u) => `<option value="${u.id}">önce ${esc(u.name)}</option>`).join('')}`;
     const army = kind === 'chest' ? '' : `
@@ -128,7 +128,7 @@ export class SiteWin extends Win {
           <button class="btn" data-act="half" title="Her türden kaledeki askerin yarısını yaz">Yarısı</button></span></div>
         <div class="atk-head"><span>Birlik</span><span>Gönder</span><span>Sıra</span></div>
         ${units}
-        <div class="row"><span>Okçu hedefi</span><select data-f="priority">${priority}</select></div>
+        <div class="row" data-f="priority-row"><span data-f="priority-label">Okçu hedefi</span><select data-f="priority">${priority}</select></div>
         <div class="row"><small class="muted-ink" data-f="total"></small>
           <button class="btn btn-red" data-act="send">${kind === 'village' ? 'Yağmala' : 'Saldır'}</button></div>
       </div>`;
@@ -198,8 +198,14 @@ export class SiteWin extends Win {
     if (!this.last || !this.body.querySelector('[data-act="send"]')) return;
     const s = this.last.castle, site = this.site();
     if (!site) return;
-    let total = 0;
-    for (const u of s.units) total += Number(this.q<HTMLInputElement>(`[data-count="${u.id}"]`).value) || 0;
+    let total = 0, shooters = 0;
+    for (const u of s.units) {
+      const n = Number(this.q<HTMLInputElement>(`[data-count="${u.id}"]`).value) || 0;
+      total += n;
+      if (SHOOTERS.includes(u.id)) shooters += n;
+    }
+    this.q('[data-f="priority-row"]').classList.toggle('hidden', shooters === 0);
+    this.q('[data-f="priority-label"]').textContent = s.units.some((u) => u.id === 'okcu') ? 'Okçu hedefi' : 'Mancınık hedefi';
     const enough = site.kind !== 'village' || total >= site.minSoldiers;
     this.q('[data-f="total"]').textContent = total === 0 ? 'Gönderilecek askeri seç.'
       : site.kind === 'village' && !enough ? `En az ${site.minSoldiers} asker gerekir.` : `${total} asker`;

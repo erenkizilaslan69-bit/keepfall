@@ -1,4 +1,4 @@
-import { COLOR_NAMES, botMark, clock, esc } from '../format';
+import { BACK_LINE, COLOR_NAMES, SHOOTERS, botMark, clock, esc } from '../format';
 import type { ArmyMode, CastleView, Job, PlayerView, RoomView, Row, ScoutReportView, ScoutTargetView } from '../types';
 import { ago, scoutButton, scoutReportHtml } from './scout-report';
 import { Win, type WinContext, type WinData } from './windows';
@@ -21,7 +21,7 @@ export class EnemyWin extends Win {
         <span class="stepper"><button class="btn-round" data-act="less" title="Bir eksik">−</button>
           <input type="number" min="0" value="0" data-count="${u.id}" aria-label="${esc(u.name)} sayısı">
           <button class="btn-round" data-act="more" title="Bir fazla">+</button></span>
-        ${rowSelect(u.id, u.id === 'okcu' ? 'back' : 'front')}
+        ${rowSelect(u.id, BACK_LINE.includes(u.id) ? 'back' : 'front')}
       </div>`).join('');
     const priority = `<option value="">ön sıra</option>${s.units.map((u) => `<option value="${u.id}">önce ${esc(u.name)}</option>`).join('')}`;
     const sources = s.jobs.map((j) => `<option value="${j.job}"></option>`).join('');
@@ -54,7 +54,7 @@ export class EnemyWin extends Win {
           <button class="btn" data-act="half" title="Her türden kaledeki askerin yarısını yaz">Yarısı</button></span></div>
         <div class="atk-head"><span>Birlik</span><span>Gönder</span><span>Sıra</span></div>
         ${units}
-        <div class="row"><span>Okçu hedefi</span><select data-f="priority">${priority}</select></div>
+        <div class="row" data-f="priority-row"><span data-f="priority-label">Okçu hedefi</span><select data-f="priority">${priority}</select></div>
         <div class="row"><span>Emir</span>
           <select data-f="mode" title="Önünü kes: yolda karşılaştığı ilk orduyla savaşır ve eve döner; kimseyle karşılaşmazsa yolun yarısından döner. Rakip bunu bilemez.">
             <option value="attack">Saldır (kaleye)</option><option value="intercept">Önünü kes (yolda karşıla, dön)</option></select></div>
@@ -154,8 +154,15 @@ export class EnemyWin extends Win {
   private refreshSend(): void {
     if (!this.last) return;
     const s = this.last.castle;
-    let total = 0;
-    for (const u of s.units) total += Number(this.q<HTMLInputElement>(`[data-count="${u.id}"]`).value) || 0;
+    let total = 0, shooters = 0;
+    for (const u of s.units) {
+      const n = Number(this.q<HTMLInputElement>(`[data-count="${u.id}"]`).value) || 0;
+      total += n;
+      if (SHOOTERS.includes(u.id)) shooters += n;
+    }
+    // The target pick is for armies with something that shoots in them.
+    this.q('[data-f="priority-row"]').classList.toggle('hidden', shooters === 0);
+    this.q('[data-f="priority-label"]').textContent = s.units.some((u) => u.id === 'okcu') ? 'Okçu hedefi' : 'Mancınık hedefi';
     const t = this.target(s);
     const intercept = this.q<HTMLSelectElement>('[data-f="mode"]').value === 'intercept';
     const march = t?.marchSeconds ?? 0;

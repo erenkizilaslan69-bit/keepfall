@@ -20,4 +20,8 @@ export const isBotSeat = (seat: number) => botSeats.has(seat);
 export const botMark = (seat: number) => (botSeats.has(seat) ? '<i class="bot-ico" title="Bot"></i>' : '');
 
 export const COLOR_NAMES: Record<string, string> = { blue: 'Mavi', red: 'Kırmızı', yellow: 'Sarı', purple: 'Mor', black: 'Siyah' };
+/** Units that shoot from the back and have a target to pick (the monk only heals), and units that stand at the back by default. */
+export const SHOOTERS = ['okcu', 'mancinik'];
+export const BACK_LINE = ['okcu', 'mancinik', 'kesis'];
+
 export const COLOR_CSS: Record<string, string> = { blue: '#4a8fd9', red: '#d9534a', yellow: '#e2b93b', purple: '#9b6bd1', black: '#3a3a44' };
