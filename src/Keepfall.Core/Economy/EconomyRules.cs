@@ -28,7 +28,8 @@ public sealed record WarRules(
     double FamineStartSeconds = -1,
     double PrisonerShare = 0,
     double RaidBurnSeconds = 60,
-    double RaidBurnFactor = 0.5);
+    double RaidBurnFactor = 0.5,
+    double MinBattleSeconds = 0);
 
 /// <summary>
 /// The wall round every castle: it always stands (a castle falls when its attacker wins at the gate). <see cref="ArcherDefenseBonus"/>:

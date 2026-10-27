@@ -1028,7 +1028,7 @@ public sealed class GameState
                 _ => BattleWinner.Draw,
             };
         battle.Record = result.Record!;
-        battle.FightSeconds = result.DurationSeconds / Rules.War.BattlePlayback;
+        battle.FightSeconds = Math.Max(Rules.War.MinBattleSeconds, result.DurationSeconds / Rules.War.BattlePlayback);
     }
 
     private void Begin(ActiveBattle battle)

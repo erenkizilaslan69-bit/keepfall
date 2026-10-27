@@ -76,7 +76,9 @@
     "prisonerShare": 0.5,
     // Yalnız baskıncılardan (süvari) oluşan ordu kapıda kazanırsa kale düşmez; tarlalar yanar: yemek üretimi raidBurnSeconds sn boyunca raidBurnFactor katı.
     "raidBurnSeconds": 60,
-    "raidBurnFactor": 0.5
+    "raidBurnFactor": 0.5,
+    // Bir savaş en az bu kadar oyun saniyesi oynatılır (boş kaleye saldırı da görülsün: ordu kapıya yürür, sonra kale düşer).
+    "minBattleSeconds": 4
   },
 
   // Altın (ormandan gelir: sandık, köy, haydut kampı): kale penceresinde birim başına bu fiyata anında asker kiralanır.

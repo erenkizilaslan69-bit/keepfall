@@ -100,6 +100,18 @@ public class RaidTests
     }
 
     [Fact]
+    public void Even_an_empty_castle_is_fought_for_a_few_seconds_so_the_battle_is_seen()
+    {
+        var game = War();
+        game.CastleOf(A)!.AddSoldiers(Sword, 4);
+        Ok(game.Execute(A, Send(B, (Sword, 4))));
+        for (int t = 0; t < 600 && game.ActiveBattlesOf(A).Count == 0; t++) game.Tick(1);
+        var battle = Assert.Single(game.ActiveBattlesOf(A));
+        Assert.True(Rules.War.MinBattleSeconds >= 3);
+        Assert.True(battle.FightSeconds >= Rules.War.MinBattleSeconds, $"{battle.FightSeconds} s");
+    }
+
+    [Fact]
     public void Fast_cavalry_never_jumps_either()
     {
         var game = War();

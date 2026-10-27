@@ -200,6 +200,8 @@ public sealed class WarConfig
     /// <summary>A raid that wins at a castle burns its fields: food production runs at raidBurnFactor for raidBurnSeconds.</summary>
     public double RaidBurnSeconds { get; set; } = 60;
     public double RaidBurnFactor { get; set; } = 0.5;
+    /// <summary>Shortest a battle plays (real game seconds): even an empty castle is walked up to, so the fight is always seen.</summary>
+    public double MinBattleSeconds { get; set; } = 0;
 }
 
 public sealed class DeckConfig
@@ -520,7 +522,7 @@ public static class BalanceConfigLoader
                     i + 1, l.Capacity, l.Multiplier, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList()),
             new ScoutingRules(sc.ReportError, sc.MaxScouts, sc.NoScoutLastPrepSeconds),
             new WarRules(w.FamineStart, w.FamineFoodMultiplier,
-                w.BattlePlayback, w.EncounterRadius, w.FallLootShare, w.FallWorkerShare, w.FamineStartSeconds, w.PrisonerShare, w.RaidBurnSeconds, w.RaidBurnFactor),
+                w.BattlePlayback, w.EncounterRadius, w.FallLootShare, w.FallWorkerShare, w.FamineStartSeconds, w.PrisonerShare, w.RaidBurnSeconds, w.RaidBurnFactor, w.MinBattleSeconds),
             new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout, mp.ScoutTrailSeconds),
             config.Mercenary,
             new ForestRules(fo.ChestsPerCorner, fo.VillagesPerCorner, fo.CampsPerCorner, fo.MinSpacing, fo.HubClearing, fo.FootMin, fo.FootMax,
