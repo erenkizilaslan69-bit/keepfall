@@ -23,6 +23,7 @@ import { music, sfx } from './audio';
 import { mountGuideButton } from './ui/guide';
 import { CloudCurtain } from './ui/clouds';
 import { warmUp } from './preload';
+import { mountScenery } from './ui/scenery';
 import { guarded, installErrorReporting } from './error-report';
 import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 
@@ -64,6 +65,7 @@ installErrorReporting(() => ({
 }));
 
 const curtain = new CloudCurtain();
+mountScenery(); // the living picture behind the menus
 let lobby: LobbyScreen | null = null;
 let end: EndScreen | null = null;
 let ui: GameUi | null = null;
@@ -113,6 +115,7 @@ if (import.meta.env.DEV) (window as unknown as { keepfallAudio: unknown }).keepf
 
 function onRoom(r: RoomView): void {
   setBotSeats(r.players);
+  mountScenery().setColors(r.players.map((p) => p.color));
   // In the lobby the browser already fetches what the map will need.
   const me = r.players.find((p) => p.seat === net.seat);
   if (me && r.phase === 'lobby') warmUp(me.color, r.players.map((p) => p.color));

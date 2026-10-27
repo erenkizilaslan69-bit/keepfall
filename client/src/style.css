@@ -26,13 +26,15 @@ main.game { position: fixed; inset: 0; }
 }
 
 /* ---- home, lobby and end screens: parchment on the sea, like the map ---------------------------- */
-html.in-menu #app { display: flow-root; min-height: 100vh; }
+html.in-menu #app { display: flow-root; min-height: 100vh; position: relative; z-index: 2; }
+#scenery { position: fixed; inset: 0; z-index: 0; display: none; width: 100%; height: 100%; image-rendering: pixelated; }
+html.in-menu #scenery { display: block; }
 html.in-menu body {
   background: #47aba9 url('/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/Terrain/Tileset/Water%20Background%20color.png');
   background-attachment: fixed;
 }
 html.in-menu body::before {
-  content: ''; position: fixed; inset: 0; pointer-events: none;
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1;
   background: radial-gradient(ellipse at center, transparent 45%, rgba(10, 30, 40, .45) 100%);
 }
 .screen { position: relative; max-width: 600px; margin: calc(56px * var(--u, 1)) auto calc(32px * var(--u, 1)); font-size: calc(16px * var(--u, 1)); }
