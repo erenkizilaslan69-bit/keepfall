@@ -393,9 +393,9 @@ check('Y is back and its trail closed', await waitFor(() => Y.of('CastleState').
 const ironBefore = X.of('CastleState').at(-1).resources.iron;
 check('X sends a scout for the chest', (await X.call('SendChestScout', chest.id, 'idle')).ok);
 check('Z (who never found it) cannot', !(await Z.call('SendChestScout', chest.id, 'idle')).ok);
-check('the gold arrives with the scout', await waitFor(() => X.of('CastleState').at(-1).resources.gold >= 10, 25000));
+check('the gold arrives with the scout', await waitFor(() => X.of('CastleState').at(-1).resources.gold >= 30, 25000));
 const chestGold = X.of('CastleState').at(-1).resources.gold;
-check('a chest holds 10 to 20 gold', chestGold >= 10 && chestGold <= 20, String(chestGold));
+check('a chest holds 30 to 45 gold', chestGold >= 30 && chestGold <= 45, String(chestGold));
 check('the iron of the chest (4 to 8) came with the gold', X.of('CastleState').at(-1).resources.iron >= ironBefore + 4);
 check('a found place tells nothing about what it holds',
   !['gold', 'iron', 'food', 'wood', 'people', 'weapons'].some((k) => k in siteOf(X, chest.id)));
@@ -415,7 +415,7 @@ check('the army is home with the loot', await waitFor(() => {
 }, 30000));
 const afterVillage = X.of('CastleState').at(-1);
 const villageGold = afterVillage.resources.gold - chestGold;
-check('the village (12 to 20) and the second chest (10 to 20) give 22 to 40 gold', villageGold >= 22 && villageGold <= 40, String(villageGold));
+check('the village (30 to 48) and the second chest (30 to 45) give 60 to 93 gold', villageGold >= 60 && villageGold <= 93, String(villageGold));
 check('the village is gone for X, all soldiers came home', siteOf(X, village.id).gone === true
   && afterVillage.units.find((u) => u.id === 'kilicli').soldiers === 6);
 check('the raid shows in nobody elses castle state, and Z never hears of the village at all',

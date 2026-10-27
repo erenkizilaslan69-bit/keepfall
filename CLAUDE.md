@@ -3,7 +3,7 @@
 Kullanıcıyla **Türkçe** konuş. Kısa ve öz raporla. Kod, yorum ve commit mesajı bağlamı: kod yorumları İngilizce, oyun metinleri ve commit başlıkları Türkçe.
 
 ## Oyun (özet)
-2–4 kişilik tarayıcı kale stratejisi. Her oyuncunun tek kalesi var. **Hazırlık** (10 dk): işçileri çiftçi/oduncu/madenci/demirci yap, silah üret, asker hazırla, orman (sandık, köy, haydut kampı, ortada büyük kamp) yağmala, gözcü gönder, paralı asker kirala (altınla). **Savaş** (5 dk): ordular yollarda yürür, yolda ve kale kapısında çarpışır; kale canı 500, sıfırlanan elenir ve izleyici olur. Son ayakta kalan kazanır; süre dolarsa en yüksek nüfus. 15 dk ve 30 dk modu var. Botlar (Kolay/Orta/Zor) lobide eklenir. Ayrıntı: `README.md`.
+2–4 kişilik tarayıcı kale stratejisi. Her oyuncunun tek kalesi var. **Hazırlık** (10 dk): işçileri çiftçi/oduncu/madenci/demirci yap, silah üret, asker hazırla, orman (sandık, köy, haydut kampı, ortada büyük kamp) yağmala, gözcü gönder, paralı asker kirala (altınla). **Savaş** (10 dk; kıtlık 4. dakikadan sonuna): ordular yollarda yürür, yolda ve kale kapısında çarpışır; kapıda saldıran kazanırsa kale tek seferde düşer (can/sur seviyesi yok), savunanın ordusunun yarısı esir olur; kalesi düşen elenir ve izleyici olur. Son ayakta kalan kazanır; süre dolarsa en yüksek nüfus (esirler dahil). 20 dk (10+10) ve 30 dk (20+10) modu var. Botlar (Kolay/Orta/Zor) lobide eklenir. Ayrıntı: `README.md`.
 
 ## Mimari
 - `src/Keepfall.Core`: tüm oyun kuralları (Economy, Match/GameState, Combat, World, Lobby/Room, Config). Hiçbir ağ/UI bağımlılığı yok.
@@ -27,7 +27,7 @@ Kullanıcıyla **Türkçe** konuş. Kısa ve öz raporla. Kod, yorum ve commit m
 9. Test sunucusunda tarayıcı bölmesi gizliyken Phaser çizmez; ekran testi için başsız Chrome (CDP) kullan (örnek: `tools/replay-check.mjs`).
 
 ## Test rutini
-`dotnet test -c Release` (198 test) → `node tools/run-smoke.mjs` (~2–3 dk; kendi test sunucusunu 5081'de, savaşı 15 dk olan geçici bir config kopyasıyla açar ve kapatır; Production çalışırken de koşar, kilitlemez) → istemci için `npm --prefix client run build` (tsc dahil).
+`dotnet test -c Release` (241 test) → `node tools/run-smoke.mjs` (~2–3 dk; kendi test sunucusunu 5081'de, savaşı 15 dk olan geçici bir config kopyasıyla açar ve kapatır; Production çalışırken de koşar, kilitlemez) → istemci için `npm --prefix client run build` (tsc dahil).
 Bot dengesi: `python tools/bot-deney.py 200 docs/bot-deney-son.md` (tablo `docs/`'ta).
 
 ## Son durum (2026-10-26)
@@ -81,15 +81,16 @@ Görev 0–6 ve kullanıcı istekleri bitti, hepsi push edildi; Production (5080
 - Zor botun öngörüsü (`bots.hard`: `foresight`, `garrisonShare`; `ForesightModule`): ordu görüşe girer girmez (tepki süresini beklemeden) depodaki silahları kuşanır ve paralı asker kiralar; savaşta evde, bildiği en büyük rakip ordusunun `garrisonShare` kadarını (0,2) kuşanmış tutar; saldırı kararında kuşananları sayar, kuşanma bitince yola çıkar. Zor vs Orta ~%71 (hedef %75–85'in biraz altında; garnizon 0 iken ~%74, fark hata payı içinde).
 
 ## Ulak
-- `SendEnvoy` (hub `SendEnvoy`): rakip kaleye yemek/odun/demir/altın (toplam en çok `envoy.maxCargo` = 40) ve/veya mesaj (`envoy.maxMessageLength` = 140, denetim karakteri yok; sunucuda `EnvoyMessage.Check`). Gözcüyle aynı hak (`maxScouts`) ve hız; `MissionKind.Envoy` (ScoutMission'ın bir türü): iz bırakmaz, rapor getirmez, görüşü yok, yakalanmaz, hazırlık sonu gözcü yasağına tabi değil. Yük gönderilirken kasadan düşer, varınca alıcıya girer (alıcı yolda elenirse ulakla geri döner). Mektup yalnız alıcının `CastleView.Letters`'ında; başkaları görüşte yalnız `kind: envoy`, `ownerSeat 0` görür.
+- `SendEnvoy` (hub `SendEnvoy`): rakip kaleye yemek/odun/demir/altın (toplam en çok `envoy.maxCargo` = 40) ve/veya mesaj (`envoy.maxMessageLength` = 140, denetim karakteri yok; sunucuda `EnvoyMessage.Check`). Gözcüyle aynı hak (`maxScouts`) ve hız; `MissionKind.Envoy` (ScoutMission'ın bir türü): iz bırakmaz, rapor getirmez, görüşü yok, yakalanmaz, hazırlık sonu gözcü yasağına tabi değil. Yük gönderilirken kasadan düşer, varınca alıcıya girer (alıcı yolda elenirse ulakla geri döner). Mektup yalnız alıcının `CastleView.Letters`'ında; başkaları görüşte `kind: envoy` olarak gönderenin renginde (`ownerSeat` dolu) görür; yük ve mesaj gizli.
 - Mesaj istemcide HER ZAMAN `textContent` ile gösterilir (`ReportTags.showLetter`); `tools/shot-envoy.mjs` bunu işaretli bir mesajla denetler. Küfür filtresi `envoy.profanityFilter` (varsayılan kapalı).
 - Botlar ulak göndermez; yük toplamı `bots.giftThreshold` (30) ve üstündeki hediyeyi alınca göndereni `bots.giftPeaceSeconds` (90) sn hedeflemez (mesajı okumaz).
 
-## Sur
-- Kale canı = sur canı. `walls` bölümü (balance.json): Sv1 = `war.castleHp` (500), Sv2 750 (40 odun, 20 demir, 90 sn), Sv3 1100 (80 odun, 50 demir, 120 sn) — Excel "Binalar/Sur"; yükseltme bitince can farkı mevcut cana eklenir. `UpgradeWall` komutu (kale penceresi, Savunma sekmesi). Sur ayaktayken kapıdaki savunan okçular `walls.archerDefenseBonus` (+%25) fazla hasar verir (`ArmySetup.RangedDamageFactor`; botların dövüş hesabı da bilir).
-- Gizlilik: kendi sur seviyesi kendi görünümünde; rakibinki yalnız kapısı görüşteyken (`MapState.Walls`) ve gözcü raporunda (`WallLevel`); istemci en yüksek bildiğini tutar.
-- Görsel: `client/src/scene/Walls.ts` bölgenin kenarını çevirir (Sv1 kodla çizilmiş ahşap çit, Sv2 taş duvar, Sv3 kalın duvar + köşe ve kapı kuleleri; taş = CC0 Tilemap_Elevation). Kapı, yolun bölgeden çıktığı yanda (batı kaleleri doğu yanda, doğu kaleleri batı yanda): yol geometrisi sunucuda sabit. `?sur=1..3` ile önizleme; `tools/shot-walls.mjs`.
-- Botlar: Orta ve Zor `WallModule` ile yükseltir (`wallUpgrade`). Ölçüm: `docs/bot-sur-tablo.md`: sur ve bot yükseltmesi eleme ile biten maçı %60'tan %16'ya düşürdü (bkz. öneri tablosu `docs/bot-sur-oneri-tablo.md`); kullanıcı kararı: Sv2 750, Sv3 1100 (öneri tablosu `docs/bot-sur-oneri-tablo.md`; eleme ile biten maç ~%33).
+## Kale düşmesi, sur ve esir (2026-10-28 gece: kale canı KALKTI)
+- Kale canı, sur seviyeleri, `UpgradeWall`, `WallModule`, can barları ve `war.castleHp/siegeSeconds/archerSiegeMultiplier` silindi. Saldıran kapıdaki savaşı kazanırsa (boş kale dahil, tek asker kalsa bile) kale düşer. `walls.archerDefenseBonus` (+%25) kapıdaki savunan okçular için hep geçerli. Sur hep Sv3 görünümüyle çizilir (`WorldScene.drawWalls`, `Walls.ts`).
+- Esir: `war.prisonerShare` (0,5): kale düşünce savunanın SAVAŞA GİREN ordusunun (ölenler dahil, tür başına yuvarlanır) o payı saldıranın askeri olur (`GameState.TakePrisoners`, `Castle.AddPrisoners`); orduyla eve döner, yolda yemek yer ve nüfusa sayılır; `FallLoot.Prisoners`, rapor ve eve dönüş bildiriminde "+N esir". Botlara özel kod eklenmedi: esirler dönen ordunun asker listesinde görünür (Regroup vb. onları sayar).
+- Işınlanma hatası (düzeltildi): yönlendirilen ordunun `Out` rotası yolun ortasından başlar; eve dönüş `Out.Route.Reversed()` ile kurulunca ordu kaleye değil yönlendirme noktasına "dönüp" kaleye ışınlanıyordu. Artık `GameState.WayHome` yönlendirilmiş ordular için bulunduğu yerden kendi kapısına rota kurar. `GameState.ContinuityViolations` her tick konum sıçramasını ve "eve vardı ama kapıda değil" durumunu sayar (hedef 0); `ContinuityTests` rastgele emirlerle (×1/×5/×20) denetler, BattleSim raporu da yazar.
+- Binalar: yükseltme süreleri yarıya (15/30 sn), Sv4 (10 kişi, ×2,5; 80 odun + 50 demir, 60 sn) ve ayrı görünümü (`layout.ts`). Kıtlık `war.famineStartSeconds` (240). Sandık altını 30–45 (köy 30–48, kamp 60–90), gözcü ve ulak hızı 2,5. Harita etrafına 14 karo su (`WATER_PAD`).
+- Ölçüm: `docs/gece/olcum.md` (BattleSim `--zorluk bekleyen` yalnız bekleyen bot deneyi için).
 
 ## Yollar (görünüm)
 - `client/src/scene/Roads.ts`: yol geometrisi sunucununki (değişmedi); zemin 4 px hücrelerle bir kez canvas dokularına çizilir (ragged kenar, tekerlek izi, çakıl, ormanda dar patika), kavşaklarda CC0 yön tabelası, kapı önü taş döşeme sur seviyesine göre (`GatePaving`). `tools/shot-roads.mjs`.
