@@ -176,9 +176,9 @@ public class VisionTests
         Assert.True(game.ElapsedSeconds < 1 + 2 * 31 + 60 + 30, "closed far too late");
     }
 
-    private static GameState Prep(double prepSeconds)
+    private static GameState Prep(double prepSeconds, GameRules? rules = null)
     {
-        var game = new GameState(Rules, [A, B, C], prepSeconds: prepSeconds, warSeconds: 1000, rng: new Random(1),
+        var game = new GameState(rules ?? Rules, [A, B, C], prepSeconds: prepSeconds, warSeconds: 1000, rng: new Random(1),
             corners: new Dictionary<string, Corner> { [A] = Corner.NorthWest, [B] = Corner.SouthEast, [C] = Corner.NorthEast });
         foreach (var p in new[] { A, B, C }) Ok(game.Execute(p, new SetGrowth(false)));
         return game;
@@ -210,8 +210,11 @@ public class VisionTests
     [Fact]
     public void The_war_begins_with_every_scout_trail_closed_and_a_scout_still_out_goes_on_with_its_mission()
     {
-        var game = Prep(100);
-        for (int t = 0; t < 39; t++) game.Tick(1); // 61 s of preparation left: the last scout that may leave
+        // With the scouting ban lifted (a scout is faster than the ban is long) one can be out when the war begins.
+        var path = BalanceConfigLoader.FindDefaultPath(AppContext.BaseDirectory)!;
+        var open = BalanceConfigLoader.LoadFromJson(File.ReadAllText(path).Replace("\"noScoutLastPrepSeconds\": 60", "\"noScoutLastPrepSeconds\": 0"));
+        var game = Prep(100, open);
+        for (int t = 0; t < 60; t++) game.Tick(1); // 40 s of preparation left: the trip takes longer
         Ok(game.Execute(A, new SendScout(C)));
         while (game.Phase == MatchPhase.Preparation && game.ElapsedSeconds < 99) game.Tick(1);
         Assert.Equal(MatchPhase.Preparation, game.Phase);

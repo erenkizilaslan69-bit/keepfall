@@ -107,7 +107,7 @@ public class WorldMapTests
     [Fact]
     public void Travel_times_follow_the_roads_and_the_configured_speeds()
     {
-        Assert.Equal((1.5, 1.8), (Rules.Map.ArmySpeed, Rules.Map.ScoutSpeed));
+        Assert.Equal((1.5, 2.5), (Rules.Map.ArmySpeed, Rules.Map.ScoutSpeed));
         var game = new GameState(Rules, ["a", "b", "c"], rng: new Random(1),
             corners: new Dictionary<string, Corner> { ["a"] = Corner.NorthWest, ["b"] = Corner.NorthEast, ["c"] = Corner.SouthEast });
         double neighbour = Map.RouteBetween(Corner.NorthWest, Corner.NorthEast).Length;
