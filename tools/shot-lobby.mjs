@@ -12,7 +12,7 @@ const MINUTES = Number(process.argv[3] ?? 4);
 const port = 9333 + Math.floor(Math.random() * 500);
 const dir = mkdtempSync(join(tmpdir(), 'kf-chrome-'));
 const chrome = spawn('C:/Program Files/Google/Chrome/Application/chrome.exe', [
-  '--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${dir}`, '--window-size=1280,800', '--no-first-run', '--disable-gpu', 'about:blank',
+  '--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${dir}`, `--window-size=${process.env.SIZE ?? '1280,800'}`, '--no-first-run', '--disable-gpu', 'about:blank',
 ], { stdio: 'ignore' });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let targets;

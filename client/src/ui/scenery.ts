@@ -1,15 +1,18 @@
 import { assetUrl } from '../scene/assets';
-import { flameCanvas } from '../scene/PixelArt';
+import { catapultCanvas, flameCanvas, horsemanCanvas } from '../scene/PixelArt';
 import type { PlayerColor } from '../types';
 
-// The living picture behind the home, lobby and end screens: a small island of the Tiny Swords ground with a castle, a camp fire with
-// soldiers waiting round it, sheep that wander and graze, trees that sway and clouds that drift. Drawn on one canvas at a low frame rate;
-// it only draws while a menu screen is up (the game has its own map), and it is made once for the whole page.
+// The living picture behind the home, lobby and end screens: an island of the Tiny Swords ground with a camp fire and four soldiers of four
+// colours chatting round it, a mine, a lumber camp, a smithy and a sheep field with their workers, a small army on patrol, a horseman now
+// and then, a catapult and a monk far off, and clouds that drift. The panel of the screen is measured and everything stands in the free
+// strips to its left and right, so nothing hides behind the panel or is squeezed against the window's edge (a strip that is too narrow
+// stays empty). Drawn on one canvas at a low frame rate; it only draws while a menu screen is up and is made once for the whole page.
 
-const FOLDER: Record<PlayerColor, string> = { blue: 'Blue', red: 'Red', yellow: 'Yellow', purple: 'Purple', black: 'Black' };
 const TILE = 64;
 const GRASS = { tl: 0, t: 1, tr: 2, l: 9, c: 10, r: 11, bl: 18, b: 19, br: 20 };
 const FPS = 12;
+/** A strip narrower than this stays empty. */
+const MIN_STRIP = 76;
 
 const images = new Map<string, HTMLImageElement>();
 function image(path: string): HTMLImageElement | null {
@@ -48,8 +51,13 @@ class Scenery {
   private tick = 0;
   private last = 0;
   private colors: PlayerColor[] = ['blue', 'red'];
+  private measuredAt = -1000;
+  private panel = { l: 0, r: 0 };
+  private readonly horse = { t: -1, next: 6 };
+  private readonly squad = { y: 0.7, dir: 1 as 1 | -1 };
+  private readonly cache = new Map<string, HTMLCanvasElement[]>();
   private readonly flames = [0, 1, 2, 3, 4, 5].map((f) => flameCanvas(f, 6));
-  private readonly sheep: Walker[] = [0, 1, 2].map((i) => ({ x: 0.15 + i * 0.3, speed: 0.012 + i * 0.004, y: 0.86 + (i % 2) * 0.05, phase: i * 3, dir: i % 2 ? -1 : 1, graze: 0 }));
+  private readonly sheep: Walker[] = [0, 1].map((i) => ({ x: 0.3 + i * 0.35, speed: 0.012 + i * 0.004, y: 0.86 + (i % 2) * 0.05, phase: i * 3, dir: i % 2 ? -1 : 1, graze: 0 }));
   private readonly clouds: Cloud[] = Array.from({ length: 6 }, (_, i) => ({ x: i / 6, y: 0.05 + ((i * 37) % 30) / 100, speed: 0.004 + (i % 3) * 0.0025, variant: 1 + (i % 8), scale: 0.7 + (i % 3) * 0.25 }));
 
   constructor() {
@@ -60,7 +68,7 @@ class Scenery {
     requestAnimationFrame((t) => this.loop(t));
   }
 
-  /** The soldiers at the fire come in the colours of the players in the room. */
+  /** The catapult takes the colour of the first player in the room. */
   setColors(colors: PlayerColor[]): void {
     if (colors.length > 0) this.colors = colors;
   }
@@ -69,6 +77,7 @@ class Scenery {
     this.canvas.width = Math.max(1, window.innerWidth);
     this.canvas.height = Math.max(1, window.innerHeight);
     this.backdrop = null;
+    this.measuredAt = -1000;
   }
 
   private loop(now: number): void {
@@ -86,12 +95,11 @@ class Scenery {
     return Math.max(1, Math.min(3, Math.round(Math.min(this.canvas.width / 1100, this.canvas.height / 700))));
   }
 
-  /** Water, the island of grass and everything that stands still: drawn once per window size and colour set, then copied every frame. */
+  /** Water, the island of grass and everything that stands still: drawn once per window size, then copied every frame. */
   private makeBackdrop(): HTMLCanvasElement | null {
     const w = this.canvas.width, h = this.canvas.height, s = this.scale;
     const tiles = image('Terrain/Tileset/Tilemap_color1.png'), water = image('Terrain/Tileset/Water Background color.png');
-    const castle = image('Buildings/Blue Buildings/Castle.png');
-    if (!tiles || !water || !castle) return null;
+    if (!tiles || !water) return null;
     const c = document.createElement('canvas');
     c.width = w; c.height = h;
     const g = c.getContext('2d')!;
@@ -117,79 +125,153 @@ class Scenery {
       g.fillStyle = '#4f7d2a';
       g.fillRect(x, y + 2 * s, s, 3 * s);
     }
-    // The castle, left of the middle, with a tower and a house beside it.
-    const cx = Math.max(w * 0.14, (castle.naturalWidth * s) / 2 + 6), cy = h * 0.5;
-    g.drawImage(castle, cx - (castle.naturalWidth * s) / 2, cy - castle.naturalHeight * s, castle.naturalWidth * s, castle.naturalHeight * s);
-    const tower = image('Buildings/Blue Buildings/Tower.png'), house = image('Buildings/Blue Buildings/House1.png');
-    if (tower) g.drawImage(tower, cx + 190 * s * 0.8, cy - tower.naturalHeight * s * 0.8, tower.naturalWidth * s * 0.8, tower.naturalHeight * s * 0.8);
-    if (house) g.drawImage(house, cx - 330 * s * 0.8, cy - house.naturalHeight * s * 0.55 + 20 * s, house.naturalWidth * s * 0.8, house.naturalHeight * s * 0.8);
-    const rock = image('Terrain/Decorations/Rocks/Rock1.png');
-    if (rock) for (const [px, py] of [[0.44, 0.34], [0.92, 0.45], [0.06, 0.8]]) g.drawImage(rock, w * px, h * py, 64 * s * 0.7, 64 * s * 0.7);
     this.backdropKey = `${w}x${h}`;
     return c;
   }
 
+  /** The free strips left and right of the panel (re-measured twice a second). */
+  private strips(): { left: [number, number]; right: [number, number] } {
+    const now = performance.now();
+    if (now - this.measuredAt > 500) {
+      this.measuredAt = now;
+      const r = document.querySelector<HTMLElement>('.screen')?.getBoundingClientRect();
+      const w = this.canvas.width;
+      this.panel = r && r.width > 0 ? { l: r.left, r: r.right } : { l: w * 0.3, r: w * 0.7 };
+    }
+    return { left: [0, this.panel.l], right: [this.panel.r, this.canvas.width] };
+  }
+
+  private catapult(color: PlayerColor): HTMLCanvasElement {
+    const key = `cat:${color}`;
+    if (!this.cache.has(key)) this.cache.set(key, [catapultCanvas(color, false, 0)]);
+    return this.cache.get(key)![0];
+  }
+
+  /** A horseman gallops through the left strip from the top corner to the bottom one every half minute or so. */
+  private cavalry(g: CanvasRenderingContext2D, x0: number, x1: number, h: number, s: number, dt: number): void {
+    const hs = this.horse;
+    if (hs.t < 0) {
+      hs.next -= dt;
+      if (hs.next > 0) return;
+      hs.t = 0;
+    }
+    const lancer = image('Units/Red Units/Lancer/Lancer_Right_Attack.png');
+    if (!lancer) { hs.t = -1; hs.next = 4; return; }
+    hs.t += dt;
+    if (!this.cache.has('horse:red')) this.cache.set('horse:red', [1, 2, 1, 0].map((p) => horsemanCanvas(lancer, 'red', p, 0)));
+    const frames = this.cache.get('horse:red')!;
+    const k = Math.min(1, hs.t / 7);
+    const f = frames[Math.floor(hs.t * 8) % frames.length];
+    const x = x0 + (x1 - x0) * (0.25 + 0.5 * k), y = h * (0.06 + 0.88 * k), z = s * 0.28;
+    g.drawImage(f, 36, 8, 168, 138, x - 84 * z, y - 138 * z, 168 * z, 138 * z);
+    if (k >= 1) { hs.t = -1; hs.next = 20 + Math.random() * 15; }
+  }
+
+  /** Four soldiers (swords, spear, bow) march up and down the lower part of the right strip. */
+  private patrol(g: CanvasRenderingContext2D, x0: number, x1: number, h: number, s: number, dt: number, anim: number): void {
+    const sq = this.squad, cx = (x0 + x1) / 2;
+    sq.y += sq.dir * dt * 0.03;
+    if (sq.y > 0.84) sq.dir = -1;
+    if (sq.y < 0.58) sq.dir = 1;
+    const kinds = [
+      { p: 'Units/Blue Units/Warrior/Warrior_Run.png', w: 192, k: 0.5 },
+      { p: 'Units/Blue Units/Lancer/Lancer_Run.png', w: 320, k: 0.3 },
+      { p: 'Units/Blue Units/Archer/Archer_Run.png', w: 192, k: 0.5 },
+      { p: 'Units/Blue Units/Warrior/Warrior_Run.png', w: 192, k: 0.5 },
+    ];
+    kinds.forEach((kd, i) => {
+      const x = cx + (i % 2 ? 16 : -16) * s, y = h * sq.y + (Math.floor(i / 2) * 24 + (i % 2) * 8) * s;
+      frame(g, kd.p, kd.w, kd.w, anim * 2 + i, x, y, s * kd.k, sq.dir < 0, 0.72);
+    });
+  }
+
   private draw(dt: number): void {
-    const g = this.g, w = this.canvas.width, h = this.canvas.height, s = this.scale;
+    const g = this.g, w = this.canvas.width, h = this.canvas.height, ground = this.scale;
     g.imageSmoothingEnabled = false;
     if (!this.backdrop || this.backdropKey !== `${w}x${h}`) this.backdrop = this.makeBackdrop();
     if (this.backdrop) g.drawImage(this.backdrop, 0, 0);
     else { g.fillStyle = '#47aba9'; g.fillRect(0, 0, w, h); }
 
     const anim = Math.floor(this.tick / 2); // 6 frames a second
+    const work = this.tick; // 12 frames a second
+    const st = this.strips();
+    const lw = st.left[1] - st.left[0], rw = st.right[1] - st.right[0];
+    const L = lw >= MIN_STRIP, R = rw >= MIN_STRIP;
+    // The figures grow with the window but never wider than the narrower strip allows.
+    const s = Math.max(1, Math.min(3, Math.round(Math.min(h / 450, Math.min(L ? lw : 1e9, R ? rw : 1e9) / 60))));
+    const u = s * 0.55; // unit scale: the 192 px frames hold a figure about 60 px wide
+    const unit = (path: string, fw: number, f: number, x: number, y: number, flip = false, k = u) => frame(g, path, fw, fw, f, x, y, k, flip, 0.72);
+    const pawn = (color: string, sheet: string) => `Units/${color} Units/Pawn/Pawn_${sheet}.png`;
 
-    // Trees that sway, at the edges of the island.
-    for (const [tx, ty, flip] of [[0.045, 0.3, false], [0.95, 0.38, true], [0.9, 0.78, false], [0.5, 0.97, true]] as const)
-      frame(g, 'Terrain/Resources/Wood/Trees/Tree1.png', 192, 256, anim + Math.floor(tx * 20), w * tx, h * ty + 190 * s * 0.5, s * 0.8, flip);
-
-    // The camp: fire and the soldiers round it, each looking at the flames.
-    const fx = w * 0.82, fy = h * 0.66;
-    const kinds = [
-      { path: (c: string) => `Units/${c} Units/Warrior/Warrior_Idle.png`, w: 192, scale: 0.6 },
-      { path: (c: string) => `Units/${c} Units/Archer/Archer_Idle.png`, w: 192, scale: 0.6 },
-      { path: (c: string) => `Units/${c} Units/Lancer/Lancer_Idle.png`, w: 320, scale: 0.6 },
-      { path: (c: string) => `Units/${c} Units/Monk/Idle.png`, w: 192, scale: 0.6 },
-      { path: (c: string) => `Units/${c} Units/Pawn/Pawn_Idle.png`, w: 192, scale: 0.6 },
-      { path: (c: string) => `Units/${c} Units/Warrior/Warrior_Idle.png`, w: 192, scale: 0.6 },
-    ];
-    const ring: { x: number; y: number; k: number }[] = kinds.map((_, i) => {
-      const a = Math.PI * 0.15 + (i / kinds.length) * Math.PI * 2;
-      return { x: fx + Math.cos(a) * 78 * s, y: fy + Math.sin(a) * 30 * s + 6 * s, k: i };
-    }).sort((a, b) => a.y - b.y);
-    // Back half of the ring behind the fire, front half in front of it.
-    const behind = ring.filter((r) => r.y < fy + 6 * s), front = ring.filter((r) => r.y >= fy + 6 * s);
-    const drawUnit = (r: { x: number; y: number; k: number }) => {
-      const kind = kinds[r.k], color = FOLDER[this.colors[r.k % this.colors.length]];
-      frame(g, kind.path(color), kind.w, kind.w, anim + r.k * 2, r.x, r.y, s * kind.scale, r.x > fx, 0.72);
-    };
-    behind.forEach(drawUnit);
-    // Stones round the fire, the glow and the flame.
-    g.fillStyle = 'rgba(255, 166, 58, 0.16)';
-    g.beginPath(); g.ellipse(fx, fy, 60 * s, 30 * s, 0, 0, Math.PI * 2); g.fill();
-    for (let i = 0; i < 9; i++) {
-      const a = (i / 9) * Math.PI * 2;
-      g.fillStyle = '#4a4f57'; g.fillRect(fx + Math.cos(a) * 14 * s - 3 * s, fy + Math.sin(a) * 6 * s, 6 * s, 3 * s);
-      g.fillStyle = '#b4bcc4'; g.fillRect(fx + Math.cos(a) * 14 * s - 3 * s, fy + Math.sin(a) * 6 * s - s, 5 * s, 2 * s);
+    if (L) {
+      const [x0, x1] = st.left, cx = (x0 + x1) / 2, sw = x1 - x0;
+      // Mine: gold stones and a miner swinging the pickaxe.
+      const my = h * 0.17;
+      const stone = image('Terrain/Resources/Gold/Gold Stones/Gold Stone 3.png');
+      if (stone) g.drawImage(stone, cx + 2 * s, my - 52 * s, 64 * s * 0.8, 64 * s * 0.8);
+      unit(pawn('Yellow', 'Interact Pickaxe'), 192, work, cx - 18 * s, my + 4 * s);
+      // Lumber camp: a swaying tree and a woodcutter chopping.
+      const ly = h * 0.37;
+      frame(g, 'Terrain/Resources/Wood/Trees/Tree1.png', 192, 256, anim, cx + 16 * s, ly + 34 * s, s * 0.5, true);
+      unit(pawn('Red', 'Interact Axe'), 192, work, cx - 24 * s, ly + 12 * s);
+      // The camp fire: four soldiers in four colours sit round it and take turns to talk (a small bob).
+      const fx = cx, fy = h * 0.64;
+      const rx = Math.max(24, Math.min(46 * s, sw / 2 - 26)), ry = rx * 0.42;
+      const folk = [
+        { color: 'Blue', path: (c: string) => `Units/${c} Units/Warrior/Warrior_Idle.png` },
+        { color: 'Red', path: (c: string) => `Units/${c} Units/Archer/Archer_Idle.png` },
+        { color: 'Yellow', path: (c: string) => `Units/${c} Units/Pawn/Pawn_Idle.png` },
+        { color: 'Purple', path: (c: string) => `Units/${c} Units/Monk/Idle.png` },
+      ];
+      const seats = folk.map((f, i) => {
+        const a = Math.PI * 0.25 + (i / folk.length) * Math.PI * 2;
+        const speaking = Math.floor(this.tick / 30) % folk.length === i && this.tick % 6 < 3;
+        return { f, x: fx + Math.cos(a) * rx, y: fy + Math.sin(a) * ry + 6 * s - (speaking ? s : 0), i };
+      }).sort((p, q) => p.y - q.y);
+      const draw = (r: typeof seats[number]) => unit(r.f.path(r.f.color), 192, anim + r.i * 2, r.x, r.y, r.x > fx);
+      seats.filter((r) => r.y < fy + 6 * s).forEach(draw);
+      g.fillStyle = 'rgba(255, 166, 58, 0.16)';
+      g.beginPath(); g.ellipse(fx, fy, rx * 0.9, ry * 1.2, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#4b2e1a';
+      g.fillRect(fx - 8 * s, fy - s, 16 * s, 3 * s);
+      const fr = this.flames[anim % this.flames.length];
+      g.drawImage(fr, fx - (fr.width * s * 0.7) / 2, fy - fr.height * s * 0.7 + 4 * s, fr.width * s * 0.7, fr.height * s * 0.7);
+      seats.filter((r) => r.y >= fy + 6 * s).forEach(draw);
+      // Far off in the corner: a monk.
+      unit('Units/Blue Units/Monk/Idle.png', 192, anim, cx, h * 0.95, false, s * 0.4);
+      // A horseman now and then crosses the strip.
+      this.cavalry(g, x0, x1, h, s, dt);
     }
-    g.fillStyle = '#4b2e1a';
-    g.fillRect(fx - 9 * s, fy - s, 18 * s, 3 * s);
-    const fr = this.flames[anim % this.flames.length];
-    g.drawImage(fr, fx - (fr.width * s * 0.9) / 2, fy - fr.height * s * 0.9 + 4 * s, fr.width * s * 0.9, fr.height * s * 0.9);
-    front.forEach(drawUnit);
 
-    // Sheep wander along the bottom and stop to graze.
-    for (const sh of this.sheep) {
-      sh.phase += dt;
-      if (sh.graze > 0) sh.graze -= dt;
-      else {
-        sh.x += sh.dir * sh.speed * dt;
-        if (sh.x > 0.9) sh.dir = -1;
-        if (sh.x < 0.1) sh.dir = 1;
-        if (Math.random() < dt * 0.15) sh.graze = 3 + Math.random() * 4;
+    if (R) {
+      const [x0, x1] = st.right, cx = (x0 + x1) / 2, sw = x1 - x0;
+      // Smithy: a house with a hammering smith.
+      const sy = h * 0.25;
+      const house = image('Buildings/Black Buildings/House3.png');
+      if (house) { const k = s * 0.5; g.drawImage(house, cx - 6 * s, sy - house.naturalHeight * k + 12 * s, house.naturalWidth * k, house.naturalHeight * k); }
+      unit(pawn('Purple', 'Interact Hammer'), 192, work, cx - 28 * s, sy + 6 * s);
+      // Sheep field: a shepherd and sheep that wander inside the strip and graze.
+      const fy = h * 0.4;
+      unit(pawn('Blue', 'Idle'), 192, anim, x0 + sw * 0.22, fy);
+      for (const sh of this.sheep) {
+        sh.phase += dt;
+        if (sh.graze > 0) sh.graze -= dt;
+        else {
+          sh.x += sh.dir * sh.speed * dt * 6;
+          if (sh.x > 0.8) sh.dir = -1;
+          if (sh.x < 0.4) sh.dir = 1;
+          if (Math.random() < dt * 0.15) sh.graze = 3 + Math.random() * 4;
+        }
+        const f = Math.floor(sh.phase * 6);
+        frame(g, sh.graze > 0 ? 'Terrain/Resources/Meat/Sheep/Sheep_Grass.png' : 'Terrain/Resources/Meat/Sheep/Sheep_Move.png', 128, 128, f,
+          x0 + sh.x * sw, fy + (sh.y - 0.86) * 260 * s + 10 * s, s * 0.5, sh.dir < 0, 0.8);
       }
-      const f = Math.floor(sh.phase * 6);
-      if (sh.graze > 0) frame(g, 'Terrain/Resources/Meat/Sheep/Sheep_Grass.png', 128, 128, f, sh.x * w, sh.y * h, s * 0.8, sh.dir < 0, 0.8);
-      else frame(g, 'Terrain/Resources/Meat/Sheep/Sheep_Move.png', 128, 128, f, sh.x * w, sh.y * h, s * 0.8, sh.dir < 0, 0.8);
+      // A small army on patrol, up and down the strip.
+      this.patrol(g, x0, x1, h, s, dt, anim);
+      // Far off: a catapult.
+      const cat = this.catapult(this.colors[0] ?? 'blue');
+      const z = s * 0.4;
+      g.drawImage(cat, 14, 4, 152, 120, cx - 76 * z, h * 0.97 - 120 * z, 152 * z, 120 * z);
     }
 
     // Clouds drift across, with their shadow on the ground.
@@ -198,10 +280,10 @@ class Scenery {
       if (c.x > 1.25) c.x = -0.25;
       const img = image(`Terrain/Decorations/Clouds/Clouds_0${c.variant}.png`);
       if (!img) continue;
-      const cw = img.naturalWidth * s * c.scale * 0.6, ch = img.naturalHeight * s * c.scale * 0.6;
+      const cw = img.naturalWidth * ground * c.scale * 0.6, ch = img.naturalHeight * ground * c.scale * 0.6;
       g.globalAlpha = 0.14;
       g.filter = 'brightness(0)';
-      g.drawImage(img, c.x * w, c.y * h + 300 * s, cw, ch * 0.6);
+      g.drawImage(img, c.x * w, c.y * h + 300 * ground, cw, ch * 0.6);
       g.filter = 'none';
       g.globalAlpha = 0.95;
       g.drawImage(img, c.x * w, c.y * h, cw, ch);
