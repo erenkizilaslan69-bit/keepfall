@@ -38,6 +38,7 @@ export class DebugLayer {
   private lagsSeen = 0;
   private posted = 0;
   private roads: Vec[][] = [];
+  private forests: { center: Vec; radius: number }[] = [];
 
   constructor(private readonly scene: Phaser.Scene, private readonly movers: Movers, private readonly battles: BattlePlayer,
     private readonly extraSprites: () => Phaser.GameObjects.Sprite[], private readonly speed: () => number, private readonly gameNow: () => number) {
@@ -51,6 +52,8 @@ export class DebugLayer {
   }
 
   setRoads(roads: Vec[][]): void { this.roads = roads; }
+  /** An army bound for a place in the forest leaves the roads: not a fault there. */
+  setForests(forests: { center: Vec; radius: number }[]): void { this.forests = forests; }
 
   destroy(): void {
     window.removeEventListener('keydown', this.onKey);
@@ -103,13 +106,18 @@ export class DebugLayer {
       // a sprite that is fading out or being cleaned (alpha 0 / tweened) is given a moment
       if (s.alpha < 0.05) continue;
       const at = { x: Math.round(s.x / TILE), y: Math.round(s.y / TILE) };
-      this.fault('stray', `${s.texture.key}@${at.x},${at.y}`, `an unowned ${s.texture.key} at ${at.x},${at.y} (depth ${Math.round(s.depth)}, alpha ${s.alpha.toFixed(2)})`);
+      const from = (s.getData('replay') as string | undefined) ? `replay ${s.getData('replay')}` : (s.getData('track') as string | undefined) ? `column ${s.getData('track')}` : 'unknown origin';
+      const ended = (s.getData('replay') as string | undefined) ? this.battles.endedAt.get(s.getData('replay') as string) : undefined;
+      this.fault('stray', `${s.texture.key}@${at.x},${at.y}`, `an unowned ${s.texture.key} at ${at.x},${at.y} from ${from}${ended ? ` (ended ${((performance.now() - ended) / 1000).toFixed(1)} s ago)` : ''}, depth ${Math.round(s.depth)}, alpha ${s.alpha.toFixed(2)}, tweening ${this.scene.tweens.isTweening(s)}, ${this.movers.debugOwner(s)}, anim ${s.anims.isPlaying ? s.anims.currentAnim?.key : 'stopped'}`);
     }
 
     // deviation from the server's position
     for (const c of this.movers.corrections.splice(0)) {
+      // An army that turned round (a recall, the way home after a battle) or began moving since the last news cannot be guessed: not a fault.
+      const turned = c.beforeVelocity.x * c.velocity.x + c.beforeVelocity.y * c.velocity.y <= 0.01;
+      if (turned) continue;
       const allowed = 2 + c.speed * 0.6;
-      if (c.tiles > allowed) this.fault('deviation', c.key, `${c.tiles.toFixed(1)} tiles from the server's position (allowed ${allowed.toFixed(1)} at x${c.speed})`);
+      if (c.tiles > allowed) this.fault('deviation', c.key, `${c.tiles.toFixed(1)} tiles from the server's position (allowed ${allowed.toFixed(1)} at x${c.speed}); last news ${Math.round(c.ageMs)} ms before, drawn ${c.shown.x.toFixed(1)},${c.shown.y.toFixed(1)}, server ${c.position.x.toFixed(1)},${c.position.y.toFixed(1)}, velocity ${c.velocity.x.toFixed(2)},${c.velocity.y.toFixed(2)}, previous news ${c.before.x.toFixed(1)},${c.before.y.toFixed(1)} with velocity ${c.beforeVelocity.x.toFixed(2)},${c.beforeVelocity.y.toFixed(2)}, on a road ${c.onRoad}`);
     }
 
     // off-road: an army away from every road
@@ -117,6 +125,7 @@ export class DebugLayer {
       if (!t.route && this.roads.length === 0) continue;
       const near = this.distanceToRoads(t.shown);
       const onOwnRoute = t.route ? distanceToPolyline(t.route, t.shown) : Infinity;
+      if (this.forests.some((f) => Math.hypot(f.center.x - t.shown.x, f.center.y - t.shown.y) < f.radius + 3)) continue;
       if (Math.min(near, onOwnRoute) > 1.6) this.fault('off-road', t.key, `drawn at ${t.shown.x.toFixed(1)},${t.shown.y.toFixed(1)}, ${Math.min(near, onOwnRoute).toFixed(1)} tiles from any road`);
     }
     for (const r of replays) {

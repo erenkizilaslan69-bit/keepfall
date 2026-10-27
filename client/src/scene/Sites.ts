@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { SiteKind, SiteView } from '../types';
 import { esc } from '../format';
 import type { WorldLabels } from '../ui/world-labels';
-import { UNIT_SCALE, unitOriginY } from './assets';
+import { UNIT_SCALE, playRandom, unitOriginY } from './assets';
 import { sign } from './parts';
 import { toWorld } from './world';
 
@@ -39,6 +39,8 @@ export class SiteLayer {
   constructor(private readonly scene: Phaser.Scene, private readonly labels: WorldLabels, private readonly onSelect: (id: string) => void) {
     this.trails = scene.add.graphics().setDepth(DEPTH_TRAIL);
   }
+
+  debugSprites(): Phaser.GameObjects.Sprite[] { return [...this.items.values()].flatMap((i) => i.sprites); }
 
   /** Where each place is (tiles), so the trees around it can be cleared. */
   tiles(): { position: { x: number; y: number }; kind: SiteKind }[] {
@@ -155,7 +157,7 @@ export class SiteLayer {
           const key = BANDIT_ANIM[unit] ?? 'black-warrior-idle';
           const sp = add(p.x + Math.cos(a) * r, p.y + 24 + Math.sin(a) * r * 0.55, key, UNIT_SCALE, 0, unitOriginY(key));
           sp.setFlipX(Math.cos(a) > 0);
-          if (this.scene.anims.exists(key)) sp.play({ key, startFrame: Phaser.Math.Between(0, 5) });
+          if (this.scene.anims.exists(key)) playRandom(sp, key, 5);
         });
         break;
       }

@@ -4,7 +4,7 @@ import { sfx } from '../audio';
 import { reportError } from '../error-report';
 import type { Effects } from './Effects';
 import type { BattleStartedView, PlayerColor, Vec } from '../types';
-import { SHIELD_SCALE, UNIT_SCALE, colorKey, unitOriginY } from './assets';
+import { SHIELD_SCALE, UNIT_SCALE, colorKey, playRandom, unitOriginY } from './assets';
 import type { Point } from './layout';
 import { toWorld } from './world';
 
@@ -94,7 +94,7 @@ export class BattlePlayer {
   }
 
   start(view: BattleStartedView): void {
-    if (this.replays.has(view.id)) return;
+    if (this.replays.has(view.id) || this.played.has(view.id)) { trace('battle-replay-duplicate', view.id, 'the server announced it again'); return; } // (each battle is replayed once: a repeat of the news must not play it again)
     this.played.add(view.id);
     {
       const { now, speed } = this.clock();
@@ -107,6 +107,7 @@ export class BattlePlayer {
     // At a castle the fight is in front of the gate, on the road the attackers came along.
     const centre = view.kind === 'siege' ? { x: view.at.x - f.x * 1.6, y: view.at.y - f.y * 1.6 } : view.at;
     const fighters: (Fighter | null)[] = [];
+    try {
     view.sides.forEach((side, s) => {
       const sign = s === 0 ? -1 : 1; // side A stands behind the centre, side B in front of it
       const fronts = side.soldiers.map((x, i) => ({ ...x, i })).filter((x) => x.row === 'front');
@@ -131,12 +132,21 @@ export class BattlePlayer {
           const at = courtyard ?? (isFront ? start : back);
           const key = colorKey(side.color, this.ownColor, look.run);
           const sprite = this.scene.add.sprite(at.x, at.y, key).setScale(look.scale).setOrigin(0.5, unitOriginY(look.run));
-          sprite.setFlipX(sign > 0 ? f.x > 0 : f.x < 0).setDepth(at.y).play({ key, startFrame: Phaser.Math.Between(0, 3) });
+          sprite.setFlipX(sign > 0 ? f.x > 0 : f.x < 0).setDepth(at.y).setData('replay', view.id);
+          playRandom(sprite, key);
           fighters[offset(view, s) + x.i] = { sprite, side: s, unit: x.unitId, ranged, front, start, back, inFront: isFront, dead: false };
           if (courtyard) this.walk(sprite, isFront ? start : back, 1.6); // down from the courtyard to the gate
         });
       }
     });
+    } catch (e) {
+      // A replay that cannot be built leaves nothing behind (the soldiers made so far are deleted) and the battle shows as a cloud.
+      for (const f of fighters) if (f?.sprite.active) { this.scene.tweens.killTweensOf(f.sprite); f.sprite.destroy(); }
+      this.played.delete(view.id);
+      trace('battle-replay-failed', view.id, String(e));
+      reportError('battle-replay', e, { source: `building battle ${view.id}` });
+      return;
+    }
     sfx.play('battleStart');
     this.replays.set(view.id, { view, fighters, hit: 0, death: 0, advance: 0, heal: 0, gate: toWorld(view.at), ended: false });
   }

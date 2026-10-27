@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { BuildingView } from '../types';
 import { esc } from '../format';
+import { playRandom } from './assets';
 import type { Part, Point } from './layout';
 
 // Pieces shared by our own castle and the castles a spectator sees: a building part drawn at a place,
@@ -27,7 +28,7 @@ export function placePart(scene: Phaser.Scene, p: Part, off: Point = NO_OFFSET, 
     const size = /^(house|tower|barracks|archery)/.test(p.key) ? [150 * s, 46 * s] : /^tree/.test(p.key) ? [95 * s, 34 * s] : null;
     if (size) { const shade = shadeHook(p.x + off.x, p.y + off.y, size[0], size[1]); sprite.once('destroy', () => shade.destroy()); }
   }
-  if (p.anim) sprite.play({ key: p.key, startFrame: Phaser.Math.Between(0, 3) });
+  if (p.anim) playRandom(sprite, p.key);
   return sprite;
 }
 

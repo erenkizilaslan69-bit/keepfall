@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { MapStateView, MoverUnit, PlayerColor, Vec } from '../types';
-import { SHIELD_SCALE, UNIT_SCALE, colorKey, unitOriginY } from './assets';
+import { SHIELD_SCALE, UNIT_SCALE, colorKey, playRandom, unitOriginY } from './assets';
 import type { Target } from '../ui/windows';
 import type { WorldLabels } from '../ui/world-labels';
 import { COLOR_CSS } from '../format';
@@ -64,7 +64,7 @@ export class Movers {
   private tracks = new Map<string, Track>();
   private gameSpeed = 1;
   /** Development: how far a column was from where the server put its army when the news came (tiles), for the debug layer to judge. */
-  readonly corrections: { key: string; tiles: number; speed: number }[] = [];
+  readonly corrections: { key: string; tiles: number; speed: number; ageMs: number; shown: Vec; position: Vec; velocity: Vec; before: Vec; beforeVelocity: Vec; onRoad: boolean }[] = [];
 
   /** Development: what the debug layer reads. */
   debugTracks(): { key: string; own: boolean; scout: boolean; fighting: boolean; position: Vec; shown: Vec; drawn: number; expected: number; route: Vec[] | null; units: number; ageMs: number }[] {
@@ -73,6 +73,13 @@ export class Movers {
       drawn: t.sprites.filter((s) => s.active).length, expected: t.sprites.length, route: t.route, units: t.units.reduce((n, u) => n + u.count, 0), ageMs: now - t.receivedAt }));
   }
   debugSprites(): Phaser.GameObjects.Sprite[] { return [...this.tracks.values()].flatMap((t) => t.sprites); }
+  /** Development: is this sprite's column still known, and does it hold it? */
+  debugOwner(s: Phaser.GameObjects.Sprite): string {
+    const key = s.getData('track') as string | undefined;
+    if (!key) return 'no column';
+    const t = this.tracks.get(key);
+    return t ? `column exists with ${t.sprites.length} sprites, holds this one: ${t.sprites.includes(s)}` : 'column is gone';
+  }
 
   /** Set by the scene: a click on one of our armies or scouts. */
   onSelect: (target: Target) => void = () => {};
@@ -95,7 +102,7 @@ export class Movers {
     const alive = new Set<string>();
     for (const o of state.own) {
       const t = this.track(`own:${o.id}`, this.ownColor, o.kind !== 'army', o.units, o.position, o.kind === 'envoy');
-      if (t.receivedAt > 0 && t.key === `own:${o.id}`) this.corrections.push({ key: t.key, tiles: Math.hypot(t.shown.x - o.position.x, t.shown.y - o.position.y), speed: this.gameSpeed });
+      if (t.receivedAt > 0 && t.key === `own:${o.id}`) this.corrections.push({ key: t.key, tiles: Math.hypot(t.shown.x - o.position.x, t.shown.y - o.position.y), speed: this.gameSpeed, ageMs: now - t.receivedAt, shown: { ...t.shown }, position: { ...o.position }, velocity: { ...o.velocity }, before: { ...t.position }, beforeVelocity: { ...t.velocity }, onRoad: true });
       if (o.fighting !== t.fighting) trace(o.fighting ? 'fight-flag-on' : 'fight-flag-off', t.key);
       t.position = o.position;
       t.velocity = o.velocity;
@@ -123,7 +130,7 @@ export class Movers {
     }
     for (const s of state.seen) {
       const t = this.track(`seen:${s.id}`, s.ownerColor, s.kind !== 'army', s.units, s.position, s.kind === 'envoy');
-      if (t.receivedAt > 0 && performance.now() - t.receivedAt < 5000) this.corrections.push({ key: t.key, tiles: Math.hypot(t.shown.x - s.position.x, t.shown.y - s.position.y), speed: this.gameSpeed });
+      if (t.receivedAt > 0 && performance.now() - t.receivedAt < 5000) this.corrections.push({ key: t.key, tiles: Math.hypot(t.shown.x - s.position.x, t.shown.y - s.position.y), speed: this.gameSpeed, ageMs: now - t.receivedAt, shown: { ...t.shown }, position: { ...s.position }, velocity: { ...s.velocity }, before: { ...t.position }, beforeVelocity: { ...t.velocity }, onRoad: followRoads(this.roads, t.position, t.velocity, 1) !== null });
       t.position = s.position;
       t.velocity = s.velocity;
       t.route = null;
@@ -235,13 +242,21 @@ export class Movers {
     if (t) { for (const s of t.sprites) s.destroy(); t.zone?.destroy(); }
 
     const kinds = scout ? ['pawn'] : formation(units);
-    const sprites = kinds.map((unit) => {
+    const sprites: Phaser.GameObjects.Sprite[] = [];
+    try {
+    for (const unit of kinds) {
       const look = unit === 'pawn' ? { anim: 'pawn-run', scale: UNIT_SCALE } : RUN[unit] ?? { anim: 'pawn-run', scale: UNIT_SCALE };
       const anim = colorKey(color, this.ownColor, look.anim);
       const s = this.scene.add.sprite(0, 0, anim).setScale(look.scale).setOrigin(0.5, unitOriginY(look.anim)).setData('sig', signature).setData('track', key);
-      s.play({ key: anim, startFrame: Phaser.Math.Between(0, 3) });
-      return s;
-    });
+      sprites.push(s);
+      playRandom(s, anim);
+    }
+    } catch (e) {
+      // A column that cannot be built is not left half drawn: what was made is deleted, and the column stands as an empty one (nothing is retried every tick).
+      for (const s of sprites) s.destroy();
+      sprites.length = 0;
+      reportError('movers', e, { source: `building column ${key}` });
+    }
     trace('track-created', key, `${kinds.length} drawn of ${units.reduce((n, u) => n + u.count, 0)}${t ? ' (rebuilt: its soldiers changed)' : ''}`);
     const fresh: Track = {
       key, color, scout, envoy, units, position, velocity: { x: 0, y: 0 }, route: null, cumulative: [], travelled: 0, speed: 0, vision: 0, fighting: false,

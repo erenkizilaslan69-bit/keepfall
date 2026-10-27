@@ -42,20 +42,20 @@ export const SITES: Record<BuildingType, Site> = {
     workSpots: [
       { x: 168, y: 268 }, { x: 232, y: 298 }, { x: 282, y: 258 }, { x: 206, y: 338 },
       { x: 146, y: 314 }, { x: 286, y: 322 }, { x: 250, y: 226 }, { x: 186, y: 226 },
-      { x: 120, y: 268 }, { x: 306, y: 290 },
+      { x: 150, y: 268 }, { x: 306, y: 290 },
     ],
     faceLeft: (p) => p.x > 220,
     parts: (level) => [
-      { key: 'house1', x: 100, y: 205, scale: 1 },
-      ...(level >= 2 ? [{ key: 'house2', x: 225, y: 175, scale: 1 }] : []),
-      ...(level >= 3 ? [{ key: 'house3', x: 92, y: 360, scale: 1 }] : []),
+      { key: 'house1', x: 165, y: 225, scale: 1 },
+      ...(level >= 2 ? [{ key: 'house2', x: 300, y: 232, scale: 1 }] : []),
+      ...(level >= 3 ? [{ key: 'house3', x: 172, y: 364, scale: 1 }] : []),
       ...[{ x: 196, y: 254 }, { x: 262, y: 284 }, { x: 226, y: 322 }, { x: 290, y: 236 }, { x: 262, y: 356 }, { x: 170, y: 296 }, { x: 140, y: 340 }, { x: 310, y: 300 }]
         .slice(0, level * 2)
         .map((p, i) => ({ key: i % 2 ? 'sheep-idle' : 'sheep-grass', x: p.x, y: p.y, scale: 0.85, anim: true, flip: i % 3 === 0 })),
       ...(level >= 2 ? [{ key: 'bush1', x: 300, y: 130, scale: 0.8, anim: true }] : []),
       ...(level >= 3 ? [{ key: 'bush2', x: 160, y: 390, scale: 0.75, anim: true }] : []),
       // level 4: a second barn and a lookout tower over the pasture
-      ...(level >= 4 ? [{ key: 'house1', x: 230, y: 400, scale: 1 }, { key: 'tower', x: 330, y: 160, scale: 0.7 }] : []),
+      ...(level >= 4 ? [{ key: 'house1', x: 230, y: 400, scale: 1 }, { key: 'tower', x: 372, y: 256, scale: 0.7 }] : []),
     ],
   },
   // Forest with a woodcutter's hut; more trees, wood piles and a second hut as it grows.
@@ -65,14 +65,14 @@ export const SITES: Record<BuildingType, Site> = {
     workSpots: [
       // Just left of and in front of a trunk, so the pawn draws over its tree.
       { x: 840, y: 188 }, { x: 900, y: 238 }, { x: 830, y: 288 }, { x: 896, y: 332 },
-      { x: 904, y: 144 }, { x: 865, y: 381 }, { x: 922, y: 384 }, { x: 820, y: 128 },
-      { x: 950, y: 270 }, { x: 960, y: 205 },
+      { x: 864, y: 144 }, { x: 865, y: 381 }, { x: 884, y: 384 }, { x: 820, y: 128 },
+      { x: 910, y: 270 }, { x: 920, y: 205 },
     ],
     faceLeft: () => false,
     parts: (level) => {
       const trees = [
-        { x: 880, y: 172 }, { x: 940, y: 222 }, { x: 870, y: 272 }, { x: 936, y: 316 }, { x: 944, y: 128 },
-        { x: 905, y: 365 }, { x: 960, y: 365 }, { x: 860, y: 112 }, { x: 960, y: 170 }, { x: 990, y: 260 }, { x: 985, y: 330 },
+        { x: 860, y: 176 }, { x: 888, y: 226 }, { x: 850, y: 276 }, { x: 886, y: 320 }, { x: 890, y: 132 },
+        { x: 880, y: 368 }, { x: 890, y: 330 }, { x: 830, y: 120 }, { x: 890, y: 180 }, { x: 896, y: 262 }, { x: 880, y: 372 },
       ].slice(0, 3 + level * 2);
       return [
         { key: 'house2', x: 762, y: 214, scale: 1 },
@@ -100,7 +100,7 @@ export const SITES: Record<BuildingType, Site> = {
     workSpots: [
       { x: 156, y: 576 }, { x: 226, y: 604 }, { x: 296, y: 612 }, { x: 196, y: 664 },
       { x: 266, y: 672 }, { x: 150, y: 640 }, { x: 320, y: 588 }, { x: 240, y: 548 },
-      { x: 120, y: 600 }, { x: 330, y: 650 },
+      { x: 150, y: 600 }, { x: 330, y: 650 },
     ],
     faceLeft: (p) => p.x > 190,
     parts: (level) => {
@@ -110,10 +110,10 @@ export const SITES: Record<BuildingType, Site> = {
         // Gold Stone in greyscale reads as iron ore.
         ...sizes.map((size, i) => ({ key: `stone${size}`, x: spots[i].x, y: spots[i].y, scale: 1, grey: true })),
         { key: 'rock1', x: 320, y: 694, scale: 0.8 },
-        ...(level >= 2 ? [{ key: 'house3', x: 84, y: 696, scale: 1 }] : []),
+        ...(level >= 2 ? [{ key: 'house3', x: 172, y: 694, scale: 1 }] : []),
         ...(level >= 3 ? [{ key: 'tower', x: 300, y: 530, scale: 0.75 }] : []),
         // level 4: a second tower and a foreman's house
-        ...(level >= 4 ? [{ key: 'tower', x: 110, y: 540, scale: 0.75 }, { key: 'house1', x: 170, y: 712, scale: 1 }] : []),
+        ...(level >= 4 ? [{ key: 'tower', x: 150, y: 548, scale: 0.75 }, { key: 'house1', x: 190, y: 706, scale: 1 }] : []),
       ];
     },
   },
@@ -132,8 +132,8 @@ export const SITES: Record<BuildingType, Site> = {
       ...(level >= 2 ? [{ key: 'barracks', x: 830, y: 594, scale: 1 }] : []),
       ...(level >= 3 ? [{ key: 'archery', x: 716, y: 700, scale: 0.85 }] : []),
       // level 4: the full complex, with a watchtower and a second hall
-      ...(level >= 4 ? [{ key: 'tower', x: 960, y: 560, scale: 0.8 }, { key: 'house1', x: 700, y: 560, scale: 1 }] : []),
-      { key: 'rock2', x: 930, y: 690, scale: 0.8 },
+      ...(level >= 4 ? [{ key: 'tower', x: 884, y: 560, scale: 0.8 }, { key: 'house1', x: 700, y: 560, scale: 1 }] : []),
+      { key: 'rock2', x: 890, y: 690, scale: 0.8 },
     ],
   },
 };

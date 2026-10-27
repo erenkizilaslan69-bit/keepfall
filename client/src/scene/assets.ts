@@ -116,6 +116,20 @@ export function colorKey(color: PlayerColor, own: PlayerColor, key: string): str
   return color === own ? key : `${color}-${key}`;
 }
 
+/**
+ * Plays <paramref name="key"/> on a sprite from the frame <paramref name="wanted"/>, or the nearest one the animation has. A start frame past the
+ * last frame makes Phaser throw ("duration of undefined"), and the catapult's idle animation has ONE frame: a column or a battle replay that held a
+ * catapult died half-built (its soldiers drawn so far were never deleted and the replay never began).
+ */
+export function playFrom(sprite: Phaser.GameObjects.Sprite, key: string, wanted: number, extra: { repeat?: number } = {}): void {
+  const frames = sprite.scene.anims.get(key)?.frames.length ?? 1;
+  sprite.play({ key, startFrame: Math.max(0, Math.min(Math.floor(wanted), frames - 1)), ...extra });
+}
+/** The same from a random frame up to <paramref name="max"/>. */
+export function playRandom(sprite: Phaser.GameObjects.Sprite, key: string, max = 3, extra: { repeat?: number } = {}): void {
+  playFrom(sprite, key, Phaser.Math.Between(0, max), extra);
+}
+
 /** The URL of a file of the pack (for the lobby scenery and the warm-up, which draw outside Phaser too). */
 export const assetUrl = url;
 

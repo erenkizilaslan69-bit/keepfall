@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { reportError } from '../error-report';
 import type { BuildingType, Job, JobView } from '../types';
 import type { WorldLabels } from '../ui/world-labels';
-import { UNIT_SCALE, unitOriginY } from './assets';
+import { UNIT_SCALE, playRandom, unitOriginY } from './assets';
 import { GATE, IDLE_AREA, JOB_LOOK, SITES, type Point } from './layout';
 import { NO_OFFSET } from './parts';
 
@@ -175,12 +175,14 @@ export class Workers {
     const spot = this.spotOf(pawn.job, pawn.slot);
     if (!site || !look.work) {
       pawn.state = 'waiting';
-      pawn.sprite.setFlipX(Math.random() < 0.5).play({ key: this.k(look.idle), startFrame: Phaser.Math.Between(0, 5) });
+      pawn.sprite.setFlipX(Math.random() < 0.5);
+      playRandom(pawn.sprite, this.k(look.idle), 5);
       return;
     }
     pawn.state = 'working';
     pawn.timer = Phaser.Math.FloatBetween(4, 7);
-    pawn.sprite.setFlipX(site.faceLeft(spot)).play({ key: this.k(look.work), startFrame: Phaser.Math.Between(0, 2) });
+    pawn.sprite.setFlipX(site.faceLeft(spot));
+    playRandom(pawn.sprite, this.k(look.work), 2);
   }
 
   /** After a work stint: carriers take the load home; blacksmiths keep hammering. */

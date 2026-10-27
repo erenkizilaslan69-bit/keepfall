@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { UnitView } from '../types';
-import { SHIELD_SCALE, UNIT_SCALE, unitOriginY } from './assets';
+import { SHIELD_SCALE, UNIT_SCALE, playRandom, unitOriginY } from './assets';
 import type { WorldLabels } from '../ui/world-labels';
 import { esc } from '../format';
 import { CAMP, type Point } from './layout';
@@ -108,7 +108,7 @@ export class Soldiers {
         .setScale(look.scale)
         .setOrigin(0.5, unitOriginY(look.anim))
         .setAlpha(0);
-      sprite.play({ key: this.k(look.anim), startFrame: Phaser.Math.Between(0, 4) });
+      playRandom(sprite, this.k(look.anim), 4);
       this.scene.tweens.add({ targets: sprite, alpha: 1, duration: 400 });
       sprites.push(sprite);
     }

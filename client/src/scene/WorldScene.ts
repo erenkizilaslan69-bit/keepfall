@@ -6,7 +6,7 @@ import type { Anchor, Target } from '../ui/windows';
 import type { WorldLabels } from '../ui/world-labels';
 import { COLOR_CSS, esc } from '../format';
 import { makeCampfire, newUnitArtJobs } from './NewUnits';
-import { createAnimations, loadSpectatorAssets, preloadAssets } from './assets';
+import { createAnimations, playFrom, loadSpectatorAssets, preloadAssets } from './assets';
 import { CAMP, CASTLE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH } from './layout';
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
 import { buildingSign, placePart, setShadeHook, sign } from './parts';
@@ -172,9 +172,10 @@ export class WorldScene extends Phaser.Scene {
     if (import.meta.env.DEV) {
       setTraceClock(() => this.gameNow().now);
       this.debug = new DebugLayer(this, this.movers, this.battles,
-        () => [...this.workers.debugSprites(), ...this.soldiers.debugSprites(), ...[...this.regions.values()].flatMap((r) => r.debugSprites())],
+        () => [...this.workers.debugSprites(), ...this.soldiers.debugSprites(), ...this.sites.debugSprites(), ...[...this.regions.values()].flatMap((r) => r.debugSprites())],
         () => this.clock.speed, () => this.gameNow().now);
       this.debug.setRoads(this.layout.roads.map((r) => r.points));
+      this.debug.setForests(this.layout.features.map((f) => ({ center: f.center, radius: f.radius })));
     }
     for (const b of this.pendingBattles) this.battles.start(b);
     this.pendingBattles = [];
@@ -594,7 +595,7 @@ export class WorldScene extends Phaser.Scene {
         const key = rnd() < 0.5 ? 'tree1' : 'tree2';
         const scale = 0.75 + rnd() * 0.25;
         const sprite = this.add.sprite(w.x, w.y, key).setOrigin(0.5, 0.9).setScale(scale).setDepth(w.y);
-        sprite.play({ key, startFrame: Math.floor(rnd() * 4) });
+        playFrom(sprite, key, Math.floor(rnd() * 4));
         // deeper into the forest the trees are darker (a multiply tint), and every tree stands in a soft shadow
         const deep = Math.max(0, 1 - r / forest.radius);
         sprite.setTint(Phaser.Display.Color.GetColor(255 - deep * 70, 255 - deep * 42, 255 - deep * 62));
@@ -612,8 +613,8 @@ export class WorldScene extends Phaser.Scene {
       if (!this.layout.roads.every((road) => road.points.slice(1).every((b, j) => distanceToSegment(p, road.points[j], b) > 1.3))) continue;
       placed++;
       const w = toWorld(p), key = rnd() < 0.5 ? 'bush3' : 'bush4';
-      this.add.sprite(w.x, w.y, key).setOrigin(0.5, 0.75).setScale(0.55 + rnd() * 0.25).setTint(0xa8c4a8).setDepth(w.y)
-        .play({ key, startFrame: Math.floor(rnd() * 4) });
+      const bush = this.add.sprite(w.x, w.y, key).setOrigin(0.5, 0.75).setScale(0.55 + rnd() * 0.25).setTint(0xa8c4a8).setDepth(w.y);
+      playFrom(bush, key, Math.floor(rnd() * 4));
     }
   }
 
