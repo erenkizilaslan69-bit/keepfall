@@ -29,7 +29,7 @@ public class NewUnitTests
         Assert.Equal(7, Rules.Units.Count);
         foreach (var id in new[] { "kesis", "mancinik", "suvari" }) Assert.NotNull(Rules.FindUnit(id));
         var cavalry = Rules.FindUnit("suvari")!;
-        Assert.Equal(2.0, Rules.Counters.Get(cavalry, Rules.FindUnit("okcu")!));
+        Assert.Equal(1.5, Rules.Counters.Get(cavalry, Rules.FindUnit("okcu")!));
         Assert.Equal(0.5, Rules.Counters.Get(cavalry, Rules.FindUnit("mizrakci")!));
         Assert.Equal(2.0, Rules.Counters.Get(Rules.FindUnit("mizrakci")!, cavalry));
         Assert.Equal(2, Rules.FindUnit("mancinik")!.Cost.People);
