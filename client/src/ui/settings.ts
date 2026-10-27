@@ -16,6 +16,36 @@ const CREDITS: [string, string][] = [
 ];
 
 let open: HTMLElement | null = null;
+let leaveAction: (() => void) | null = null;
+
+/** Set while the player is in a running match: the settings then offer "Ana menüye dön". */
+export function setLeaveAction(action: (() => void) | null): void {
+  leaveAction = action;
+}
+
+/** Asks before leaving a running match (the castle stays behind undefended). */
+function confirmLeave(): void {
+  const box = document.createElement('div');
+  box.className = 'guide-overlay settings-overlay';
+  box.innerHTML = `
+    <div class="guide settings paper" role="alertdialog" aria-label="Maçtan ayrıl">
+      <div class="ribbon ribbon-red guide-title">Maçtan ayrılıyorsun</div>
+      <div class="guide-body settings-body">
+        <p>Maçtan ayrılırsan kalen savunmasız kalır. Aynı linkle istediğin zaman geri dönebilirsin.</p>
+        <section class="set-links">
+          <button class="btn btn-red" data-act="yes">Ayrıl</button>
+          <button class="btn" data-act="no">Vazgeç</button>
+        </section>
+      </div>
+    </div>`;
+  box.addEventListener('click', (e) => {
+    const t = e.target as HTMLElement;
+    const act = t.closest<HTMLElement>('[data-act]')?.dataset.act;
+    if (act === 'yes') { box.remove(); leaveAction?.(); }
+    else if (act === 'no' || t === box) box.remove();
+  });
+  document.body.appendChild(box);
+}
 
 export function closeSettings(): void {
   open?.remove();
@@ -51,6 +81,7 @@ export function toggleSettings(): void {
           <button class="btn" data-act="guide">Nasıl oynanır?</button>
           <button class="btn" data-act="about">Oyun hakkında</button>
         </section>
+        ${leaveAction ? '<section class="set-links"><button class="btn btn-red" data-act="leave">Ana menüye dön</button></section>' : ''}
         <section class="set-about hidden" data-f="about">
           <h3>Oyun hakkında</h3>
           <p><b>Keepfall</b> — sürüm ${VERSION} (${typeof __BUILD_DATE__ === 'string' ? __BUILD_DATE__ : ''})</p>
@@ -81,6 +112,7 @@ export function toggleSettings(): void {
     const act = t.closest<HTMLElement>('[data-act]')?.dataset.act;
     if (t === overlay || act === 'close') closeSettings();
     else if (act === 'guide') { closeSettings(); toggleGuide(); }
+    else if (act === 'leave') { closeSettings(); confirmLeave(); }
     else if (act === 'about') q('[data-f="about"]').classList.toggle('hidden');
   });
   document.body.appendChild(overlay);

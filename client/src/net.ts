@@ -92,6 +92,13 @@ export class GameConnection {
   removeBot = (seat: number) => this.call('RemoveBot', seat);
   finishMatch = () => this.call('FinishMatch');
   backToLobby = () => this.call('BackToLobby');
+  /** Back to the main menu: the server unbinds this connection (a lobby seat is freed, a castle in a running match stays). */
+  leaveRoom = async () => {
+    const r = await this.call('LeaveRoom');
+    this.roomCode = null;
+    this.seat = 0;
+    return r;
+  };
 
   // Own castle
   moveWorkers = (from: Job, to: Job, count: number) => this.call('MoveWorkers', from, to, count);

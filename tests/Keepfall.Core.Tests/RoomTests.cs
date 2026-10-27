@@ -125,6 +125,29 @@ public class RoomTests
         Assert.Equal(b.Seat, room.HostSeat);
     }
 
+    [Fact]
+    public void Leaving_the_lobby_frees_the_seat_and_hands_the_room_on()
+    {
+        var room = NewRoom();
+        var a = Join(room); var b = Join(room);
+        room.Leave(a.Token, T0);
+        Assert.Null(room.Find(a.Token));
+        Assert.Equal(b.Seat, room.HostSeat);
+        Assert.Single(room.Players);
+    }
+
+    [Fact]
+    public void Leaving_a_started_match_keeps_the_castle_and_the_token_returns_to_it()
+    {
+        var (room, a, b) = StartedMatch();
+        room.Leave(a.Token, T0);
+        Assert.NotNull(room.Find(a.Token));
+        Assert.False(room.Find(a.Token)!.Connected);
+        var back = room.Join(null, a.Token, false, T0 + TimeSpan.FromSeconds(5));
+        Assert.True(back.Ok && back.Rejoined);
+        Assert.True(room.Find(a.Token)!.Connected);
+    }
+
     // ---- starting ----------------------------------------------------------------------------
 
     [Fact]

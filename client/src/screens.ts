@@ -81,7 +81,7 @@ export class LobbyScreen {
   private readonly root: HTMLElement;
 
   constructor(parent: HTMLElement, private readonly net: GameConnection, private readonly mySeat: number, room: RoomView,
-    onName: (name: string) => void) {
+    onName: (name: string) => void, onLeave: () => void) {
     const link = `${location.origin}/oda/${room.code}`;
     const root = this.root = mount(parent, `
       <div class="screen menu paper lobby">
@@ -105,6 +105,7 @@ export class LobbyScreen {
           <div class="lob-bottom">
             <label class="field">Adın <input id="myname" maxlength="16"></label>
             <button class="btn" data-a="ready" id="ready"></button>
+            <button class="btn" data-a="leave" id="leave">Odadan çık</button>
             <div class="start">
               <button data-a="start" id="start" class="btn btn-red wide">Maçı başlat</button>
             </div>
@@ -131,6 +132,8 @@ export class LobbyScreen {
         await this.toggleDeck((e.target as HTMLElement).closest<HTMLElement>('[data-unit]')!.dataset.unit!);
       } else if (a === 'flip') {
         (e.target as HTMLElement).closest<HTMLElement>('.ucard')!.classList.toggle('flipped');
+      } else if (a === 'leave') {
+        onLeave();
       } else if (a === 'start') {
         this.show(await this.net.startMatch());
       } else if (a === 'addbot') {

@@ -24,7 +24,7 @@ import { mountGuideButton } from './ui/guide';
 import { CloudCurtain } from './ui/clouds';
 import { warmUp } from './preload';
 import { mountScenery } from './ui/scenery';
-import { mountSettingsButton } from './ui/settings';
+import { mountSettingsButton, setLeaveAction } from './ui/settings';
 import { guarded, installErrorReporting } from './error-report';
 import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 
@@ -160,8 +160,17 @@ function clear(): void {
   app.innerHTML = '';
 }
 
+/** Back to the main menu; in a running match the castle stays in the game and the room's link brings the player back to it. */
+async function leaveToMenu(): Promise<void> {
+  await net.leaveRoom();
+  lastCastle = null; lastLayout = null; lastMap = null; lastSpectator = null; pendingBattles = []; summary = null;
+  history.pushState(null, '', `/${location.search}`);
+  showHome();
+}
+
 function showHome(defaults: { code?: string; error?: string } = {}): void {
   music.scene('prep');
+  setLeaveAction(null);
   clear();
   document.documentElement.classList.add('in-menu');
   screen = 'home';
@@ -197,13 +206,15 @@ function showLobby(r: RoomView): void {
   lastSpectator = null;
   pendingBattles = [];
   summary = null;
-  lobby = new LobbyScreen(app, net, net.seat, r, saveName);
+  setLeaveAction(null);
+  lobby = new LobbyScreen(app, net, net.seat, r, saveName, () => void leaveToMenu());
 }
 
 function showGame(): void {
   // The clouds close over the lobby; they part when the map is up.
   curtain.cover();
   clear();
+  setLeaveAction(() => void leaveToMenu());
   screen = 'game';
   document.documentElement.classList.add('in-game');
   // The map fills the window and never scrolls; the UI layer (top bar, windows, ribbons) sits on top of it.
@@ -258,6 +269,7 @@ function startScene(color: CastleView['color'], layout: MapLayoutView): void {
 
 function showEnd(r: RoomView): void {
   music.scene('prep');
+  setLeaveAction(null);
   clear();
   document.documentElement.classList.add('in-menu');
   screen = 'end';

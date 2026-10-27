@@ -93,6 +93,25 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
 
     // ---- lobby -----------------------------------------------------------------------------
 
+    /// <summary>The caller goes back to the main menu: this connection is unbound from the room (a started match keeps the castle, the token still returns to it).</summary>
+    public async Task<CommandResultView> LeaveRoom()
+    {
+        if (Bound() is not { } bound) return NotJoined;
+        var code = bound.Session.Room.Code;
+        int seat;
+        lock (bound.Session.Lock)
+        {
+            seat = bound.Session.Room.Find(bound.Token)?.Seat ?? 0;
+            bound.Session.Room.Leave(bound.Token, DateTime.UtcNow);
+        }
+        Context.Items.Remove(CodeKey);
+        Context.Items.Remove(TokenKey);
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, RoomGroup(code));
+        if (seat > 0) await Groups.RemoveFromGroupAsync(Context.ConnectionId, PlayerGroup(code, seat));
+        await PushRoom(bound.Session);
+        return new CommandResultView(true, null);
+    }
+
     public Task<CommandResultView> SetName(string? name) => RoomCommand((room, token) => room.SetName(token, name));
     public Task<CommandResultView> SetReady(bool ready) => RoomCommand((room, token) => room.SetReady(token, ready));
     public Task<CommandResultView> SetDeck(string[]? units) => RoomCommand((room, token) => room.SetDeck(token, units));

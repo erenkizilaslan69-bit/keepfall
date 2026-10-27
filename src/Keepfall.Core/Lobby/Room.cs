@@ -255,6 +255,25 @@ public sealed class Room
         return new JoinResult(player, false, null);
     }
 
+    /// <summary>
+    /// The player leaves for the main menu. In the lobby the seat is freed (the host role passes on by the usual rule);
+    /// once the match has begun the castle stays in the game as if the connection had dropped, and the token still rejoins it.
+    /// </summary>
+    public void Leave(string token, DateTime nowUtc)
+    {
+        if (Find(token) is not { IsBot: false } player) return;
+        if (Phase == RoomPhase.Lobby)
+        {
+            _players.Remove(player);
+            if (HostSeat == player.Seat) PassHost();
+        }
+        else
+        {
+            player.Connections = 0;
+            player.DisconnectedAtUtc = nowUtc;
+        }
+    }
+
     /// <summary>One of the player's connections closed.</summary>
     public void Disconnect(string token, DateTime nowUtc)
     {
