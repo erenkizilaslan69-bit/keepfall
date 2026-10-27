@@ -415,7 +415,7 @@ check('the army is home with the loot', await waitFor(() => {
 }, 30000));
 const afterVillage = X.of('CastleState').at(-1);
 const villageGold = afterVillage.resources.gold - chestGold;
-check('the village (30 to 48) and the second chest (30 to 45) give 60 to 93 gold', villageGold >= 60 && villageGold <= 93, String(villageGold));
+check('the village (20 to 30) and the second chest (30 to 45) give 50 to 75 gold', villageGold >= 50 && villageGold <= 75, String(villageGold));
 check('the village is gone for X, all soldiers came home', siteOf(X, village.id).gone === true
   && afterVillage.units.find((u) => u.id === 'kilicli').soldiers === 6);
 check('the raid shows in nobody elses castle state, and Z never hears of the village at all',

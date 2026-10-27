@@ -19,4 +19,6 @@ Gözlem: sandık altını 30-45 olunca paralı asker payı savaş başında ~%27
 |---|---|---|
 | 30-48 / 60-90 | %40,1 | %6 |
 | 20-30 / 40-60 (istenen) | %34,5 | %12 |
-| 15-25 / 30-45 (ek tur, geçerli) | %31,8 | %17,8 |
+| 15-25 / 30-45 (ek tur, geri alındı) | %31,8 | %17,8 |
+
+Karar: köy 20-30, kamp 40-60 geçerli (paralı %34,5, bekleyen %12); daha fazla ayar turu yok.
