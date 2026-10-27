@@ -138,9 +138,17 @@
     "giftThreshold": 30,
     "giftPeaceSeconds": 90,
     // Ordu karışımı payları; bot yalnız destesindeki birimleri kullanır, paylar deste içinde yeniden oranlanır.
-    "mix": { "kilicli": 0.35, "kalkanli": 0.25, "okcu": 0.25, "mizrakci": 0.15, "kesis": 0.1, "mancinik": 0.1, "suvari": 0.2 },
+    "mix": { "kilicli": 0.3, "kalkanli": 0.2, "okcu": 0.2, "mizrakci": 0.2, "kesis": 0.08, "mancinik": 0.08, "suvari": 0.15 },
     // Orta ve Zor botların seçtiği desteler (kolay bot rastgele seçer). Ölçümle belirlenir.
-    "decks": [],
+    "decks": [
+      ["okcu", "kalkanli", "kesis", "suvari"],
+      ["okcu", "kilicli", "kalkanli", "kesis"],
+      ["okcu", "kalkanli", "kesis", "mancinik"],
+      ["okcu", "mizrakci", "kalkanli", "mancinik"],
+      ["okcu", "mizrakci", "kalkanli", "kesis"],
+      ["kilicli", "kalkanli", "kesis", "suvari"],
+      ["okcu", "kilicli", "kalkanli", "suvari"]
+    ],
     "weaponsFrom": 0.3,
     "armFrom": 0.75,
     "armyShare": 0.5,
@@ -229,14 +237,14 @@
       "id": "okcu", "name": "Okçu", "phase": 1,
       "cost": { "iron": 1, "wood": 4, "food": 0, "people": 1 },
       "buildSeconds": 25,
-      "hp": 70, "damage": 11, "attackInterval": 1.2,
+      "hp": 65, "damage": 9.5, "attackInterval": 1.2,
       "range": "ranged", "row": "back"
     },
     {
       "id": "kilicli", "name": "Kılıçlı", "phase": 1,
       "cost": { "iron": 3, "wood": 2, "food": 0, "people": 1 },
       "buildSeconds": 30,
-      "hp": 100, "damage": 8.5, "attackInterval": 1.0,
+      "hp": 110, "damage": 9.5, "attackInterval": 1.0,
       "range": "melee", "row": "front"
     },
     {
@@ -250,7 +258,7 @@
       "id": "kalkanli", "name": "Kalkanlı", "phase": 1,
       "cost": { "iron": 2, "wood": 3, "food": 0, "people": 1 },
       "buildSeconds": 35,
-      "hp": 150, "damage": 7, "attackInterval": 1.3,
+      "hp": 135, "damage": 7, "attackInterval": 1.3,
       "range": "melee", "row": "front"
     },
     // Yeni birlikler (2026-10-28 gece, ilk öneri; BattleSim ile kalibre edilir).
@@ -261,7 +269,7 @@
       "buildSeconds": 30,
       "hp": 60, "damage": 0, "attackInterval": 1.5,
       "range": "ranged", "row": "back",
-      "heal": 12, "healInterval": 1.5
+      "heal": 8, "healInterval": 2.0
     },
     // Mancınık: hep düşmanın arka sırasına vurur (yoksa ön sıraya), asıl hedefe tam, aynı sıradan splashTargets kişiye splashFactor kadar.
     // people 2: kuşanırken iki işçi harcar (işçiye dönerken iki işçi geri gelir).
@@ -269,7 +277,7 @@
       "id": "mancinik", "name": "Mancınık", "phase": 1,
       "cost": { "iron": 2, "wood": 5, "food": 0, "people": 2 },
       "buildSeconds": 60,
-      "hp": 50, "damage": 16, "attackInterval": 3.0,
+      "hp": 50, "damage": 28, "attackInterval": 3.0,
       "range": "ranged", "row": "back",
       "splashTargets": 2, "splashFactor": 0.5, "backFirst": true
     },

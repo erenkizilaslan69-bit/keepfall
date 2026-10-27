@@ -18,7 +18,7 @@ public class HardBotTests
 
     private static (Room Room, GameState Game, Bot Bot, RoomPlayer Me, RoomPlayer Rival) War(BotDifficulty level)
     {
-        var room = Room.StartBotMatch("HRD", Rules, new RoomOptions { MinPlayers = 1, PrepSeconds = 5, WarSeconds = 900, Seed = 2 }, [level, BotDifficulty.Medium]);
+        var room = Room.StartBotMatch("HRD", Rules, new RoomOptions { BotDeck = RoomOptions.ClassicDeck, MinPlayers = 1, PrepSeconds = 5, WarSeconds = 900, Seed = 2 }, [level, BotDifficulty.Medium]);
         var game = room.Game!;
         for (int i = 0; i < 6; i++) room.Tick(1);
         Assert.Equal(MatchPhase.War, game.Phase);

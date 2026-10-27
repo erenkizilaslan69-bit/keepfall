@@ -18,7 +18,7 @@ public class BotGiftTests
     /// <summary>The bot (seat 1) is strong and the rival (seat 2) is weak, so without a gift the bot goes for it.</summary>
     private static (Room Room, GameState Game, Bot Bot, RoomPlayer Me, RoomPlayer Rival) War()
     {
-        var room = Room.StartBotMatch("GFT", Rules, new RoomOptions { MinPlayers = 1, PrepSeconds = 5, WarSeconds = 900, Seed = 2 }, [BotDifficulty.Medium, BotDifficulty.Medium]);
+        var room = Room.StartBotMatch("GFT", Rules, new RoomOptions { BotDeck = RoomOptions.ClassicDeck, MinPlayers = 1, PrepSeconds = 5, WarSeconds = 900, Seed = 2 }, [BotDifficulty.Medium, BotDifficulty.Medium]);
         var game = room.Game!;
         for (int i = 0; i < 6; i++) room.Tick(1);
         Assert.Equal(MatchPhase.War, game.Phase);

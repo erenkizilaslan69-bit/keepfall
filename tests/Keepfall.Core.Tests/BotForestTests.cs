@@ -16,7 +16,7 @@ public class BotForestTests
     /// <summary>A preparation of the given length played by two bots of one difficulty; returns the room and the host (for their counters).</summary>
     private static (Room Room, BotHost.BotHost Host) Play(BotDifficulty level, int seed, double prep = 600, double war = 0.0, double seconds = 600)
     {
-        var room = Room.StartBotMatch("FOR", Rules, new RoomOptions { MinPlayers = 1, PrepSeconds = prep, WarSeconds = war > 0 ? war : 300, Seed = seed }, [level, level]);
+        var room = Room.StartBotMatch("FOR", Rules, new RoomOptions { BotDeck = RoomOptions.ClassicDeck, MinPlayers = 1, PrepSeconds = prep, WarSeconds = war > 0 ? war : 300, Seed = seed }, [level, level]);
         var host = new BotHost.BotHost(Rules, seed);
         for (int t = 0; t < seconds && room.Phase != RoomPhase.Ended; t++) room.Tick(1, dt => host.Step(room, dt));
         return (room, host);

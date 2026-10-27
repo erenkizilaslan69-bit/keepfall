@@ -159,6 +159,7 @@ Ayar dosyası çalışma klasöründen yukarı doğru `config/balance.json` olar
 
 ## Savaş kuralları
 
+- **7 birlik ve deste:** Okçu, Kılıçlı, Mızrakçı, Kalkanlı + **Keşiş** (arka sıra, saldırmaz, her 1,5 sn'de ordusundaki en yaralıya 12 can verir), **Mancınık** (arka sıra, savaşın başından düşmanın arka sırasına alan hasarı, 2 işçi harcar) ve **Süvari** (haritada 2 kat hızlı; arka sıradaki okçu/mancınık/keşişe dalar; yalnız süvariden oluşan ordu kapıda kazanırsa kale düşmez, rakibin tarlaları 60 sn yarı verimle çalışır). Maç başında (lobide) her oyuncu 7 birimden 4'ünü seçer (`deck`); yalnız onları üretir/kuşanır/kiralar; rakip destesini yalnız gözcü raporunda görür. Botlar da deste seçer. Deste turnuvası: `BattleSim deste`.
 - Yakın birlikler, düşmanın ön sırası düşene kadar arka sıraya ulaşamaz. Okçular, öncelikli tür seçildiyse arka sıradaki o türü de vurabilir.
 - Uzak birlikler (okçu) her sıradan vurur. Yakın birlikler sadece ön sıradan vurur; arkaya konan yakın birlik yedektir, ön sıra düşünce öne geçer.
 - Savaş başında yakın dövüşçüler `approachTime` saniye hedefe ulaşamaz; bu sürede okçular serbest atış yapar.

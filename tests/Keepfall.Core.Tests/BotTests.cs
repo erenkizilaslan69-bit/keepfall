@@ -17,7 +17,7 @@ public class BotTests
 
     private static Room RoomWithBots(BotDifficulty a, BotDifficulty b, int seed = 11, double prep = 600, double war = 300)
     {
-        var room = new Room("BOTS", Rules, new RoomOptions { MinPlayers = 2, PrepSeconds = prep, WarSeconds = war, Seed = seed });
+        var room = new Room("BOTS", Rules, new RoomOptions { BotDeck = RoomOptions.ClassicDeck, MinPlayers = 2, PrepSeconds = prep, WarSeconds = war, Seed = seed });
         var human = room.Join("Ali", null, false, DateTime.UtcNow).Player!;
         Assert.True(room.AddBot(human.Token, a).Ok);
         Assert.True(room.AddBot(human.Token, b).Ok);

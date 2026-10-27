@@ -29,6 +29,10 @@ public sealed record RoomOptions
     public int? Seed { get; init; }
     /// <summary>Tests: a different forest with everything else (corners, battles) as <see cref="Seed"/> makes it.</summary>
     public int? ForestSeed { get; init; }
+    /// <summary>Tests: every bot gets exactly this deck (null: bots pick their own).</summary>
+    public IReadOnlyList<string>? BotDeck { get; init; }
+    /// <summary>The four units the game had before the deck: tests that count on them use it.</summary>
+    public static readonly IReadOnlyList<string> ClassicDeck = ["okcu", "kilicli", "mizrakci", "kalkanli"];
 }
 
 /// <summary>
@@ -335,6 +339,7 @@ public sealed class Room
     /// <summary>A bot's deck: easy ones pick at random; the others from the balanced decks of the config (the four first units when there are none).</summary>
     private IReadOnlyList<string> BotDeck(BotDifficulty level, Random rng)
     {
+        if (Options.BotDeck is { } fixedDeck) return fixedDeck;
         var decks = _rules.Bots.Decks;
         if (level == BotDifficulty.Easy) return _rules.RandomDeck(rng);
         if (decks is { Count: > 0 }) return decks[rng.Next(decks.Count)];

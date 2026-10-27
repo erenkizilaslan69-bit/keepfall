@@ -21,7 +21,7 @@ public class BotWarTests
     /// <summary>Two castles, the war on (the preparation is five seconds). Only seat 1 has a bot brain; the test plays seat 2 by hand.</summary>
     private static (Room Room, GameState Game, Bot Bot, RoomPlayer Me, RoomPlayer Rival) War(BotDifficulty level, double war = 600, int seed = 2)
     {
-        var room = Room.StartBotMatch("WAR", Rules, new RoomOptions { MinPlayers = 1, PrepSeconds = 5, WarSeconds = war, Seed = seed }, [level, level]);
+        var room = Room.StartBotMatch("WAR", Rules, new RoomOptions { BotDeck = RoomOptions.ClassicDeck, MinPlayers = 1, PrepSeconds = 5, WarSeconds = war, Seed = seed }, [level, level]);
         var game = room.Game!;
         for (int i = 0; i < 6; i++) room.Tick(1);
         Assert.Equal(MatchPhase.War, game.Phase);
@@ -144,7 +144,7 @@ public class BotWarTests
     [Fact]
     public void Nobody_attacks_a_castle_in_the_preparation()
     {
-        var room = Room.StartBotMatch("PRE", Rules, new RoomOptions { MinPlayers = 1, PrepSeconds = 600, WarSeconds = 300, Seed = 4 }, [BotDifficulty.Medium, BotDifficulty.Medium]);
+        var room = Room.StartBotMatch("PRE", Rules, new RoomOptions { BotDeck = RoomOptions.ClassicDeck, MinPlayers = 1, PrepSeconds = 600, WarSeconds = 300, Seed = 4 }, [BotDifficulty.Medium, BotDifficulty.Medium]);
         var host = new BotHost.BotHost(Rules, 4);
         foreach (var p in room.Players) Soldiers(room.Game!, p.CastleKey, 20, 10, 10);
         for (int t = 0; t < 590; t++) room.Tick(1, dt => host.Step(room, dt));

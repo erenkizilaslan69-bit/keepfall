@@ -17,7 +17,7 @@ public class BotModuleTests
     /// <summary>Two bots in a started match (the first one is the one under test; nobody plays it but the test).</summary>
     private static Room Match(double prep = 600, double war = 300, int seed = 3)
     {
-        var room = Room.StartBotMatch("MOD", Rules, new RoomOptions { MinPlayers = 1, PrepSeconds = prep, WarSeconds = war, Seed = seed },
+        var room = Room.StartBotMatch("MOD", Rules, new RoomOptions { BotDeck = RoomOptions.ClassicDeck, MinPlayers = 1, PrepSeconds = prep, WarSeconds = war, Seed = seed },
             [BotDifficulty.Medium, BotDifficulty.Medium]);
         return room;
     }
@@ -140,12 +140,19 @@ public class BotModuleTests
     [Fact]
     public void The_easy_bot_thinks_less_often_and_gives_fewer_commands_than_the_medium_one()
     {
-        var room = Room.StartBotMatch("EZ", Rules, new RoomOptions { MinPlayers = 1, PrepSeconds = 600, WarSeconds = 300, Seed = 4 },
-            [BotDifficulty.Easy, BotDifficulty.Medium]);
-        var host = new BotHost.BotHost(Rules, 2);
-        for (int t = 0; t < 240; t++) room.Tick(1, dt => host.Step(room, dt));
-        Assert.True(host.Stats[1]["thinks"] < host.Stats[2]["thinks"]);
-        Assert.True(host.Stats[1]["commands"] < host.Stats[2]["commands"]);
+        // Over a few matches (the decks are random, so one match is not enough to tell).
+        int easyThinks = 0, mediumThinks = 0, easyCommands = 0, mediumCommands = 0;
+        foreach (int seed in new[] { 4, 5, 6, 7 })
+        {
+            var room = Room.StartBotMatch("EZ", Rules, new RoomOptions { BotDeck = RoomOptions.ClassicDeck, MinPlayers = 1, PrepSeconds = 600, WarSeconds = 300, Seed = seed },
+                [BotDifficulty.Easy, BotDifficulty.Medium]);
+            var host = new BotHost.BotHost(Rules, 2);
+            for (int t = 0; t < 240; t++) room.Tick(1, dt => host.Step(room, dt));
+            easyThinks += host.Stats[1]["thinks"]; mediumThinks += host.Stats[2]["thinks"];
+            easyCommands += host.Stats[1]["commands"]; mediumCommands += host.Stats[2]["commands"];
+        }
+        Assert.True(easyThinks < mediumThinks);
+        Assert.True(easyCommands < mediumCommands);
     }
 
     private static class Building

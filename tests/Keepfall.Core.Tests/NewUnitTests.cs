@@ -44,7 +44,10 @@ public class NewUnitTests
         var withMonk = Fight(Army("A", ("okcu", 6)), Army("B", ("kalkanli", 4), ("kesis", 2)));
         Assert.NotEmpty(withMonk.Record!.Heals);
         Assert.Empty(withoutMonk.Record!.Heals);
-        Assert.True(withMonk.DurationSeconds > withoutMonk.DurationSeconds, "healing makes the fight last longer");
+        // Healing makes the shield line last longer (averaged over several fights: the shots are random).
+        double Mean(params (string, int)[] b) => Enumerable.Range(1, 12).Average(seed => Fight(Army("A", ("okcu", 14)), Army("B", b), seed).DurationSeconds);
+        double withM = Mean(("kalkanli", 4), ("kesis", 2)), withoutM = Mean(("kalkanli", 4));
+        Assert.True(withM > withoutM, $"healing makes the fight last longer ({withM:0.0} vs {withoutM:0.0} s)");
         // A monk never deals damage.
         var monkStats = withMonk.SideB.ByType.Single(t => t.Type.Id == "kesis");
         Assert.Equal(0, monkStats.DamageDealt);
