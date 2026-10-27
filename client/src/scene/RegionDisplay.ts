@@ -30,6 +30,8 @@ export class RegionDisplay {
     }
   }
 
+  debugSprites(): Phaser.GameObjects.Sprite[] { return [...this.workers.debugSprites(), ...this.soldiers.debugSprites()]; }
+
   sync(castle: SpectatorCastleView): void {
     for (const b of castle.buildings) {
       const slot = this.slots.get(b.type);

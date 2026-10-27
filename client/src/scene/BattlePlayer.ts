@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { trace } from '../debug-trace';
 import { sfx } from '../audio';
 import { reportError } from '../error-report';
 import type { Effects } from './Effects';
@@ -58,6 +59,19 @@ interface Replay {
 
 export class BattlePlayer {
   private replays = new Map<string, Replay>();
+  /** Development: how late each replay began, in game seconds after the server started the battle. */
+  readonly lags: { id: string; kind: string; lagGame: number; lagReal: number; fight: number }[] = [];
+  /** Development: every replay that was dropped after an error, and every one that ended: when (performance.now) it ended. */
+  readonly endedAt = new Map<string, number>();
+
+  /** Development: what the debug layer reads. */
+  debugReplays(): { id: string; kind: string; ended: boolean; at: { x: number; y: number }; startedAt: number; fight: number; alive: number }[] {
+    return [...this.replays.entries()].map(([id, r]) => ({ id, kind: r.view.kind, ended: r.ended, at: r.view.at, startedAt: r.view.startedAt, fight: r.view.fightSeconds,
+      alive: r.fighters.filter((f) => f && f.sprite.active).length }));
+  }
+  debugSprites(): Phaser.GameObjects.Sprite[] {
+    return [...this.replays.values()].flatMap((r) => r.fighters.filter((f): f is Fighter => !!f).map((f) => f.sprite));
+  }
   /** Every battle that has been replayed here, for good: its "Savaş" cloud must not come back after the replay ends. */
   private played = new Set<string>();
   hasPlayed(id: string): boolean { return this.played.has(id); }
@@ -82,6 +96,12 @@ export class BattlePlayer {
   start(view: BattleStartedView): void {
     if (this.replays.has(view.id)) return;
     this.played.add(view.id);
+    {
+      const { now, speed } = this.clock();
+      this.lags.push({ id: view.id, kind: view.kind, lagGame: now - view.startedAt, lagReal: (now - view.startedAt) / Math.max(1, speed), fight: view.fightSeconds });
+      trace('battle-replay-start', view.id, `${view.kind} lag ${(now - view.startedAt).toFixed(1)} game s, fight ${view.fightSeconds.toFixed(1)} s, sides ${view.sides.map((s) => s.soldiers.length).join('v')}`);
+      for (const s of view.sides) if (s.seat) trace('battle-involves', `seat:${s.seat}`, view.id);
+    }
     const f = normalise(view.facing);
     const p = { x: -f.y, y: f.x };
     // At a castle the fight is in front of the gate, on the road the attackers came along.
@@ -173,6 +193,8 @@ export class BattlePlayer {
   /** Remove a replay whose code failed: its sprites go, it is not drawn or counted as active again. */
   private drop(id: string, r: Replay): void {
     r.ended = true;
+    this.endedAt.set(id, performance.now());
+    trace('battle-replay-dropped', id, 'after an error');
     for (const f of r.fighters) if (f?.sprite.active) { this.scene.tweens.killTweensOf(f.sprite); f.sprite.destroy(); }
     this.replays.delete(id);
   }
@@ -246,6 +268,8 @@ export class BattlePlayer {
   private end(id: string, r: Replay): void {
     if (r.ended) return;
     r.ended = true;
+    this.endedAt.set(id, performance.now());
+    trace('battle-replay-end', id, `${r.view.kind}, ${r.fighters.filter((f) => f && !f.dead && f.sprite.active).length} left standing`);
     const left = r.fighters.filter((f): f is Fighter => !!f && !f.dead);
     this.scene.tweens.add({ targets: left.map((f) => f.sprite), alpha: 0, duration: 400, onComplete: () => left.forEach((f) => f.sprite.destroy()) });
     this.scene.time.delayedCall(500, () => this.replays.delete(id));

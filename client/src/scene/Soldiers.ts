@@ -33,6 +33,8 @@ export class Soldiers {
   private blocks = new Map<string, Phaser.GameObjects.Sprite[]>();
   private fire: Phaser.GameObjects.GameObject[] = [];
 
+  debugSprites(): Phaser.GameObjects.Sprite[] { return [...this.blocks.values()].flat(); }
+
   /** <paramref name="off"/>: where this castle's corner is; <paramref name="key"/> keeps the signs of several castles apart. */
   constructor(private readonly scene: Phaser.Scene, private readonly labels: WorldLabels,
     private readonly off: Point = NO_OFFSET, private readonly key = '',

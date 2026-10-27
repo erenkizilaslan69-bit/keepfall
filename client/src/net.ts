@@ -1,5 +1,6 @@
 import * as signalR from '@microsoft/signalr';
 import { loadIdentity, saveIdentity } from './identity';
+import { trace } from './debug-trace';
 import type { ArmyMode, BattleStartedView, BotLevel, BuildingType, CastleView, CommandResult, Job, JoinView, MapLayoutView, MapStateView, RoomView, Row, SpectatorStateView, SpectatorWaitView, SummaryView } from './types';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
@@ -110,9 +111,9 @@ export class GameConnection {
   sendScout = (targetSeat: number, from: Job) => this.call('SendScout', targetSeat, from);
   sendArmy = (targetSeat: number, units: Record<string, number>, rows: Record<string, Row>, archerPriority: string | null,
     mode: ArmyMode = 'attack') => this.call('SendArmy', targetSeat, units, rows, archerPriority, mode);
-  recallArmy = (armyId: number) => this.call('RecallArmy', armyId);
+  recallArmy = (armyId: number) => { trace('recall', `own:${armyId}`); return this.call('RecallArmy', armyId); };
   /** A new order for an army on the road: another castle (`targetSeat`) or a place in the forest (`siteId`). */
-  redirectArmy = (armyId: number, targetSeat: number | null, siteId: string | null) => this.call('RedirectArmy', armyId, targetSeat, siteId);
+  redirectArmy = (armyId: number, targetSeat: number | null, siteId: string | null) => { trace('redirect', `own:${armyId}`, `to ${targetSeat ?? siteId}`); return this.call('RedirectArmy', armyId, targetSeat, siteId); };
   setDefense = (rows: Record<string, Row>, archerPriority: string | null) => this.call('SetDefense', rows, archerPriority);
   setSpeed = (speed: number) => this.call('SetSpeed', speed);
 

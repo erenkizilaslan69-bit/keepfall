@@ -6,6 +6,7 @@ import type { WorldLabels } from '../ui/world-labels';
 import { COLOR_CSS } from '../format';
 import { reportError } from '../error-report';
 import { toWorld } from './world';
+import { trace } from '../debug-trace';
 
 // Armies and scouts walking on the map: our own (we know their road) and the others the server lets
 // us see (only where they are and which way they go). Every soldier is drawn in its own unit's
@@ -62,6 +63,16 @@ interface Track {
 export class Movers {
   private tracks = new Map<string, Track>();
   private gameSpeed = 1;
+  /** Development: how far a column was from where the server put its army when the news came (tiles), for the debug layer to judge. */
+  readonly corrections: { key: string; tiles: number; speed: number }[] = [];
+
+  /** Development: what the debug layer reads. */
+  debugTracks(): { key: string; own: boolean; scout: boolean; fighting: boolean; position: Vec; shown: Vec; drawn: number; expected: number; route: Vec[] | null; units: number; ageMs: number }[] {
+    const now = performance.now();
+    return [...this.tracks.values()].map((t) => ({ key: t.key, own: t.key.startsWith('own:'), scout: t.scout, fighting: t.fighting, position: t.position, shown: t.shown,
+      drawn: t.sprites.filter((s) => s.active).length, expected: t.sprites.length, route: t.route, units: t.units.reduce((n, u) => n + u.count, 0), ageMs: now - t.receivedAt }));
+  }
+  debugSprites(): Phaser.GameObjects.Sprite[] { return [...this.tracks.values()].flatMap((t) => t.sprites); }
 
   /** Set by the scene: a click on one of our armies or scouts. */
   onSelect: (target: Target) => void = () => {};
@@ -84,6 +95,8 @@ export class Movers {
     const alive = new Set<string>();
     for (const o of state.own) {
       const t = this.track(`own:${o.id}`, this.ownColor, o.kind !== 'army', o.units, o.position, o.kind === 'envoy');
+      if (t.receivedAt > 0 && t.key === `own:${o.id}`) this.corrections.push({ key: t.key, tiles: Math.hypot(t.shown.x - o.position.x, t.shown.y - o.position.y), speed: this.gameSpeed });
+      if (o.fighting !== t.fighting) trace(o.fighting ? 'fight-flag-on' : 'fight-flag-off', t.key);
       t.position = o.position;
       t.velocity = o.velocity;
       if (o.route.length === 0) o.route = [o.position]; // a road always has at least where the army stands
@@ -110,6 +123,7 @@ export class Movers {
     }
     for (const s of state.seen) {
       const t = this.track(`seen:${s.id}`, s.ownerColor, s.kind !== 'army', s.units, s.position, s.kind === 'envoy');
+      if (t.receivedAt > 0 && performance.now() - t.receivedAt < 5000) this.corrections.push({ key: t.key, tiles: Math.hypot(t.shown.x - s.position.x, t.shown.y - s.position.y), speed: this.gameSpeed });
       t.position = s.position;
       t.velocity = s.velocity;
       t.route = null;
@@ -119,6 +133,7 @@ export class Movers {
     for (const [key, t] of this.tracks) {
       if (alive.has(key)) continue;
       // Out of sight (or home): it simply is not there any more.
+      trace('track-removed', key, t.fighting ? 'while fighting' : '');
       for (const s of t.sprites) s.destroy();
       this.labels.remove(`army:${key}`);
       t.zone?.destroy();
@@ -227,6 +242,7 @@ export class Movers {
       s.play({ key: anim, startFrame: Phaser.Math.Between(0, 3) });
       return s;
     });
+    trace('track-created', key, `${kinds.length} drawn of ${units.reduce((n, u) => n + u.count, 0)}${t ? ' (rebuilt: its soldiers changed)' : ''}`);
     const fresh: Track = {
       key, color, scout, envoy, units, position, velocity: { x: 0, y: 0 }, route: null, cumulative: [], travelled: 0, speed: 0, vision: 0, fighting: false,
       receivedAt: performance.now(), shown: t?.shown ?? position, heading: t?.heading ?? { x: 1, y: 0 }, sprites,

@@ -49,6 +49,8 @@ export class Workers {
     this.drawPen();
   }
 
+  debugSprites(): Phaser.GameObjects.Sprite[] { return this.pawns.map((p) => p.sprite); }
+
   private pen: Phaser.GameObjects.Graphics | null = null;
 
   /** The idle people's pen: trodden dirt with a low picket fence round it, so they are not standing on the road. */

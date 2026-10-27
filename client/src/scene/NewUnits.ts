@@ -53,6 +53,8 @@ function makeStone(scene: Phaser.Scene): void {
 export function newUnitArtJobs(scene: Phaser.Scene, own: PlayerColor, colors: PlayerColor[]): (() => void)[] {
   const jobs: (() => void)[] = [() => makeStone(scene)];
   for (const color of new Set([own, ...colors])) {
+    // (A spectator's late load passes a made-up own colour so that every real colour gets its prefix: it has no art of its own.)
+    if (!['blue', 'red', 'yellow', 'purple', 'black'].includes(color)) continue;
     const lancer = key(color, own, 'lancer-attack');
     if (!scene.textures.exists(lancer)) continue;
     const img = scene.textures.get(lancer).getSourceImage() as HTMLImageElement;

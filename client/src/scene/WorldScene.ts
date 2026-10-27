@@ -16,6 +16,8 @@ import { scoutSignHtml } from '../ui/scout-report';
 import { BattlePlayer } from './BattlePlayer';
 import { Effects } from './Effects';
 import { Fog } from './Fog';
+import { DebugLayer } from './DebugLayer';
+import { setTraceClock, trace } from '../debug-trace';
 import { Movers } from './Movers';
 import { Soldiers } from './Soldiers';
 import { Terrain } from './Terrain';
@@ -118,6 +120,7 @@ export class WorldScene extends Phaser.Scene {
   private ownFallen: boolean | null = null;
   private lastPhase: string | null = null;
   private fx!: Effects;
+  private debug: DebugLayer | null = null;
 
   /** <paramref name="color"/>: the player's colour; units and buildings are drawn in it. */
   /** <paramref name="seed"/>: the room's (everybody in it draws the same decorations). */
@@ -166,6 +169,13 @@ export class WorldScene extends Phaser.Scene {
     this.fog = new Fog(this, this.layout.size, WATER_FAR);
     this.fx = new Effects(this);
     this.battles = new BattlePlayer(this, this.color, () => this.gameNow(), (seat) => this.courtyardOf(seat), this.fx);
+    if (import.meta.env.DEV) {
+      setTraceClock(() => this.gameNow().now);
+      this.debug = new DebugLayer(this, this.movers, this.battles,
+        () => [...this.workers.debugSprites(), ...this.soldiers.debugSprites(), ...[...this.regions.values()].flatMap((r) => r.debugSprites())],
+        () => this.clock.speed, () => this.gameNow().now);
+      this.debug.setRoads(this.layout.roads.map((r) => r.points));
+    }
     for (const b of this.pendingBattles) this.battles.start(b);
     this.pendingBattles = [];
     this.setupCamera();
@@ -219,6 +229,7 @@ export class WorldScene extends Phaser.Scene {
 
   /** A battle we fight in: replayed on the map from its record. */
   playBattle(battle: BattleStartedView): void {
+    trace('battle-received', battle.id, `${battle.kind} started at ${battle.startedAt.toFixed(1)}, now ${this.gameNow().now.toFixed(1)}`);
     if (this.ready) this.battles.start(battle);
     else this.pendingBattles.push(battle);
   }
@@ -323,6 +334,7 @@ export class WorldScene extends Phaser.Scene {
 
   private enterSpectator(): void {
     this.spectating = true;
+    trace('spectator-enter', `seat:${this.mySeat}`);
     this.fog.setVisible(false);
     if (this.minimap) this.minimap.fogless = true;
     for (const r of this.layout.regions) {
@@ -489,6 +501,7 @@ export class WorldScene extends Phaser.Scene {
     guarded('scene-update', () => { for (const r of this.regions.values()) r.update(dt); }, 'regions');
     guarded('scene-update', () => this.movers.update(dt), 'movers');
     guarded('scene-update', () => this.auditMovers(dt), 'audit');
+    if (this.debug) guarded('scene-update', () => this.debug!.update(dt), 'debug');
     guarded('scene-update', () => this.battles.update(), 'battles');
     guarded('scene-update', () => this.onFrame(), 'onFrame');
     guarded('scene-update', () => this.clearTreesAroundBattles(dt), 'trees');
