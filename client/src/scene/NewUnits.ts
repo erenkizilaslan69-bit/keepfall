@@ -40,20 +40,31 @@ function makeStone(scene: Phaser.Scene): void {
   scene.textures.addCanvas('stone-shot', c);
 }
 
-/** Makes the art for each colour whose Lancer sheet is loaded (a colour already done is skipped). */
-export function makeNewUnitArt(scene: Phaser.Scene, own: PlayerColor, colors: PlayerColor[]): void {
-  makeStone(scene);
+/**
+ * The art for each colour whose Lancer sheet is loaded, as small jobs (a strip each; a colour already done is skipped). Drawing it all takes
+ * a couple of seconds, so the map runs the jobs one per frame after it is up instead of making the player wait.
+ */
+export function newUnitArtJobs(scene: Phaser.Scene, own: PlayerColor, colors: PlayerColor[]): (() => void)[] {
+  const jobs: (() => void)[] = [() => makeStone(scene)];
   for (const color of new Set([own, ...colors])) {
     const lancer = key(color, own, 'lancer-attack');
     if (!scene.textures.exists(lancer)) continue;
     const img = scene.textures.get(lancer).getSourceImage() as HTMLImageElement;
     const team = color as TeamName;
     const { w, h } = HORSE_FRAME;
-    addStrip(scene, key(color, own, 'suvari-run'), [0, 1, 2, 3].map((p) => horsemanCanvas(img, team, p, 0)), w, h, 10, -1);
-    addStrip(scene, key(color, own, 'suvari-idle'), [horsemanCanvas(img, team, 1, 0)], w, h, 1, -1);
-    addStrip(scene, key(color, own, 'suvari-attack'), [0, 1, 2].map((f) => horsemanCanvas(img, team, 2, f)), w, h, 8, 0);
-    addStrip(scene, key(color, own, 'mancinik-idle'), [catapultCanvas(team, false, 0)], CATAPULT_FRAME.w, CATAPULT_FRAME.h, 1, -1);
-    addStrip(scene, key(color, own, 'mancinik-fire'), [catapultCanvas(team, true, 0.3), catapultCanvas(team, true, 0.6), catapultCanvas(team, false, 0.9)],
-      CATAPULT_FRAME.w, CATAPULT_FRAME.h, 4, 0);
+    jobs.push(
+      () => addStrip(scene, key(color, own, 'suvari-run'), [0, 1, 2, 3].map((p) => horsemanCanvas(img, team, p, 0)), w, h, 10, -1),
+      () => addStrip(scene, key(color, own, 'suvari-idle'), [horsemanCanvas(img, team, 1, 0)], w, h, 1, -1),
+      () => addStrip(scene, key(color, own, 'suvari-attack'), [0, 1, 2].map((f) => horsemanCanvas(img, team, 2, f)), w, h, 8, 0),
+      () => addStrip(scene, key(color, own, 'mancinik-idle'), [catapultCanvas(team, false, 0)], CATAPULT_FRAME.w, CATAPULT_FRAME.h, 1, -1),
+      () => addStrip(scene, key(color, own, 'mancinik-fire'), [catapultCanvas(team, true, 0.3), catapultCanvas(team, true, 0.6), catapultCanvas(team, false, 0.9)],
+        CATAPULT_FRAME.w, CATAPULT_FRAME.h, 4, 0),
+    );
   }
+  return jobs;
+}
+
+/** All of it at once (a spectator's late load, or a map that has to show cavalry right away). */
+export function makeNewUnitArt(scene: Phaser.Scene, own: PlayerColor, colors: PlayerColor[]): void {
+  for (const job of newUnitArtJobs(scene, own, colors)) job();
 }

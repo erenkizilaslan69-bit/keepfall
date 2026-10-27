@@ -21,6 +21,8 @@ import { EndScreen, HomeScreen, LobbyScreen } from './screens';
 import { setBotSeats } from './format';
 import { music, sfx } from './audio';
 import { mountGuideButton } from './ui/guide';
+import { CloudCurtain } from './ui/clouds';
+import { warmUp } from './preload';
 import { guarded, installErrorReporting } from './error-report';
 import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 
@@ -61,6 +63,7 @@ installErrorReporting(() => ({
   context: `screen=${screen} scene=${scene ? 'on' : 'off'} spectating=${lastSpectator ? 'yes' : 'no'}`,
 }));
 
+const curtain = new CloudCurtain();
 let lobby: LobbyScreen | null = null;
 let end: EndScreen | null = null;
 let ui: GameUi | null = null;
@@ -110,6 +113,9 @@ if (import.meta.env.DEV) (window as unknown as { keepfallAudio: unknown }).keepf
 
 function onRoom(r: RoomView): void {
   setBotSeats(r.players);
+  // In the lobby the browser already fetches what the map will need.
+  const me = r.players.find((p) => p.seat === net.seat);
+  if (me && r.phase === 'lobby') warmUp(me.color, r.players.map((p) => p.color));
   const wanted: Screen = r.phase === 'lobby' ? 'lobby' : r.phase === 'ended' ? 'end' : 'game';
   if (wanted !== screen) {
     if (wanted === 'lobby') showLobby(r);
@@ -190,6 +196,8 @@ function showLobby(r: RoomView): void {
 }
 
 function showGame(): void {
+  // The clouds close over the lobby; they part when the map is up.
+  curtain.cover();
   clear();
   screen = 'game';
   document.documentElement.classList.add('in-game');
@@ -215,6 +223,7 @@ function seedOf(code: string): number {
 /** The scene is drawn in the player's colour on the shared map, so it starts once both have arrived. */
 function startScene(color: CastleView['color'], layout: MapLayoutView): void {
   scene = new WorldScene(color, layout, net.seat, seedOf(net.roomCode ?? ''));
+  scene.onReady = () => curtain.open();
   ui?.attach(scene);
   const world = scene;
   world.minimap = new Minimap(document.getElementById('stage')!, layout, (tile) => world.lookAt(tile));

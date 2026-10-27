@@ -116,6 +116,23 @@ export function colorKey(color: PlayerColor, own: PlayerColor, key: string): str
   return color === own ? key : `${color}-${key}`;
 }
 
+/** The URL of a file of the pack (for the lobby scenery and the warm-up, which draw outside Phaser too). */
+export const assetUrl = url;
+
+/**
+ * Every file the map will ask for in these colours, so the lobby can fetch them ahead of time (the browser keeps them: the map
+ * then starts from the cache instead of loading for seconds after the match begins).
+ */
+export function assetUrls(color: PlayerColor, others: PlayerColor[] = []): string[] {
+  const list = [...sheets(color), ...moverSheets(others)].map((s) => url(s.path));
+  list.push(...Object.values({ ...buildingImages(color), ...IMAGES }).map(url));
+  for (const name of COLORED_IMAGES) list.push(url(buildingImages('black')[name]));
+  list.push('/cc0/Tilemap_Elevation.png', '/cc0/Signpost.png');
+  for (const c of others) if (c !== 'black') list.push(url(buildingImages(c).tower));
+  for (const folder of Object.values(COLOR_FOLDER)) list.push(url(`Buildings/${folder} Buildings/Castle.png`));
+  return [...new Set(list)];
+}
+
 /** Loads the pack in the player's colour (units and buildings) and the others' marching units; terrain is shared. */
 export function preloadAssets(scene: Phaser.Scene, color: PlayerColor, others: PlayerColor[] = []): void {
   for (const s of [...sheets(color), ...moverSheets(others)])
@@ -160,7 +177,6 @@ export function loadSpectatorAssets(scene: Phaser.Scene, others: PlayerColor[], 
 /** Looping animation per sheet, named after the sheet key. */
 export function createAnimations(scene: Phaser.Scene, color: PlayerColor, others: PlayerColor[] = []): void {
   createSheetAnimations(scene, [...sheets(color), ...moverSheets(others)]);
-  makeNewUnitArt(scene, color, others);
 }
 
 function createSheetAnimations(scene: Phaser.Scene, list: SheetDef[]): void {

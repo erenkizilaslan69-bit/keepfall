@@ -399,3 +399,22 @@ html.in-menu .guide-fab { display: inline-grid; }
 .letter-text { margin: calc(8px * var(--u)) 0; padding: calc(8px * var(--u)) calc(12px * var(--u)); border-left: calc(4px * var(--u)) solid rgba(90, 66, 34, .5);
   white-space: pre-wrap; overflow-wrap: anywhere; font-style: italic; }
 .modal-shade { z-index: 40; } /* reports and the envoy's decree cover the windows */
+
+/* ---- cloud curtain between the lobby and the map ------------------------------------------ */
+.cloud-curtain { position: fixed; inset: 0; z-index: 9000; overflow: hidden; pointer-events: all; background: transparent; }
+.cloud-curtain.closing { animation: curtain-sky 0.9s ease-out forwards; }
+.cloud-curtain.opening { animation: curtain-sky-out 1.1s ease-in forwards; pointer-events: none; }
+.cloud-curtain .cloud { position: absolute; width: var(--size, 420px); height: auto; image-rendering: pixelated; opacity: 0; will-change: transform; }
+.cloud-curtain.closing .from-left { animation: cloud-in-left 0.9s cubic-bezier(.2,.7,.3,1) forwards; }
+.cloud-curtain.closing .from-right { animation: cloud-in-right 0.9s cubic-bezier(.2,.7,.3,1) forwards; }
+.cloud-curtain.opening .from-left { opacity: 1; animation: cloud-out-left 1.2s cubic-bezier(.6,0,.8,.4) forwards; }
+.cloud-curtain.opening .from-right { opacity: 1; animation: cloud-out-right 1.2s cubic-bezier(.6,0,.8,.4) forwards; }
+@keyframes curtain-sky { from { background: rgba(150, 212, 236, 0); } to { background: rgba(150, 212, 236, 1); } }
+@keyframes curtain-sky-out { from { background: rgba(150, 212, 236, 1); } to { background: rgba(150, 212, 236, 0); } }
+@keyframes cloud-in-left { from { opacity: 1; transform: translateX(-110vw); } to { opacity: 1; transform: translateX(0); } }
+@keyframes cloud-in-right { from { opacity: 1; transform: translateX(110vw); } to { opacity: 1; transform: translateX(0); } }
+@keyframes cloud-out-left { from { transform: translateX(0); } to { transform: translateX(-120vw); } }
+@keyframes cloud-out-right { from { transform: translateX(0); } to { transform: translateX(120vw); } }
+@media (prefers-reduced-motion: reduce) {
+  .cloud-curtain.closing, .cloud-curtain.opening, .cloud-curtain .cloud { animation-duration: 0.01s !important; animation-delay: 0s !important; }
+}

@@ -5,6 +5,7 @@ import type { Minimap } from '../minimap';
 import type { Anchor, Target } from '../ui/windows';
 import type { WorldLabels } from '../ui/world-labels';
 import { COLOR_CSS, esc } from '../format';
+import { newUnitArtJobs } from './NewUnits';
 import { createAnimations, loadSpectatorAssets, preloadAssets } from './assets';
 import { CASTLE, COURTYARD, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH } from './layout';
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
@@ -84,6 +85,8 @@ export class WorldScene extends Phaser.Scene {
   private terrain!: Terrain;
   /** The roads, baked into textures once (see drawRoads). */
   private battles!: BattlePlayer;
+  /** Called once the map is built (the screen is still under the clouds until then). */
+  onReady?: () => void;
   private pendingBattles: BattleStartedView[] = [];
   /** Battles we can see but are not in: just a cloud of dust and crossed swords where they are. */
   private markers = new Map<string, Phaser.GameObjects.GameObject[]>();
@@ -159,11 +162,23 @@ export class WorldScene extends Phaser.Scene {
     for (const b of this.pendingBattles) this.battles.start(b);
     this.pendingBattles = [];
     this.setupCamera();
-    this.cameras.main.fadeIn(600, 10, 14, 22); // the map comes up out of the dark
     this.ready = true;
+    this.buildNewUnitArt();
+    this.onReady?.(); // the clouds part and the camera is already on our castle
     if (this.state) this.apply(this.state);
     if (this.map) this.setMap(this.map);
     if (this.pendingSpectator) this.setSpectator(this.pendingSpectator);
+  }
+
+  /**
+   * The cavalry and catapult art takes a couple of seconds to draw. At the start of a match nobody has any, so it is drawn one strip per
+   * frame while the game begins; a map joined later (a reload mid-match) draws it at once, as soldiers may be using it already.
+   */
+  private buildNewUnitArt(): void {
+    const colors = [...this.otherColors].filter((c) => c !== 'black');
+    const jobs = newUnitArtJobs(this, this.color, colors);
+    if ((this.state?.elapsedSeconds ?? 0) > 20) { for (const job of jobs) job(); return; }
+    this.time.addEvent({ delay: 16, repeat: jobs.length - 1, callback: () => { jobs.shift()?.(); } });
   }
 
   /** What we see on the map this tick. */
