@@ -13,3 +13,10 @@ BattleSim `bot --mac 200 --seed 11` (2 oyunculu, kısa mod 10+10 dk). Ham çıkt
 Zor için ek deneme (200 maç, `zor-orta`): `bots.hard.garrisonShare` 0 → %61,8, 0,2 (şimdiki) → %60, 0,35 → %59,3, 0,5 → %57,5. Fark hata payı içinde; değiştirilmedi.
 
 Gözlem: sandık altını 30-45 olunca paralı asker payı savaş başında ~%27'den ~%40'a çıktı (Orta); istenirse köy/kamp altını (şimdi 30-48 / 60-90) azaltılabilir.
+
+## Paralı payı ayarı (köy/kamp altını)
+| Köy / kamp altını | Paralı payı savaş başı (Orta vs Orta) | Bekleyen bot kazanma |
+|---|---|---|
+| 30-48 / 60-90 | %40,1 | %6 |
+| 20-30 / 40-60 (istenen) | %34,5 | %12 |
+| 15-25 / 30-45 (ek tur, geçerli) | %31,8 | %17,8 |

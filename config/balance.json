@@ -103,9 +103,9 @@
     // Bir çeyreği keşfeden gözcü, o çeyreğin noktalarına bu kadar karo yaklaşınca onları bulur (patika uzunluğundan büyük olmalı).
     "discoverRadius": 5,
     "chest": { "goldMin": 30, "goldMax": 45, "ironMin": 4, "ironMax": 8 },
-    "village": { "goldMin": 30, "goldMax": 48, "foodMin": 14, "foodMax": 24, "peopleMin": 2, "peopleMax": 4, "minSoldiers": 3 },
+    "village": { "goldMin": 15, "goldMax": 25, "foodMin": 14, "foodMax": 24, "peopleMin": 2, "peopleMax": 4, "minSoldiers": 3 },
     // Haydutlar birim istatistikleriyle savaşır (id: sayı). Silahlar kazanana hazır silah olarak depoya gider.
-    "camp": { "bandits": { "kilicli": 6, "okcu": 1 }, "goldMin": 60, "goldMax": 90, "woodMin": 15, "woodMax": 25, "weapons": { "kilicli": 2, "okcu": 1 } },
+    "camp": { "bandits": { "kilicli": 6, "okcu": 1 }, "goldMin": 30, "goldMax": 45, "woodMin": 15, "woodMax": 25, "weapons": { "kilicli": 2, "okcu": 1 } },
     "bigCamp": { "bandits": { "kilicli": 8, "kalkanli": 4, "okcu": 4 }, "goldMin": 154, "goldMax": 210, "weapons": { "kilicli": 3, "mizrakci": 2, "okcu": 1 } }
   },
 
