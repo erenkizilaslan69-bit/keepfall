@@ -91,9 +91,16 @@ public class BotModuleTests
         var room = Match(prep: 600, war: 300);
         var host = new BotHost.BotHost(Rules, 1);
         int firstWeaponAt = -1;
+        Dictionary<string, int>? atHome = null; // the biggest army seen with everybody at home (raids take soldiers away part of the time)
         for (int t = 0; t < 560; t++)
         {
             room.Tick(1, dt => host.Step(room, dt));
+            var live = room.Game!.CastleOf(room.Players[0].CastleKey)!;
+            if (live.SoldiersAway == 0)
+            {
+                var snap = live.UnitTypes.ToDictionary(u => u.Id, u => live.Soldiers[u] + live.Weapons[u]);
+                if (atHome is null || snap.Values.Sum() >= atHome.Values.Sum()) atHome = snap;
+            }
             var c = ViewMapper.CastleOf(room, room.Players[0])!;
             if (firstWeaponAt < 0 && c.Units.Sum(u => u.Weapons) + c.Queue.Count > 0) firstWeaponAt = t;
         }
@@ -108,9 +115,8 @@ public class BotModuleTests
         double share = Rules.Bots.Mix.Values.Sum();
         foreach (var (id, want) in Rules.Bots.Mix)
         {
-            var type = Rules.FindUnit(id)!;
-            double have = (castle.Soldiers[type] + castle.Weapons[type]) / (double)(castle.Soldiers.Values.Sum() + castle.Weapons.Values.Sum());
-            Assert.InRange(have, want / share - 0.2, want / share + 0.2);
+            double have = atHome![id] / (double)atHome.Values.Sum();
+            Assert.True(have >= want / share - 0.2 && have <= want / share + 0.2, $"{id}: {have:0.00} not near {want / share:0.00} ({string.Join(",", atHome.Select(kv => kv.Key + "=" + kv.Value))})");
         }
     }
 

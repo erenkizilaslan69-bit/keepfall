@@ -252,6 +252,18 @@ public sealed class UnitConfig
     public double AttackInterval { get; set; }
     public string Range { get; set; } = "melee";
     public string Row { get; set; } = "front";
+    /// <summary>A healer: hit points it restores per heal (0 = none) and the seconds between heals.</summary>
+    public double Heal { get; set; }
+    public double HealInterval { get; set; }
+    /// <summary>Area damage: this many extra targets of the same row are hit for splashFactor of the damage.</summary>
+    public int SplashTargets { get; set; }
+    public double SplashFactor { get; set; }
+    /// <summary>Always goes for the enemy back row (the front row only when no back row is left).</summary>
+    public bool BackFirst { get; set; }
+    /// <summary>Goes over the front line for the enemy shooters and healers while any are alive.</summary>
+    public bool Flank { get; set; }
+    /// <summary>Walks this many times as fast as an army on the map (the slowest unit sets an army speed).</summary>
+    public double SpeedFactor { get; set; } = 1;
 }
 
 public sealed class CostConfig
@@ -423,6 +435,8 @@ public static class BalanceConfigLoader
             if (u.Hp <= 0) errors.Add($"{where}.hp sıfırdan büyük olmalı.");
             if (u.Damage < 0) errors.Add($"{where}.damage negatif olamaz.");
             if (u.AttackInterval <= 0) errors.Add($"{where}.attackInterval sıfırdan büyük olmalı.");
+            if (u.Heal < 0 || (u.Heal > 0 && u.HealInterval <= 0)) errors.Add($"{where}: heal negatif olamaz ve healInterval sıfırdan büyük olmalı.");
+            if (u.SplashTargets < 0 || u.SplashFactor < 0 || u.SpeedFactor <= 0) errors.Add($"{where}: splashTargets, splashFactor negatif, speedFactor sıfır olamaz.");
 
             AttackRange range = u.Range.ToLowerInvariant() switch
             {
@@ -440,7 +454,8 @@ public static class BalanceConfigLoader
             units.Add(new UnitType(
                 units.Count, u.Id, string.IsNullOrWhiteSpace(u.Name) ? u.Id : u.Name, u.Phase,
                 new ResourceCost(u.Cost.Iron, u.Cost.Wood, u.Cost.Food, u.Cost.People),
-                u.BuildSeconds, u.Hp, u.Damage, u.AttackInterval, range, row));
+                u.BuildSeconds, u.Hp, u.Damage, u.AttackInterval, range, row,
+                u.Heal, u.HealInterval, u.SplashTargets, u.SplashFactor, u.BackFirst, u.Flank, u.SpeedFactor));
         }
         if (units.Count == 0) errors.Add("units: en az bir birlik tanımlanmalı.");
 

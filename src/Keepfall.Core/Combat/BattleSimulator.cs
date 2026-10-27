@@ -47,6 +47,15 @@ public sealed class BattleSimulator
         {
             int aliveA = CountAlive(sides[0]), aliveB = CountAlive(sides[1]);
             if (aliveA == 0 || aliveB == 0) break;
+            // A side that can no longer hurt anybody (only healers left) is finished: what is left of it is gone.
+            bool dealA = HasDamageDealer(sides[0]), dealB = HasDamageDealer(sides[1]);
+            if (!dealA || !dealB)
+            {
+                for (int side = 0; side < 2; side++)
+                    if (!(side == 0 ? dealA : dealB))
+                        foreach (var gone in sides[side]) if (gone.Alive) { gone.Hp = 0; record?.Death(tick, gone.Index); }
+                break;
+            }
             if (tick >= maxTicks) { timedOut = true; break; }
 
             double now = tick * dt;
@@ -58,7 +67,8 @@ public sealed class BattleSimulator
                 var enemies = sides[1 - s];
                 var aim = new Aim(
                     HasAliveInRow(enemies, Row.Front) ? Row.Front : Row.Back,
-                    setups[s].Targeting.PreferredType is { } p && HasAliveOfType(enemies, p) ? p : null);
+                    setups[s].Targeting.PreferredType is { } p && HasAliveOfType(enemies, p) ? p : null,
+                    HasAliveInRow(enemies, Row.Back), HasAliveSupportInBack(enemies));
                 foreach (var soldier in sides[s])
                 {
                     if (!soldier.Alive) continue;
@@ -71,6 +81,17 @@ public sealed class BattleSimulator
                         continue;
                     }
 
+                    if (soldier.Type.Heal > 0)
+                    {
+                        var patient = MostWounded(sides[s], soldier);
+                        if (patient is null) { soldier.Cooldown = 0; continue; }
+                        patient.PendingHeal += soldier.Type.Heal;
+                        record?.Heal(tick, soldier.Index, patient.Index);
+                        soldier.Cooldown += soldier.Type.HealInterval;
+                        continue;
+                    }
+                    if (!soldier.Type.Hurts) { soldier.Cooldown = 0; continue; }
+
                     var target = soldier.Target;
                     if (target is null || !IsValidTarget(soldier, target, aim))
                         target = soldier.Target = ChooseTarget(soldier, enemies, aim, candidates, rng);
@@ -82,6 +103,23 @@ public sealed class BattleSimulator
                     soldier.DamageDealt += damage;
                     record?.Hit(tick, soldier.Index, target.Index);
                     soldier.Cooldown += soldier.Type.AttackInterval;
+
+                    // Area damage: a few more of the same kind of target take a share.
+                    if (soldier.Type.SplashTargets > 0)
+                    {
+                        candidates.Clear();
+                        foreach (var e in enemies) if (e != target && IsValidTarget(soldier, e, aim)) candidates.Add(e);
+                        for (int n = 0; n < soldier.Type.SplashTargets && candidates.Count > 0; n++)
+                        {
+                            int pick = rng.Next(candidates.Count);
+                            var extra = candidates[pick];
+                            candidates.RemoveAt(pick);
+                            double part = soldier.Type.Damage * soldier.Type.SplashFactor * _rules.Counters.Get(soldier.Type, extra.Type);
+                            extra.PendingDamage += part;
+                            soldier.DamageDealt += part;
+                            record?.Hit(tick, soldier.Index, extra.Index);
+                        }
+                    }
                 }
             }
 
@@ -89,6 +127,8 @@ public sealed class BattleSimulator
             {
                 foreach (var soldier in sides[s])
                 {
+                    if (soldier.Alive && soldier.PendingHeal > 0) soldier.Hp = Math.Min(soldier.Type.Hp, soldier.Hp + soldier.PendingHeal);
+                    soldier.PendingHeal = 0;
                     if (!soldier.Alive || soldier.PendingDamage == 0) continue;
                     soldier.DamageTaken += Math.Min(soldier.PendingDamage, soldier.Hp);
                     soldier.Hp -= soldier.PendingDamage;
@@ -152,11 +192,14 @@ public sealed class BattleSimulator
     }
 
     /// <summary>What one side may hit this tick: the frontmost enemy row, and the preferred type if any is alive.</summary>
-    private readonly record struct Aim(Row FrontmostRow, UnitType? PreferredAlive);
+    private readonly record struct Aim(Row FrontmostRow, UnitType? PreferredAlive, bool BackAlive, bool SupportAlive);
 
     private static bool IsValidTarget(Soldier attacker, Soldier target, Aim aim)
     {
         if (!target.Alive) return false;
+        // Siege engines always go for the back row; flanking riders for shooters and healers there, while any are alive.
+        if (attacker.Type.BackFirst) return target.Row == (aim.BackAlive ? Row.Back : Row.Front);
+        if (attacker.Type.Flank && aim.SupportAlive) return target.Row == Row.Back && target.Type.IsSupport;
         if (attacker.Type.Range == AttackRange.Ranged && aim.PreferredAlive is { } preferred)
             return target.Type == preferred;
         return target.Row == aim.FrontmostRow;
@@ -169,6 +212,31 @@ public sealed class BattleSimulator
         foreach (var e in enemies)
             if (IsValidTarget(attacker, e, aim)) candidates.Add(e);
         return candidates.Count == 0 ? null : candidates[rng.Next(candidates.Count)];
+    }
+
+    private static bool HasDamageDealer(List<Soldier> army)
+    {
+        foreach (var s in army) if (s.Alive && s.Type.Hurts) return true;
+        return false;
+    }
+
+    private static bool HasAliveSupportInBack(List<Soldier> army)
+    {
+        foreach (var s in army) if (s.Alive && s.Row == Row.Back && s.Type.IsSupport) return true;
+        return false;
+    }
+
+    /// <summary>The wounded ally with the lowest share of hit points left (never the healer itself).</summary>
+    private static Soldier? MostWounded(List<Soldier> army, Soldier healer)
+    {
+        Soldier? best = null; double bestShare = 1;
+        foreach (var s in army)
+        {
+            if (!s.Alive || s == healer) continue;
+            double share = s.Hp / s.Type.Hp;
+            if (share < bestShare - 1e-9) { bestShare = share; best = s; }
+        }
+        return best;
     }
 
     private static bool HasAliveOfType(List<Soldier> army, UnitType type)
@@ -213,6 +281,7 @@ public sealed class BattleSimulator
         public double Hp { get; set; } = type.Hp;
         public double Cooldown { get; set; }
         public double PendingDamage { get; set; }
+        public double PendingHeal { get; set; }
         public Soldier? Target { get; set; }
         public double DamageDealt { get; set; }
         public double DamageTaken { get; set; }

@@ -15,6 +15,7 @@ public sealed class BattleRecord
     private readonly List<int> _hits = [];
     private readonly List<int> _deaths = [];
     private readonly List<int> _advances = [];
+    private readonly List<int> _heals = [];
 
     internal BattleRecord(IReadOnlyList<RecordedSoldier> soldiers, double tickSeconds)
     {
@@ -34,9 +35,13 @@ public sealed class BattleRecord
     /// <summary>[tick, soldier] per reserve stepping into the front row.</summary>
     public IReadOnlyList<int> Advances => _advances;
 
+    /// <summary>[tick, healer, target] per heal.</summary>
+    public IReadOnlyList<int> Heals => _heals;
+
     public int HitCount => _hits.Count / 3;
 
     internal void Hit(int tick, int attacker, int target) { _hits.Add(tick); _hits.Add(attacker); _hits.Add(target); }
     internal void Death(int tick, int soldier) { _deaths.Add(tick); _deaths.Add(soldier); }
+    internal void Heal(int tick, int healer, int target) { _heals.Add(tick); _heals.Add(healer); _heals.Add(target); }
     internal void Advance(int tick, int soldier) { _advances.Add(tick); _advances.Add(soldier); }
 }

@@ -18,9 +18,21 @@ public sealed record UnitType(
     double Damage,
     double AttackInterval,
     AttackRange Range,
-    Row DefaultRow)
+    Row DefaultRow,
+    double Heal = 0,
+    double HealInterval = 0,
+    int SplashTargets = 0,
+    double SplashFactor = 0,
+    bool BackFirst = false,
+    bool Flank = false,
+    double SpeedFactor = 1)
 {
+    /// <summary>Damage per second (0 for a healer).</summary>
     public double Dps => Damage / AttackInterval;
+    /// <summary>The soldier can hurt an enemy (a healer cannot).</summary>
+    public bool Hurts => Damage > 0;
+    /// <summary>Back-row support that a flanking unit goes for: shooters and healers.</summary>
+    public bool IsSupport => Range == AttackRange.Ranged || Heal > 0;
 
     public override string ToString() => Name;
 }

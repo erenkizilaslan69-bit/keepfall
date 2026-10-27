@@ -438,9 +438,10 @@ public sealed class Castle
         if (FindUnit(c.UnitId) is not { } type) return CommandResult.Fail($"Bilinmeyen birlik \"{c.UnitId}\".");
         if (c.Count <= 0) return CommandResult.Fail("Sayı en az 1 olmalı.");
         if (_weapons[type] < c.Count) return CommandResult.Fail($"Depoda sadece {_weapons[type]} {type.Name} silahı var.");
-        if (_workers[c.From] < c.Count) return CommandResult.Fail($"{Jobs.Name(c.From)} olarak sadece {_workers[c.From]} kişi var.");
+        int crew = c.Count * Math.Max(1, type.Cost.People); // a siege engine takes two people
+        if (_workers[c.From] < crew) return CommandResult.Fail($"{Jobs.Name(c.From)} olarak sadece {_workers[c.From]} kişi var ({type.Name} için {crew} kişi gerekir).");
         _weapons[type] -= c.Count;
-        _workers[c.From] -= c.Count;
+        _workers[c.From] -= crew;
         if (_rules.Match.ArmSeconds > 0) _arming.Add((type, c.Count, _rules.Match.ArmSeconds));
         else _soldiers[type] += c.Count;
         return CommandResult.Success;
@@ -455,7 +456,7 @@ public sealed class Castle
             return CommandResult.Fail($"{type.Name} askerlerinin {_mercenaries[type]} tanesi paralı asker; işçiye dönemez (en fazla {Disarmable(type)}).");
         _soldiers[type] -= c.Count;
         _weapons[type] += c.Count;
-        _workers[Job.Idle] += c.Count;
+        _workers[Job.Idle] += c.Count * Math.Max(1, type.Cost.People);
         return CommandResult.Success;
     }
 

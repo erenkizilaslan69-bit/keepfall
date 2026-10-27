@@ -29,7 +29,7 @@ public class MercenaryTests
     [Fact]
     public void Prices_come_from_the_config_and_every_unit_has_one()
     {
-        Assert.Equal(new[] { "kalkanli", "kilicli", "mizrakci", "okcu" }, Rules.MercenaryPrices.Keys.Order());
+        Assert.Equal(new[] { "kalkanli", "kesis", "kilicli", "mancinik", "mizrakci", "okcu", "suvari" }, Rules.MercenaryPrices.Keys.Order());
         Assert.All(Rules.MercenaryPrices.Values, p => Assert.True(p > 0));
         Assert.Equal(29, Rules.MercenaryPrices["kilicli"]);
     }

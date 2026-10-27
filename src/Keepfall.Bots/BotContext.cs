@@ -211,7 +211,7 @@ public sealed class BotContext(GameRules rules, BotInput input, BotMemory memory
         var mine = Castle.Units.ToDictionary(u => u.Id, u => Owned(u.Id));
         string? best = null;
         double bestRate = -1;
-        foreach (var u in Castle.Units.OrderBy(_ => Rng.Next()))
+        foreach (var u in Castle.Units.Where(u => Rules.Bots.Mix.ContainsKey(u.Id)).OrderBy(_ => Rng.Next()))
         {
             var with = new Dictionary<string, int>(mine);
             with[u.Id] += 4;
