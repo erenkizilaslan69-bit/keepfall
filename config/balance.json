@@ -233,7 +233,7 @@
       "id": "mizrakci", "name": "Mızrakçı", "phase": 1,
       "cost": { "iron": 1, "wood": 3, "food": 0, "people": 1 },
       "buildSeconds": 20,
-      "hp": 90, "damage": 11, "attackInterval": 1.2,
+      "hp": 90, "damage": 10, "attackInterval": 1.2,
       "range": "melee", "row": "front"
     },
     {
@@ -251,13 +251,13 @@
       "buildSeconds": 30,
       "hp": 60, "damage": 0, "attackInterval": 1.5,
       "range": "ranged", "row": "back",
-      "heal": 7, "healInterval": 1.5
+      "heal": 12, "healInterval": 1.5
     },
     // Mancınık: hep düşmanın arka sırasına vurur (yoksa ön sıraya), asıl hedefe tam, aynı sıradan splashTargets kişiye splashFactor kadar.
     // people 2: kuşanırken iki işçi harcar (işçiye dönerken iki işçi geri gelir).
     {
       "id": "mancinik", "name": "Mancınık", "phase": 1,
-      "cost": { "iron": 3, "wood": 9, "food": 0, "people": 2 },
+      "cost": { "iron": 2, "wood": 5, "food": 0, "people": 2 },
       "buildSeconds": 60,
       "hp": 50, "damage": 16, "attackInterval": 3.0,
       "range": "ranged", "row": "back",
@@ -266,9 +266,9 @@
     // Süvari: yakın dövüş, arka sıradaki okçu/mancınık/keşiş yaşadıkça onlara vurur (flank); haritada speedFactor kat hızlı.
     {
       "id": "suvari", "name": "Süvari", "phase": 1,
-      "cost": { "iron": 4, "wood": 5, "food": 0, "people": 1 },
+      "cost": { "iron": 3, "wood": 4, "food": 0, "people": 1 },
       "buildSeconds": 45,
-      "hp": 110, "damage": 10, "attackInterval": 1.0,
+      "hp": 90, "damage": 9, "attackInterval": 1.0,
       "range": "melee", "row": "front",
       "flank": true, "speedFactor": 2
     }
@@ -281,8 +281,8 @@
     "okcu":     { "okcu": "=", "kilicli": "+", "mizrakci": "=", "kalkanli": 0.6, "kesis": "+", "mancinik": "=", "suvari": 0.75 },
     "kilicli":  { "okcu": "-", "kilicli": "=", "mizrakci": "+", "kalkanli": "=", "kesis": "+", "mancinik": "+", "suvari": "=" },
     "mizrakci": { "okcu": "=", "kilicli": "-", "mizrakci": "=", "kalkanli": "+", "kesis": "=", "mancinik": "=", "suvari": 2.0 },
-    "kalkanli": { "okcu": "=", "kilicli": "=", "mizrakci": "-", "kalkanli": "=", "kesis": "=", "mancinik": "=", "suvari": "=" },
+    "kalkanli": { "okcu": "=", "kilicli": "=", "mizrakci": "-", "kalkanli": "=", "kesis": "=", "mancinik": "=", "suvari": "+" },
     "mancinik": { "okcu": 1.25, "kilicli": "=", "mizrakci": "=", "kalkanli": "=", "kesis": 1.25, "mancinik": "=", "suvari": 0.5 },
-    "suvari":   { "okcu": 2.0, "kilicli": "=", "mizrakci": 0.5, "kalkanli": 0.75, "kesis": 1.5, "mancinik": 2.0, "suvari": "=" }
+    "suvari":   { "okcu": 1.5, "kilicli": "=", "mizrakci": 0.5, "kalkanli": 0.75, "kesis": 1.5, "mancinik": 1.5, "suvari": "=" }
   }
 }
