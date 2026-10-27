@@ -29,7 +29,7 @@ Birimler (7): Kılıçlı, Mızrakçı, Kalkanlı, Okçu + **Keşiş** (saldırm
 9. Test sunucusunda tarayıcı bölmesi gizliyken Phaser çizmez; ekran testi için başsız Chrome (CDP) kullan (örnek: `tools/replay-check.mjs`).
 
 ## Test rutini
-`dotnet test -c Release` (260 test) → `node tools/run-smoke.mjs` (~2–3 dk; kendi test sunucusunu 5081'de, savaşı 15 dk olan geçici bir config kopyasıyla açar ve kapatır; CPU yükü altında ölçümle çakışırsa bazı zamanlama denetimleri düşebilir, tek başına koşunca geçer) → istemci için `npm --prefix client run build` (tsc dahil).
+`dotnet test -c Release` (261 test) → `node tools/run-smoke.mjs` (~2–3 dk; kendi test sunucusunu 5081'de, savaşı 15 dk olan geçici bir config kopyasıyla açar ve kapatır; CPU yükü altında ölçümle çakışırsa bazı zamanlama denetimleri düşebilir, tek başına koşunca geçer) → istemci için `npm --prefix client run build` (tsc dahil).
 Bot dengesi: `BattleSim bot --mac 400 --zorluk karisik|bekleyen|orta|zor-orta` (Orta vs Kolay, yalnız bekleyen bot, Orta vs Orta, Zor vs Orta). Deste dengesi: `BattleSim deste --deste-basi 50`.
 
 ## Son sayılar (2026-10-28)
@@ -46,6 +46,14 @@ Bot dengesi: `BattleSim bot --mac 400 --zorluk karisik|bekleyen|orta|zor-orta` (
 - Eski bot tabloları (`docs/bot-deney-*.md`) tek gözcü kuralı, esir, süvari ve deste ÖNCESİ durumu gösterir.
 - Geri dönüş sorunu (savaş kaybeden toparlanamıyor): aday çözümler kale muhafızları, sığınan köylüler, son çiftçi uyarısı, büyüme maliyeti %8 → %6. Kodlanmadı.
 - Fikirler (kodlanmadı): gözcüyle erzak/para/mesaj (ulak ile yapıldı), sis dışındaki maç olayları kalktı. Zafer puanı kuralı eklenmedi (kullanıcı kararı: nüfus kuralı kalsın).
+
+## Test sonrası düzeltmeler ve lobi yenilemesi (2026-10-28)
+- **Klonlanan ordu**: sunucuda tek ordu (kimlik tekil, `ContinuityTests`); istemcide `Movers.audit()` her saniye "bir ordu, bir çizim" denetler (`mover-audit` olarak raporlanır) ve savaş oynatması sürerken yürüyen sütun gizlenir (`Movers.inReplay`). Kontrol: `node tools/army-check.mjs` (×20 maç, ordu çizimi + savaş oynatması zamanlaması).
+- **Savaşlar hep oynatılır**: `war.minBattleSeconds` 4 (boş kaleye saldırı da kapıya yürüyerek görülür); oynatması yapılan savaşın "Savaş" bulutu geri gelmez (`BattlePlayer.hasPlayed`).
+- Okçu/mancınık hedefi seçimi yalnız ordu ya da deste okçu/mancınık içeriyorsa görünür (`SHOOTERS`, `BACK_LINE` in `format.ts`).
+- **Lobi→oyun geçişi**: gecikmenin sebebi ağ değil, süvari/mancınık görsellerinin sahne kurulurken çizilmesiydi (3,3 sn); artık harita açıldıktan sonra kare kare çizilir (`newUnitArtJobs`; haritaya sonradan girilirse hemen). Lobide dosyalar `preload.ts` ile önceden çekilir; geçişte bulut perdesi (`ui/clouds.ts`) kapanır ve harita hazır olunca açılır.
+- **Avlu**: askerler kalenin önünde (`CAMP`, layout.ts) kamp ateşi etrafında tür gruplarıyla bekler (`Soldiers.ts`); ateş koddan çizilir (`PixelArt.flameCanvas`, `NewUnits.makeCampfire`); savunanlar kamptan kapıya iner. Sunucu koordinatları değişmedi.
+- **Lobi**: deste kartları (`ui/portraits.ts` + `LobbyScreen`; çevrilir, Seç/çift tık), canlı menü sahnesi (`ui/scenery.ts`: ana ekran, lobi, maç sonu), ayarlar (`ui/settings.ts`, `prefs.ts`: ses, efektleri azalt, hakkında). Ekran görüntüsü araçları: `tools/shot-lobby.mjs`, `shot-camp.mjs`, `shot-settings.mjs` (görüntüler repoya GİRMEZ: Free Pack içerir).
 
 ## Önemli tasarım kararları (kısa)
 - **Kale düşmesi**: kale canı, sur seviyeleri, `UpgradeWall` kalktı; saldıran kapıdaki savaşı kazanırsa (boş kale dahil) kale düşer. `walls.archerDefenseBonus` (+%25) kapıdaki savunan okçulara hep geçerli. Düşüren ordu depodaki yemek/odun/demir/altının yarısını (`war.fallLootShare`) ve hayatta kalan işçilerin üçte birini (`war.fallWorkerShare`) eve getirir. Esir: `war.prisonerShare` 0,5 (savunanın savaşa giren ordusunun payı, saldıranın askeri olur, yolda yemek yer, nüfusa sayılır; kullanıcı kararıyla olduğu gibi kalır).
