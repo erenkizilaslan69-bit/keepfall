@@ -17,8 +17,11 @@ const LOOKS: Record<string, Look> = {
   mizrakci: { anim: 'lancer-idle', scale: UNIT_SCALE },
   kilicli: { anim: 'warrior-idle', scale: UNIT_SCALE },
   kalkanli: { anim: 'warrior-guard', scale: SHIELD_SCALE },
+  kesis: { anim: 'monk-idle', scale: UNIT_SCALE },
+  mancinik: { anim: 'mancinik-idle', scale: UNIT_SCALE },
+  suvari: { anim: 'suvari-idle', scale: UNIT_SCALE },
 };
-const BLOCK_ORDER = ['okcu', 'mizrakci', 'kilicli', 'kalkanli'];
+const BLOCK_ORDER = ['okcu', 'mancinik', 'kesis', 'mizrakci', 'kilicli', 'kalkanli', 'suvari'];
 const FALLBACK: Look = { anim: 'pawn-idle', scale: UNIT_SCALE };
 
 const COLS = 3;

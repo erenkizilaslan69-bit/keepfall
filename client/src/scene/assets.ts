@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { PlayerColor } from '../types';
+import { makeNewUnitArt } from './NewUnits';
 
 // Tiny Swords (Free Pack) by Pixel Frog — not in the repo, see README. Units and buildings are
 // loaded in the player's own colour; terrain and props are shared.
@@ -48,6 +49,10 @@ const units = (color: string): SheetDef[] => {
     { key: 'warrior-attack', path: `${u}Warrior/Warrior_Attack1.png`, frame: 192 },
     { key: 'archer-shoot', path: `${u}Archer/Archer_Shoot.png`, frame: 192 },
     { key: 'lancer-attack', path: `${u}Lancer/Lancer_Right_Attack.png`, frame: 320 },
+    { key: 'monk-idle', path: `${u}Monk/Idle.png`, frame: 192 },
+    { key: 'monk-run', path: `${u}Monk/Run.png`, frame: 192 },
+    { key: 'monk-heal', path: `${u}Monk/Heal.png`, frame: 192 },
+    { key: 'monk-heal-fx', path: `${u}Monk/Heal_Effect.png`, frame: 192 },
   ];
 };
 
@@ -102,7 +107,7 @@ const IMAGES: Record<string, string> = {
 
 /** Sheets other players' armies and scouts need on the map, loaded in their colours as "<colour>-<key>". */
 const MOVER_KEYS = ['pawn-run', 'warrior-run', 'archer-run', 'lancer-run', 'warrior-guard', 'warrior-attack', 'archer-shoot', 'lancer-attack',
-  'warrior-idle', 'archer-idle', 'lancer-idle', 'pawn-idle'];
+  'warrior-idle', 'archer-idle', 'lancer-idle', 'pawn-idle', 'monk-idle', 'monk-run', 'monk-heal', 'monk-heal-fx'];
 const moverSheets = (others: PlayerColor[]): SheetDef[] =>
   others.flatMap((c) => units(COLOR_FOLDER[c]).filter((s) => MOVER_KEYS.includes(s.key)).map((s) => ({ ...s, key: `${c}-${s.key}` })));
 
@@ -146,6 +151,7 @@ export function loadSpectatorAssets(scene: Phaser.Scene, others: PlayerColor[], 
   for (const s of missing) scene.load.spritesheet(s.key, url(s.path), { frameWidth: s.frame, frameHeight: s.frameHeight ?? s.frame });
   scene.load.once('complete', () => {
     createSheetAnimations(scene, missing);
+    makeNewUnitArt(scene, '__none__' as PlayerColor, others); // every colour gets its prefix
     done();
   });
   scene.load.start();
@@ -154,6 +160,7 @@ export function loadSpectatorAssets(scene: Phaser.Scene, others: PlayerColor[], 
 /** Looping animation per sheet, named after the sheet key. */
 export function createAnimations(scene: Phaser.Scene, color: PlayerColor, others: PlayerColor[] = []): void {
   createSheetAnimations(scene, [...sheets(color), ...moverSheets(others)]);
+  makeNewUnitArt(scene, color, others);
 }
 
 function createSheetAnimations(scene: Phaser.Scene, list: SheetDef[]): void {
@@ -163,16 +170,19 @@ function createSheetAnimations(scene: Phaser.Scene, list: SheetDef[]): void {
     if (s.key === 'tiles') continue;
     const texture = scene.textures.get(s.key);
     const frames = texture.frameTotal - 1; // minus the __BASE frame
+    const once = /heal(-fx)?$/.test(s.key); // the monk's heal and its sparkle play once per heal
     scene.anims.create({
       key: s.key,
       frames: scene.anims.generateFrameNumbers(s.key, { start: 0, end: frames - 1 }),
-      frameRate: rates[s.key] ?? (/(^|-)pawn-(run|work)/.test(s.key) ? 10 : 8),
-      repeat: -1,
+      frameRate: rates[s.key] ?? (once ? 14 : /(^|-)pawn-(run|work)/.test(s.key) ? 10 : 8),
+      repeat: once ? 0 : -1,
     });
   }
 }
 
 /** Where a unit's feet are inside its frame (the Lancer's frame is taller). */
 export function unitOriginY(textureKey: string): number {
+  if (textureKey.includes('suvari')) return 0.94;
+  if (textureKey.includes('mancinik')) return 0.88;
   return textureKey.startsWith('lancer') ? 0.6 : 0.65;
 }

@@ -106,11 +106,14 @@ public sealed class Room
     /// Simulation only: a room of nothing but bots, started at once. There is no host and nobody is connected;
     /// the caller plays it with <see cref="Tick"/>.
     /// </summary>
-    public static Room StartBotMatch(string code, GameRules rules, RoomOptions options, IReadOnlyList<BotDifficulty> levels)
+    public static Room StartBotMatch(string code, GameRules rules, RoomOptions options, IReadOnlyList<BotDifficulty> levels,
+        IReadOnlyList<IReadOnlyList<string>?>? decks = null)
     {
         var room = new Room(code, rules, options);
         for (int i = 0; i < levels.Count; i++)
             room._players.Add(new RoomPlayer(i + 1, Tokens.NewPlayerToken(), $"Bot {ColorName((PlayerColor)i)}", levels[i]));
+        if (decks is not null)
+            for (int i = 0; i < decks.Count && i < room._players.Count; i++) room._players[i].Deck = decks[i]?.Select(id => rules.FindUnit(id)!.Id).ToList();
         room.HostSeat = 0;
         room.StartGame();
         return room;

@@ -42,7 +42,7 @@ export function reportHtml(b: BattleReportView): string {
       ${side(b.attacking ? 'Senin ordun' : 'Saldıran', b.attackerUnits)}
       ${side(b.attacking ? 'Savunan' : 'Senin savunman', b.defenderUnits)}
     </div>
-    <p class="rep-note">${b.defenderEliminated ? '<b>Kale düştü!</b>' : b.attacking ? (b.youWon ? 'Savunma yenilemedi.' : 'Kale ayakta kaldı.') : (b.youWon ? 'Saldırıyı püskürttün, kalen ayakta.' : 'Kale ayakta kaldı.')}</p>${lootLine(b)}`;
+    <p class="rep-note">${b.raid ? (b.attacking ? '<b>Süvari baskını kazandı:</b> tarlalar yandı, kale düşmedi.' : '<b>Süvari baskını:</b> tarlaların yandı, yemek üretimin bir süre yarıya iner.') : b.defenderEliminated ? '<b>Kale düştü!</b>' : b.attacking ? (b.youWon ? 'Savunma yenilemedi.' : 'Kale ayakta kaldı.') : (b.youWon ? 'Saldırıyı püskürttün, kalen ayakta.' : 'Kale ayakta kaldı.')}</p>${lootLine(b)}`;
 }
 
 /** "Ganimet: +120 yemek, +40 altın, +4 kişi, +3 esir" for the report of a castle that fell (only the attacker takes any). */

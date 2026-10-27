@@ -114,12 +114,14 @@ export interface BattleReportView {
   winner: 'attacker' | 'defender' | 'draw';
   youWon: boolean;
   defenderEliminated: boolean;
+  raid?: boolean;
   kind: BattleKind;
   /** What the army that brought the castle down took from it (null unless the castle fell). */
   loot: { food: number; wood: number; iron: number; gold: number; people: number; prisoners: number } | null;
 }
 export interface WarView {
   famine: boolean;
+  fieldsBurnedSeconds?: number;
   famineStartsIn: number;
   soldiersAway: number;
   armies: ArmyView[];
@@ -155,6 +157,8 @@ export interface ScoutReportView {
   deliveredAt: number;
   soldiers: { unitId: string; name: string; count: number }[];
   buildings: { type: BuildingType; name: string; level: number }[];
+  /** The rival's deck (unit ids): only a scout report shows it. */
+  deck?: string[];
 }
 export interface ScoutingView {
   scoutsAway: number;
@@ -199,6 +203,8 @@ export interface CastleView {
   /** What envoys left at our castle (newest last). Plain text only: show the message with textContent. */
   letters: LetterView[];
   envoy: { maxCargo: number; maxMessageLength: number };
+  /** The units we can make (our deck). */
+  deck?: string[];
 }
 
 export interface LetterView {
@@ -262,6 +268,7 @@ export interface BattleStartedView {
   /** [tick, soldier] … */ deaths: number[];
   /** [tick, soldier] … */ advances: number[];
   winner: 'attacker' | 'defender' | 'draw';
+  /** [tick, healer, patient] … */ heals?: number[];
 }
 
 // What a fallen player watches (see the server's SpectatorViews): the whole map without fog, a fixed delay behind the game.

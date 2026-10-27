@@ -15,6 +15,7 @@ const string Usage = """
       BattleSim savas  <ordu A> <ordu B> [--hedef-a X] [--hedef-b X] [--tekrar N] [--seed N]
       BattleSim bot    [--mac 200] [--oyuncu 2|3|4] [--mod 20|30] [--zorluk orta|kolay|zor|zor-orta|bekleyen|karisik] [--seed 1] [--puan evet] [--agirlik 150,0.2,2,1] [--ozet 1]
                        (bot vs bot istatistikleri; bekleyen: koltuklardan biri yalnız bekler; --puan: süre bitince kazanan zafer puanına göre sayılır (deney); --ozet: karşılaştırma satırı)
+      BattleSim deste  [--cift 8] [--seed 1] [--zorluk orta|zor] [--cikti docs/deste.md]   (her deste her desteyle: bot maçlarıyla kazanma payı)
       BattleSim bot --izle [--oyuncu 2] [--zorluk orta|kolay] [--mod 15|30] [--seed 1] [--aralik 60]   (tek maçı dakika dakika göster)
       BattleSim kontrol
 
@@ -123,6 +124,10 @@ try
             Console.WriteLine($"Sonuç: kazanan {string.Join(", ", result.Winners.Select(w => room.PlayerOfCastle(w)?.Name))} ({(result.ByElimination ? "eleme" : "süre sonu")})");
             return 0;
         }
+
+        case "deste":
+            new DeckReport(rules, Int(flags, "cift", 8), Int(flags, "seed", 1), flags.GetValueOrDefault("cikti"), flags.GetValueOrDefault("zorluk", "orta")).Run();
+            return 0;
 
         case "kontrol":
             Console.WriteLine($"Ayar dosyası geçerli: {rules.Units.Count} birlik ({string.Join(", ", rules.Units.Select(u => u.Name))}).");

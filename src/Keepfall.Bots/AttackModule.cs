@@ -96,7 +96,7 @@ public sealed class AttackModule : IBotModule
         var pick = options.OrderBy(o => o.Needed + o.March * 0.1 - Eager(o.Seat)).First();
         // Enough to win the fight at the gate (the winner brings the castle down).
         int send = medium ? (int)Math.Ceiling(pick.Needed * 1.1) : pick.Needed;
-        var units = Tactics.Take(spare, Math.Min(send, spareTotal));
+        var units = Tactics.WithBreaker(ctx, spare, Tactics.Take(spare, Math.Min(send, spareTotal)));
         if (units.Count == 0) return;
         if (ctx.Level.HoldWeapons && !ctx.ReadyToSend(units)) { ctx.Stats.Count("armingWaits"); return; }
         ctx.Wish(80, new SendArmy(CastleKeys.Of(pick.Seat), units, null, null, ArmyMode.Attack));

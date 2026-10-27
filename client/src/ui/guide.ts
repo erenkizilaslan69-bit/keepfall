@@ -5,9 +5,10 @@ import { esc } from '../format';
 
 interface Range { min: number; max: number }
 interface Count { name: string; count: number }
-interface GuideUnit {
+export interface GuideUnit {
   id: string; name: string; hp: number; damage: number; dps: number; ranged: boolean; iron: number; wood: number; buildSeconds: number;
   price: number | null; strong: string[]; weak: string[];
+  heal?: number; healInterval?: number; people?: number; speedFactor?: number; back?: boolean; flank?: boolean; backFirst?: boolean; splashTargets?: number;
 }
 interface GuideCamp { bandits: Count[]; gold: Range; wood: Range; weapons: Count[] }
 export interface Guide {
@@ -24,6 +25,8 @@ export interface Guide {
   fallLootShare: number; fallWorkerShare: number;
   archerDefenseBonusPercent: number;
   prisonerShare: number;
+  deckEnabled: boolean; deckSize: number;
+  raidBurnSeconds?: number;
 }
 
 let cached: Promise<Guide> | null = null;
@@ -55,6 +58,12 @@ export function guideHtml(g: Guide): string {
       `Çiftlik, kereste, maden ve demirci: her birinde en çok ${l1.capacity} kişi çalışır. Yükseltince ${l2 ? `${l2.capacity}` : ''}${l3 ? `, ${l3.capacity}` : ''}${l4 ? ` ve ${l4.capacity}` : ''} kişi, üretim ${l2 ? `×${num(l2.multiplier)}` : ''}${l3 ? `, ×${num(l3.multiplier)}` : ''}${l4 ? ` ve ×${num(l4.multiplier)}` : ''}.`,
       l2 ? `Yükseltme bedeli: ${num(l2.upgradeWood)} odun + ${num(l2.upgradeIron)} demir${l3 ? ` (sonra ${num(l3.upgradeWood)} + ${num(l3.upgradeIron)}${l4 ? `, en üst seviye ${num(l4.upgradeWood)} + ${num(l4.upgradeIron)}` : ''})` : ''}; ${g.levels.slice(1).map((l) => `${num(l.upgradeSeconds)}`).join(', ')} sn sürer.` : '',
       'Demirci demir ve odundan <b>silah</b> yapar; silahı askere çevirirsin, asker işçiye de geri dönebilir.',
+    ]],
+    ['Deste, keşiş, mancınık, süvari', [
+      g.deckEnabled ? `Maç başında ${g.units.length} birlikten <b>${g.deckSize}</b> tanesini seçersin (lobide); yalnız onları üretir, kuşanır ve kiralarsın. Rakibin destesini yalnız gözcü raporunda görürsün.` : '',
+      ...g.units.filter((u) => u.heal).map((u) => `<b>${esc(u.name)}</b>: arka sırada durur, saldırmaz; her ${num(u.healInterval ?? 0)} sn'de ordusundaki en yaralı dostuna ${num(u.heal ?? 0)} can verir. Okçuların öncelikli hedefi olarak seçilebilir.`),
+      ...g.units.filter((u) => u.backFirst).map((u) => `<b>${esc(u.name)}</b>: savaşın başından itibaren düşmanın <b>arka sırasına</b> vurur, hedefin yanındaki ${u.splashTargets ?? 0} kişiye de yarım hasar; ${u.people ?? 2} kişi harcar. Yakın dövüşte çok zayıftır.`),
+      ...g.units.filter((u) => u.flank).map((u) => `<b>${esc(u.name)}</b>: arka sırada okçu, mancınık ya da keşiş yaşadıkça ön sırayı aşıp onlara dalar; mızrakçıdan korkar. Haritada ×${num(u.speedFactor ?? 1)} hızlıdır. <b>Yalnız süvariden oluşan ordu</b> kapıda kazanırsa kale düşmez, rakibin tarlaları yanar (yemek üretimi ${num(g.raidBurnSeconds ?? 60)} sn yarıya iner).`),
     ]],
     ['Gözcü', [
       `Aynı anda en çok ${g.maxScouts} gözcü. Bir rakibe gönder: dönünce <b>rapor</b> gelir (asker sayıları ±${num(g.scoutErrorPercent)}% şaşabilir). Rakip gözetlendiğini öğrenir.`,
@@ -93,6 +102,10 @@ export function guideHtml(g: Guide): string {
     <p class="guide-note">Ön sıra önce vurulur; arka sıradakiler öndekiler düşene kadar hasar almaz (yakın dövüşçüler orada yedektir).</p>`;
   return sections.map(([title, lines]) => `
     <section><h3>${title}</h3>${title.startsWith('Birlikler') ? table : `<ul>${lines.filter(Boolean).map((l) => `<li>${l}</li>`).join('')}</ul>`}</section>`).join('');
+}
+
+export function loadGuide(): Promise<Guide> {
+  return load();
 }
 
 function load(): Promise<Guide> {

@@ -336,6 +336,16 @@ html.in-menu .guide-fab { display: inline-grid; }
   background-image: url('/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/Units/Blue%20Units/Lancer/Lancer_Idle.png');
   background-size: auto 420%; background-position: calc(var(--ico) * -1.55) calc(var(--ico) * -1.45);
 }
+.unit-kesis { background-image: url('/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/Units/Blue%20Units/Monk/Idle.png'); }
+.unit-mancinik, .unit-suvari { background-size: 100% 100%; background-position: 0 0; }
+.unit-mancinik { background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='19' width='26' height='4' fill='%23a56d3c' stroke='%231b2a3d'/%3E%3Cpath d='M12 19 L14 8 L18 8 L20 19Z' fill='%23744827' stroke='%231b2a3d'/%3E%3Cpath d='M16 9 L6 20' stroke='%23cd9459' stroke-width='3'/%3E%3Ccircle cx='6' cy='20' r='3' fill='%239aa3ac' stroke='%231b2a3d'/%3E%3Ccircle cx='9' cy='26' r='4' fill='%236e4526' stroke='%231b2a3d'/%3E%3Ccircle cx='23' cy='26' r='4' fill='%236e4526' stroke='%231b2a3d'/%3E%3C/svg%3E"); }
+.unit-suvari { background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M9 6 L11 2 L14 6 L19 4 L21 6 L17 12 L26 20 L26 26 L18 26 L14 18 L8 26 L4 26 L6 14Z' fill='%23c08a56' stroke='%231b2a3d' stroke-width='1.5'/%3E%3Ccircle cx='18' cy='13' r='1.6' fill='%23150f1a'/%3E%3Cpath d='M6 12 L10 6 L12 14Z' fill='%235c3a24'/%3E%3C/svg%3E"); }
+/* deck picker in the lobby */
+.deck h3 { margin: calc(8px * var(--u)) 0 calc(2px * var(--u)); }
+.deck-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(150px * var(--u)), 1fr)); gap: calc(6px * var(--u)); }
+.deck-card { display: flex; flex-direction: column; align-items: flex-start; gap: calc(2px * var(--u)); text-align: left; padding: calc(6px * var(--u)) calc(8px * var(--u)); }
+.deck-card small { font-family: var(--font-text); font-size: .8em; opacity: .85; line-height: 1.25; }
+.deck-card.on { outline: calc(3px * var(--u)) solid var(--gold, #e0b73a); filter: brightness(1.12); }
 .unit-count { display: inline-flex; align-items: center; gap: calc(1px * var(--u)); font-variant-numeric: tabular-nums; }
 .unit-count.none { opacity: .45; }
 .wl-report { gap: calc(4px * var(--u)); }

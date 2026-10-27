@@ -2,6 +2,7 @@ import { sfx } from './audio';
 import { botMark, clock, COLOR_CSS, esc, fmt } from './format';
 import type { GameConnection } from './net';
 import type { BotLevel, RoomView, SummaryView } from './types';
+import { loadGuide, type GuideUnit } from './ui/guide';
 
 // Plain-HTML screens around the game: home, lobby and the end screen, in the same parchment-and-ribbon
 // look as the in-game UI (ui/ui.css).
@@ -90,6 +91,11 @@ export class LobbyScreen {
           <button class="btn" data-a="copy">Linki kopyala</button>
         </div>
         <ul class="players" id="players"></ul>
+        <div class="deck" id="deck" hidden>
+          <h3>Destem <small id="deck-count"></small></h3>
+          <p class="muted small">Maçta yalnız seçtiğin 4 birliği üretebilirsin. Rakip destene yalnız gözcü raporuyla bakabilir. Seçmezsen rastgele verilir.</p>
+          <div class="deck-cards" id="deck-cards"></div>
+        </div>
         <div class="me">
           <label class="field">Adın <input id="myname" maxlength="16"></label>
           <button class="btn" data-a="ready" id="ready"></button>
@@ -114,6 +120,8 @@ export class LobbyScreen {
         catch { input.select(); }
       } else if (a === 'ready') {
         this.show(await this.net.setReady(!this.me(this.room!)?.ready));
+      } else if (a === 'deckpick') {
+        await this.toggleDeck((e.target as HTMLElement).closest<HTMLElement>('[data-unit]')!.dataset.unit!);
       } else if (a === 'start') {
         this.show(await this.net.startMatch());
       } else if (a === 'addbot') {
@@ -124,9 +132,55 @@ export class LobbyScreen {
       }
     });
     this.update(room);
+    void this.setupDeck();
   }
 
   private room: RoomView | null = null;
+  private deckUnits: GuideUnit[] = [];
+  private deckSize = 4;
+  private deck: string[] = [];
+
+  /** The deck picker: the seven units as cards, four to be picked. The choice is remembered in this browser. */
+  private async setupDeck(): Promise<void> {
+    try {
+      const guide = await loadGuide();
+      if (!guide.deckEnabled) return;
+      this.deckUnits = guide.units;
+      this.deckSize = guide.deckSize;
+      try {
+        const saved = JSON.parse(localStorage.getItem('keepfall.deck') ?? '[]') as string[];
+        if (Array.isArray(saved)) this.deck = saved.filter((id) => this.deckUnits.some((u) => u.id === id)).slice(0, this.deckSize);
+      } catch { /* no memory of it */ }
+      this.q('#deck').hidden = false;
+      this.renderDeck();
+      if (this.deck.length === this.deckSize) this.show(await this.net.setDeck(this.deck));
+    } catch { /* the guide could not be read: the server hands out a random deck */ }
+  }
+
+  private async toggleDeck(id: string): Promise<void> {
+    const at = this.deck.indexOf(id);
+    if (at >= 0) this.deck.splice(at, 1);
+    else if (this.deck.length < this.deckSize) this.deck.push(id);
+    else return;
+    try { localStorage.setItem('keepfall.deck', JSON.stringify(this.deck)); } catch { /* fine */ }
+    this.renderDeck();
+    if (this.deck.length === this.deckSize) this.show(await this.net.setDeck(this.deck));
+  }
+
+  private renderDeck(): void {
+    const describe = (u: GuideUnit) => [
+      u.heal ? `her ${u.healInterval} sn'de ${u.heal} can iyileştirir` : `${Math.round(u.dps * 10) / 10} hasar/sn`,
+      `${u.hp} can`,
+      u.backFirst ? 'düşmanın arka sırasını döver' : u.flank ? 'okçu ve mancınığa dalar' : u.back ? 'arka sıra' : 'ön sıra',
+      u.speedFactor && u.speedFactor > 1 ? `×${u.speedFactor} hız, tek başına tarla yakar` : '',
+      u.people && u.people > 1 ? `${u.people} kişi harcar` : '',
+    ].filter(Boolean).join(' · ');
+    this.q('#deck-count').textContent = `${this.deck.length} / ${this.deckSize}`;
+    this.q('#deck-cards').innerHTML = this.deckUnits.map((u) => `
+      <button class="btn deck-card${this.deck.includes(u.id) ? ' on' : ''}" data-a="deckpick" data-unit="${u.id}" aria-pressed="${this.deck.includes(u.id)}">
+        <b>${esc(u.name)}</b><small>${esc(describe(u))}</small>
+      </button>`).join('');
+  }
 
   update(room: RoomView): void {
     this.room = room;

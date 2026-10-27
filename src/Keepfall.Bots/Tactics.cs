@@ -30,6 +30,22 @@ public static class Tactics
         return army.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
     }
 
+    /// <summary>
+    /// A castle falls only to an army that has something besides raiders (cavalry) left: if the picked army is all raiders, one of
+    /// them is swapped for a soldier of another kind from the spare ones.
+    /// </summary>
+    public static Dictionary<string, int> WithBreaker(BotContext ctx, IReadOnlyDictionary<string, int> spare, Dictionary<string, int> army)
+    {
+        bool Raider(string id) => ctx.Rules.FindUnit(id)?.Raider == true;
+        if (army.Count == 0 || army.Keys.Any(id => !Raider(id))) return army;
+        var other = spare.Where(kv => kv.Value > 0 && !Raider(kv.Key)).Select(kv => kv.Key).FirstOrDefault();
+        if (other is null) return army;
+        var biggest = army.OrderByDescending(kv => kv.Value).First().Key;
+        if (army[biggest] > 1) army[biggest]--; else army.Remove(biggest);
+        army[other] = army.GetValueOrDefault(other) + 1;
+        return army;
+    }
+
     public static ArmySetup Setup(BotContext ctx, string name, IReadOnlyDictionary<string, int> units)
     {
         var army = new ArmySetup(name);

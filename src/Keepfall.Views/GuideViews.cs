@@ -33,7 +33,7 @@ public sealed record GuideView(
     int ChestsPerCorner, int VillagesPerCorner, int CampsPerCorner,
     GuideChestView Chest, GuideVillageView Village, GuideCampView Camp, GuideCampView BigCamp,
     double FallLootShare, double FallWorkerShare,
-    double ArcherDefenseBonusPercent = 0, double PrisonerShare = 0, bool DeckEnabled = false, int DeckSize = 4);
+    double ArcherDefenseBonusPercent = 0, double PrisonerShare = 0, bool DeckEnabled = false, int DeckSize = 4, double RaidBurnSeconds = 60);
 
 public static class GuideMapper
 {
@@ -62,6 +62,6 @@ public static class GuideMapper
             new GuideVillageView(new(f.Village.GoldMin, f.Village.GoldMax), new(f.Village.FoodMin, f.Village.FoodMax),
                 new(f.Village.PeopleMin, f.Village.PeopleMax), f.Village.MinSoldiers),
             Camp(f.Camp), Camp(f.BigCamp), rules.War.FallLootShare, rules.War.FallWorkerShare,
-            Math.Round(rules.Walls.ArcherDefenseBonus * 100), rules.War.PrisonerShare, rules.Deck.Enabled, rules.Deck.Size);
+            Math.Round(rules.Walls.ArcherDefenseBonus * 100), rules.War.PrisonerShare, rules.Deck.Enabled, rules.Deck.Size, rules.War.RaidBurnSeconds);
     }
 }

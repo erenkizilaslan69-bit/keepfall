@@ -85,6 +85,7 @@ export class GameConnection {
   // Lobby
   setName = (name: string) => { this.name = name; return this.call('SetName', name); };
   setReady = (ready: boolean) => this.call('SetReady', ready);
+  setDeck = (units: string[]) => this.call('SetDeck', units);
   startMatch = () => this.call('StartMatch');
   addBot = (level: BotLevel) => this.call('AddBot', level);
   removeBot = (seat: number) => this.call('RemoveBot', seat);

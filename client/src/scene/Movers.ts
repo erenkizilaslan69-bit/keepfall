@@ -19,9 +19,12 @@ const RUN: Record<string, { anim: string; scale: number }> = {
   kilicli: { anim: 'warrior-run', scale: UNIT_SCALE },
   mizrakci: { anim: 'lancer-run', scale: UNIT_SCALE },
   okcu: { anim: 'archer-run', scale: UNIT_SCALE },
+  kesis: { anim: 'monk-run', scale: UNIT_SCALE },
+  mancinik: { anim: 'mancinik-idle', scale: UNIT_SCALE },
+  suvari: { anim: 'suvari-run', scale: UNIT_SCALE },
 };
 /** Marching order, front to back. */
-const ORDER = ['kalkanli', 'kilicli', 'mizrakci', 'okcu'];
+const ORDER = ['suvari', 'kalkanli', 'kilicli', 'mizrakci', 'okcu', 'mancinik', 'kesis'];
 const MAX_DRAWN = 30;
 const PER_ROW = 3;
 const ROW_GAP = 34, COL_GAP = 38; // px: far enough apart to tell the types from each other

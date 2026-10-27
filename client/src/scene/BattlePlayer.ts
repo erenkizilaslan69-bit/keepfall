@@ -26,7 +26,12 @@ const LOOK: Record<string, { run: string; attack: string | null; scale: number }
   kilicli: { run: 'warrior-run', attack: 'warrior-attack', scale: UNIT_SCALE },
   mizrakci: { run: 'lancer-run', attack: 'lancer-attack', scale: UNIT_SCALE },
   okcu: { run: 'archer-run', attack: 'archer-shoot', scale: UNIT_SCALE },
+  kesis: { run: 'monk-run', attack: null, scale: UNIT_SCALE },
+  mancinik: { run: 'mancinik-idle', attack: 'mancinik-fire', scale: UNIT_SCALE },
+  suvari: { run: 'suvari-run', attack: 'suvari-attack', scale: UNIT_SCALE },
 };
+/** They stand back and do not close in: shooters, the catapult and the monk. */
+const STAYS_BACK = new Set(['okcu', 'mancinik', 'kesis']);
 
 interface Fighter {
   sprite: Phaser.GameObjects.Sprite;
@@ -46,6 +51,7 @@ interface Replay {
   hit: number;
   death: number;
   advance: number;
+  heal: number;
   gate: Point;
   ended: boolean;
 }
@@ -94,7 +100,7 @@ export class BattlePlayer {
           if (drawn >= MAX_DRAWN) { fighters[offset(view, s) + x.i] = null; return; }
           drawn++;
           const look = LOOK[x.unitId] ?? LOOK.kilicli;
-          const ranged = x.unitId === 'okcu';
+          const ranged = STAYS_BACK.has(x.unitId);
           const front = place(k, list.length, ranged || !isFront ? FRONT_START : FRONT_MEET);
           const start = place(k, list.length, isFront ? FRONT_START : BACK);
           const back = place(k, list.length, BACK);
@@ -108,7 +114,7 @@ export class BattlePlayer {
       }
     });
     sfx.play('battleStart');
-    this.replays.set(view.id, { view, fighters, hit: 0, death: 0, advance: 0, gate: toWorld(view.at), ended: false });
+    this.replays.set(view.id, { view, fighters, hit: 0, death: 0, advance: 0, heal: 0, gate: toWorld(view.at), ended: false });
   }
 
   update(): void {
@@ -141,6 +147,8 @@ export class BattlePlayer {
 
     const h = v.hits;
     for (; r.hit < h.length && h[r.hit] <= tick; r.hit += 3) this.strike(r, h[r.hit + 1], h[r.hit + 2], speed);
+    const hl = v.heals ?? [];
+    for (; r.heal < hl.length && hl[r.heal] <= tick; r.heal += 3) this.healFx(r, hl[r.heal + 1], hl[r.heal + 2], speed);
     const a = v.advances;
     for (; r.advance < a.length && a[r.advance] <= tick; r.advance += 2) {
       const f = r.fighters[a[r.advance + 1]];
@@ -170,7 +178,7 @@ export class BattlePlayer {
     if (!a || a.dead || !a.sprite.active) return;
     if (b) a.sprite.setFlipX(b.sprite.x < a.sprite.x);
     const look = LOOK[a.unit] ?? LOOK.kilicli;
-    sfx.play(a.ranged ? 'arrow' : look.attack ? 'sword' : 'shield', this.loudness(a.sprite.x, a.sprite.y));
+    sfx.play(a.unit === 'mancinik' ? 'castleHit' : a.ranged ? 'arrow' : look.attack ? 'sword' : 'shield', this.loudness(a.sprite.x, a.sprite.y));
     if (look.attack) {
       const key = colorKey(r.view.sides[a.side].color, this.ownColor, look.attack);
       if (this.scene.anims.exists(key)) {
@@ -183,10 +191,11 @@ export class BattlePlayer {
       this.scene.tweens.add({ targets: a.sprite, x: a.sprite.x + dx, duration: 120 / speed, yoyo: true });
     }
     if (a.ranged && b) {
-      const arrow = this.scene.add.image(a.sprite.x, a.sprite.y - 30, 'arrow').setScale(0.6).setDepth(20_000);
-      arrow.setRotation(Math.atan2(b.sprite.y - 24 - arrow.y, b.sprite.x - arrow.x));
+      const stone = a.unit === 'mancinik';
+      const arrow = this.scene.add.image(a.sprite.x, a.sprite.y - (stone ? 60 : 30), stone ? 'stone-shot' : 'arrow').setScale(stone ? 1 : 0.6).setDepth(20_000);
+      if (!stone) arrow.setRotation(Math.atan2(b.sprite.y - 24 - arrow.y, b.sprite.x - arrow.x));
       this.scene.tweens.add({
-        targets: arrow, x: b.sprite.x, y: b.sprite.y - 24, duration: 280 / speed,
+        targets: arrow, x: b.sprite.x, y: b.sprite.y - 24, duration: (stone ? 520 : 280) / speed,
         onUpdate: () => this.fx.trail(arrow.x, arrow.y),
         onComplete: () => arrow.destroy(),
       });
@@ -195,6 +204,23 @@ export class BattlePlayer {
     if (b && !b.dead && b.sprite.active) {
       b.sprite.setTintFill(0xffffff);
       this.scene.time.delayedCall(70, () => { if (!b.dead && b.sprite.active) b.sprite.clearTint(); });
+    }
+  }
+
+  /** A monk heals: it raises its arms and a green sparkle rises round the one it heals. */
+  private healFx(r: Replay, healer: number, patient: number, speed: number): void {
+    const h = r.fighters[healer], p = r.fighters[patient];
+    if (h && !h.dead && h.sprite.active) {
+      const key = colorKey(r.view.sides[h.side].color, this.ownColor, 'monk-heal');
+      if (this.scene.anims.exists(key)) {
+        h.sprite.play({ key, timeScale: Math.min(3, speed) });
+        h.sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => { if (!h.dead && h.sprite.active) h.sprite.anims.stop(); });
+      }
+    }
+    if (p && !p.dead && p.sprite.active && this.scene.anims.exists('monk-heal-fx')) {
+      const fx = this.scene.add.sprite(p.sprite.x, p.sprite.y, 'monk-heal-fx').setScale(UNIT_SCALE).setOrigin(0.5, 0.65).setDepth(p.sprite.y + 1);
+      fx.play({ key: 'monk-heal-fx', timeScale: Math.min(3, speed) });
+      fx.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => fx.destroy());
     }
   }
 
