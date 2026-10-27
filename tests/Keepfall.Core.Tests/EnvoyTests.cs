@@ -100,7 +100,7 @@ public class EnvoyTests
     }
 
     [Fact]
-    public void Others_who_can_see_an_envoy_see_only_a_walking_envoy_without_an_owner()
+    public void Others_who_can_see_an_envoy_see_a_walking_envoy_in_its_senders_colour()
     {
         var game = NewGame();
         Ok(game.Execute(A, new SendEnvoy(B, 4, 0, 0, 0, "gizli mesaj")));
@@ -108,8 +108,8 @@ public class EnvoyTests
         for (int t = 0; t < 120 && game.MissionsOf(A).Count > 0; t++)
         {
             game.Tick(1);
-            foreach (var s in game.SeenBy(B)) { Assert.Equal(MoverKind.Envoy, s.Kind); Assert.Equal("", s.Owner); Assert.Empty(s.Units); seenByTarget = true; }
-            foreach (var s in game.SeenBy(C)) { Assert.Equal(MoverKind.Envoy, s.Kind); Assert.Equal("", s.Owner); }
+            foreach (var s in game.SeenBy(B)) { Assert.Equal(MoverKind.Envoy, s.Kind); Assert.Equal(A, s.Owner); Assert.Empty(s.Units); seenByTarget = true; }
+            foreach (var s in game.SeenBy(C)) { Assert.Equal(MoverKind.Envoy, s.Kind); Assert.Equal(A, s.Owner); }
             Assert.DoesNotContain(game.SeenBy(A), s => s.Kind == MoverKind.Envoy); // never its own
         }
         Assert.True(seenByTarget, "the receiver should see it walk up to the gate");

@@ -348,8 +348,8 @@ check('the sender and the third player have no letter', X.of('CastleState').at(-
 check('the message reached nobody but Y', ![X, Z].some((c) => c.msgs.some((m) => m.raw.includes('evet'))));
 check('an envoy brings no report and leaves no trail', X.of('CastleState').at(-1).scouting.reports.length === reportsBefore
   && X.of('MapState').at(-1).trail.length === 0);
-check('whoever sees an envoy sees it as an envoy with no owner and no colour',
-  [X, Y, Z].every((c) => c.of('MapState').every((m) => m.seen.filter((e) => e.kind === 'envoy').every((e) => e.ownerSeat === 0 && e.units.length === 0))));
+check('whoever sees an envoy sees it as an envoy in its sender colour (an owner seat, no units, nothing of its load)',
+  [X, Y, Z].every((c) => c.of('MapState').every((m) => m.seen.filter((e) => e.kind === 'envoy').every((e) => e.ownerSeat > 0 && e.units.length === 0 && !('cargo' in e) && !('message' in e)))));
 
 // ---- the forest: what a scout finds is its owner's alone -----------------------------------------------------
 const quarters = X.of('CastleState').at(-1).scouting.quarters;

@@ -33,7 +33,7 @@ interface Track {
   color: PlayerColor;
   /** A scout or an envoy (one walker, no soldiers). */
   scout: boolean;
-  /** An envoy: marked with a letter sign; nobody can tell whose it is. */
+  /** An envoy: marked with a letter sign; it walks in its sender's colour. */
   envoy: boolean;
   units: MoverUnit[];
   // From the latest tick:
@@ -100,8 +100,7 @@ export class Movers {
       alive.add(t.key);
     }
     for (const s of state.seen) {
-      // An envoy shows no colour: it is drawn in ours, with the letter sign, and says nothing about whose it is.
-      const t = this.track(`seen:${s.id}`, s.kind === 'envoy' ? this.ownColor : s.ownerColor, s.kind !== 'army', s.units, s.position, s.kind === 'envoy');
+      const t = this.track(`seen:${s.id}`, s.ownerColor, s.kind !== 'army', s.units, s.position, s.kind === 'envoy');
       t.position = s.position;
       t.velocity = s.velocity;
       t.route = null;

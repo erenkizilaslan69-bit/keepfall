@@ -223,8 +223,8 @@ public sealed class GameState
             seen.Add(new SeenMover(a.PublicId, MoverKind.Army, a.From, a.Position, a.Velocity,
                 a.Walking.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value)));
         foreach (var m in _missions.Where(m => m.From != playerKey && Visible(m.Position)))
-            seen.Add(new SeenMover(m.PublicId, m.Kind == MissionKind.Envoy ? MoverKind.Envoy : MoverKind.Scout, m.Kind == MissionKind.Envoy ? "" : m.From,
-                m.Position, m.Velocity, new Dictionary<UnitType, int>())); // an envoy shows who it belongs to to nobody
+            seen.Add(new SeenMover(m.PublicId, m.Kind == MissionKind.Envoy ? MoverKind.Envoy : MoverKind.Scout, m.From,
+                m.Position, m.Velocity, new Dictionary<UnitType, int>())); // an envoy walks in its sender's colour, like a scout
         return seen;
     }
 
