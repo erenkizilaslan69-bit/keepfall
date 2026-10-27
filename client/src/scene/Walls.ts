@@ -150,7 +150,8 @@ export class WallRing {
     };
     const column = (x: number, y0: number, y1: number) => { // a vertical stretch: the cobbled top seen from above
       for (let y = y0; y < y1; y += topH + 2) piece(WALL_TOP, x, y, side * 2, Math.min(topH + 2, y1 - y));
-      g.lineStyle(2, OUTLINE, 1).strokeRect(x, y0, side * 2, y1 - y0);
+      // an outline along the two long edges only: a box round the stretch showed as a black frame at its ends, round the towers
+      g.lineStyle(2, OUTLINE, 1).lineBetween(x, y0, x, y1).lineBetween(x + side * 2, y0, x + side * 2, y1);
     };
     row(L, R, T);                    // north
     row(L, R, B - band);             // south

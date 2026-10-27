@@ -65,6 +65,10 @@ for (const r of corners) {
   await evalJs(`(()=>{const s=window.keepfallScene; const c=s.cameras.main; const b=c.getBounds(); const o=${JSON.stringify(r.origin)}; c.setZoom(1.2); c.centerOn(b.x+14*64+(o.x+(${JSON.stringify(r.corner)}.endsWith('West')?16:0))*64, b.y+14*64+(o.y+7)*64);})()`);
   await sleep(500);
   await shot(r.corner + '-gate');
+  await evalJs(`window.keepfallScene.fog.setVisible(false)`);
+  await sleep(300);
+  await shot(r.corner + '-gate-nofog');
+  await evalJs(`window.keepfallScene.fog.setVisible(true)`);
 }
 console.log(logs.join(' / ') || 'no exceptions');
 ws.close(); chrome.kill(); process.exit(0);
