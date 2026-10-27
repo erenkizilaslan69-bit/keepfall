@@ -12,7 +12,7 @@ public sealed record BotReportOptions
     public int Players { get; init; } = 2;
     /// <summary>15 or 30 (the match modes).</summary>
     public int Minutes { get; init; } = 15;
-    /// <summary>"orta", "kolay" or "karisik" (a mix of both, seats rotated from match to match).</summary>
+    /// <summary>"bekleyen": every match has one Orta bot that only waits (builds, defends) against Orta bots that play normally; "orta", "kolay" or "karisik" (a mix of both, seats rotated from match to match).</summary>
     public string Difficulty { get; init; } = "karisik";
     public int Seed { get; init; } = 1;
     /// <summary>Experiment: when time runs out the winner is who has the most victory points, not the most people (nothing in the game changes).</summary>
@@ -32,11 +32,11 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
     private sealed record SeatResult(
         int Seat, BotDifficulty Level, bool Won, bool Eliminated, double EliminatedAt, int PopWarStart, int SoldiersWarStart, int PopEnd, int PeakPop,
         int Soldiers, double GoldGained, double GoldSpent, int Mercenaries, int SoldiersLost, int EnemiesKilled,
-        IReadOnlyDictionary<string, int> Bot, int HiredWarStart, int HiredEnd, int Eliminations, double Points);
+        IReadOnlyDictionary<string, int> Bot, int HiredWarStart, int HiredEnd, int Eliminations, double Points, bool Passive = false);
 
     private sealed record MatchRecord(
         bool ByElimination, double Duration, IReadOnlyList<SeatResult> Seats, int SiegeBattles, int FieldBattles, int CampBattles, int CampWins,
-        int ChestsTaken, int VillagesPlundered, int CampsCleared, int BigCampsCleared, int Chests, int Villages, int Camps, int BigCamps, double FirstEliminationAt = double.NaN);
+        int ChestsTaken, int VillagesPlundered, int CampsCleared, int BigCampsCleared, int Chests, int Villages, int Camps, int BigCamps, double FirstEliminationAt = double.NaN, int Jumps = 0);
 
     private readonly List<string> _findings = [];
 
@@ -73,6 +73,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
                 "orta" => BotDifficulty.Medium,
                 "zor" => BotDifficulty.Hard,
                 // Hard against Medium: about half of each, seats rotated from match to match.
+                "bekleyen" => BotDifficulty.Medium,
                 "zor-orta" => (s + match) % 2 == 0 ? BotDifficulty.Hard : BotDifficulty.Medium,
                 // Mixed: about half of each, and who sits where changes from match to match.
                 _ => (s + match) % 2 == 0 ? BotDifficulty.Medium : BotDifficulty.Easy,
@@ -87,6 +88,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
         var room = BotMatch.Create(rules, levels, prep, war, seed);
         var game = room.Game!;
         var host = new BotHost.BotHost(rules, seed);
+        if (options.Difficulty == "bekleyen") host.PassiveSeats.Add(room.Players[index % room.Players.Count].Seat);
         var atWarStart = new Dictionary<int, (int Pop, int Soldiers, int Hired)>();
         BotMatch.Play(rules, room, seed, (r, _) =>
         {
@@ -119,7 +121,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
                 game.Eliminated.GetValueOrDefault(p.CastleKey), pop0, sol0, c.Population, c.Stats.PeakPopulation,
                 c.SoldierCount + c.SoldiersAway, c.Stats.GoldGained, c.Stats.GoldSpent, c.Stats.MercenariesHired, c.Stats.SoldiersLost,
                 c.Stats.EnemiesKilled, host.Stats.TryGetValue(p.Seat, out var st) ? st.Counts : new Dictionary<string, int>(),
-                hired0, c.Mercenaries.Values.Sum(), points[p.Seat].Eliminations, points[p.Seat].Points);
+                hired0, c.Mercenaries.Values.Sum(), points[p.Seat].Eliminations, points[p.Seat].Points, host.PassiveSeats.Contains(p.Seat));
         }).ToList();
 
         var reports = room.Players.SelectMany(p => game.BattlesOf(p.CastleKey).Select(b => (Player: p, Report: b))).ToList();
@@ -132,7 +134,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
             sites.Count(s => s.Site.Kind == SiteKind.Camp && s.BanditCount == 0), sites.Count(s => s.Site.Kind == SiteKind.BigCamp && s.BanditCount == 0),
             sites.Count(s => s.Site.Kind == SiteKind.Chest), sites.Count(s => s.Site.Kind == SiteKind.Village),
             sites.Count(s => s.Site.Kind == SiteKind.Camp), sites.Count(s => s.Site.Kind == SiteKind.BigCamp),
-            game.Eliminated.Count == 0 ? double.NaN : game.Eliminated.Values.Min());
+            game.Eliminated.Count == 0 ? double.NaN : game.Eliminated.Values.Min(), game.ContinuityViolations);
     }
 
     // ---- sections ----------------------------------------------------------------------------
@@ -160,6 +162,16 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
         Console.WriteLine($"   Ortalama maç süresi: {F(matches.Average(m => m.Duration) / 60)} dk (oyun saati)");
         int stalled = matches.Count(m => m.SiegeBattles == 0);
         Console.WriteLine($"   Hiç kale saldırısı olmayan maç: {stalled}/{matches.Length} ({Pct(stalled / (double)matches.Length)})");
+        var firsts = matches.Where(m => !double.IsNaN(m.FirstEliminationAt)).ToList();
+        double warStartAt = options.Minutes == 30 ? rules.Match.LongModePrepSeconds : rules.Match.ShortModePrepSeconds;
+        Console.WriteLine($"   İlk elemenin zamanı (savaş başlangıcından): {(firsts.Count == 0 ? "—" : F((firsts.Average(m => m.FirstEliminationAt) - warStartAt) / 60) + " dk")} ({firsts.Count} maçta eleme oldu)");
+        Console.WriteLine($"   Işınlanma (süreklilik) ihlali: {matches.Sum(m => m.Jumps)} (hedef 0; ihlalli maç: {matches.Count(m => m.Jumps > 0)})");
+        if (options.Difficulty == "bekleyen")
+        {
+            var passive = matches.SelectMany(m => m.Seats.Where(s => s.Passive).Select(s => (Match: m, Seat: s))).ToList();
+            double won = passive.Sum(x => x.Seat.Won ? 1.0 / x.Match.Seats.Count(y => y.Won) : 0);
+            Console.WriteLine($"   Yalnız bekleyen botun kazanma oranı: {Pct(won / passive.Count)} ({passive.Count} maç; elenen: {Pct(passive.Count(x => x.Seat.Eliminated) / (double)passive.Count)})");
+        }
         Console.WriteLine();
 
         var t = new Table("Zorluk", "Koltuk", "Kazanma payı", "Elenme", "Ort. son nüfus");
@@ -313,6 +325,9 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
             Pct(aggressorWins),
             lopsided.Count.ToString(),
             matches.Any(m => !double.IsNaN(m.FirstEliminationAt)) ? F((matches.Where(m => !double.IsNaN(m.FirstEliminationAt)).Average(m => m.FirstEliminationAt) - warStart) / 60, "0.0") + " dk" : "—",
+            matches.Sum(m => m.Jumps).ToString(),
+            F(matches.Average(m => m.Duration) / 60) + " dk",
+            Pct(matches.SelectMany(m => m.Seats).Where(s => s.Passive).DefaultIfEmpty().Average(s => s is null ? double.NaN : s.Won ? 1.0 : 0.0)),
         };
         Console.WriteLine("ÖZET	" + string.Join("	", fields));
     }

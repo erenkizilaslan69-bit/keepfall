@@ -22,6 +22,9 @@ public sealed class BotHost(GameRules rules, int seed)
 
     public IReadOnlyDictionary<int, Bot> Bots => _bots;
 
+    /// <summary>Experiment only: seats whose bot just waits (economy and defence, no attacks).</summary>
+    public ISet<int> PassiveSeats { get; } = new HashSet<int>();
+
     public void Step(Room room, double dt)
     {
         if (room.Game is not { } game || game.Phase == MatchPhase.Ended) return;
@@ -39,7 +42,7 @@ public sealed class BotHost(GameRules rules, int seed)
             room.TakeNotifications(player);
             if (room.IsEliminated(player)) continue;
             if (!_bots.TryGetValue(player.Seat, out var bot))
-                _bots[player.Seat] = bot = new Bot(rules, level, player.Seat, MixSeed(seed, player.Seat));
+                _bots[player.Seat] = bot = new Bot(rules, level, player.Seat, MixSeed(seed, player.Seat), PassiveSeats.Contains(player.Seat));
             if (!bot.IsDue(game.ElapsedSeconds)) continue;
 
             _layout ??= MapViewMapper.LayoutOf(room);

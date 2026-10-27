@@ -19,7 +19,8 @@ public sealed class Bot
     private readonly Keepfall.Core.Combat.BattleSimulator _simulator;
     private double _nextThink;
 
-    public Bot(GameRules rules, BotDifficulty difficulty, int seat, int seed)
+    /// <param name="passive">Experiment only (BattleSim): a bot that just builds its economy and defends; it never scouts, raids or attacks.</param>
+    public Bot(GameRules rules, BotDifficulty difficulty, int seat, int seed, bool passive = false)
     {
         _rules = rules;
         Difficulty = difficulty;
@@ -27,7 +28,9 @@ public sealed class Bot
         _level = rules.Bots.Of(difficulty);
         _rng = new Random(seed);
         _memory = new BotMemory(_level);
-        _modules = [new EconomyModule(), new BuildModule(), new ScoutModule(), new ForesightModule(), new DefenseModule(), new AttackModule(), new ForestModule(), new MercenaryModule(), new ProductionModule()];
+        _modules = passive
+            ? [new EconomyModule(), new BuildModule(), new DefenseModule(), new MercenaryModule(), new ProductionModule()]
+            : [new EconomyModule(), new BuildModule(), new ScoutModule(), new ForesightModule(), new DefenseModule(), new AttackModule(), new ForestModule(), new MercenaryModule(), new ProductionModule()];
         _simulator = new Keepfall.Core.Combat.BattleSimulator(rules);
         // Bots do not all wake up on the same second.
         _nextThink = _rng.NextDouble() * _level.ThinkMax;

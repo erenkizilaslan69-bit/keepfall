@@ -13,8 +13,8 @@ const string Usage = """
       BattleSim denge  [--mac 5000] [--min 10] [--max 30] [--butce kisi|kaynak] [--duello 10]
                        [--havuz 60] [--esik 0.55] [--seed 12345]
       BattleSim savas  <ordu A> <ordu B> [--hedef-a X] [--hedef-b X] [--tekrar N] [--seed N]
-      BattleSim bot    [--mac 200] [--oyuncu 2|3|4] [--mod 15|30] [--zorluk orta|kolay|zor|zor-orta|karisik] [--seed 1] [--puan evet] [--agirlik 150,0.2,2,1] [--ozet 1]
-                       (bot vs bot istatistikleri; --puan: süre bitince kazanan zafer puanına göre sayılır (deney); --ozet: karşılaştırma satırı)
+      BattleSim bot    [--mac 200] [--oyuncu 2|3|4] [--mod 20|30] [--zorluk orta|kolay|zor|zor-orta|bekleyen|karisik] [--seed 1] [--puan evet] [--agirlik 150,0.2,2,1] [--ozet 1]
+                       (bot vs bot istatistikleri; bekleyen: koltuklardan biri yalnız bekler; --puan: süre bitince kazanan zafer puanına göre sayılır (deney); --ozet: karşılaştırma satırı)
       BattleSim bot --izle [--oyuncu 2] [--zorluk orta|kolay] [--mod 15|30] [--seed 1] [--aralik 60]   (tek maçı dakika dakika göster)
       BattleSim kontrol
 
@@ -83,9 +83,9 @@ try
             int players = Int(flags, "oyuncu", 2);
             if (players is < 2 or > 4) throw new FormatException("--oyuncu 2, 3 ya da 4 olmalı.");
             int minutes = Int(flags, "mod", 15);
-            if (minutes is not (15 or 30)) throw new FormatException("--mod 15 ya da 30 olmalı.");
+            if (minutes is not (15 or 20 or 30)) throw new FormatException("--mod 20 (kısa mod; eski 15 de kabul) ya da 30 olmalı.");
             string level = flags.GetValueOrDefault("zorluk", "karisik").ToLowerInvariant();
-            if (level is not ("orta" or "kolay" or "zor" or "zor-orta" or "karisik" or "karışık")) throw new FormatException($"Geçersiz zorluk \"{level}\" (kolay | orta | zor | zor-orta | karisik).");
+            if (level is not ("orta" or "kolay" or "zor" or "zor-orta" or "bekleyen" or "karisik" or "karışık")) throw new FormatException($"Geçersiz zorluk \"{level}\" (kolay | orta | zor | zor-orta | bekleyen | karisik).");
             new BotReport(rules, new BotReportOptions
             {
                 Matches = Int(flags, "mac", 200), Players = players, Minutes = minutes,
