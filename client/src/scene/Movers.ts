@@ -65,6 +65,10 @@ export class Movers {
 
   /** Set by the scene: a click on one of our armies or scouts. */
   onSelect: (target: Target) => void = () => {};
+  /** The roads of the map (public, the same for everybody), as polylines in tiles: what others' armies and scouts are walked along between two pictures. */
+  setRoads(roads: Vec[][]): void { this.roads = roads; }
+  private roads: Vec[][] = [];
+
   /** Set by the scene: a battle replay is being played at this place (tiles). The column that walked into it stays hidden meanwhile. */
   inReplay: (at: Vec) => boolean = () => false;
 
@@ -138,6 +142,12 @@ export class Movers {
       else perKey.set(key, (perKey.get(key) ?? 0) + 1);
     }
     for (const [key, t] of this.tracks) {
+      // Our own walkers keep to their road, bends included: a column drawn away from it has cut a corner.
+      if (t.route && t.route.length > 1) {
+        let near = Infinity;
+        for (let i = 0; i + 1 < t.route.length; i++) near = Math.min(near, distanceToSegment(t.shown, t.route[i], t.route[i + 1]));
+        if (near > 0.6) problems.push(`${key}: ${near.toFixed(1)} tiles off its road`);
+      }
       const drawn = perKey.get(key) ?? 0;
       if (drawn !== t.sprites.length) problems.push(`${key}: ${drawn} drawn, ${t.sprites.length} expected`);
     }
@@ -183,8 +193,14 @@ export class Movers {
         const d = Math.min(length, t.travelled + t.speed * ahead);
         ({ point: target, direction: heading } = along(t.route, t.cumulative, d));
       } else {
-        target = { x: t.position.x + t.velocity.x * ahead, y: t.position.y + t.velocity.y * ahead };
-        heading = normalise(t.velocity) ?? t.heading;
+        // Somebody else's: only where they are and which way they go. They keep to the roads, so go on along the road (round its corners),
+        // not straight on: a straight guess would run past a bend and then jump back onto the road.
+        const walked = followRoads(this.roads, t.position, t.velocity, Math.hypot(t.velocity.x, t.velocity.y) * ahead);
+        if (walked) { target = walked.point; heading = walked.direction; }
+        else {
+          target = { x: t.position.x + t.velocity.x * ahead, y: t.position.y + t.velocity.y * ahead };
+          heading = normalise(t.velocity) ?? t.heading;
+        }
       }
       // Glide onto the new estimate rather than jumping when a tick corrects it.
       const k = Math.min(1, dt * 12);
@@ -271,6 +287,69 @@ function formation(units: MoverUnit[]): string[] {
 }
 
 const rank = (id: string) => { const i = ORDER.indexOf(id); return i < 0 ? ORDER.length : i; };
+
+/**
+ * Walks <paramref name="distance"/> tiles from <paramref name="pos"/> along the road that lies under it and runs the way <paramref name="vel"/> points,
+ * round bends and on to the next road at a junction (the one that bends least). Null when no road is there (the forest paths, open ground).
+ */
+export function followRoads(roads: Vec[][], pos: Vec, vel: Vec, distance: number): { point: Vec; direction: Vec } | null {
+  const v = normalise(vel);
+  if (!v || roads.length === 0) return null;
+  // The road segment under the position that points the same way (either way along it).
+  let best: { road: number; seg: number; t: number; dist: number; sign: 1 | -1 } | null = null;
+  roads.forEach((pts, ri) => {
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const a = pts[i], b = pts[i + 1];
+      const dx = b.x - a.x, dy = b.y - a.y, len2 = dx * dx + dy * dy;
+      if (len2 < 1e-9) continue;
+      const t = Math.min(1, Math.max(0, ((pos.x - a.x) * dx + (pos.y - a.y) * dy) / len2));
+      const d = Math.hypot(pos.x - (a.x + dx * t), pos.y - (a.y + dy * t));
+      const dot = (dx * v.x + dy * v.y) / Math.sqrt(len2);
+      if (d > 0.7 || Math.abs(dot) < 0.5 || (best && d >= best.dist)) continue;
+      best = { road: ri, seg: i, t, dist: d, sign: dot > 0 ? 1 : -1 };
+    }
+  });
+  if (!best) return null;
+  let { road, seg, t, sign } = best as { road: number; seg: number; t: number; sign: 1 | -1 };
+  let remaining = distance;
+  let x = roads[road][seg].x + (roads[road][seg + 1].x - roads[road][seg].x) * t, y = roads[road][seg].y + (roads[road][seg + 1].y - roads[road][seg].y) * t;
+  let dir = { x: v.x, y: v.y };
+  for (let guard = 0; guard < 64 && remaining > 1e-6; guard++) {
+    const pts = roads[road];
+    const from = sign > 0 ? pts[seg] : pts[seg + 1], to = sign > 0 ? pts[seg + 1] : pts[seg];
+    const segDir = normalise({ x: to.x - from.x, y: to.y - from.y });
+    if (!segDir) break;
+    dir = segDir;
+    const left = Math.hypot(to.x - x, to.y - y);
+    if (remaining <= left) { x += dir.x * remaining; y += dir.y * remaining; remaining = 0; break; }
+    x = to.x; y = to.y; remaining -= left;
+    const next = sign > 0 ? seg + 1 : seg - 1;
+    if (next >= 0 && next + 1 < pts.length) { seg = next; continue; }
+    // The end of this road: a road that starts or ends right here and bends least from where we were going.
+    let pick: { road: number; seg: number; sign: 1 | -1; dot: number } | null = null;
+    roads.forEach((other, oi) => {
+      if (oi === road) return;
+      const first = other[0], last = other[other.length - 1];
+      if (Math.hypot(first.x - x, first.y - y) < 0.3 && other.length > 1) {
+        const d = normalise({ x: other[1].x - first.x, y: other[1].y - first.y });
+        if (d && (!pick || d.x * dir.x + d.y * dir.y > pick.dot)) pick = { road: oi, seg: 0, sign: 1, dot: d.x * dir.x + d.y * dir.y };
+      }
+      if (Math.hypot(last.x - x, last.y - y) < 0.3 && other.length > 1) {
+        const d = normalise({ x: other[other.length - 2].x - last.x, y: other[other.length - 2].y - last.y });
+        if (d && (!pick || d.x * dir.x + d.y * dir.y > pick.dot)) pick = { road: oi, seg: other.length - 2, sign: -1, dot: d.x * dir.x + d.y * dir.y };
+      }
+    });
+    if (!pick || (pick as { dot: number }).dot < -0.2) break; // a dead end (or only a turn-back): wait here for the next picture
+    ({ road, seg, sign } = pick as { road: number; seg: number; sign: 1 | -1 });
+  }
+  return { point: { x, y }, direction: dir };
+}
+
+function distanceToSegment(p: Vec, a: Vec, b: Vec): number {
+  const dx = b.x - a.x, dy = b.y - a.y, len2 = dx * dx + dy * dy;
+  const t = len2 < 1e-9 ? 0 : Math.min(1, Math.max(0, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2));
+  return Math.hypot(p.x - (a.x + dx * t), p.y - (a.y + dy * t));
+}
 
 function cumulative(points: Vec[]): number[] {
   const out = [0];

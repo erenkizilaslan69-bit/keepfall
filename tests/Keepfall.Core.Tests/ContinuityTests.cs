@@ -24,6 +24,19 @@ public class ContinuityTests
         return game;
     }
 
+    private static double DistanceToRoute(IReadOnlyList<Vec> points, Vec p)
+    {
+        double best = double.MaxValue;
+        for (int i = 0; i + 1 < points.Count; i++)
+        {
+            var a = points[i]; var b = points[i + 1];
+            double dx = b.X - a.X, dy = b.Y - a.Y, len2 = dx * dx + dy * dy;
+            double t = len2 < 1e-12 ? 0 : Math.Clamp(((p.X - a.X) * dx + (p.Y - a.Y) * dy) / len2, 0, 1);
+            best = Math.Min(best, Math.Sqrt(Math.Pow(p.X - (a.X + dx * t), 2) + Math.Pow(p.Y - (a.Y + dy * t), 2)));
+        }
+        return points.Count == 1 ? Math.Sqrt(Math.Pow(p.X - points[0].X, 2) + Math.Pow(p.Y - points[0].Y, 2)) : best;
+    }
+
     [Fact]
     public void A_redirected_army_that_goes_home_walks_to_its_own_castle()
     {
@@ -99,6 +112,14 @@ public class ContinuityTests
             // One army, one entry: an id is never in the game twice.
             var ids = all.SelectMany(p => game.ArmiesOf(p)).Select(a => a.PublicId).ToList();
             Assert.Equal(ids.Count, ids.Distinct().Count());
+            // Every walker stands on its road, bends included: a long tick (x20) does not cut a corner.
+            foreach (var p in all)
+            {
+                foreach (var a in game.ArmiesOf(p).Where(a => a.Battle is null))
+                    Assert.True(DistanceToRoute(a.Leg.Route.Points, a.Position) < 0.02, $"seed {seed}: army {a.Id} is off its road");
+                foreach (var m in game.MissionsOf(p))
+                    Assert.True(DistanceToRoute(m.Leg.Route.Points, m.Position) < 0.02, $"seed {seed}: mission {m.PublicId} is off its road");
+            }
         }
         Assert.True(game.ContinuityViolations == 0, $"{game.ContinuityViolations} jumps, worst {game.WorstJump:F2} tiles beyond walking");
     }

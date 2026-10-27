@@ -158,6 +158,7 @@ export class WorldScene extends Phaser.Scene {
     this.movers = new Movers(this, this.color, this.labels);
     this.sites = new SiteLayer(this, this.labels, (id) => this.select({ kind: 'site', id }));
     this.movers.onSelect = (t) => this.select(t);
+    this.movers.setRoads(this.layout.roads.map((r) => r.points));
     this.movers.inReplay = (at) => this.battles?.active.some((b) => Math.hypot(b.at.x - at.x, b.at.y - at.y) < 2.5) ?? false;
     this.fog = new Fog(this, this.layout.size, WATER_FAR);
     this.fx = new Effects(this);
