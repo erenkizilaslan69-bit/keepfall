@@ -340,12 +340,44 @@ html.in-menu .guide-fab { display: inline-grid; }
 .unit-mancinik, .unit-suvari { background-size: 100% 100%; background-position: 0 0; }
 .unit-mancinik { background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='19' width='26' height='4' fill='%23a56d3c' stroke='%231b2a3d'/%3E%3Cpath d='M12 19 L14 8 L18 8 L20 19Z' fill='%23744827' stroke='%231b2a3d'/%3E%3Cpath d='M16 9 L6 20' stroke='%23cd9459' stroke-width='3'/%3E%3Ccircle cx='6' cy='20' r='3' fill='%239aa3ac' stroke='%231b2a3d'/%3E%3Ccircle cx='9' cy='26' r='4' fill='%236e4526' stroke='%231b2a3d'/%3E%3Ccircle cx='23' cy='26' r='4' fill='%236e4526' stroke='%231b2a3d'/%3E%3C/svg%3E"); }
 .unit-suvari { background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M9 6 L11 2 L14 6 L19 4 L21 6 L17 12 L26 20 L26 26 L18 26 L14 18 L8 26 L4 26 L6 14Z' fill='%23c08a56' stroke='%231b2a3d' stroke-width='1.5'/%3E%3Ccircle cx='18' cy='13' r='1.6' fill='%23150f1a'/%3E%3Cpath d='M6 12 L10 6 L12 14Z' fill='%235c3a24'/%3E%3C/svg%3E"); }
-/* deck picker in the lobby */
-.deck h3 { margin: calc(8px * var(--u)) 0 calc(2px * var(--u)); }
-.deck-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(150px * var(--u)), 1fr)); gap: calc(6px * var(--u)); }
-.deck-card { display: flex; flex-direction: column; align-items: flex-start; gap: calc(2px * var(--u)); text-align: left; padding: calc(6px * var(--u)) calc(8px * var(--u)); }
-.deck-card small { font-family: var(--font-text); font-size: .8em; opacity: .85; line-height: 1.25; }
-.deck-card.on { outline: calc(3px * var(--u)) solid var(--gold, #e0b73a); filter: brightness(1.12); }
+/* deck picker in the lobby: portrait cards that turn over (front: the unit; back: what it does and who it beats) */
+.deck h3 { margin: calc(8px * var(--u)) 0 calc(2px * var(--u)); display: flex; align-items: center; gap: calc(10px * var(--u)); }
+.deck-medal { display: inline-grid; place-items: center; min-width: calc(46px * var(--u)); height: calc(30px * var(--u)); padding: 0 calc(8px * var(--u)); border-radius: calc(16px * var(--u));
+  background: linear-gradient(#f6d278, #d9a031); border: calc(3px * var(--u)) solid #7a4a25; color: #3a2a18; font-size: .95em; box-shadow: 0 calc(2px * var(--u)) 0 #2c1a0c; }
+.deck-medal.done { background: linear-gradient(#9be07a, #4fa83a); color: #123a0a; animation: medal-pop .5s ease-out; }
+@keyframes medal-pop { 0% { transform: scale(.7); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.deck-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(122px * var(--u)), 1fr)); gap: calc(12px * var(--u)); padding: calc(6px * var(--u)) calc(2px * var(--u)) calc(10px * var(--u)); }
+.ucard { position: relative; aspect-ratio: 5 / 7.2; perspective: 900px; cursor: pointer; transition: transform .18s ease, filter .25s; -webkit-tap-highlight-color: transparent; }
+.ucard:hover { transform: translateY(calc(-4px * var(--u))); }
+.ucard-inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.3, 1.25, .5, 1); }
+.ucard.flipped .ucard-inner { transform: rotateY(180deg); }
+.ucard-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; gap: calc(4px * var(--u));
+  padding: calc(6px * var(--u)); border: calc(5px * var(--u)) solid #7a4a25; border-radius: calc(10px * var(--u)); color: var(--ink); overflow: hidden;
+  background: radial-gradient(ellipse at 50% 18%, #fbf3d6, #e4d6a7 62%, #cdbb86); box-shadow: inset 0 0 0 calc(2px * var(--u)) #4b2e17, 0 calc(4px * var(--u)) 0 #2c1a0c, 0 calc(8px * var(--u)) calc(12px * var(--u)) rgba(0, 0, 0, .3); }
+.ucard-face.back { transform: rotateY(180deg); align-items: stretch; background: radial-gradient(ellipse at 50% 12%, #3a4a7c, #29335a 62%, #1b2342); color: #f1ead6; border-color: #5b3a1d; }
+.ucard-art { width: 100%; flex: 1 1 auto; min-height: 0; border-radius: calc(6px * var(--u)); border: calc(2px * var(--u)) solid #4b2e17;
+  background: linear-gradient(#a9dcef 0 46%, #8cc455 46% 100%); display: grid; place-items: center; overflow: hidden; }
+.ucard-art canvas { width: 100%; height: 100%; image-rendering: pixelated; }
+.ucard-name { font-size: .95em; text-align: center; line-height: 1.1; }
+.ucard-tag { font-size: .68em; padding: calc(1px * var(--u)) calc(8px * var(--u)); border-radius: 99px; background: #7a4a25; color: #fbf3d6; text-transform: uppercase; letter-spacing: .04em; }
+.ucard-btns { display: flex; gap: calc(4px * var(--u)); width: 100%; margin-top: auto; }
+.ucard-btns .btn { flex: 1; min-height: calc(26px * var(--u)); padding: 0 calc(4px * var(--u)); font-size: .78em; }
+.ucard-face.back dl { display: grid; grid-template-columns: auto 1fr; gap: calc(2px * var(--u)) calc(8px * var(--u)); margin: calc(2px * var(--u)) 0; font-size: .82em; }
+.ucard-face.back dt { color: #f6d278; }
+.ucard-face.back dd { margin: 0; text-align: right; }
+.ucard-role { margin: 0; font: .72em/1.3 var(--font-text); color: #dfe6f7; }
+.ucard-vs { margin: 0; font: .72em/1.25 var(--font-text); }
+.ucard-vs span { display: inline-block; padding: 0 calc(5px * var(--u)); border-radius: 4px; font-family: var(--font-pixel); margin-right: calc(3px * var(--u)); }
+.ucard-vs .good { background: #3d8f3a; color: #eaffd8; }
+.ucard-vs .bad { background: #b9403a; color: #ffe3dc; }
+.ucard-check { position: absolute; top: calc(-2px * var(--u)); right: calc(-2px * var(--u)); z-index: 2; width: calc(26px * var(--u)); height: calc(26px * var(--u)); display: none; place-items: center;
+  border-radius: 50%; background: #4fa83a; color: #fff; border: calc(3px * var(--u)) solid #123a0a; font-size: .9em; }
+.ucard.on .ucard-face { border-color: #f1c84b; box-shadow: inset 0 0 0 calc(2px * var(--u)) #9a7220, 0 0 0 calc(3px * var(--u)) #fff2a8, 0 0 calc(20px * var(--u)) calc(5px * var(--u)) rgba(255, 214, 80, .85); animation: card-glow 1.6s ease-in-out infinite; }
+.ucard.on .ucard-check { display: grid; }
+@keyframes card-glow { 50% { box-shadow: inset 0 0 0 calc(2px * var(--u)) #9a7220, 0 0 0 calc(3px * var(--u)) #fff2a8, 0 0 calc(28px * var(--u)) calc(9px * var(--u)) rgba(255, 214, 80, 1); } }
+.ucard.dim { filter: saturate(.5) brightness(.88); }
+.ucard.dim:hover { transform: none; }
+@media (prefers-reduced-motion: reduce) { .ucard-inner { transition-duration: .01s; } .ucard.on .ucard-face, .deck-medal.done { animation: none; } }
 .unit-count { display: inline-flex; align-items: center; gap: calc(1px * var(--u)); font-variant-numeric: tabular-nums; }
 .unit-count.none { opacity: .45; }
 .wl-report { gap: calc(4px * var(--u)); }

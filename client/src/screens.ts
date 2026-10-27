@@ -3,6 +3,7 @@ import { botMark, clock, COLOR_CSS, esc, fmt } from './format';
 import type { GameConnection } from './net';
 import type { BotLevel, RoomView, SummaryView } from './types';
 import { loadGuide, type GuideUnit } from './ui/guide';
+import { mountPortrait } from './ui/portraits';
 
 // Plain-HTML screens around the game: home, lobby and the end screen, in the same parchment-and-ribbon
 // look as the in-game UI (ui/ui.css).
@@ -92,8 +93,8 @@ export class LobbyScreen {
         </div>
         <ul class="players" id="players"></ul>
         <div class="deck" id="deck" hidden>
-          <h3>Destem <small id="deck-count"></small></h3>
-          <p class="muted small">Maçta yalnız seçtiğin 4 birliği üretebilirsin. Rakip destene yalnız gözcü raporuyla bakabilir. Seçmezsen rastgele verilir.</p>
+          <h3>Destem <span class="deck-medal" id="deck-count" title="Seçilen birlik"></span></h3>
+          <p class="muted small">Maçta yalnız seçtiğin 4 birliği üretebilirsin. Kartı çevirmek için tıkla, seçmek için <b>Seç</b>'e bas (ya da kartı çift tıkla). Rakip destene yalnız gözcü raporuyla bakabilir. Seçmezsen rastgele verilir.</p>
           <div class="deck-cards" id="deck-cards"></div>
         </div>
         <div class="me">
@@ -122,6 +123,8 @@ export class LobbyScreen {
         this.show(await this.net.setReady(!this.me(this.room!)?.ready));
       } else if (a === 'deckpick') {
         await this.toggleDeck((e.target as HTMLElement).closest<HTMLElement>('[data-unit]')!.dataset.unit!);
+      } else if (a === 'flip') {
+        (e.target as HTMLElement).closest<HTMLElement>('.ucard')!.classList.toggle('flipped');
       } else if (a === 'start') {
         this.show(await this.net.startMatch());
       } else if (a === 'addbot') {
@@ -130,6 +133,18 @@ export class LobbyScreen {
       } else if (a === 'rmbot') {
         this.show(await this.net.removeBot(Number((e.target as HTMLElement).closest<HTMLElement>('[data-seat]')!.dataset.seat)));
       }
+    });
+    // A click on the card itself turns it over; a double click picks it.
+    this.q('#deck-cards').addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      if (t.closest('button')) return;
+      t.closest<HTMLElement>('.ucard')?.classList.toggle('flipped');
+    });
+    this.q('#deck-cards').addEventListener('dblclick', (e) => {
+      const card = (e.target as HTMLElement).closest<HTMLElement>('.ucard');
+      if (!card || (e.target as HTMLElement).closest('button')) return;
+      card.classList.toggle('flipped'); // the two clicks of the double click turned it twice already: put it as it was
+      void this.toggleDeck(card.dataset.unit!);
     });
     this.update(room);
     void this.setupDeck();
@@ -167,19 +182,53 @@ export class LobbyScreen {
     if (this.deck.length === this.deckSize) this.show(await this.net.setDeck(this.deck));
   }
 
+  /** What a unit does, in words, for the back of its card. */
+  private static role(u: GuideUnit): string {
+    if (u.heal) return `Saldırmaz; her ${u.healInterval} sn'de en yaralı dostuna ${u.heal} can verir. Arka sırada durur.`;
+    if (u.backFirst) return 'Düşmanın arka sırasını döver, iki hedefe sıçrar. Kuşanırken ' + (u.people ?? 2) + ' kişi harcar.';
+    if (u.flank) return `Arkadaki okçu, mancınık ve keşişe dalar. ×${u.speedFactor ?? 2} hızlı; tek başına tarla yakar.`;
+    if (u.back) return 'Arka sıradan ateş eder; öndekiler onu korur.';
+    return 'Ön sırada dövüşür ve arkadakileri korur.';
+  }
+
   private renderDeck(): void {
-    const describe = (u: GuideUnit) => [
-      u.heal ? `her ${u.healInterval} sn'de ${u.heal} can iyileştirir` : `${Math.round(u.dps * 10) / 10} hasar/sn`,
-      `${u.hp} can`,
-      u.backFirst ? 'düşmanın arka sırasını döver' : u.flank ? 'okçu ve mancınığa dalar' : u.back ? 'arka sıra' : 'ön sıra',
-      u.speedFactor && u.speedFactor > 1 ? `×${u.speedFactor} hız, tek başına tarla yakar` : '',
-      u.people && u.people > 1 ? `${u.people} kişi harcar` : '',
-    ].filter(Boolean).join(' · ');
-    this.q('#deck-count').textContent = `${this.deck.length} / ${this.deckSize}`;
-    this.q('#deck-cards').innerHTML = this.deckUnits.map((u) => `
-      <button class="btn deck-card${this.deck.includes(u.id) ? ' on' : ''}" data-a="deckpick" data-unit="${u.id}" aria-pressed="${this.deck.includes(u.id)}">
-        <b>${esc(u.name)}</b><small>${esc(describe(u))}</small>
-      </button>`).join('');
+    const box = this.q('#deck-cards');
+    const full = this.deck.length >= this.deckSize;
+    if (box.childElementCount === 0) {
+      const color = this.room?.players.find((p) => p.seat === this.mySeat)?.color ?? 'blue';
+      box.innerHTML = this.deckUnits.map((u) => `
+        <div class="ucard" data-unit="${u.id}">
+          <div class="ucard-inner">
+            <div class="ucard-face front">
+              <span class="ucard-check" aria-hidden="true">✓</span>
+              <div class="ucard-art"><canvas width="128" height="112"></canvas></div>
+              <b class="ucard-name">${esc(u.name)}</b>
+              <span class="ucard-tag">${u.heal ? 'destek' : u.flank ? 'baskıncı' : u.backFirst ? 'kuşatma' : u.back ? 'menzilli' : 'yakın dövüş'}</span>
+              <span class="ucard-btns"><button class="btn small" data-a="flip" title="Kartı çevir">Çevir</button><button class="btn small ucard-pick" data-a="deckpick" aria-pressed="false">Seç</button></span>
+            </div>
+            <div class="ucard-face back">
+              <b class="ucard-name">${esc(u.name)}</b>
+              <dl>
+                <dt>Can</dt><dd>${u.hp}</dd>
+                <dt>${u.heal ? 'İyileştirme' : 'Hasar'}</dt><dd>${u.heal ? `${u.heal} / ${u.healInterval} sn` : `${Math.round(u.dps * 10) / 10} / sn`}</dd>
+              </dl>
+              <p class="ucard-role">${esc(LobbyScreen.role(u))}</p>
+              <p class="ucard-vs"><span class="good">Yener</span> ${esc(u.strong.join(', ') || '—')}</p>
+              <p class="ucard-vs"><span class="bad">Korkar</span> ${esc(u.weak.join(', ') || '—')}</p>
+              <span class="ucard-btns"><button class="btn small" data-a="flip" title="Kartı çevir">Geri</button><button class="btn small ucard-pick" data-a="deckpick" aria-pressed="false">Seç</button></span>
+            </div>
+          </div>
+        </div>`).join('');
+      box.querySelectorAll<HTMLElement>('.ucard').forEach((card) => mountPortrait(card.querySelector('canvas')!, card.dataset.unit!, color));
+    }
+    this.q('#deck-count').textContent = `${this.deck.length}/${this.deckSize}`;
+    this.q('#deck-count').classList.toggle('done', full);
+    box.querySelectorAll<HTMLElement>('.ucard').forEach((card) => {
+      const on = this.deck.includes(card.dataset.unit!);
+      card.classList.toggle('on', on);
+      card.classList.toggle('dim', full && !on);
+      card.querySelectorAll<HTMLButtonElement>('.ucard-pick').forEach((b) => { b.textContent = on ? 'Seçili' : 'Seç'; b.setAttribute('aria-pressed', String(on)); b.disabled = full && !on; });
+    });
   }
 
   update(room: RoomView): void {
