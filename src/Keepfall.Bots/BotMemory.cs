@@ -41,6 +41,9 @@ public sealed class BotMemory(BotLevelRules level)
     /// <summary>When a battle that is not ours was last seen at a rival's gate (it is being besieged by somebody else).</summary>
     public Dictionary<int, double> GateFights { get; } = [];
 
+    /// <summary>When the bot last sent riders to burn fields.</summary>
+    public double RaidAt { get; set; } = double.NegativeInfinity;
+
     /// <summary>The unit type that does best against the rivals' soldiers as the reports show them, worked out at <see cref="CounterAt"/>.</summary>
     public string? CounterPick { get; set; }
     public double CounterAt { get; set; } = double.NegativeInfinity;

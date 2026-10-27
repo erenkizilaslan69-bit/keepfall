@@ -1,0 +1,40 @@
+
+2. Ekonomi ve ordu
+──────────────────
+   Zorluk  Nüfus savaş başı  Asker savaş başı  Zirve nüfus  Son nüfus  Son asker  Paralı oranı savaş başı  Paralı oranı maç sonu  En büyük saldırı ordusu  Ort. saldırı ordusu
+   ------  ----------------  ----------------  -----------  ---------  ---------  -----------------------  ---------------------  -----------------------  -------------------
+   Kolay               39,4              18,3         44,0       36,8       18,1                    %35,4                  %29,8                       29                 14,2
+   Nüfus/asker savaş başlarken (hazırlığın sonu), zirve ve maç sonu; askerler yoldakiler dahil.
+
+3. Savaş
+────────
+   Zorluk  Kale saldırısı/maç  Pusu/maç  Ölen asker  Öldürülen düşman  Savunma tepkisi/maç  Yeni hedefe yönelme/maç
+   ------  ------------------  --------  ----------  ----------------  -------------------  -----------------------
+   Kolay                 0,68      0,00        12,4              21,6                  0,1                     0,00
+   Maç başına: kale savaşı 0,89 · yol savaşı 0,73
+
+4. Orman
+────────
+   Zorluk  Kazanılan altın  Harcanan altın  Paralı asker  Köy yağması  Kamp saldırısı  Büyük kamp  Gözcü sandığı  Casusluk
+   ------  ---------------  --------------  ------------  -----------  --------------  ----------  -------------  --------
+   Kolay               305             291           9,8          3,2             2,4        0,00            8,7       3,5
+   Maç sonunda kullanılmış yerler: sandık %99,7 · köy %98,3 · küçük kamp %81,4 · büyük kamp %0,5
+   Kamp savaşlarının kazanılma oranı: %99,4 (656 savaş)
+
+5. Kazananın stratejisi
+───────────────────────
+   Strateji                             Koltuk  Kazanan  Kazanma oranı  Kazananlar içinde pay
+   -----------------------------------  ------  -------  -------------  ---------------------
+   ormancı (köy+kamp ≥ 4, altın ≥ 150)     342      181          %52,9                  %87,0
+   paralı (≥ 6 kiralık)                    389      204          %52,4                  %98,1
+   saldırgan (≥ 1 kale saldırısı)          217      126          %58,1                  %60,6
+   savunmacı (hiç saldırmadı)              183       82          %44,8                  %39,4
+   pusucu (≥ 1 pusu)                         0        0              —                   %0,0
+   büyük ordu (savaşa ≥ 15 asker)          365      194          %53,2                  %93,3
+   Berabere biten maçta (süre sonunda en çok nüfus aynıysa) birden çok kazanan sayılır.
+
+Özet
+────
+  ! Büyük kamp hemen hiç temizlenmiyor (%0,5).
+
+Süre: 13,8 sn

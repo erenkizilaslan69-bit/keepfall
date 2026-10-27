@@ -1,0 +1,30 @@
+   Zorluk  Kale saldırısı/maç  Pusu/maç  Ölen asker  Öldürülen düşman  Savunma tepkisi/maç  Yeni hedefe yönelme/maç
+   ------  ------------------  --------  ----------  ----------------  -------------------  -----------------------
+   Orta                  1,23      0,00        19,6              28,8                  4,6                     0,00
+   Maç başına: kale savaşı 2,43 · yol savaşı 0,00
+
+4. Orman
+────────
+   Zorluk  Kazanılan altın  Harcanan altın  Paralı asker  Köy yağması  Kamp saldırısı  Büyük kamp  Gözcü sandığı  Casusluk
+   ------  ---------------  --------------  ------------  -----------  --------------  ----------  -------------  --------
+   Orta                302             296           9,7          2,0             1,5        0,06            6,7       4,0
+   Maç sonunda kullanılmış yerler: sandık %95,1 · köy %98,1 · küçük kamp %73,3 · büyük kamp %11,5
+   Kamp savaşlarının kazanılma oranı: %100,0 (609 savaş)
+
+5. Kazananın stratejisi
+───────────────────────
+   Strateji                             Koltuk  Kazanan  Kazanma oranı  Kazananlar içinde pay
+   -----------------------------------  ------  -------  -------------  ---------------------
+   ormancı (köy+kamp ≥ 4, altın ≥ 150)     200      186          %93,0                  %91,6
+   paralı (≥ 6 kiralık)                    200      186          %93,0                  %91,6
+   saldırgan (≥ 1 kale saldırısı)          200      186          %93,0                  %91,6
+   savunmacı (hiç saldırmadı)              200       17           %8,5                   %8,4
+   pusucu (≥ 1 pusu)                         0        0              —                   %0,0
+   büyük ordu (savaşa ≥ 15 asker)          387      203          %52,5                 %100,0
+   Berabere biten maçta (süre sonunda en çok nüfus aynıysa) birden çok kazanan sayılır.
+
+Özet
+────
+  Eşik dışında kalan bir şey yok.
+
+Süre: 26,5 sn

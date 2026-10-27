@@ -46,6 +46,10 @@ public static class Tactics
         return army;
     }
 
+    /// <summary>An army of nothing but raiders (cavalry): it burns fields, it does not take a castle.</summary>
+    public static bool IsRaid(BotContext ctx, Keepfall.Views.ArmyView army) =>
+        army.Units.Any(u => u.Count > 0) && army.Units.Where(u => u.Count > 0).All(u => ctx.Rules.FindUnit(u.UnitId)?.Raider == true);
+
     public static ArmySetup Setup(BotContext ctx, string name, IReadOnlyDictionary<string, int> units)
     {
         var army = new ArmySetup(name);

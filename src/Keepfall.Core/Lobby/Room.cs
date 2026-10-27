@@ -336,12 +336,11 @@ public sealed class Room
         Phase = RoomPhase.Preparation;
     }
 
-    /// <summary>A bot's deck: easy ones pick at random; the others from the balanced decks of the config (the four first units when there are none).</summary>
+    /// <summary>A bot's deck: one of the balanced decks of the config at every difficulty (the four first units when there are none); how well it plays comes from its play style.</summary>
     private IReadOnlyList<string> BotDeck(BotDifficulty level, Random rng)
     {
         if (Options.BotDeck is { } fixedDeck) return fixedDeck;
         var decks = _rules.Bots.Decks;
-        if (level == BotDifficulty.Easy) return _rules.RandomDeck(rng);
         if (decks is { Count: > 0 }) return decks[rng.Next(decks.Count)];
         return _rules.Units.Take(_rules.Deck.Size).Select(u => u.Id).ToList();
     }

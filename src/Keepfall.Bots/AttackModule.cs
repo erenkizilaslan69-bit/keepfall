@@ -18,7 +18,7 @@ public sealed class AttackModule : IBotModule
         var c = ctx.Castle;
         bool medium = ctx.Level.Calculates;
         if (medium && Regroup(ctx)) return;
-        if (c.War.Armies.Any(a => a.SiteId is null && a.Mode == ArmyMode.Attack && a.State == ArmyState.Marching)) return; // one assault at a time
+        if (c.War.Armies.Any(a => a.SiteId is null && a.Mode == ArmyMode.Attack && a.State == ArmyState.Marching && !Tactics.IsRaid(ctx, a))) return; // one assault at a time (a raid of riders does not count)
 
         var botRules = ctx.Rules.Bots;
         double maxAge = medium ? botRules.StaleReportSeconds : 400;
@@ -115,7 +115,7 @@ public sealed class AttackModule : IBotModule
     {
         var c = ctx.Castle;
         var rules = ctx.Rules.Bots;
-        var army = c.War.Armies.FirstOrDefault(a => a.SiteId is null && a.State == ArmyState.Returning && !a.Fighting && a.Distance > 0.5);
+        var army = c.War.Armies.FirstOrDefault(a => a.SiteId is null && a.State == ArmyState.Returning && !a.Fighting && a.Distance > 0.5 && !Tactics.IsRaid(ctx, a));
         if (army is null) return false;
         var units = army.Units.Where(u => u.Count > 0).ToDictionary(u => u.UnitId, u => u.Count);
         int total = units.Values.Sum();
