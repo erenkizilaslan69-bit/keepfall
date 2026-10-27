@@ -20,10 +20,14 @@ export class Fog {
   private readonly block: Phaser.GameObjects.Image;
   private lastDraw = 0;
 
-  constructor(scene: Phaser.Scene, mapSize: number) {
-    const size = Math.ceil((mapSize * TILE) / SCALE);
+  /** The fog texture's top-left corner (scene px): it reaches <paramref name="pad"/> tiles beyond the map, over the sea too, so the water never changes shade at the map's edge. */
+  private readonly base: { x: number; y: number };
+
+  constructor(scene: Phaser.Scene, mapSize: number, pad = 0) {
+    const size = Math.ceil(((mapSize + 2 * pad) * TILE) / SCALE);
     const topLeft = toWorld({ x: 0, y: 0 });
-    this.rt = scene.add.renderTexture(topLeft.x, topLeft.y, size, size).setOrigin(0).setScale(SCALE).setDepth(DEPTH);
+    this.base = { x: topLeft.x - pad * TILE, y: topLeft.y - pad * TILE };
+    this.rt = scene.add.renderTexture(this.base.x, this.base.y, size, size).setOrigin(0).setScale(SCALE).setDepth(DEPTH);
     this.hole = scene.make.image({ key: Fog.holeTexture(scene), add: false });
     this.block = scene.make.image({ key: '__WHITE', add: false }).setOrigin(0);
   }
@@ -41,7 +45,7 @@ export class Fog {
     const now = performance.now();
     if (!force && now - this.lastDraw < REDRAW_MS) return;
     this.lastDraw = now;
-    const topLeft = toWorld({ x: 0, y: 0 });
+    const topLeft = this.base;
     this.rt.clear().fill(FOG_COLOR, FOG_ALPHA);
     const open = (c: { center: Vec; radius: number }, alpha: number) => {
       const p = toWorld(c.center);

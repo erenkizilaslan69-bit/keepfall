@@ -26,6 +26,8 @@ import { Workers } from './Workers';
 const MAX_ZOOM = 1.5;
 /** Open water all round the map (tiles), so the camera can centre a castle that sits in a corner. Roads and coordinates are untouched. */
 const WATER_PAD = 14;
+/** The sea is drawn (and fogged) this many tiles beyond the map: far more than any window can show, even zoomed all the way out. */
+const WATER_FAR = 90;
 const PAN_SPEED = 900; // px per second at zoom 1 (keyboard)
 // Things stand in front of each other by their y; parts of the map lie at negative y, so the ground
 // layers sit far below anything that can stand on them.
@@ -157,7 +159,7 @@ export class WorldScene extends Phaser.Scene {
     this.sites = new SiteLayer(this, this.labels, (id) => this.select({ kind: 'site', id }));
     this.movers.onSelect = (t) => this.select(t);
     this.movers.inReplay = (at) => this.battles?.active.some((b) => Math.hypot(b.at.x - at.x, b.at.y - at.y) < 2.5) ?? false;
-    this.fog = new Fog(this, this.layout.size);
+    this.fog = new Fog(this, this.layout.size, WATER_FAR);
     this.fx = new Effects(this);
     this.battles = new BattlePlayer(this, this.color, () => this.gameNow(), (seat) => this.courtyardOf(seat), this.fx);
     for (const b of this.pendingBattles) this.battles.start(b);
@@ -531,7 +533,7 @@ export class WorldScene extends Phaser.Scene {
   private drawGround(): Phaser.Tilemaps.TilemapLayer {
     const topLeft = toWorld({ x: 0, y: 0 });
     const cols = this.layout.size, rows = this.layout.size;
-    this.add.tileSprite(topLeft.x - WATER_PAD * TILE, topLeft.y - WATER_PAD * TILE, (cols + 2 * WATER_PAD) * TILE, (rows + 2 * WATER_PAD) * TILE, 'water')
+    this.add.tileSprite(topLeft.x - WATER_FAR * TILE, topLeft.y - WATER_FAR * TILE, (cols + 2 * WATER_FAR) * TILE, (rows + 2 * WATER_FAR) * TILE, 'water')
       .setOrigin(0).setDepth(DEPTH_WATER);
     const data = Array.from({ length: rows }, (_, y) => Array.from({ length: cols }, (_, x) => {
       if (x === 0 || y === 0 || x === cols - 1 || y === rows - 1) return -1;
