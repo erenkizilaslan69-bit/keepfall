@@ -53,7 +53,7 @@ public sealed record BattleReportView(
     BattleWinner Winner, bool YouWon, bool DefenderEliminated,
     BattleKind Kind, LootView? Loot = null);
 /// <summary>What the army that brought a castle down took from it.</summary>
-public sealed record LootView(int Food, int Wood, int Iron, int Gold, int People);
+public sealed record LootView(int Food, int Wood, int Iron, int Gold, int People, int Prisoners = 0);
 public sealed record DefenseView(IReadOnlyDictionary<string, Row> Rows, string? ArcherPriority);
 public sealed record WarView(
     bool Famine, double FamineStartsIn,
@@ -207,7 +207,7 @@ public static class ViewMapper
                 return new BattleReportView(b.Id, b.At, attacking, opponent?.Seat ?? 0, bandits ? "Haydutlar" : opponent?.Name ?? "?",
                     bandits ? PlayerColor.Black : opponent?.Color ?? PlayerColor.Blue, Lines(b.AttackerUnits), Lines(b.DefenderUnits), b.Winner, youWon,
                     b.DefenderEliminated, b.Kind,
-                    b.Loot is { } l ? new LootView(l.Food, l.Wood, l.Iron, l.Gold, l.People) : null);
+                    b.Loot is { } l ? new LootView(l.Food, l.Wood, l.Iron, l.Gold, l.People, l.Prisoners) : null);
             }).ToList(),
             new DefenseView(c.DefenseRows.ToDictionary(kv => kv.Key.Id, kv => kv.Value), c.DefensePriority?.Id));
     }

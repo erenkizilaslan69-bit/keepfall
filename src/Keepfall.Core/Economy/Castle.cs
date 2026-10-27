@@ -210,6 +210,14 @@ public sealed class Castle
         }
     }
 
+    /// <summary>Prisoners of a fallen castle join the army that took it, which is still away: they count and eat as soldiers on the road.</summary>
+    internal void AddPrisoners(IReadOnlyDictionary<UnitType, int> prisoners)
+    {
+        foreach (var (type, n) in prisoners) _away[type] += n;
+        SoldiersAway += prisoners.Values.Sum();
+        Stats.PeakPopulation = Math.Max(Stats.PeakPopulation, Population);
+    }
+
     /// <summary>A returning army is home: its soldiers can defend again.</summary>
     internal void ArmyReturned(IReadOnlyDictionary<UnitType, int> survivors)
     {

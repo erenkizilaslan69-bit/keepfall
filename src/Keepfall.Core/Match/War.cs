@@ -108,12 +108,12 @@ public sealed record BattleUnitLine(string UnitId, string Name, int Count, int L
 /// armies exactly as they fought.
 /// </summary>
 /// <summary>What the army that brought a castle down took from it (whole units).</summary>
-public sealed record FallLoot(int Food, int Wood, int Iron, int Gold, int People)
+public sealed record FallLoot(int Food, int Wood, int Iron, int Gold, int People, int Prisoners = 0)
 {
-    /// <summary>"+120 yemek, +40 altın, +4 kişi": only what there is.</summary>
+    /// <summary>"+120 yemek, +40 altın, +4 kişi, +3 esir": only what there is.</summary>
     public string Describe() => string.Join(", ", new[]
     {
-        (Food, "yemek"), (Wood, "odun"), (Iron, "demir"), (Gold, "altın"), (People, "kişi"),
+        (Food, "yemek"), (Wood, "odun"), (Iron, "demir"), (Gold, "altın"), (People, "kişi"), (Prisoners, "esir"),
     }.Where(x => x.Item1 > 0).Select(x => $"+{x.Item1} {x.Item2}"));
 }
 

@@ -676,6 +676,48 @@ public class WarTests
     }
 
     [Fact]
+    public void Half_of_the_defending_army_is_taken_prisoner_when_the_castle_falls_and_walks_home_as_soldiers()
+    {
+        Assert.Equal(0.5, Rules.War.PrisonerShare);
+        var game = War(players: 3);
+        game.CastleOf(A)!.AddSoldiers(Sword, 30);
+        game.CastleOf(B)!.AddSoldiers(Spear, 4);
+        game.CastleOf(B)!.AddSoldiers(Shield, 3);
+        int popBefore = game.CastleOf(A)!.Population;
+        Ok(game.Execute(A, Attack(B, (Sword, 30))));
+        RunUntilReports(game, B);
+
+        Assert.True(game.IsEliminated(B));
+        var army = game.ArmiesOf(A).Single();
+        var report = Assert.Single(game.BattlesOf(A));
+        Assert.Equal(2 + 2, report.Loot!.Prisoners); // half of 4 spearmen and half of 3 shield bearers (1,5 rounds up)
+        int survivors = report.AttackerUnits.Sum(u => u.Count - u.Lost);
+        Assert.Equal(survivors + 4, army.Size); // they walk with the army, as its soldiers
+        Assert.Equal(survivors + 4, game.CastleOf(A)!.SoldiersAway);
+        Assert.Equal(popBefore - report.AttackerUnits.Sum(u => u.Lost) + 4, game.CastleOf(A)!.Population);
+        Assert.Contains(army.Units.Concat(army.Survivors), kv => kv.Key == Spear);
+
+        RunUntilHome(game, A);
+        var home = game.CastleOf(A)!;
+        Assert.Equal(2, home.Soldiers[Spear]);
+        Assert.Equal(2, home.Soldiers[Shield]);
+        Assert.Equal(0, home.SoldiersAway);
+        Assert.Contains("+4 esir", game.TakeNotifications(A).Single(n => n.Kind == NotificationKind.LootHome).Detail);
+    }
+
+    [Fact]
+    public void An_attack_that_fails_takes_no_prisoners()
+    {
+        var game = War(players: 3);
+        game.CastleOf(A)!.AddSoldiers(Archer, 2);
+        game.CastleOf(B)!.AddSoldiers(Shield, 10);
+        Ok(game.Execute(A, Attack(B, (Archer, 2))));
+        RunUntilReports(game, A);
+        Assert.Null(Assert.Single(game.BattlesOf(A)).Loot);
+        Assert.Equal(0, game.CastleOf(A)!.Soldiers[Shield]);
+    }
+
+    [Fact]
     public void An_eliminated_players_marching_army_still_fights_then_disbands()
     {
         var game = War(players: 3);

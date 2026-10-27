@@ -1053,14 +1053,15 @@ public sealed class GameState
             fell = b.Winner == BattleWinner.Attacker;
         }
 
-        var loot = fell ? PlunderFallen(a, defender) : null;
+        var prisoners = fell ? TakePrisoners(b, attacker) : new Dictionary<UnitType, int>();
+        var loot = fell ? PlunderFallen(a, defender, prisoners.Values.Sum()) : null;
         var report = new BattleReport(b.Id, ElapsedSeconds, a.From, b.Defender,
             Lines(b.AttackerUnits, attackLost), Lines(b.DefenderUnits, defendLost), b.Winner, fell, b.Kind, loot);
         _battles.Add(report);
         Notify(a.From, new GameNotification(NotificationKind.BattleFought, b.Defender, ElapsedSeconds, BattleId: report.Id));
         Notify(b.Defender, new GameNotification(NotificationKind.BattleFought, a.From, ElapsedSeconds, BattleId: report.Id));
 
-        if (b.Kind == BattleKind.Siege) SendHome(a, b.AttackerSurvivors);
+        if (b.Kind == BattleKind.Siege) SendHome(a, Merge(b.AttackerSurvivors, prisoners));
         else
         {
             GoOn(a, b.AttackerSurvivors);
@@ -1069,8 +1070,32 @@ public sealed class GameState
         if (fell) Eliminate(b.Defender);
     }
 
+    /// <summary>
+    /// A castle fell: this share of the army that defended its gate (the soldiers who fought, whether they came out of it or not) is taken prisoner and
+    /// becomes soldiers of the conqueror, of the same kinds. They walk home with its army, eat and count as population from that moment.
+    /// </summary>
+    private Dictionary<UnitType, int> TakePrisoners(ActiveBattle b, Castle conqueror)
+    {
+        var taken = new Dictionary<UnitType, int>();
+        if (Rules.War.PrisonerShare <= 0) return taken;
+        foreach (var (type, n) in b.DefenderUnits)
+        {
+            int k = Math.Min(n, (int)Math.Round(n * Rules.War.PrisonerShare, MidpointRounding.AwayFromZero));
+            if (k > 0) taken[type] = k;
+        }
+        conqueror.AddPrisoners(taken);
+        return taken;
+    }
+
+    private static Dictionary<UnitType, int> Merge(IReadOnlyDictionary<UnitType, int> a, IReadOnlyDictionary<UnitType, int> b)
+    {
+        var all = a.ToDictionary(kv => kv.Key, kv => kv.Value);
+        foreach (var (type, n) in b) all[type] = all.GetValueOrDefault(type) + n;
+        return all;
+    }
+
     /// <summary>The castle fell: the army that brought it down carries a share of its stores, gold and people home.</summary>
-    private FallLoot PlunderFallen(ArmyMarch a, Castle fallen)
+    private FallLoot PlunderFallen(ArmyMarch a, Castle fallen, int prisoners)
     {
         var (food, wood, iron, gold, workers) = fallen.Plunder(Rules.War.FallLootShare, Rules.War.FallWorkerShare);
         a.LootFood += food;
@@ -1078,7 +1103,7 @@ public sealed class GameState
         a.LootIron += iron;
         a.LootGold += gold;
         a.LootPeople += workers;
-        return a.FallLoot = new FallLoot(food, wood, iron, gold, workers);
+        return a.FallLoot = new FallLoot(food, wood, iron, gold, workers, prisoners);
     }
 
     /// <summary>
