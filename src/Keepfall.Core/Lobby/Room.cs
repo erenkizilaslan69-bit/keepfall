@@ -145,6 +145,7 @@ public sealed class Room
                 // The goods and the message are in the letter (the receiver's picture), not in this text.
                 NotificationKind.EnvoyArrived => $"{ColorGenitive(other?.Color)} ulağı kaleye geldi: yük ve mesaj fermanda.",
                 NotificationKind.EnvoyDelivered => "Ulağın ulaştı.",
+                NotificationKind.FieldsBurned => $"{ColorGenitive(other?.Color)} süvarileri tarlalarını yaktı!",
                 NotificationKind.LootHome => $"{ColorAblative(other?.Color)} aldığın ganimet kaleye ulaştı: {n.Detail}.",
                 _ => n.Kind.ToString(),
             };
@@ -167,6 +168,9 @@ public sealed class Room
             return report.Winner == BattleWinner.Draw ? $"Yolda {them} ordusuyla çarpıştın: berabere."
                 : won ? $"Yolda {them} ordusunu yendin!" : $"Yolda {them} ordusuna yenildin.";
         }
+        if (report.Raid)
+            return attacking ? $"Süvari baskının {them} kalesinde kazandı: tarlaları yaktın (kale düşmez)."
+                : $"{them} süvarileri kapıda kazandı ve tarlalarını yaktı: yemek üretimin bir süre yarıya iner.";
         return (attacking, report.Winner) switch
         {
             (true, BattleWinner.Attacker) => $"{them} kalesine saldırın kazandı: kaleyi düşürdün!",

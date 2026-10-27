@@ -98,6 +98,8 @@ public enum NotificationKind
     Eliminated,
     /// <summary>The army that brought OtherPlayer's castle down is home with its loot (Detail says what).</summary>
     LootHome,
+    /// <summary>OtherPlayer's cavalry raid won at our gate and burnt our fields.</summary>
+    FieldsBurned,
     /// <summary>OtherPlayer's envoy arrived at our castle.</summary>
     EnvoyArrived,
     /// <summary>Our envoy reached OtherPlayer.</summary>

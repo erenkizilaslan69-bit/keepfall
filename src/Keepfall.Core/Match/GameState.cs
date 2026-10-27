@@ -167,6 +167,10 @@ public sealed class GameState
     /// <summary>How long an army needs from one castle to another (one way).</summary>
     public double MarchSeconds(string from, string to) => RouteBetween(from, to).Length / Rules.Map.ArmySpeed;
 
+    /// <summary>An army walks as fast as its slowest unit (cavalry alone: twice the usual).</summary>
+    private double SpeedOf(IReadOnlyDictionary<UnitType, int> units) =>
+        Rules.Map.ArmySpeed * units.Where(kv => kv.Value > 0).Select(kv => kv.Key.SpeedFactor).DefaultIfEmpty(1).Min();
+
     /// <summary>How long a scout needs from one castle to another (one way).</summary>
     public double ScoutSeconds(string from, string to) => RouteBetween(from, to).Length / Rules.Map.ScoutSpeed;
     public bool IsEliminated(string playerKey) => _eliminated.ContainsKey(playerKey);
@@ -327,13 +331,13 @@ public sealed class GameState
         foreach (var (key, p) in _players)
         {
             if (_eliminated.ContainsKey(key)) continue; // a fallen castle's economy stops
-            p.Castle.FoodFactor = foodFactor;
+            p.Castle.FoodFactor = foodFactor * (p.Castle.ScorchLeft > 0 ? Rules.War.RaidBurnFactor : 1);
             p.Castle.Tick(dt);
         }
         ElapsedSeconds += dt;
         AdvanceScouts(dt);
         AdvanceArmies(dt);
-        CheckContinuity(Rules.Map.ArmySpeed * dt + 1e-6);
+        CheckContinuity(Rules.Map.ArmySpeed * Rules.Units.Max(u => u.SpeedFactor) * dt + 1e-6);
         RefreshSight();
         if (Phase == MatchPhase.Ended) return; // the last castle standing ended it
         if (ElapsedSeconds + 1e-9 >= _nextSample) TakeSamples();
@@ -706,7 +710,7 @@ public sealed class GameState
         var sent = player.Castle.DispatchArmy(units);
         if (!sent.Ok) return sent;
         _armies.Add(new ArmyMarch(_nextId++, NewPublicId(), from, c.TargetKey, units, rows, priority, ElapsedSeconds,
-            RouteBetween(from, c.TargetKey), Rules.Map.ArmySpeed, c.Mode));
+            RouteBetween(from, c.TargetKey), SpeedOf(units), c.Mode));
         return CommandResult.Success;
     }
 
@@ -754,7 +758,7 @@ public sealed class GameState
         var sent = player.Castle.DispatchArmy(units);
         if (!sent.Ok) return sent;
         _armies.Add(new ArmyMarch(_nextId++, NewPublicId(), from, $"site:{c.SiteId}", units, rows, priority, ElapsedSeconds,
-            Map.RouteToSite(_corners[from], state.Site), Rules.Map.ArmySpeed) { Site = state });
+            Map.RouteToSite(_corners[from], state.Site), SpeedOf(units)) { Site = state });
         return CommandResult.Success;
     }
 
@@ -1055,7 +1059,7 @@ public sealed class GameState
         attacker.Stats.EnemiesKilled += defendLost.Values.Sum();
         defender.Stats.EnemiesKilled += attackLost.Values.Sum();
 
-        bool fell = false;
+        bool fell = false, raid = false;
         if (b.Opponent is { } o)
         {
             o.Battle = null;
@@ -1064,13 +1068,20 @@ public sealed class GameState
         if (b.Kind == BattleKind.Siege)
         {
             defender.DefendersBack(b.DefenderSurvivors, defendLost);
-            fell = b.Winner == BattleWinner.Attacker;
+            // An attacker that won with nothing but raiders left (cavalry) cannot take the castle: it burns the fields and rides home.
+            raid = b.Winner == BattleWinner.Attacker && b.AttackerSurvivors.Where(kv => kv.Value > 0).All(kv => kv.Key.Raider);
+            fell = b.Winner == BattleWinner.Attacker && !raid;
+            if (raid)
+            {
+                defender.Scorch(Rules.War.RaidBurnSeconds);
+                Notify(b.Defender, new GameNotification(NotificationKind.FieldsBurned, a.From, ElapsedSeconds));
+            }
         }
 
         var prisoners = fell ? TakePrisoners(b, attacker) : new Dictionary<UnitType, int>();
         var loot = fell ? PlunderFallen(a, defender, prisoners.Values.Sum()) : null;
         var report = new BattleReport(b.Id, ElapsedSeconds, a.From, b.Defender,
-            Lines(b.AttackerUnits, attackLost), Lines(b.DefenderUnits, defendLost), b.Winner, fell, b.Kind, loot);
+            Lines(b.AttackerUnits, attackLost), Lines(b.DefenderUnits, defendLost), b.Winner, fell, b.Kind, loot, raid);
         _battles.Add(report);
         Notify(a.From, new GameNotification(NotificationKind.BattleFought, b.Defender, ElapsedSeconds, BattleId: report.Id));
         Notify(b.Defender, new GameNotification(NotificationKind.BattleFought, a.From, ElapsedSeconds, BattleId: report.Id));

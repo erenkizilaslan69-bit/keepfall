@@ -73,7 +73,10 @@
     "fallLootShare": 0.5,
     "fallWorkerShare": 0.3333,
     // Kale düşünce kapıda savaşan savunan ordunun bu kadarı (yarısı) saldıranın askeri olur (esir): türleri korunur, orduyla eve gelir.
-    "prisonerShare": 0.5
+    "prisonerShare": 0.5,
+    // Yalnız baskıncılardan (süvari) oluşan ordu kapıda kazanırsa kale düşmez; tarlalar yanar: yemek üretimi raidBurnSeconds sn boyunca raidBurnFactor katı.
+    "raidBurnSeconds": 60,
+    "raidBurnFactor": 0.5
   },
 
   // Altın (ormandan gelir: sandık, köy, haydut kampı): kale penceresinde birim başına bu fiyata anında asker kiralanır.
@@ -277,7 +280,7 @@
       "buildSeconds": 45,
       "hp": 90, "damage": 9, "attackInterval": 1.0,
       "range": "melee", "row": "front",
-      "flank": true, "speedFactor": 2
+      "flank": true, "speedFactor": 2, "raider": true
     }
   ],
 

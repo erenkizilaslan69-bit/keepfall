@@ -195,6 +195,9 @@ public sealed class WarConfig
     public double FallWorkerShare { get; set; }
     /// <summary>The share of the defenders' army that fought at the gate who join the conqueror as soldiers when a castle falls (0 = none).</summary>
     public double PrisonerShare { get; set; }
+    /// <summary>A raid that wins at a castle burns its fields: food production runs at raidBurnFactor for raidBurnSeconds.</summary>
+    public double RaidBurnSeconds { get; set; } = 60;
+    public double RaidBurnFactor { get; set; } = 0.5;
 }
 
 public sealed class DeckConfig
@@ -273,6 +276,8 @@ public sealed class UnitConfig
     public bool Flank { get; set; }
     /// <summary>Walks this many times as fast as an army on the map (the slowest unit sets an army speed).</summary>
     public double SpeedFactor { get; set; } = 1;
+    /// <summary>An army of nothing but raiders cannot bring a castle down: it burns the rival's fields instead.</summary>
+    public bool Raider { get; set; }
 }
 
 public sealed class CostConfig
@@ -464,7 +469,7 @@ public static class BalanceConfigLoader
                 units.Count, u.Id, string.IsNullOrWhiteSpace(u.Name) ? u.Id : u.Name, u.Phase,
                 new ResourceCost(u.Cost.Iron, u.Cost.Wood, u.Cost.Food, u.Cost.People),
                 u.BuildSeconds, u.Hp, u.Damage, u.AttackInterval, range, row,
-                u.Heal, u.HealInterval, u.SplashTargets, u.SplashFactor, u.BackFirst, u.Flank, u.SpeedFactor));
+                u.Heal, u.HealInterval, u.SplashTargets, u.SplashFactor, u.BackFirst, u.Flank, u.SpeedFactor, u.Raider));
         }
         if (units.Count == 0) errors.Add("units: en az bir birlik tanımlanmalı.");
 
@@ -511,7 +516,7 @@ public static class BalanceConfigLoader
                     i + 1, l.Capacity, l.Multiplier, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList()),
             new ScoutingRules(sc.ReportError, sc.MaxScouts, sc.NoScoutLastPrepSeconds),
             new WarRules(w.FamineStart, w.FamineFoodMultiplier,
-                w.BattlePlayback, w.EncounterRadius, w.FallLootShare, w.FallWorkerShare, w.FamineStartSeconds, w.PrisonerShare),
+                w.BattlePlayback, w.EncounterRadius, w.FallLootShare, w.FallWorkerShare, w.FamineStartSeconds, w.PrisonerShare, w.RaidBurnSeconds, w.RaidBurnFactor),
             new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout, mp.ScoutTrailSeconds),
             config.Mercenary,
             new ForestRules(fo.ChestsPerCorner, fo.VillagesPerCorner, fo.CampsPerCorner, fo.MinSpacing, fo.HubClearing, fo.FootMin, fo.FootMax,

@@ -60,7 +60,7 @@ public sealed record BattleSideView(int Seat, PlayerColor Color, string Name, bo
 public sealed record BattleStartedView(
     string Id, BattleKind Kind, VecView At, VecView Facing, double StartedAt, double Playback, double TickSeconds, int Ticks,
     double FightSeconds, IReadOnlyList<BattleSideView> Sides,
-    IReadOnlyList<int> Hits, IReadOnlyList<int> Deaths, IReadOnlyList<int> Advances, BattleWinner Winner);
+    IReadOnlyList<int> Hits, IReadOnlyList<int> Deaths, IReadOnlyList<int> Advances, BattleWinner Winner, IReadOnlyList<int>? Heals = null);
 
 public static class MapViewMapper
 {
@@ -133,7 +133,7 @@ public static class MapViewMapper
             b.PublicId, b.Kind, VecView.Of(b.Position), VecView.Of(b.Facing), b.StartedAt, game.Rules.War.BattlePlayback,
             record.TickSeconds, record.Ticks, b.FightSeconds,
             [Side(0, b.Attacker.From, true), Side(1, b.Defender, false)],
-            record.HitCount > MaxHits ? [] : record.Hits, record.Deaths, record.Advances, b.Winner);
+            record.HitCount > MaxHits ? [] : record.Hits, record.Deaths, record.Advances, b.Winner, record.Heals);
     }
 
     /// <summary>Battles <paramref name="player"/> fights in that started since the last call.</summary>

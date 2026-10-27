@@ -25,7 +25,8 @@ public sealed record UnitType(
     double SplashFactor = 0,
     bool BackFirst = false,
     bool Flank = false,
-    double SpeedFactor = 1)
+    double SpeedFactor = 1,
+    bool Raider = false)
 {
     /// <summary>Damage per second (0 for a healer).</summary>
     public double Dps => Damage / AttackInterval;

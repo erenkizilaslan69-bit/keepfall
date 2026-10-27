@@ -87,6 +87,9 @@ public sealed class Castle
 
     /// <summary>Food production factor set by the match (famine late in the war); 1 otherwise.</summary>
     public double FoodFactor { get; internal set; } = 1;
+    /// <summary>Seconds left of a raid's burnt fields (food production is cut while it lasts).</summary>
+    public double ScorchLeft { get; private set; }
+    internal void Scorch(double seconds) => ScorchLeft = Math.Max(ScorchLeft, seconds);
     /// <summary>Soldiers marching with an army: they count and eat like soldiers, but do not defend.</summary>
     public int SoldiersAway { get; private set; }
     /// <summary>Soldiers down at the gate in a battle: they cannot be sent or disarmed until it is over.</summary>
@@ -331,6 +334,7 @@ public sealed class Castle
         double iron = ProductionPerMinute(Resource.Iron) / 60 * dt;
         Food += food; Wood += wood; Iron += iron;
         Stats.ProducedFood += food; Stats.ProducedWood += wood; Stats.ProducedIron += iron;
+        if (ScorchLeft > 0) ScorchLeft = Math.Max(0, ScorchLeft - dt);
 
         RunForge(ForgeSpeed * dt);
 
