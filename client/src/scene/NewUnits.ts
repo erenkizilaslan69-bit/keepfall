@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { PlayerColor } from '../types';
-import { catapultCanvas, horsemanCanvas, type TeamName } from './PixelArt';
+import { catapultCanvas, flameCanvas, horsemanCanvas, type TeamName } from './PixelArt';
 
 // The textures and animations of the cavalry and the catapult, made at load time in every player colour that is on the map:
 //   suvari-run (4 gallop frames), suvari-idle, suvari-attack (the Lancer's thrust over the horse),
@@ -26,6 +26,12 @@ function addStrip(scene: Phaser.Scene, name: string, frames: HTMLCanvasElement[]
     frameRate: rate,
     repeat,
   });
+}
+
+/** The camp fire's flame: six frames, 48×64, in a strip texture and an animation named "campfire". */
+export const FLAME_FRAME = { w: 48, h: 64 };
+export function makeCampfire(scene: Phaser.Scene): void {
+  addStrip(scene, 'campfire', [0, 1, 2, 3, 4, 5].map((f) => flameCanvas(f, 6)), FLAME_FRAME.w, FLAME_FRAME.h, 9, -1);
 }
 
 /** A small grey stone for the catapult's throw. */

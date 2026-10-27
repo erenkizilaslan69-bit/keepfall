@@ -3,12 +3,12 @@ import type { UnitView } from '../types';
 import { SHIELD_SCALE, UNIT_SCALE, unitOriginY } from './assets';
 import type { WorldLabels } from '../ui/world-labels';
 import { esc } from '../format';
-import { CASTLE, COURTYARD, type Point } from './layout';
+import { CAMP, type Point } from './layout';
 import { NO_OFFSET } from './parts';
 
-// Soldiers stand in the castle courtyard, one block per unit type from left to right
-// (archers, spearmen, swordsmen, shield bearers). Shield bearers always keep their shield raised
-// (Warrior_Guard) and are drawn a bit larger, so they never read as swordsmen.
+// Soldiers wait in front of the castle around a camp fire, a group for each unit type (the groups sit round the fire in the order of
+// the list), all turned toward the flames. Shield bearers always keep their shield raised (Warrior_Guard) and are drawn a bit larger,
+// so they never read as swordsmen.
 
 interface Look { anim: string; scale: number }
 
@@ -25,46 +25,75 @@ const BLOCK_ORDER = ['okcu', 'mancinik', 'kesis', 'mizrakci', 'kilicli', 'kalkan
 const FALLBACK: Look = { anim: 'pawn-idle', scale: UNIT_SCALE };
 
 const COLS = 3;
-const ROWS = 3;
+const ROWS = 2;
 const PER_BLOCK = COLS * ROWS;
-const COL_GAP = 22;
-/** The courtyard is on top of the castle sprite, which sorts at its base (CASTLE.y). */
-const DEPTH_BASE = CASTLE.y + 1;
+const GAP_X = 22, GAP_Y = 16;
 
 export class Soldiers {
   private blocks = new Map<string, Phaser.GameObjects.Sprite[]>();
+  private fire: Phaser.GameObjects.GameObject[] = [];
 
   /** <paramref name="off"/>: where this castle's corner is; <paramref name="key"/> keeps the signs of several castles apart. */
   constructor(private readonly scene: Phaser.Scene, private readonly labels: WorldLabels,
     private readonly off: Point = NO_OFFSET, private readonly key = '',
-    private readonly k: (key: string) => string = (key) => key) {}
+    private readonly k: (key: string) => string = (key) => key) {
+    this.buildFire();
+  }
 
   destroy(): void {
     for (const sprites of this.blocks.values()) for (const s of sprites) s.destroy();
     for (const id of this.blocks.keys()) this.labels.remove(`soldiers:${this.key}${id}`);
     this.labels.remove(`arming:${this.key}`);
     this.blocks.clear();
+    for (const o of this.fire) o.destroy();
+    this.fire = [];
+  }
+
+  /** The camp fire: ash and stones, two logs, the animated flame and a glow that breathes. */
+  private buildFire(): void {
+    const x = CAMP.x + this.off.x, y = CAMP.y + this.off.y;
+    const g = this.scene.add.graphics().setDepth(y - 1);
+    g.fillStyle(0x2b2018, 0.55).fillEllipse(x, y + 2, 64, 26);
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * Math.PI * 2;
+      const px = x + Math.cos(a) * 30, py = y + 2 + Math.sin(a) * 12;
+      g.fillStyle(0x4a4f57, 1).fillEllipse(px, py + 1, 14, 9);
+      g.fillStyle(0x9aa3ac, 1).fillEllipse(px, py - 1, 12, 7);
+      g.fillStyle(0xc9d0d6, 1).fillEllipse(px - 2, py - 2, 5, 3);
+    }
+    g.lineStyle(7, 0x4b2e1a, 1).lineBetween(x - 20, y + 5, x + 16, y - 3).lineBetween(x + 20, y + 5, x - 14, y - 4);
+    g.lineStyle(3, 0x7a4c2a, 1).lineBetween(x - 20, y + 4, x + 16, y - 4).lineBetween(x + 20, y + 4, x - 14, y - 5);
+    const glow = this.scene.add.ellipse(x, y - 4, 230, 120, 0xffa63a, 0.14).setDepth(y - 2);
+    this.scene.tweens.add({ targets: glow, alpha: 0.26, scaleX: 1.08, scaleY: 1.08, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    const flame = this.scene.add.sprite(x, y + 4, 'campfire').setOrigin(0.5, 0.97).setScale(1.5).setDepth(y + 1);
+    flame.play({ key: 'campfire', startFrame: Phaser.Math.Between(0, 5) });
+    this.fire = [g, glow, flame];
   }
 
   sync(units: UnitView[]): void {
-    // People being armed (workers on their way to becoming soldiers) wait in the courtyard under a sign.
+    // People being armed (workers on their way to becoming soldiers) wait at the fire under a sign.
     const arming = units.reduce((n, u) => n + u.arming, 0);
     if (arming > 0)
       this.labels.set(`arming:${this.key}`, {
-        x: (COURTYARD.left + COURTYARD.right) / 2 + this.off.x, y: COURTYARD.top - 10 + this.off.y, anchor: 'bottom', minZoom: 0.6, cls: 'wl-small',
+        x: CAMP.x + 150 + this.off.x, y: CAMP.y - 100 + this.off.y, anchor: 'bottom', minZoom: 0.6, cls: 'wl-small',
         html: `<div class="wl-sign"><i class="ico ico-sword"></i> Kuşanıyor: <b>${arming}</b></div>`,
       });
     else this.labels.remove(`arming:${this.key}`);
     const ids = [...BLOCK_ORDER.filter((id) => units.some((u) => u.id === id)),
       ...units.map((u) => u.id).filter((id) => !BLOCK_ORDER.includes(id))];
-    const blockWidth = (COURTYARD.right - COURTYARD.left) / Math.max(ids.length, 1);
     ids.forEach((id, i) => {
       const unit = units.find((u) => u.id === id)!;
-      this.syncBlock(id, unit.name, unit.soldiers, COURTYARD.left + blockWidth * (i + 0.5));
+      // Round the fire, the first group at the bottom left, going round.
+      const angle = Math.PI * 0.75 + (i / Math.max(ids.length, 1)) * Math.PI * 2;
+      this.syncBlock(id, unit.name, unit.soldiers, {
+        x: CAMP.x + Math.cos(angle) * CAMP.rx + this.off.x,
+        y: CAMP.y + Math.sin(angle) * CAMP.ry + this.off.y,
+      }, Math.sin(angle) < -0.3);
     });
   }
 
-  private syncBlock(id: string, name: string, count: number, centerX: number): void {
+  /** <paramref name="above"/>: the group is on the far side of the fire, so its sign goes above it (away from the flames). */
+  private syncBlock(id: string, name: string, count: number, centre: Point, above: boolean): void {
     const look = LOOKS[id] ?? FALLBACK;
     const sprites = this.blocks.get(id) ?? [];
     const shown = Math.min(count, PER_BLOCK);
@@ -81,20 +110,19 @@ export class Soldiers {
     }
     this.blocks.set(id, sprites);
 
-    // Fill front row first (closest to the gate), then the rows behind it.
-    const rowGap = (COURTYARD.bottom - COURTYARD.top) / (ROWS - 1);
+    // A little crowd: rows of three; everybody faces the flames.
+    const fireX = CAMP.x + this.off.x;
     sprites.forEach((s, i) => {
       const row = Math.floor(i / COLS), col = i % COLS;
-      const y = COURTYARD.bottom - row * rowGap;
-      // Stagger alternate rows a little so heads don't line up exactly.
-      const x = centerX + (col - (COLS - 1) / 2) * COL_GAP + (row % 2) * 6;
-      s.setPosition(x + this.off.x, y + this.off.y).setDepth(DEPTH_BASE + this.off.y + y / 1000 + 0.00001 * col);
+      const x = centre.x + (col - (COLS - 1) / 2) * GAP_X + (row % 2) * 7;
+      const y = centre.y + (row - (ROWS - 1) / 2) * GAP_Y;
+      s.setPosition(x, y).setDepth(y).setFlipX(x > fireX + 4);
     });
 
-    // Name and the real count on the wall below the block (a block shows at most PER_BLOCK).
+    // Name and the real count under the group (a group shows at most PER_BLOCK).
     if (count > 0)
       this.labels.set(`soldiers:${this.key}${id}`, {
-        x: centerX + this.off.x, y: COURTYARD.bottom + 14 + this.off.y, anchor: 'top', minZoom: 0.6, cls: 'wl-small',
+        x: centre.x, y: above ? centre.y - 40 : centre.y + 24, anchor: above ? 'bottom' : 'top', minZoom: 0.6, cls: 'wl-small',
         html: `<div class="wl-sign"><b>${esc(name)}</b> ${count}</div>`,
       });
     else this.labels.remove(`soldiers:${this.key}${id}`);

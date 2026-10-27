@@ -185,3 +185,31 @@ function toCanvas(s) {
   s.draw(c.getContext('2d'), 0, 0, 1);
   return c;
 }
+
+// A camp fire flame: three tongues of flame (outer orange, middle amber, inner yellow, hot core) that lick up and sway; six frames loop.
+function flame(frame, frames = 6) {
+  const S = new Spr(48, 64);
+  const base = 61, t = frame / frames;
+  const tongue = (cx, h, hw, sway) => {
+    const pts = [[cx - hw, base], [cx - hw * 0.92, base - h * 0.34], [cx - hw * 0.5 + sway * 0.5, base - h * 0.7], [cx + sway, base - h], [cx + hw * 0.5 + sway * 0.5, base - h * 0.7], [cx + hw * 0.92, base - h * 0.34], [cx + hw, base]];
+    return S.poly(pts);
+  };
+  const tongues = [
+    [24, 42 + 6 * Math.sin(Math.PI * 2 * t), 13, 2.5 * Math.sin(Math.PI * 2 * t + 1)],
+    [13, 27 + 7 * Math.sin(Math.PI * 2 * t + 2), 8, 2 * Math.sin(Math.PI * 2 * t + 3)],
+    [35, 25 + 7 * Math.sin(Math.PI * 2 * t + 4), 8, 2 * Math.sin(Math.PI * 2 * t + 5)],
+  ];
+  const layers = [['#d8421c', 1, 0], ['#f39a1c', 0.72, 1], ['#ffd84a', 0.48, 2], ['#fff6c0', 0.24, 3]];
+  for (const [color, k, lift] of layers)
+    for (const [cx, h, hw, sway] of tongues) {
+      const m = S.poly([[cx - hw * k, base - lift], [cx - hw * k * 0.92, base - lift - h * k * 0.34], [cx - hw * k * 0.5 + sway * 0.5, base - lift - h * k * 0.7], [cx + sway * k, base - lift - h * k],
+        [cx + hw * k * 0.5 + sway * 0.5, base - lift - h * k * 0.7], [cx + hw * k * 0.92, base - lift - h * k * 0.34], [cx + hw * k, base - lift]]);
+      S.flat(m, color);
+    }
+  for (let i = 0; i < 3; i++) {
+    const p = (t + i / 3) % 1;
+    S.set(24 + Math.sin(i * 2.1 + t * 6) * 10, 40 - p * 36, p < 0.8 ? '#ffd84a' : '#f39a1c');
+  }
+  return S;
+}
+export function flameCanvas(frame = 0, frames = 6): HTMLCanvasElement { return toCanvas(flame(frame, frames)); }

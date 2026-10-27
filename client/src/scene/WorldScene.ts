@@ -5,9 +5,9 @@ import type { Minimap } from '../minimap';
 import type { Anchor, Target } from '../ui/windows';
 import type { WorldLabels } from '../ui/world-labels';
 import { COLOR_CSS, esc } from '../format';
-import { newUnitArtJobs } from './NewUnits';
+import { makeCampfire, newUnitArtJobs } from './NewUnits';
 import { createAnimations, loadSpectatorAssets, preloadAssets } from './assets';
-import { CASTLE, COURTYARD, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH } from './layout';
+import { CAMP, CASTLE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH } from './layout';
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
 import { buildingSign, placePart, setShadeHook, sign } from './parts';
 import { RegionDisplay } from './RegionDisplay';
@@ -138,6 +138,7 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     createAnimations(this, this.color, [...this.otherColors, 'black']);
+    makeCampfire(this);
     const ground = this.drawGround();
     this.terrain = new Terrain(this, this.layout, this.seed, ground);
     setShadeHook((x, y, w, h) => this.terrain.shade(x, y, w, h));
@@ -242,7 +243,7 @@ export class WorldScene extends Phaser.Scene {
     const region = this.layout.regions.find((r) => r.seat === seat);
     if (!region) return null;
     const o = toWorld(region.origin);
-    return { x: o.x + (COURTYARD.left + COURTYARD.right) / 2, y: o.y + (COURTYARD.top + COURTYARD.bottom) / 2 };
+    return { x: o.x + CAMP.x, y: o.y + CAMP.y };
   }
 
   /** Players who fell: their castle greys out. */
