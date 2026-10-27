@@ -23,6 +23,7 @@ public sealed class BalanceConfig
     public BotsConfig Bots { get; set; } = new();
     public EnvoyConfig Envoy { get; set; } = new();
     public WallsConfig Walls { get; set; } = new();
+    public DeckConfig Deck { get; set; } = new();
     /// <summary>Gold price of hiring one soldier of each unit type (by unit id).</summary>
     public Dictionary<string, double> Mercenary { get; set; } = [];
     public List<UnitConfig> Units { get; set; } = [];
@@ -79,6 +80,8 @@ public sealed class BotsConfig
     public double BlindAfterWarSeconds { get; set; }
     public double GiftThreshold { get; set; } = 30;
     public double GiftPeaceSeconds { get; set; } = 90;
+    /// <summary>Decks (unit ids) Medium and Hard bots pick from; empty: the four first units.</summary>
+    public List<List<string>> Decks { get; set; } = [];
 }
 
 public sealed class BotLevelConfig
@@ -192,6 +195,12 @@ public sealed class WarConfig
     public double FallWorkerShare { get; set; }
     /// <summary>The share of the defenders' army that fought at the gate who join the conqueror as soldiers when a castle falls (0 = none).</summary>
     public double PrisonerShare { get; set; }
+}
+
+public sealed class DeckConfig
+{
+    public bool Enabled { get; set; }
+    public int Size { get; set; } = 4;
 }
 
 public sealed class WallsConfig
@@ -515,9 +524,10 @@ public static class BalanceConfigLoader
             new BotRules(BotLevel(config.Bots.Easy, false), BotLevel(config.Bots.Medium, true), config.Bots.Mix, config.Bots.WeaponsFrom, config.Bots.ArmFrom, config.Bots.ArmyShare,
                 config.Bots.AttackMargin, config.Bots.AttackRate, config.Bots.OtherQuartersFrom,
                 config.Bots.StaleReportSeconds, config.Bots.BlindMargin, config.Bots.BlindRivalShare, config.Bots.BlindAfterWarSeconds,
-                config.Bots.Hard is null ? null : BotLevel(config.Bots.Hard, true), config.Bots.GiftThreshold, config.Bots.GiftPeaceSeconds),
+                config.Bots.Hard is null ? null : BotLevel(config.Bots.Hard, true), config.Bots.GiftThreshold, config.Bots.GiftPeaceSeconds, config.Bots.Decks.Select(d => (IReadOnlyList<string>)d).ToList()),
             new EnvoyRules(config.Envoy.MaxCargo, config.Envoy.MaxMessageLength, config.Envoy.ProfanityFilter),
-            new WallRules(config.Walls.ArcherDefenseBonus));
+            new WallRules(config.Walls.ArcherDefenseBonus),
+            new DeckRules(config.Deck.Enabled, config.Deck.Size));
     }
 
     private static BotLevelRules BotLevel(BotLevelConfig c, bool good) => new(c.ThinkMin, c.ThinkMax, c.ReactMin, c.ReactMax, c.Commands, c.Mistake, c.Slack, c.EcoMistake < 0 ? c.Mistake : c.EcoMistake,

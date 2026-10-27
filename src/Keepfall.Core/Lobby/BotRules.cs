@@ -49,7 +49,7 @@ public sealed record BotLevelRules(double ThinkMin, double ThinkMax, double Reac
 public sealed record BotRules(BotLevelRules Easy, BotLevelRules Medium, IReadOnlyDictionary<string, double> Mix, double WeaponsFrom, double ArmFrom, double ArmyShare,
     double AttackMargin = 1.2, double AttackRate = 0.85, double OtherQuartersFrom = 0.5,
     double StaleReportSeconds = 120, double BlindMargin = 0, double BlindRivalShare = 0.8, double BlindAfterWarSeconds = 0,
-    BotLevelRules? Hard = null, double GiftThreshold = 30, double GiftPeaceSeconds = 90)
+    BotLevelRules? Hard = null, double GiftThreshold = 30, double GiftPeaceSeconds = 90, IReadOnlyList<IReadOnlyList<string>>? Decks = null)
 {
     public static readonly BotRules Default = new(
         new BotLevelRules(6, 10, 8, 15, 2, 0.25, 2, 0.25, false, false, 1, 1, 1, false, 2, 0.1, 1.0, false, false), new BotLevelRules(2, 3, 3, 6, 4, 0.05, 1, 0.05),

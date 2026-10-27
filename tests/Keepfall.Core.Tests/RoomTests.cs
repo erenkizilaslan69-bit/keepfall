@@ -32,6 +32,8 @@ public class RoomTests
         var room = NewRoom();
         var a = Join(room, "Ali");
         var b = Join(room, "Bora");
+        string[] four = ["okcu", "kilicli", "mizrakci", "kalkanli"];
+        Ok(room.SetDeck(a.Token, four)); Ok(room.SetDeck(b.Token, four));
         Ok(room.SetReady(a.Token, true));
         Ok(room.SetReady(b.Token, true));
         Ok(room.Start(a.Token));

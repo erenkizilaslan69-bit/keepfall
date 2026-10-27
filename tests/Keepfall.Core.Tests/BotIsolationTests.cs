@@ -34,7 +34,7 @@ public class BotIsolationTests
         "Keepfall.Core.Match.ArmyMode", "Keepfall.Core.Match.CastleKeys",
         // Plain enums and tables the views are made of.
         "Keepfall.Core.Economy.Job", "Keepfall.Core.Economy.Jobs", "Keepfall.Core.Economy.BuildingType", "Keepfall.Core.Economy.Resource",
-        "Keepfall.Core.Units.Row", "Keepfall.Core.Units.UnitType", "Keepfall.Core.World.Corner", "Keepfall.Core.World.SiteKind",
+        "Keepfall.Core.Units.Row", "Keepfall.Core.Units.ResourceCost", "Keepfall.Core.Economy.DeckRules", "Keepfall.Core.Units.UnitType", "Keepfall.Core.World.Corner", "Keepfall.Core.World.SiteKind",
         "Keepfall.Core.Match.MatchPhase", "Keepfall.Core.Match.MissionKind", "Keepfall.Core.Match.BattleWinner", "Keepfall.Core.Match.BattleKind",
         "Keepfall.Core.Match.ArmyState", "Keepfall.Core.Lobby.PlayerColor", "Keepfall.Core.Lobby.RoomPhase",
         // Public maths: the fight calculator works on rules and armies made up on the spot.

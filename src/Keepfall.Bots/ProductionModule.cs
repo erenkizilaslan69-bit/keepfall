@@ -23,7 +23,7 @@ public sealed class ProductionModule : IBotModule
         if (ctx.ArmyRoom <= 0) return; // enough soldiers for the people we have
         if (ctx.Count(Job.Blacksmith) == 0 && c.Queue.Count > 0) return;
 
-        var mix = ctx.Rules.Bots.Mix;
+        var mix = ctx.Mix;
         double share = mix.Values.Sum();
         var have = c.Units.ToDictionary(u => u.Id, u => ctx.Owned(u.Id));
         int total = have.Values.Sum() + 1;
@@ -47,10 +47,11 @@ public sealed class ProductionModule : IBotModule
         int idle = Math.Min(ctx.Count(Job.Idle), most);
         foreach (var u in ctx.Castle.Units.Where(u => u.Weapons > 0))
         {
-            int n = Math.Min(u.Weapons, idle);
+            int crew = Math.Max(1, ctx.Rules.FindUnit(u.Id)!.Cost.People); // a catapult takes two people
+            int n = Math.Min(u.Weapons, idle / crew);
             if (n <= 0) continue;
             ctx.Wish(70, new ArmWorkers(u.Id, n, Job.Idle));
-            idle -= n;
+            idle -= n * crew;
         }
     }
 }

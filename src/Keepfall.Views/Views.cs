@@ -75,7 +75,7 @@ public sealed record ScoutedUnitView(string UnitId, string Name, int Count);
 public sealed record ScoutBuildingView(BuildingType Type, string Name, int Level);
 public sealed record ScoutReportView(
     int TargetSeat, string TargetName, PlayerColor TargetColor, double ObservedAt, double DeliveredAt,
-    IReadOnlyList<ScoutedUnitView> Soldiers, IReadOnlyList<ScoutBuildingView> Buildings);
+    IReadOnlyList<ScoutedUnitView> Soldiers, IReadOnlyList<ScoutBuildingView> Buildings, IReadOnlyList<string>? Deck = null);
 public sealed record ScoutingView(
     int ScoutsAway, IReadOnlyList<ScoutTargetView> Targets,
     IReadOnlyList<ScoutMissionView> Missions, IReadOnlyList<ScoutReportView> Reports, IReadOnlyList<QuarterView> Quarters, int MaxScouts = 1, bool Locked = false);
@@ -93,7 +93,8 @@ public sealed record CastleView(
     SummaryView? Summary,
     double ArmSeconds = 0,
     IReadOnlyList<LetterView>? Letters = null,
-    EnvoyRulesView? Envoy = null);
+    EnvoyRulesView? Envoy = null,
+    IReadOnlyList<string>? Deck = null);
 
 /// <summary>What an envoy left at our castle: who from, the goods and the message (plain text, shown as plain text). Only ever sent to the receiver.</summary>
 public sealed record LetterView(int Id, int FromSeat, string FromName, PlayerColor FromColor, double At, int Food, int Wood, int Iron, int Gold, string? Message);
@@ -169,7 +170,8 @@ public static class ViewMapper
                 var from = room.PlayerOfCastle(l.From);
                 return new LetterView(l.Id, from?.Seat ?? 0, from?.Name ?? "?", from?.Color ?? PlayerColor.Blue, l.At, l.Food, l.Wood, l.Iron, l.Gold, l.Message);
             }).ToList(),
-            new EnvoyRulesView(game.Rules.Envoy.MaxCargo, game.Rules.Envoy.MaxMessageLength));
+            new EnvoyRulesView(game.Rules.Envoy.MaxCargo, game.Rules.Envoy.MaxMessageLength),
+            c.UnitTypes.Select(u => u.Id).ToList());
     }
 
     private static WarView WarOf(Room room, GameState game, RoomPlayer player, Castle c)
@@ -239,8 +241,8 @@ public static class ViewMapper
                 var target = room.PlayerOfCastle(r.Target);
                 return new ScoutReportView(
                     target?.Seat ?? 0, target?.Name ?? "?", target?.Color ?? PlayerColor.Blue, r.ObservedAt, r.DeliveredAt,
-                    r.Soldiers.Select(u => new ScoutedUnitView(u.UnitId, u.Name, u.Count)).ToList(),
-                    r.BuildingLevels.Select(kv => new ScoutBuildingView(kv.Key, Jobs.Name(kv.Key), kv.Value)).ToList());
+                    r.Soldiers.Where(u => r.Deck is null || r.Deck.Contains(u.UnitId)).Select(u => new ScoutedUnitView(u.UnitId, u.Name, u.Count)).ToList(),
+                    r.BuildingLevels.Select(kv => new ScoutBuildingView(kv.Key, Jobs.Name(kv.Key), kv.Value)).ToList(), r.Deck);
             }).ToList(),
             Enum.GetValues<Corner>().Select(q =>
             {

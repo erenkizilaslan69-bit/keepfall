@@ -15,6 +15,19 @@ public sealed class BotContext(GameRules rules, BotInput input, BotMemory memory
     public GameRules Rules { get; } = rules;
     public BotInput Input { get; } = input;
     public CastleView Castle => Input.Castle;
+
+    /// <summary>The army mix the bot aims for: the config's shares of the units in its deck, scaled to add up to 1.</summary>
+    public IReadOnlyDictionary<string, double> Mix
+    {
+        get
+        {
+            var ids = Castle.Units.Select(u => u.Id).ToList();
+            var shares = ids.ToDictionary(id => id, id => Rules.Bots.Mix.GetValueOrDefault(id));
+            if (shares.Values.Sum() <= 0) shares = ids.ToDictionary(id => id, _ => 1.0);
+            double total = shares.Values.Sum();
+            return shares.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value / total);
+        }
+    }
     public MapStateView? Map => Input.Map;
     public double Now => Input.Now;
     public BotMemory Memory { get; } = memory;
@@ -211,7 +224,7 @@ public sealed class BotContext(GameRules rules, BotInput input, BotMemory memory
         var mine = Castle.Units.ToDictionary(u => u.Id, u => Owned(u.Id));
         string? best = null;
         double bestRate = -1;
-        foreach (var u in Castle.Units.Where(u => Rules.Bots.Mix.ContainsKey(u.Id)).OrderBy(_ => Rng.Next()))
+        foreach (var u in Castle.Units.OrderBy(_ => Rng.Next()))
         {
             var with = new Dictionary<string, int>(mine);
             with[u.Id] += 4;

@@ -112,8 +112,9 @@ public class BotModuleTests
         // Soldiers it forged and armed stay within its share of the people; hired ones come on top.
         int hired = castle.Mercenaries.Values.Sum();
         Assert.True(army - hired <= castle.Population * Rules.Bots.ArmyShare + 1, $"{army - hired} of {castle.Population} people");
-        double share = Rules.Bots.Mix.Values.Sum();
-        foreach (var (id, want) in Rules.Bots.Mix)
+        var deckMix = castle.UnitTypes.ToDictionary(u => u.Id, u => Rules.Bots.Mix[u.Id]);
+        double share = deckMix.Values.Sum();
+        foreach (var (id, want) in deckMix)
         {
             double have = atHome![id] / (double)atHome.Values.Sum();
             Assert.True(have >= want / share - 0.2 && have <= want / share + 0.2, $"{id}: {have:0.00} not near {want / share:0.00} ({string.Join(",", atHome.Select(kv => kv.Key + "=" + kv.Value))})");

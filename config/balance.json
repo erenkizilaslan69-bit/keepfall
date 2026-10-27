@@ -134,7 +134,10 @@
     // Ulakla gelen hediyenin (yük toplamı) bu eşikten fazlasını alan bot, gönderen oyuncuya bu kadar saniye saldırmaz (mesajı yok sayar). Botlar ulak göndermez.
     "giftThreshold": 30,
     "giftPeaceSeconds": 90,
-    "mix": { "kilicli": 0.35, "kalkanli": 0.25, "okcu": 0.25, "mizrakci": 0.15 },
+    // Ordu karışımı payları; bot yalnız destesindeki birimleri kullanır, paylar deste içinde yeniden oranlanır.
+    "mix": { "kilicli": 0.35, "kalkanli": 0.25, "okcu": 0.25, "mizrakci": 0.15, "kesis": 0.1, "mancinik": 0.1, "suvari": 0.2 },
+    // Orta ve Zor botların seçtiği desteler (kolay bot rastgele seçer). Ölçümle belirlenir.
+    "decks": [],
     "weaponsFrom": 0.3,
     "armFrom": 0.75,
     "armyShare": 0.5,
@@ -169,6 +172,10 @@
 
   // Sur: kale canı yok; sur hep en üst seviye görünümünde durur. Saldıran kapıdaki savaşı kazanırsa kale düşer.
   // archerDefenseBonus: kapıyı savunan okçular surun arkasından bu kadar fazla hasar verir (0,25 = +%25).
+  // Deste: maç başında her oyuncu birliklerden size tanesini seçer; yalnız onları üretebilir, kuşanabilir, kiralayabilir.
+  // Rakibin destesi yalnız gözcü raporunda görünür.
+  "deck": { "enabled": true, "size": 4 },
+
   "walls": {
     "archerDefenseBonus": 0.25
   },

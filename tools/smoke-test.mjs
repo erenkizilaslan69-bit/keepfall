@@ -67,6 +67,9 @@ check('A creates, B and C join', ja.ok && jb.ok && jc.ok, ja.error ?? jb.error ?
 check('economy refused in the lobby', !(await B.call('MoveWorkers', 'idle', 'farmer', 1)).ok);
 check('scouting refused in the lobby', !(await A.call('SendScout', 2, 'idle')).ok);
 check('only the host starts', !(await B.call('StartMatch')).ok);
+const FOUR = ['okcu', 'kilicli', 'mizrakci', 'kalkanli'];
+check('a deck needs exactly four different units', !(await A.call('SetDeck', ['okcu', 'okcu', 'kilicli', 'kesis'])).ok && !(await A.call('SetDeck', ['okcu'])).ok && !(await A.call('SetDeck', ['okcu', 'kilicli', 'mizrakci', 'ejderha'])).ok);
+for (const c of [A, B, C]) check('a deck is accepted', (await c.call('SetDeck', FOUR)).ok);
 await A.call('SetReady', true);
 await B.call('SetReady', true);
 await C.call('SetReady', true);
@@ -125,7 +128,7 @@ const report = castlesA.at(-1).scouting.reports.find((r) => r.targetSeat === 2);
 check('A has a report on B', !!report);
 if (report) {
   check('report has only target, time, soldiers, buildings',
-    JSON.stringify(Object.keys(report).sort()) === JSON.stringify(['buildings', 'deliveredAt', 'observedAt', 'soldiers', 'targetColor', 'targetName', 'targetSeat']));
+    JSON.stringify(Object.keys(report).sort()) === JSON.stringify(['buildings', 'deck', 'deliveredAt', 'observedAt', 'soldiers', 'targetColor', 'targetName', 'targetSeat']) && JSON.stringify(report.deck) === JSON.stringify(FOUR));
   check('report soldiers have only id, name and count',
     report.soldiers.every((s) => JSON.stringify(Object.keys(s).sort()) === '["count","name","unitId"]'));
   const seen = report.soldiers.find((s) => s.unitId === 'mizrakci').count;
@@ -285,7 +288,7 @@ await Promise.all([X.ready, Y.ready, Z.ready]);
 const jx = await X.call('CreateRoom', 'Xaver');
 await Y.call('JoinRoom', jx.code, 'Yeter', null, false);
 await Z.call('JoinRoom', jx.code, 'Zeki', null, false);
-for (const c of [X, Y, Z]) await c.call('SetReady', true);
+for (const c of [X, Y, Z]) { await c.call('SetDeck', FOUR); await c.call('SetReady', true); }
 check('second match starts', (await X.call('StartMatch')).ok);
 await X.call('SetSpeed', 20);
 await X.call('MoveWorkers', 'idle', 'blacksmith', 4);
@@ -513,6 +516,7 @@ check('the host cannot remove a human', !(await P.call('RemoveBot', 2)).ok);
 check('the host removes and seats a hard bot instead', (await P.call('RemoveBot', 3)).ok && (await P.call('AddBot', 'hard')).ok);
 await sleep(300);
 check('everyone sees it as a hard bot', Q.of('RoomState').at(-1).players.find((x) => x.isBot)?.botLevel === 'hard');
+await P.call('SetDeck', FOUR); await Q.call('SetDeck', FOUR);
 await P.call('SetReady', true);
 await Q.call('SetReady', true);
 check('a match starts with a bot in it', (await P.call('StartMatch')).ok);
@@ -535,6 +539,7 @@ await Promise.all([H.ready, K.ready]);
 const jh = await H.call('CreateRoom', 'Hasan');
 const jk = await K.call('JoinRoom', jh.code, 'Kemal', null, false);
 check('two humans and two bots take their seats', jh.ok && jk.ok && (await H.call('AddBot', 'medium')).ok && (await H.call('AddBot', 'medium')).ok);
+await H.call('SetDeck', FOUR); await K.call('SetDeck', FOUR);
 await H.call('SetReady', true);
 await K.call('SetReady', true);
 check('the match starts', (await H.call('StartMatch')).ok);

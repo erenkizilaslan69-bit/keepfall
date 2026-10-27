@@ -61,6 +61,8 @@ public sealed class RoomPlayer
     public string Name { get; internal set; }
     public PlayerColor Color => (PlayerColor)(Seat - 1);
     public bool Ready { get; internal set; }
+    /// <summary>The units the player picked for the match (null until they pick; a player who does not gets a random deck). Secret from the other players.</summary>
+    public IReadOnlyList<string>? Deck { get; internal set; }
     public int Connections { get; internal set; }
     public bool Connected => Connections > 0;
     public DateTime? DisconnectedAtUtc { get; internal set; }
@@ -287,6 +289,15 @@ public sealed class Room
         return CommandResult.Success;
     });
 
+    /// <summary>Pick the match's units (exactly <see cref="DeckRules.Size"/> different ones); can be changed until the match starts.</summary>
+    public CommandResult SetDeck(string token, IReadOnlyList<string>? units) => InLobby(token, p =>
+    {
+        if (!_rules.Deck.Enabled) return CommandResult.Fail("Bu maçta deste yok.");
+        if (!_rules.IsValidDeck(units)) return CommandResult.Fail($"Destede tam {_rules.Deck.Size} farklı birlik olmalı.");
+        p.Deck = units!.Select(i => _rules.FindUnit(i)!.Id).ToList();
+        return CommandResult.Success;
+    });
+
     public CommandResult Start(string token) => InLobby(token, p =>
     {
         if (p.Seat != HostSeat) return CommandResult.Fail("Maçı sadece odayı kuran başlatabilir.");
@@ -299,12 +310,28 @@ public sealed class Room
     private void StartGame()
     {
         var keys = _players.Select(x => x.CastleKey).ToList();
+        var deckRng = Options.Seed is { } ds ? new Random(ds + 53) : new Random();
+        IReadOnlyDictionary<string, IReadOnlyList<string>>? decks = null;
+        if (_rules.Deck.Enabled)
+        {
+            foreach (var p in _players) p.Deck ??= p.IsBot ? BotDeck(p.Bot!.Value, deckRng) : _rules.RandomDeck(deckRng);
+            decks = _players.ToDictionary(p => p.CastleKey, p => p.Deck!);
+        }
         if (Options.Seed is { } seed)
             Game = new GameState(_rules, keys, Options.PrepSeconds, Options.WarSeconds, new Random(seed),
-                GameState.AssignCorners(keys, new Random(seed + 17)), Options.ForestSeed ?? new Random(seed + 31).Next());
+                GameState.AssignCorners(keys, new Random(seed + 17)), Options.ForestSeed ?? new Random(seed + 31).Next(), decks);
         else
-            Game = new GameState(_rules, keys, Options.PrepSeconds, Options.WarSeconds, forestSeed: Options.ForestSeed);
+            Game = new GameState(_rules, keys, Options.PrepSeconds, Options.WarSeconds, forestSeed: Options.ForestSeed, decks: decks);
         Phase = RoomPhase.Preparation;
+    }
+
+    /// <summary>A bot's deck: easy ones pick at random; the others from the balanced decks of the config (the four first units when there are none).</summary>
+    private IReadOnlyList<string> BotDeck(BotDifficulty level, Random rng)
+    {
+        var decks = _rules.Bots.Decks;
+        if (level == BotDifficulty.Easy) return _rules.RandomDeck(rng);
+        if (decks is { Count: > 0 }) return decks[rng.Next(decks.Count)];
+        return _rules.Units.Take(_rules.Deck.Size).Select(u => u.Id).ToList();
     }
 
     /// <summary>The host seats a bot in the first empty seat. It gets its colour's name ("Bot Kırmızı") and is ready at once.</summary>

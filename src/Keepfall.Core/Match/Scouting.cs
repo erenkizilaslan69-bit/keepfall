@@ -83,7 +83,8 @@ public sealed record ScoutReport(
     double ObservedAt,
     double DeliveredAt,
     IReadOnlyList<ScoutedUnit> Soldiers,
-    IReadOnlyDictionary<BuildingType, int> BuildingLevels);
+    IReadOnlyDictionary<BuildingType, int> BuildingLevels,
+    IReadOnlyList<string>? Deck = null);
 
 public enum NotificationKind
 {

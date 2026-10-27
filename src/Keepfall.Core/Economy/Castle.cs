@@ -104,7 +104,11 @@ public sealed class Castle
     public int Disarmable(UnitType type) => Math.Max(0, _soldiers[type] - _mercenaries[type]);
     public double MercenaryPrice(UnitType type) => _rules.MercenaryPrices.GetValueOrDefault(type.Id);
     public IReadOnlyList<WeaponOrder> Queue => _queue;
-    public IReadOnlyList<UnitType> UnitTypes => _rules.Units;
+    /// <summary>The units this castle can make: its deck (all of them when no deck was picked).</summary>
+    public IReadOnlyList<UnitType> UnitTypes => _deckList ?? _rules.Units;
+    private IReadOnlyList<UnitType>? _deckList;
+    public bool InDeck(UnitType type) => _deckList is null || _deckList.Contains(type);
+    internal void SetDeck(IEnumerable<UnitType> units) => _deckList = units.OrderBy(u => u.Index).ToList();
     public EconomyRules Economy => _rules.Economy;
 
     public int WorkerCount => _workers.Values.Sum();
@@ -412,6 +416,7 @@ public sealed class Castle
     private CommandResult Enqueue(QueueWeapon c)
     {
         if (FindUnit(c.UnitId) is not { } type) return CommandResult.Fail($"Bilinmeyen silah \"{c.UnitId}\".");
+        if (!InDeck(type)) return CommandResult.Fail($"{type.Name} destende yok.");
         if (c.Count <= 0) return CommandResult.Fail("Sayı en az 1 olmalı.");
         double iron = type.Cost.Iron * c.Count, wood = type.Cost.Wood * c.Count, food = type.Cost.Food * c.Count;
         if (!CanAfford(wood, iron, food))
@@ -436,6 +441,7 @@ public sealed class Castle
     private CommandResult Arm(ArmWorkers c)
     {
         if (FindUnit(c.UnitId) is not { } type) return CommandResult.Fail($"Bilinmeyen birlik \"{c.UnitId}\".");
+        if (!InDeck(type)) return CommandResult.Fail($"{type.Name} destende yok.");
         if (c.Count <= 0) return CommandResult.Fail("Sayı en az 1 olmalı.");
         if (_weapons[type] < c.Count) return CommandResult.Fail($"Depoda sadece {_weapons[type]} {type.Name} silahı var.");
         int crew = c.Count * Math.Max(1, type.Cost.People); // a siege engine takes two people
@@ -495,6 +501,7 @@ public sealed class Castle
     private CommandResult Hire(HireMercenary c)
     {
         if (FindUnit(c.UnitId) is not { } type) return CommandResult.Fail($"Bilinmeyen birim \"{c.UnitId}\".");
+        if (!InDeck(type)) return CommandResult.Fail($"{type.Name} destende yok.");
         if (c.Count <= 0) return CommandResult.Fail("Sayı en az 1 olmalı.");
         var price = MercenaryPrice(type);
         if (price <= 0) return CommandResult.Fail($"{type.Name} kiralanamaz.");

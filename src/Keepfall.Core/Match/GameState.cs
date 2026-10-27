@@ -82,7 +82,8 @@ public sealed class GameState
     /// <param name="rng">Randomness for scout errors and battles; tests pass a seeded one.</param>
     /// <param name="corners">Which corner of the map each player gets; default: <see cref="AssignCorners"/>.</param>
     public GameState(GameRules rules, IEnumerable<string> playerKeys, double? prepSeconds = null,
-        double? warSeconds = null, Random? rng = null, IReadOnlyDictionary<string, Corner>? corners = null, int? forestSeed = null)
+        double? warSeconds = null, Random? rng = null, IReadOnlyDictionary<string, Corner>? corners = null, int? forestSeed = null,
+        IReadOnlyDictionary<string, IReadOnlyList<string>>? decks = null)
     {
         Rules = rules;
         // Its own randomness, so seeded matches play their battles the same whatever the forest looks like.
@@ -96,6 +97,13 @@ public sealed class GameState
         PrepSeconds = prepSeconds ?? rules.Match.ShortModePrepSeconds;
         WarSeconds = warSeconds ?? rules.Match.ShortModeWarSeconds;
         _players = playerKeys.Distinct().ToDictionary(k => k, _ => new PlayerEconomy(new Castle(rules)));
+        if (decks is not null)
+            foreach (var (key, ids) in decks)
+            {
+                if (!_players.TryGetValue(key, out var p)) continue;
+                if (!rules.IsValidDeck(ids)) throw new ArgumentException($"Deck of {key} is not valid.", nameof(decks));
+                p.Castle.SetDeck(ids.Select(i => rules.FindUnit(i)!));
+            }
         if (_players.Count == 0) throw new ArgumentException("A match needs at least one player.", nameof(playerKeys));
         if (_players.Count > 4) throw new ArgumentException("The map has four corners.", nameof(playerKeys));
         _corners = corners?.ToDictionary(kv => kv.Key, kv => kv.Value) ?? AssignCorners(_players.Keys.ToList());
@@ -680,7 +688,7 @@ public sealed class GameState
             return new ScoutedUnit(u.Id, u.Name, seen);
         }).ToList();
         var levels = Jobs.Buildings.ToDictionary(b => b, b => castle.Building(b).Level);
-        return new ScoutReport(target, now, now, soldiers, levels);
+        return new ScoutReport(target, now, now, soldiers, levels, castle.UnitTypes.Select(u => u.Id).ToList());
     }
 
     // ---- war ---------------------------------------------------------------------------------
@@ -850,7 +858,13 @@ public sealed class GameState
             castle.AddGoods(a.LootFood, a.LootWood, a.LootIron);
             if (a.FallLoot is { } fl && fl.Describe() is { Length: > 0 } text)
                 Notify(a.From, new GameNotification(NotificationKind.LootHome, a.Target, ElapsedSeconds, Detail: text));
-            foreach (var (id, n) in a.LootWeapons) castle.AddWeapons(Rules.FindUnit(id)!, n);
+            foreach (var (id, n) in a.LootWeapons)
+            {
+                var type = Rules.FindUnit(id)!;
+                // A weapon the deck cannot use is sold for half a mercenary's price instead.
+                if (castle.InDeck(type)) castle.AddWeapons(type, n);
+                else castle.AddGold(Math.Floor(n * castle.MercenaryPrice(type) * 0.5));
+            }
             _armies.Remove(a);
         }
     }

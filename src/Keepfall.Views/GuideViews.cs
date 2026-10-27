@@ -17,7 +17,8 @@ public sealed record GuideLevelView(int Level, int Capacity, double Multiplier, 
 /// <param name="Weak">Units it hits less hard.</param>
 public sealed record GuideUnitView(
     string Id, string Name, double Hp, double Damage, double Dps, bool Ranged, double Iron, double Wood, double BuildSeconds,
-    double? Price, IReadOnlyList<string> Strong, IReadOnlyList<string> Weak);
+    double? Price, IReadOnlyList<string> Strong, IReadOnlyList<string> Weak,
+    double Heal = 0, double HealInterval = 0, int People = 1, double SpeedFactor = 1, bool Back = false, bool Flank = false, bool BackFirst = false, int SplashTargets = 0);
 
 public sealed record GuideChestView(GuideRange Gold, GuideRange Iron);
 public sealed record GuideVillageView(GuideRange Gold, GuideRange Food, GuideRange People, int MinSoldiers);
@@ -32,7 +33,7 @@ public sealed record GuideView(
     int ChestsPerCorner, int VillagesPerCorner, int CampsPerCorner,
     GuideChestView Chest, GuideVillageView Village, GuideCampView Camp, GuideCampView BigCamp,
     double FallLootShare, double FallWorkerShare,
-    double ArcherDefenseBonusPercent = 0, double PrisonerShare = 0);
+    double ArcherDefenseBonusPercent = 0, double PrisonerShare = 0, bool DeckEnabled = false, int DeckSize = 4);
 
 public static class GuideMapper
 {
@@ -44,7 +45,8 @@ public static class GuideMapper
             u.Id, u.Name, u.Hp, u.Damage, Math.Round(u.Dps, 2), u.Range == AttackRange.Ranged, u.Cost.Iron, u.Cost.Wood, u.BuildSeconds,
             rules.MercenaryPrices.TryGetValue(u.Id, out var price) ? price : null,
             rules.Units.Where(d => rules.Counters.Get(u, d) > 1.0001).Select(d => d.Name).ToList(),
-            rules.Units.Where(d => rules.Counters.Get(u, d) < 0.9999).Select(d => d.Name).ToList())).ToList();
+            rules.Units.Where(d => rules.Counters.Get(u, d) < 0.9999).Select(d => d.Name).ToList(),
+            u.Heal, u.HealInterval, u.Cost.People, u.SpeedFactor, u.DefaultRow == Row.Back, u.Flank, u.BackFirst, u.SplashTargets)).ToList();
         string NameOf(string id) => rules.FindUnit(id)?.Name ?? id;
         List<GuideCount> Counts(IReadOnlyDictionary<string, int> d) => d.Where(kv => kv.Value > 0).Select(kv => new GuideCount(NameOf(kv.Key), kv.Value)).ToList();
         GuideCampView Camp(CampRules c) => new(Counts(c.Bandits), new(c.GoldMin, c.GoldMax), new(c.WoodMin, c.WoodMax), Counts(c.Weapons));
@@ -60,6 +62,6 @@ public static class GuideMapper
             new GuideVillageView(new(f.Village.GoldMin, f.Village.GoldMax), new(f.Village.FoodMin, f.Village.FoodMax),
                 new(f.Village.PeopleMin, f.Village.PeopleMax), f.Village.MinSoldiers),
             Camp(f.Camp), Camp(f.BigCamp), rules.War.FallLootShare, rules.War.FallWorkerShare,
-            Math.Round(rules.Walls.ArcherDefenseBonus * 100), rules.War.PrisonerShare);
+            Math.Round(rules.Walls.ArcherDefenseBonus * 100), rules.War.PrisonerShare, rules.Deck.Enabled, rules.Deck.Size);
     }
 }

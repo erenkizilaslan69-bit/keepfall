@@ -22,7 +22,7 @@ public sealed class MercenaryModule : IBotModule
         if (c.Starving || (c.Resources.Food < 25 && c.Rates.FoodIn < c.Rates.FoodOut)) return;
         if (ctx.Difficulty == BotDifficulty.Easy && ctx.SlipEco()) return;
 
-        var mix = ctx.Rules.Bots.Mix;
+        var mix = ctx.Mix;
         double share = mix.Values.Sum();
         int total = c.Units.Sum(u => ctx.Owned(u.Id)) + 1;
         var pick = mix.Select(kv => (Id: kv.Key, Deficit: kv.Value / share * total - ctx.Owned(kv.Key)))

@@ -34,6 +34,15 @@ public sealed record WarRules(
 /// </summary>
 public sealed record WallRules(double ArcherDefenseBonus = 0);
 
+/// <summary>
+/// The deck: before the match every player picks <see cref="Size"/> of the units; only those can be forged, armed or hired.
+/// Off: everybody has every unit.
+/// </summary>
+public sealed record DeckRules(bool Enabled, int Size)
+{
+    public static readonly DeckRules Off = new(false, 4);
+}
+
 /// <summary>Scout reports ("Maç" sheet): how wrong the soldier counts are. How long a mission takes depends on the map.</summary>
 /// <param name="MaxScouts">Most scouts one player can have out at once (a spy, a tour of a quarter and a chest run all count).</param>
 /// <param name="MaxCargo">An envoy carries at most this many goods in all (food, wood, iron and gold together).</param>
