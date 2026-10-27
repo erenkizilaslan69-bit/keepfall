@@ -39,8 +39,11 @@ const DEPTH_WATER = -100_000, DEPTH_GROUND = -90_000, DEPTH_ROAD = -80_000;
 // Tilemap_color1: the flat grass island is the 3×3 block in the top-left of the sheet (9 tiles per row).
 const GRASS = { tl: 0, t: 1, tr: 2, l: 9, c: 10, r: 11, bl: 18, b: 19, br: 20 };
 
+/** Building signs stay above the bottom wall (which begins a little below this). */
+const SIGN_MAX_Y = 684;
+
 /** Where the castle's health sign hangs: just inside the top edge of the world. */
-const WALL_SIGN_Y = 8;
+const WALL_SIGN_Y = 66;
 
 const LABEL_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
   fontFamily: 'system-ui, sans-serif',
@@ -728,7 +731,7 @@ export class WorldScene extends Phaser.Scene {
     slot.dust.setVisible(upgrading);
     if (upgrading && !slot.dust.anims.isPlaying) slot.dust.play('dust');
     this.labels.set(`building:${b.type}`, {
-      x: site.center.x, y: site.center.y + site.area.h / 2 - 6, anchor: 'bottom', minZoom: 0.5, html: buildingSign(b, workers),
+      x: site.center.x, y: Math.min(site.center.y + site.area.h / 2 - 6, SIGN_MAX_Y), anchor: 'bottom', minZoom: 0.5, html: buildingSign(b, workers),
     });
   }
 

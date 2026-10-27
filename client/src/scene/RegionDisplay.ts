@@ -45,7 +45,7 @@ export class RegionDisplay {
       if (upgrading && !slot.dust.anims.isPlaying) slot.dust.play('dust');
       const workers = castle.jobs.find((j) => j.job === b.worker)?.count ?? 0;
       this.labels.set(`building:${this.seat}:${b.type}`, {
-        x: site.center.x + this.off.x, y: site.center.y + site.area.h / 2 - 6 + this.off.y,
+        x: site.center.x + this.off.x, y: Math.min(site.center.y + site.area.h / 2 - 6, 684) + this.off.y,
         anchor: 'bottom', minZoom: 0.5, html: buildingSign(b, workers),
       });
     }

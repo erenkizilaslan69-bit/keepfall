@@ -450,3 +450,5 @@ html.in-menu .guide-fab { display: inline-grid; }
 @media (prefers-reduced-motion: reduce) {
   .cloud-curtain.closing, .cloud-curtain.opening, .cloud-curtain .cloud { animation-duration: 0.01s !important; animation-delay: 0s !important; }
 }
+.camp-sign { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(2px * var(--u)) calc(12px * var(--u)); max-width: calc(250px * var(--u)); padding: calc(4px * var(--u)) calc(10px * var(--u)); }
+.camp-sign span { white-space: nowrap; }

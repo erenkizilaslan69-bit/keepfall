@@ -11,10 +11,10 @@ export const CASTLE = { x: 512, y: 430, scale: 1.25 };
 /** The wooden courtyard on top of the castle sprite, in world pixels: soldiers stand here. */
 export const COURTYARD = { left: 356, right: 668, top: 216, bottom: 268 };
 /** The camp fire in front of the castle, below the gate: the soldiers wait around it, a group for each type. */
-export const CAMP = { x: 512, y: 660, rx: 150, ry: 38 };
-/** In front of the gate: idle people wait here and carriers drop their load. */
+export const CAMP = { x: 640, y: 656, rx: 98, ry: 36 };
+/** Idle people wait in their own pen (a patch of dirt with a low fence), off the road and the paving; carriers drop their load at the gate. */
 export const GATE = { x: 512, y: 452 };
-export const IDLE_AREA = { left: 420, right: 604, top: 478, bottom: 540 };
+export const IDLE_AREA = { left: 360, right: 484, top: 604, bottom: 676 };
 
 export interface Point { x: number; y: number }
 

@@ -46,9 +46,26 @@ export class Workers {
     private readonly off: Point = NO_OFFSET, private readonly warnIdle = true,
     /** Another colour has sheets with other keys (see colorKey). */
     private readonly k: (key: string) => string = (key) => key) {
+    this.drawPen();
+  }
+
+  private pen: Phaser.GameObjects.Graphics | null = null;
+
+  /** The idle people's pen: trodden dirt with a low picket fence round it, so they are not standing on the road. */
+  private drawPen(): void {
+    const a = IDLE_AREA, o = this.off, pad = 22;
+    const x0 = a.left - pad + o.x, x1 = a.right + pad + o.x, y0 = a.top - 40 + o.y, y1 = a.bottom + 14 + o.y;
+    const g = this.scene.add.graphics().setDepth(-69_000);
+    g.fillStyle(0x7d5e34, 0.55).fillRoundedRect(x0, y0, x1 - x0, y1 - y0, 18);
+    g.fillStyle(0x9a7a48, 0.5).fillRoundedRect(x0 + 6, y0 + 6, x1 - x0 - 12, y1 - y0 - 12, 14);
+    g.lineStyle(3, 0x4a2f1b, 1).strokeRoundedRect(x0, y0, x1 - x0, y1 - y0, 18);
+    for (let x = x0 + 8; x < x1 - 4; x += 22) { g.fillStyle(0x4a2f1b, 1).fillRect(x, y1 - 4, 6, 12); g.fillStyle(0x8a5a34, 1).fillRect(x + 1, y1 - 3, 4, 10); }
+    this.pen = g;
   }
 
   destroy(): void {
+    this.pen?.destroy();
+    this.pen = null;
     for (const p of this.pawns) p.sprite.destroy();
     this.pawns = [];
     this.labels.remove('idle');
@@ -77,7 +94,7 @@ export class Workers {
 
     const idle = this.warnIdle ? target.get('idle') ?? 0 : 0;
     if (idle > 0)
-      this.labels.set('idle', { x: GATE.x, y: IDLE_AREA.bottom + 6, anchor: 'top', minZoom: 0.5, cls: 'wl-warn', html: `<div class="wl-sign"><b>${idle} kişi boşta!</b></div>` });
+      this.labels.set('idle', { x: (IDLE_AREA.left + IDLE_AREA.right) / 2, y: IDLE_AREA.top - 44, anchor: 'bottom', minZoom: 0.5, cls: 'wl-warn', html: `<div class="wl-sign"><b>${idle} kişi boşta!</b></div>` });
     else this.labels.remove('idle');
   }
 
@@ -228,10 +245,10 @@ export class Workers {
       return slot < spots.length ? base : { x: base.x + 14, y: base.y + 10 };
     }
     // Idle people queue up in rows in front of the gate.
-    const perRow = 7, gap = (IDLE_AREA.right - IDLE_AREA.left) / (perRow - 1);
+    const perRow = 5, gap = (IDLE_AREA.right - IDLE_AREA.left) / (perRow - 1);
     return {
       x: IDLE_AREA.left + (slot % perRow) * gap + (Math.floor(slot / perRow) % 2) * (gap / 2),
-      y: IDLE_AREA.top + Math.floor(slot / perRow) * 30,
+      y: IDLE_AREA.top + (Math.floor(slot / perRow) % 4) * 22 + Math.floor(slot / (perRow * 4)) * 6,
     };
   }
 }

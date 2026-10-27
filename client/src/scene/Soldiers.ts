@@ -24,10 +24,10 @@ const LOOKS: Record<string, Look> = {
 const BLOCK_ORDER = ['okcu', 'mancinik', 'kesis', 'mizrakci', 'kilicli', 'kalkanli', 'suvari'];
 const FALLBACK: Look = { anim: 'pawn-idle', scale: UNIT_SCALE };
 
-const COLS = 3;
+const COLS = 2;
 const ROWS = 2;
 const PER_BLOCK = COLS * ROWS;
-const GAP_X = 22, GAP_Y = 16;
+const GAP_X = 22, GAP_Y = 20;
 
 export class Soldiers {
   private blocks = new Map<string, Phaser.GameObjects.Sprite[]>();
@@ -42,8 +42,7 @@ export class Soldiers {
 
   destroy(): void {
     for (const sprites of this.blocks.values()) for (const s of sprites) s.destroy();
-    for (const id of this.blocks.keys()) this.labels.remove(`soldiers:${this.key}${id}`);
-    this.labels.remove(`arming:${this.key}`);
+    this.labels.remove(`camp:${this.key}`);
     this.blocks.clear();
     for (const o of this.fire) o.destroy();
     this.fire = [];
@@ -71,29 +70,32 @@ export class Soldiers {
   }
 
   sync(units: UnitView[]): void {
-    // People being armed (workers on their way to becoming soldiers) wait at the fire under a sign.
-    const arming = units.reduce((n, u) => n + u.arming, 0);
-    if (arming > 0)
-      this.labels.set(`arming:${this.key}`, {
-        x: CAMP.x + 150 + this.off.x, y: CAMP.y - 100 + this.off.y, anchor: 'bottom', minZoom: 0.6, cls: 'wl-small',
-        html: `<div class="wl-sign"><i class="ico ico-sword"></i> Kuşanıyor: <b>${arming}</b></div>`,
-      });
-    else this.labels.remove(`arming:${this.key}`);
     const ids = [...BLOCK_ORDER.filter((id) => units.some((u) => u.id === id)),
       ...units.map((u) => u.id).filter((id) => !BLOCK_ORDER.includes(id))];
     ids.forEach((id, i) => {
       const unit = units.find((u) => u.id === id)!;
       // Round the fire, the first group at the bottom left, going round.
       const angle = Math.PI * 0.75 + (i / Math.max(ids.length, 1)) * Math.PI * 2;
-      this.syncBlock(id, unit.name, unit.soldiers, {
+      this.syncBlock(id, unit.soldiers, {
         x: CAMP.x + Math.cos(angle) * CAMP.rx + this.off.x,
         y: CAMP.y + Math.sin(angle) * CAMP.ry + this.off.y,
-      }, Math.sin(angle) < -0.3);
+      });
     });
+    // One sign for the whole camp (a sign for each group ran into the others): the counts of every type, and the people being armed.
+    const rows = ids.map((id) => units.find((u) => u.id === id)!).filter((u) => u.soldiers > 0).map((u) => `<span><b>${esc(u.name)}</b> ${u.soldiers}</span>`);
+    const arming = units.reduce((n, u) => n + u.arming, 0);
+    if (arming > 0) rows.push(`<span><i class="ico ico-sword"></i> Kuşanıyor <b>${arming}</b></span>`);
+    for (const id of this.blocks.keys()) this.labels.remove(`soldiers:${this.key}${id}`);
+    this.labels.remove(`arming:${this.key}`);
+    if (rows.length > 0)
+      this.labels.set(`camp:${this.key}`, {
+        x: CAMP.x + this.off.x, y: CAMP.y - CAMP.ry - 72 + this.off.y, anchor: 'bottom', minZoom: 0.6, cls: 'wl-small',
+        html: `<div class="wl-sign camp-sign">${rows.join('')}</div>`,
+      });
+    else this.labels.remove(`camp:${this.key}`);
   }
 
-  /** <paramref name="above"/>: the group is on the far side of the fire, so its sign goes above it (away from the flames). */
-  private syncBlock(id: string, name: string, count: number, centre: Point, above: boolean): void {
+  private syncBlock(id: string, count: number, centre: Point): void {
     const look = LOOKS[id] ?? FALLBACK;
     const sprites = this.blocks.get(id) ?? [];
     const shown = Math.min(count, PER_BLOCK);
@@ -118,13 +120,5 @@ export class Soldiers {
       const y = centre.y + (row - (ROWS - 1) / 2) * GAP_Y;
       s.setPosition(x, y).setDepth(y).setFlipX(x > fireX + 4);
     });
-
-    // Name and the real count under the group (a group shows at most PER_BLOCK).
-    if (count > 0)
-      this.labels.set(`soldiers:${this.key}${id}`, {
-        x: centre.x, y: above ? centre.y - 40 : centre.y + 24, anchor: above ? 'bottom' : 'top', minZoom: 0.6, cls: 'wl-small',
-        html: `<div class="wl-sign"><b>${esc(name)}</b> ${count}</div>`,
-      });
-    else this.labels.remove(`soldiers:${this.key}${id}`);
   }
 }

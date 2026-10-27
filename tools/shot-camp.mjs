@@ -51,8 +51,8 @@ document.querySelector('input').value='Test'; btn('Oda kur').click(); await w(15
 btn('Hazırım').click(); await w(800); btn('Maçı başlat').click(); await w(500);
 for(let i=0;i<120;i++){ if(window.keepfallScene?.ready) break; await w(300); } await w(2500);
 const s=window.keepfallScene; const u=(id,name,n,a=0)=>({id,name,soldiers:n,arming:a,weapons:0,wood:0,iron:0,buildSeconds:0,price:0,hired:0});
-const orig=s.soldiers.sync.bind(s.soldiers); s.soldiers.sync=()=>{}; orig([u('okcu','Okçu',8),u('kesis','Keşiş',3),u('mizrakci','Mızrakçı',6),u('kilicli','Kılıçlı',9),u('kalkanli','Kalkanlı',4,2)]);
-s.cameras.main.setZoom(1.0); s.cameras.main.centerOn(512,600); return 1;})()`);
+const orig=s.soldiers.sync.bind(s.soldiers); s.soldiers.sync=()=>{}; orig([u('okcu','Okçu',8),u('mizrakci','Mızrakçı',6),u('kilicli','Kılıçlı',9),u('kalkanli','Kalkanlı',4,2)]);
+s.cameras.main.setZoom(0.85); s.cameras.main.centerOn(512,520); return 1;})()`);
 await sleep(2500);
 const r = await send('Page.captureScreenshot', { format: 'png' });
 writeFileSync(OUT, Buffer.from(r.result.data, 'base64'));
