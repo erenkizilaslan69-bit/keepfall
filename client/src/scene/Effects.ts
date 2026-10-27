@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { reducedEffects } from '../prefs';
 
 // Battle and castle effects: sparks where a blow lands, dust where soldiers fall or a gate is hit, arrow trails, smoke and fire on a damaged
 // castle, the collapse of a fallen one, camera shake. Cosmetic only: nothing here reads or changes the game, and every effect is skipped
@@ -21,11 +22,9 @@ export class Effects {
   private lastRefill = 0;
   private shakeStrength = 0;
   private readonly enabled: boolean;
-  private readonly still: boolean;
 
   constructor(private readonly scene: Phaser.Scene) {
     this.enabled = new URLSearchParams(location.search).get('fx') !== '0';
-    this.still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     if (!this.enabled) return;
     makeTextures(scene);
     this.sparks = scene.add.particles(0, 0, SPARK_KEY, {
@@ -43,6 +42,9 @@ export class Effects {
     return x > v.x - margin && x < v.right + margin && y > v.y - margin && y < v.bottom + margin;
   }
 
+  /** The player asked for less (settings), or the system did: no shake, sparks or trails. */
+  private get still(): boolean { return reducedEffects(); }
+
   /** One of the limited bursts a second. */
   private budget(): boolean {
     const now = this.scene.time.now;
@@ -55,14 +57,14 @@ export class Effects {
 
   /** A blow lands: sparks (steel on steel), or a small puff where an arrow hits. */
   hit(x: number, y: number, kind: 'melee' | 'arrow' | 'shield'): void {
-    if (!this.sparks || !this.seen(x, y) || !this.budget()) return;
+    if (!this.sparks || this.still || !this.seen(x, y) || !this.budget()) return;
     if (kind === 'arrow') { this.sparks.explode(2, x, y); return; }
     this.sparks.explode(kind === 'shield' ? 7 : 5, x, y);
   }
 
   /** A short fading streak behind a flying arrow. */
   trail(x: number, y: number): void {
-    if (!this.trails || !this.seen(x, y) || !this.budget()) return;
+    if (!this.trails || this.still || !this.seen(x, y) || !this.budget()) return;
     this.trails.explode(1, x, y);
   }
 

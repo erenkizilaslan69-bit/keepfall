@@ -24,6 +24,7 @@ import { mountGuideButton } from './ui/guide';
 import { CloudCurtain } from './ui/clouds';
 import { warmUp } from './preload';
 import { mountScenery } from './ui/scenery';
+import { mountSettingsButton } from './ui/settings';
 import { guarded, installErrorReporting } from './error-report';
 import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 
@@ -50,6 +51,7 @@ let summary: SummaryView | null = null;
 let status = '';
 
 mountGuideButton(); // the "?" for the menus (in the game it is in the top bar)
+mountSettingsButton(); // the gear next to it
 
 // Sound: browsers start it only after a gesture; every button press gets a small click.
 window.addEventListener('pointerdown', () => sfx.unlock(), { capture: true });
