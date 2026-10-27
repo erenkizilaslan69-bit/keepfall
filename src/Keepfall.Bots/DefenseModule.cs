@@ -54,7 +54,7 @@ public sealed class DefenseModule : IBotModule
         // 3. Is what is at home enough? If not, bring the raiders back (hiring is the mercenary module's job, which sees the threat too).
         var home = c.Units.ToDictionary(u => u.Id, u => u.Soldiers + u.Weapons);
         var mine = Tactics.Setup(ctx, "Biz", home);
-        if (c.War.WallHp > 0) mine.RangedDamageFactor = ctx.WallArcherFactor; // our archers shoot from behind the wall
+        mine.RangedDamageFactor = ctx.WallArcherFactor; // our archers shoot from behind the wall
         bool enough = mine.TotalCount > 0 && Tactics.Win(ctx, mine, theirs).Rate >= 0.8;
         if (!enough)
         {

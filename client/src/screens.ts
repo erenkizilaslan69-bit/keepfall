@@ -270,7 +270,7 @@ function summaryHtml(s: SummaryView): string {
       <div>Açlık</div><div>${Math.round(s.starvingSeconds)} sn</div>
       <div>Boşta</div><div>${(s.idleWorkerSeconds / 60).toFixed(1)} işçi-dakika (ortalama ${(s.idleWorkerSeconds / 60 / Math.max(minutes, 1e-9)).toFixed(1)} kişi boşta)</div>
       <div>Savaş</div><div>${s.war.attacksLaunched} saldırı · ${s.war.enemiesKilled} düşman öldürüldü · ${s.war.soldiersLost} asker kaybı</div>
-      <div>Kale</div><div>${fmt(s.war.castleDamageDealt)} hasar verdin · ${fmt(s.war.castleDamageTaken)} hasar aldın · ${s.war.eliminated ? 'kale düştü' : `can ${fmt(s.war.wallHp)} / ${fmt(s.war.maxWallHp)}`}</div>
+      <div>Kale</div><div>${s.war.eliminated ? 'kale düştü' : 'kale ayakta'}</div>
     </div>
     ${chart(s)}`;
 }

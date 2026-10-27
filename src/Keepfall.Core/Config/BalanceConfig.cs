@@ -112,7 +112,6 @@ public sealed class BotLevelConfig
     public bool? UpgradeEarly { get; set; }
     public bool? Foresight { get; set; }
     public double? GarrisonShare { get; set; }
-    public bool? WallUpgrade { get; set; }
 }
 
 public sealed class ForestConfig
@@ -185,30 +184,19 @@ public sealed class WarConfig
     /// <summary>The famine starts this many seconds after the war does (overrides famineStart; negative = use the fraction).</summary>
     public double FamineStartSeconds { get; set; } = -1;
     public double FamineFoodMultiplier { get; set; } = 0.5;
-    public double CastleHp { get; set; } = 500;
-    public double SiegeSeconds { get; set; } = 5;
-    public double ArcherSiegeMultiplier { get; set; } = 0.5;
     public double BattlePlayback { get; set; } = 1;
     public double EncounterRadius { get; set; } = 1;
     /// <summary>The share of a fallen castle's stores and gold its conqueror takes (0 = nothing).</summary>
     public double FallLootShare { get; set; }
     /// <summary>The share of a fallen castle's surviving workers who join its conqueror.</summary>
     public double FallWorkerShare { get; set; }
+    /// <summary>The share of the defenders' army that fought at the gate who join the conqueror as soldiers when a castle falls (0 = none).</summary>
+    public double PrisonerShare { get; set; }
 }
 
 public sealed class WallsConfig
 {
     public double ArcherDefenseBonus { get; set; }
-    /// <summary>The upgrades: level 2, level 3… (level 1 is war.castleHp).</summary>
-    public List<WallLevelConfig> Levels { get; set; } = [];
-}
-
-public sealed class WallLevelConfig
-{
-    public double Hp { get; set; }
-    public double UpgradeWood { get; set; }
-    public double UpgradeIron { get; set; }
-    public double UpgradeSeconds { get; set; }
 }
 
 public sealed class EnvoyConfig
@@ -401,8 +389,7 @@ public static class BalanceConfigLoader
         var w = config.War;
         if (w.FamineStart < 0 || w.FamineStart > 1) errors.Add("war.famineStart 0 ile 1 arasında olmalı.");
         if (w.FamineFoodMultiplier < 0 || w.FamineFoodMultiplier > 1) errors.Add("war.famineFoodMultiplier 0 ile 1 arasında olmalı.");
-        if (w.CastleHp <= 0) errors.Add("war.castleHp sıfırdan büyük olmalı.");
-        if (w.SiegeSeconds < 0 || w.ArcherSiegeMultiplier < 0) errors.Add("war: kuşatma değerleri negatif olamaz.");
+        if (w.PrisonerShare < 0 || w.PrisonerShare > 1) errors.Add("war.prisonerShare 0 ile 1 arasında olmalı.");
         if (w.BattlePlayback <= 0) errors.Add("war.battlePlayback sıfırdan büyük olmalı.");
         if (w.EncounterRadius <= 0) errors.Add("war.encounterRadius sıfırdan büyük olmalı.");
 
@@ -414,14 +401,6 @@ public static class BalanceConfigLoader
         if (sc.ReportError < 0 || sc.ReportError >= 1) errors.Add("scouting.reportError 0 ile 1 arasında olmalı.");
         if (sc.MaxScouts < 1) errors.Add("scouting.maxScouts en az 1 olmalı.");
         if (config.Walls.ArcherDefenseBonus < 0) errors.Add("walls.archerDefenseBonus negatif olamaz.");
-        double previousHp = w.CastleHp;
-        for (int i = 0; i < config.Walls.Levels.Count; i++)
-        {
-            var l = config.Walls.Levels[i];
-            if (l.Hp <= previousHp) errors.Add($"walls.levels[{i}].hp bir önceki seviyeden büyük olmalı.");
-            if (l.UpgradeWood < 0 || l.UpgradeIron < 0 || l.UpgradeSeconds < 0) errors.Add($"walls.levels[{i}]: maliyet ve süre negatif olamaz.");
-            previousHp = l.Hp;
-        }
         if (config.Envoy.MaxCargo < 0) errors.Add("envoy.maxCargo negatif olamaz.");
         if (config.Envoy.MaxMessageLength is < 0 or > 500) errors.Add("envoy.maxMessageLength 0 ile 500 arasında olmalı.");
         if (sc.NoScoutLastPrepSeconds < 0) errors.Add("scouting.noScoutLastPrepSeconds negatif olamaz.");
@@ -508,7 +487,7 @@ public static class BalanceConfigLoader
                     i + 1, l.Capacity, l.Multiplier, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList()),
             new ScoutingRules(sc.ReportError, sc.MaxScouts, sc.NoScoutLastPrepSeconds),
             new WarRules(w.FamineStart, w.FamineFoodMultiplier,
-                w.CastleHp, w.SiegeSeconds, w.ArcherSiegeMultiplier, w.BattlePlayback, w.EncounterRadius, w.FallLootShare, w.FallWorkerShare, w.FamineStartSeconds),
+                w.BattlePlayback, w.EncounterRadius, w.FallLootShare, w.FallWorkerShare, w.FamineStartSeconds, w.PrisonerShare),
             new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout, mp.ScoutTrailSeconds),
             config.Mercenary,
             new ForestRules(fo.ChestsPerCorner, fo.VillagesPerCorner, fo.CampsPerCorner, fo.MinSpacing, fo.HubClearing, fo.FootMin, fo.FootMax,
@@ -523,13 +502,13 @@ public static class BalanceConfigLoader
                 config.Bots.StaleReportSeconds, config.Bots.BlindMargin, config.Bots.BlindRivalShare, config.Bots.BlindAfterWarSeconds,
                 config.Bots.Hard is null ? null : BotLevel(config.Bots.Hard, true), config.Bots.GiftThreshold, config.Bots.GiftPeaceSeconds),
             new EnvoyRules(config.Envoy.MaxCargo, config.Envoy.MaxMessageLength, config.Envoy.ProfanityFilter),
-            new WallRules(w.CastleHp, config.Walls.Levels.Select(l => new WallLevelRules(l.Hp, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList(), config.Walls.ArcherDefenseBonus));
+            new WallRules(config.Walls.ArcherDefenseBonus));
     }
 
     private static BotLevelRules BotLevel(BotLevelConfig c, bool good) => new(c.ThinkMin, c.ThinkMax, c.ReactMin, c.ReactMax, c.Commands, c.Mistake, c.Slack, c.EcoMistake < 0 ? c.Mistake : c.EcoMistake,
         c.ExploreAll ?? good, c.ChestsAnywhere ?? good, c.Scouts ?? (good ? 2 : 1), c.MercBatch ?? (good ? 3 : 1), c.MercThreatBatch ?? (good ? 6 : 1),
         c.Saves ?? good, c.QueueDepth ?? (good ? 3 : 2), c.KeepHome ?? (good ? 0.25 : 0.1), c.HeadCountRatio ?? 1.0, c.Calculates ?? good, c.SmartDefense ?? good, c.ScoreAware ?? false,
-        c.HoldWeapons ?? false, c.CounterUnits ?? false, c.Opportunist ?? false, c.ScoutFactor ?? 1.0, c.UpgradeEarly ?? false, c.Foresight ?? false, c.GarrisonShare ?? 0, c.WallUpgrade ?? false);
+        c.HoldWeapons ?? false, c.CounterUnits ?? false, c.Opportunist ?? false, c.ScoutFactor ?? 1.0, c.UpgradeEarly ?? false, c.Foresight ?? false, c.GarrisonShare ?? 0);
 
     private static double? ParseMultiplier(JsonElement value, CombatConfig c)
     {

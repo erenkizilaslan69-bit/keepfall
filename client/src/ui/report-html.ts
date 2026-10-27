@@ -1,4 +1,4 @@
-import { COLOR_CSS, botMark, esc, fmt } from '../format';
+import { COLOR_CSS, botMark, esc } from '../format';
 import type { BattleReportView } from '../types';
 
 export const dot = (color?: string) => `<span class="dot" style="background:${COLOR_CSS[color ?? ''] ?? '#888'}"></span>`;
@@ -36,17 +36,13 @@ export function reportHtml(b: BattleReportView): string {
       </div>`;
   }
   const title = b.attacking ? `${them} kalesine saldırı` : `${them} saldırdı`;
-  const low = b.castleHpAfter < b.castleHpMax * 0.35;
   return `
     <div class="rep-title ribbon ribbon-${color}">${title} — ${resultWord(b)}</div>
     <div class="rep-sides">
       ${side(b.attacking ? 'Senin ordun' : 'Saldıran', b.attackerUnits)}
       ${side(b.attacking ? 'Savunan' : 'Senin savunman', b.defenderUnits)}
     </div>
-    <div class="rep-castle"><span>${b.attacking ? 'Onların kalesi' : 'Kalen'}</span>
-      <div class="gbar${low ? ' low' : ''}"><div class="fill" style="width:${(100 * b.castleHpAfter) / b.castleHpMax}%"></div></div>
-      <span>${fmt(b.castleHpAfter)} / ${fmt(b.castleHpMax)}</span></div>
-    <p class="rep-note">${b.castleDamage > 0 ? `Kale ${fmt(b.castleDamage)} hasar aldı.` : 'Kale hasar almadı.'}${b.defenderEliminated ? ' <b>Kale düştü!</b>' : ''}</p>${lootLine(b)}`;
+    <p class="rep-note">${b.defenderEliminated ? '<b>Kale düştü!</b>' : b.attacking ? (b.youWon ? 'Savunma yenilemedi.' : 'Kale ayakta kaldı.') : (b.youWon ? 'Saldırıyı püskürttün, kalen ayakta.' : 'Kale ayakta kaldı.')}</p>${lootLine(b)}`;
 }
 
 /** "Ganimet: +120 yemek, +40 altın, +4 kişi" for the report of a castle that fell (only the attacker takes any). */

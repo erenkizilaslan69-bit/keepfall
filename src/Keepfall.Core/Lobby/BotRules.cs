@@ -26,13 +26,12 @@
 /// <param name="UpgradeEarly">It starts an upgrade as soon as a building's room is nearly full and saves for it, instead of waiting for people to stand idle.</param>
 /// <param name="Foresight">Where arming takes time: it starts arming the weapons in its store the moment an army is seen coming (before its reaction time), and keeps a garrison ready at home.</param>
 /// <param name="GarrisonShare">The garrison it keeps armed at home during the war: this share of the soldiers the biggest rival is thought to have (0 = none).</param>
-/// <param name="WallUpgrade">It raises its wall (when it can pay without starving its weapons): the first level in the middle of the preparation, the second once the war is on.</param>
 /// <param name="HeadCountRatio">A poor bot, which judges a rival by a head count, goes when it has this many times the soldiers the last report shows.</param>
 public sealed record BotLevelRules(double ThinkMin, double ThinkMax, double ReactMin, double ReactMax, int Commands, double Mistake, int Slack, double EcoMistake,
     bool ExploreAll = true, bool ChestsAnywhere = true, int Scouts = 2, int MercBatch = 3, int MercThreatBatch = 6, bool Saves = true, int QueueDepth = 3,
     double KeepHome = 0.25, double HeadCountRatio = 1.0, bool Calculates = true, bool SmartDefense = true, bool ScoreAware = false,
     bool HoldWeapons = false, bool CounterUnits = false, bool Opportunist = false, double ScoutFactor = 1.0, bool UpgradeEarly = false,
-    bool Foresight = false, double GarrisonShare = 0, bool WallUpgrade = false);
+    bool Foresight = false, double GarrisonShare = 0);
 
 /// <param name="Mix">The army it builds: share of each unit type (by id), summing to about 1.</param>
 /// <param name="WeaponsFrom">Share of the preparation after which it starts forging weapons.</param>

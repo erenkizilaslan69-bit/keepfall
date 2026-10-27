@@ -50,11 +50,7 @@ public sealed record SiteView(
 
 public sealed record MapStateView(
     double ElapsedSeconds, IReadOnlyList<VisionView> Vision, IReadOnlyList<OwnMoverView> Own, IReadOnlyList<SeenMoverView> Seen,
-    IReadOnlyList<BattleMarkerView> Battles, IReadOnlyList<TrailView> Trail, IReadOnlyList<SiteView> Sites,
-    IReadOnlyList<WallSeenView>? Walls = null);
-
-/// <summary>The wall of a rival's castle the player can see from where their army, scout or castle stands (a physical thing: what it looks like is no secret to whoever sees it).</summary>
-public sealed record WallSeenView(int Seat, int Level);
+    IReadOnlyList<BattleMarkerView> Battles, IReadOnlyList<TrailView> Trail, IReadOnlyList<SiteView> Sites);
 
 // A battle, for the two sides fighting it and nobody else: both armies soldier by soldier and the whole
 // record (hits [tick, attacker, target], deaths [tick, soldier], advances [tick, soldier]; soldiers are
@@ -63,8 +59,8 @@ public sealed record BattleSoldierView(string UnitId, Row Row);
 public sealed record BattleSideView(int Seat, PlayerColor Color, string Name, bool Attacker, IReadOnlyList<BattleSoldierView> Soldiers);
 public sealed record BattleStartedView(
     string Id, BattleKind Kind, VecView At, VecView Facing, double StartedAt, double Playback, double TickSeconds, int Ticks,
-    double FightSeconds, double SiegeSeconds, IReadOnlyList<BattleSideView> Sides,
-    IReadOnlyList<int> Hits, IReadOnlyList<int> Deaths, IReadOnlyList<int> Advances, BattleWinner Winner, double CastleDamage);
+    double FightSeconds, IReadOnlyList<BattleSideView> Sides,
+    IReadOnlyList<int> Hits, IReadOnlyList<int> Deaths, IReadOnlyList<int> Advances, BattleWinner Winner);
 
 public static class MapViewMapper
 {
@@ -114,8 +110,7 @@ public static class MapViewMapper
             game.TrailOf(key).Select(t => new TrailView(VecView.Of(t.Center), t.Radius, t.Fade)).ToList(),
             game.KnownSitesOf(key).Select(k => new SiteView(k.Site.Id, k.Site.Kind, VecView.Of(k.Site.Position),
                 k.Site.Spur.Select(VecView.Of).ToList(), k.Site.Quadrant, k.Gone, Units(k.BanditsSeen), k.DiscoveredAt, k.SeenAt,
-                k.Site.Kind == SiteKind.Village ? game.Rules.Forest.Village.MinSoldiers : 0)).ToList(),
-            game.WallsSeenBy(key).Select(w => new WallSeenView(SeatOf(w.Castle), w.Level)).ToList());
+                k.Site.Kind == SiteKind.Village ? game.Rules.Forest.Village.MinSoldiers : 0)).ToList());
     }
 
     /// <summary>More hits than this and only the deaths are sent (the client then animates attacks loosely).</summary>
@@ -136,9 +131,9 @@ public static class MapViewMapper
         }
         return new BattleStartedView(
             b.PublicId, b.Kind, VecView.Of(b.Position), VecView.Of(b.Facing), b.StartedAt, game.Rules.War.BattlePlayback,
-            record.TickSeconds, record.Ticks, b.FightSeconds, b.SiegeSeconds,
+            record.TickSeconds, record.Ticks, b.FightSeconds,
             [Side(0, b.Attacker.From, true), Side(1, b.Defender, false)],
-            record.HitCount > MaxHits ? [] : record.Hits, record.Deaths, record.Advances, b.Winner, b.CastleDamage);
+            record.HitCount > MaxHits ? [] : record.Hits, record.Deaths, record.Advances, b.Winner);
     }
 
     /// <summary>Battles <paramref name="player"/> fights in that started since the last call.</summary>

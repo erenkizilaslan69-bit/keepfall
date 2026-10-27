@@ -16,15 +16,14 @@ export interface Guide {
   newPersonBaseCost: number; newPersonCostGrowth: number; famineStartSeconds: number; famineFoodMultiplier: number;
   levels: { level: number; capacity: number; multiplier: number; upgradeWood: number; upgradeIron: number; upgradeSeconds: number }[];
   units: GuideUnit[];
-  castleHp: number; siegeSeconds: number; archerSiegeMultiplier: number;
   maxScouts: number; scoutErrorPercent: number; armySpeed: number; scoutSpeed: number;
   chestsPerCorner: number; villagesPerCorner: number; campsPerCorner: number;
   chest: { gold: Range; iron: Range };
   village: { gold: Range; food: Range; people: Range; minSoldiers: number };
   camp: GuideCamp; bigCamp: GuideCamp;
   fallLootShare: number; fallWorkerShare: number;
-  walls: { level: number; hp: number; upgradeWood: number; upgradeIron: number; upgradeSeconds: number }[];
   archerDefenseBonusPercent: number;
+  prisonerShare: number;
 }
 
 let cached: Promise<Guide> | null = null;
@@ -45,8 +44,7 @@ export function guideHtml(g: Guide): string {
     ['Amaç', [
       '2–4 kişi oynar, herkesin tek bir kalesi vardır. <b>Son ayakta kalan kale kazanır</b>; süre dolarsa en yüksek nüfus kazanır.',
       `<b>Hazırlık</b> (${minutes(g.shortPrepSeconds)}): ekonomi, silah, orman. <b>Savaş</b> (${minutes(g.shortWarSeconds)}): ordular yola çıkar. ${minutes(shortTotal)} ve ${minutes(longTotal)} modu var.`,
-      `Kale canı = sur canı: ${num(g.castleHp)}; sıfırlanan oyuncu elenir ve izleyici olur.`,
-      ...(g.walls.length > 1 ? [`<b>Sur</b>: kalenin etrafı. ${g.walls.slice(1).map((w) => `Sv ${w.level}: ${num(w.hp)} can (${num(w.upgradeWood)} odun, ${num(w.upgradeIron)} demir, ${num(w.upgradeSeconds)} sn)`).join(' · ')}. Sur ayaktayken kapıdaki okçular %${num(g.archerDefenseBonusPercent)} fazla hasar verir; rakibin sur seviyesini kapısını görünce ya da gözcü raporundan öğrenirsin.`] : []),
+      `Kale tek seferde düşer: bir ordu kapıdaki savaşı kazanırsa (tek askeri kalsa bile) o kale elenir ve oyuncu izleyici olur. Kapıdaki okçular surun arkasından %${num(g.archerDefenseBonusPercent)} fazla hasar verir.`,
     ]],
     ['Ekonomi: işçi mi asker mi?', [
       `Her işçi çiftçi, oduncu, madenci ya da demirci olur. Boşta duran üretmez ama yemek yer. Kişi başı dakikada: yemek ${num(g.foodPerMinute)}, odun ${num(g.woodPerMinute)}, demir ${num(g.ironPerMinute)}.`,
@@ -75,7 +73,7 @@ export function guideHtml(g: Guide): string {
     ]],
     ['Saldırı ve önünü kes', [
       'Savaş fazında rakip kalenin penceresinden birlik sayılarını (<b>Tümü / Yarısı</b> tek tıkla doldurur), sırayı ve okçu hedefini seç.',
-      `Ordular yollardan yürür. Yolda karşılaşan düşman ordular savaşır. Kapıya varınca savunanlarla savaşılır; kazanırsan hayatta kalanlar kapıya ${num(g.siegeSeconds)} sn vurur (okçular duvara ${percent(g.archerSiegeMultiplier)} etki eder).`,
+      `Ordular yollardan yürür. Yolda karşılaşan düşman ordular savaşır. Kapıya varınca savunanlarla savaşılır; kazanırsan kale düşer: depodaki yemek, odun, demir ve altının ${percent(g.fallLootShare)}'i ile işçilerin ${percent(g.fallWorkerShare)}'ü ordunla eve gelir; ayrıca savunan ordunun ${percent(g.prisonerShare)}'i <b>esir</b> olur, senin askerin olarak eve döner.`,
       '<b>Önünü kes</b>: ordu yolda karşılaştığı ilk orduyla savaşıp eve döner; rakip bunu bilemez.',
       '<b>Yeni emir</b>: yürüyen ordunu haritada tıkla; başka bir kaleye ya da ormandaki bir yere yönlendir ya da geri çağır. Rakipler yalnız yönünü görür, hedefini değil.',
     ]],

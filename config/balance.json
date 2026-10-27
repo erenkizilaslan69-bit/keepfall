@@ -62,13 +62,8 @@
     "famineStart": 0.7,
     "famineStartSeconds": 240,
     "famineFoodMultiplier": 0.5,
-    // Kale (sur seviye 1) canı. 0 olursa oyuncu elenir.
-    "castleHp": 500,
-    // Saldıran kazanırsa: kale hasarı = Σ hayatta kalan × DPS × siegeSeconds (okçular × archerSiegeMultiplier).
-    "siegeSeconds": 5,
-    "archerSiegeMultiplier": 0.5,
     // Savaşlar görünür ve gerçek zamanlı: simülasyonun her saniyesi oyunda 1 / battlePlayback saniye sürer.
-    // Kalede: önce savaş, saldıran kazanırsa siegeSeconds boyunca kapıya vurur; hasar ve sonuçlar sonunda uygulanır.
+    // Kalede: kapıda savaş; saldıran kazanırsa (tek asker kalsa bile) kale düşer. Sonuçlar savaş bitince uygulanır.
     "battlePlayback": 0.75,
     // Farklı oyunculara ait iki ordu yolda bu kadar (karo) yaklaşırsa durup savaşır (kavşaklar dahil).
     // Süren bir yol savaşına bu mesafenin 1,5 katından fazla yaklaşamayan üçüncü ordular bekler.
@@ -76,7 +71,9 @@
     // Kale düşünce düşüren oyuncu (askerleriyle birlikte eve dönerken) düşen kalenin depodaki yemek, odun, demir ve altınının
     // fallLootShare kadarını alır; hayatta kalan işçilerin fallWorkerShare kadarı boşta olarak ona katılır.
     "fallLootShare": 0.5,
-    "fallWorkerShare": 0.3333
+    "fallWorkerShare": 0.3333,
+    // Kale düşünce kapıda savaşan savunan ordunun bu kadarı (yarısı) saldıranın askeri olur (esir): türleri korunur, orduyla eve gelir.
+    "prisonerShare": 0.5
   },
 
   // Altın (ormandan gelir: sandık, köy, haydut kampı): kale penceresinde birim başına bu fiyata anında asker kiralanır.
@@ -126,11 +123,11 @@
                 "ecoMistake": 0.08, "exploreAll": true, "chestsAnywhere": true, "scouts": 2, "mercBatch": 3, "mercThreatBatch": 6,
                 "saves": true, "queueDepth": 3, "calculates": true },
     // scoreAware: bot zafer puanı gibi oynar (hasar, öldürme, eleme; savaşın ilk saniyesinden cesur). Oyun kuralını (nüfus) değiştirmez, yalnız botun saldırı isteğini artırır; Orta'da açık.
-    "medium": { "thinkMin": 2, "thinkMax": 3,  "reactMin": 3, "reactMax": 6,  "commands": 4, "mistake": 0.05, "slack": 1, "scoreAware": true, "wallUpgrade": true },
+    "medium": { "thinkMin": 2, "thinkMax": 3,  "reactMin": 3, "reactMax": 6,  "commands": 4, "mistake": 0.05, "slack": 1, "scoreAware": true },
     // Zor: hile yok (aynı görünümler, aynı komutlar); fark karar kalitesi. Hızlı düşünür ve tepki verir, boşta işçi bırakmaz, yükseltmeyi erken başlatır,
     // rakip raporlarına göre karşı birlik üretir (counterUnits), silahları depoda tutup (holdWeapons) saldırı gelince ya da saldırırken kuşanır,
     // rakiplerin zayıfladığı anı kollar (opportunist) ve gözcü raporlarını taze tutar (scoutFactor).
-    "hard":   { "thinkMin": 0.7, "thinkMax": 1.2, "reactMin": 1, "reactMax": 2, "commands": 6, "mistake": 0, "slack": 0, "ecoMistake": 0, "scoreAware": true, "queueDepth": 4, "holdWeapons": true, "counterUnits": true, "opportunist": true, "scoutFactor": 0.5, "upgradeEarly": true, "foresight": true, "garrisonShare": 0.2, "wallUpgrade": true },
+    "hard":   { "thinkMin": 0.7, "thinkMax": 1.2, "reactMin": 1, "reactMax": 2, "commands": 6, "mistake": 0, "slack": 0, "ecoMistake": 0, "scoreAware": true, "queueDepth": 4, "holdWeapons": true, "counterUnits": true, "opportunist": true, "scoutFactor": 0.5, "upgradeEarly": true, "foresight": true, "garrisonShare": 0.2 },
     // Ulakla gelen hediyenin (yük toplamı) bu eşikten fazlasını alan bot, gönderen oyuncuya bu kadar saniye saldırmaz (mesajı yok sayar). Botlar ulak göndermez.
     "giftThreshold": 30,
     "giftPeaceSeconds": 90,
@@ -167,15 +164,10 @@
     "noScoutLastPrepSeconds": 60
   },
 
-  // Sur (Excel "Binalar" sekmesi, Sur): kale canı = sur canı. Sv1 canı war.castleHp (500), başlangıçta var. Aşağıdakiler yükseltmeler (Sv2, Sv3):
-  // can, maliyet (odun, demir) ve süre (sn). Yükseltme bitince can kadar fark (yeni can − eski can) mevcut cana eklenir.
-  // archerDefenseBonus: sur ayaktayken kapıyı savunan okçular bu kadar fazla hasar verir (0,25 = +%25).
+  // Sur: kale canı yok; sur hep en üst seviye görünümünde durur. Saldıran kapıdaki savaşı kazanırsa kale düşer.
+  // archerDefenseBonus: kapıyı savunan okçular surun arkasından bu kadar fazla hasar verir (0,25 = +%25).
   "walls": {
-    "archerDefenseBonus": 0.25,
-    "levels": [
-      { "hp": 750, "upgradeWood": 40, "upgradeIron": 20, "upgradeSeconds": 90 },
-      { "hp": 1100, "upgradeWood": 80, "upgradeIron": 50, "upgradeSeconds": 120 }
-    ]
+    "archerDefenseBonus": 0.25
   },
 
   // Ulak: bir rakip kaleye yemek, odun, demir, altın ve/veya kısa bir mesaj taşır. Gözcüyle aynı hakkı (maxScouts) ve hızı kullanır, bilgi toplamaz,

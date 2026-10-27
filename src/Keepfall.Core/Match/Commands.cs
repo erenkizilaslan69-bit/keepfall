@@ -23,9 +23,6 @@ public sealed record DisarmSoldiers(string UnitId, int Count) : GameCommand;
 
 public sealed record UpgradeBuilding(BuildingType Building) : GameCommand;
 
-/// <summary>Raise the wall to its next level (more hit points; takes wood, iron and time).</summary>
-public sealed record UpgradeWall : GameCommand;
-
 /// <summary>Send one person from <paramref name="From"/> to scout <paramref name="TargetKey"/>'s castle.</summary>
 public sealed record SendScout(string TargetKey, Job From = Job.Idle) : GameCommand;
 

@@ -41,8 +41,6 @@ export class TopBar {
         </div>
       </div>
       <div class="tb-c">
-        <div class="strip hit tb-hp" title="Kale canı"><i class="ico ico-shield"></i>
-          <div class="gbar"><div class="fill"></div><span class="gbar-text"></span></div></div>
       </div>
       <div class="tb-p"><div class="strip hit tb-players" data-f="players"></div></div>
       <div class="tb-k">
@@ -157,12 +155,6 @@ export class TopBar {
     clockEl.classList.toggle('ribbon-blue', s.phase === 'preparation' && !s.eliminated);
     clockEl.classList.toggle('ribbon-red', s.phase === 'war' && !s.eliminated);
     clockEl.classList.toggle('ribbon-black', s.eliminated);
-
-    const hp = this.q('.tb-hp .gbar');
-    const w = s.war;
-    hp.classList.toggle('low', w.wallHp < w.maxWallHp * 0.35);
-    hp.querySelector<HTMLElement>('.fill')!.style.width = `${(100 * w.wallHp) / w.maxWallHp}%`;
-    hp.querySelector('.gbar-text')!.textContent = s.eliminated ? 'Kale düştü' : `${fmt(w.wallHp)} / ${fmt(w.maxWallHp)}`;
 
     const speed = this.q('[data-f="speed"]');
     speed.classList.toggle('hidden', !s.speedControl);

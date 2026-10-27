@@ -46,7 +46,6 @@ interface Replay {
   hit: number;
   death: number;
   advance: number;
-  sieging: boolean;
   gate: Point;
   ended: boolean;
 }
@@ -109,7 +108,7 @@ export class BattlePlayer {
       }
     });
     sfx.play('battleStart');
-    this.replays.set(view.id, { view, fighters, hit: 0, death: 0, advance: 0, sieging: false, gate: toWorld(view.at), ended: false });
+    this.replays.set(view.id, { view, fighters, hit: 0, death: 0, advance: 0, gate: toWorld(view.at), ended: false });
   }
 
   update(): void {
@@ -135,7 +134,7 @@ export class BattlePlayer {
     // The melee of both front rows closes in during the approach.
     const k = Math.min(1, Math.max(0, t / APPROACH_SECONDS));
     for (const f of r.fighters) {
-      if (!f || f.dead || !f.sprite.active || f.ranged || !f.inFront || r.sieging || this.scene.tweens.isTweening(f.sprite)) continue;
+      if (!f || f.dead || !f.sprite.active || f.ranged || !f.inFront || this.scene.tweens.isTweening(f.sprite)) continue;
       f.sprite.setPosition(f.start.x + (f.front.x - f.start.x) * k, f.start.y + (f.front.y - f.start.y) * k).setDepth(f.sprite.y);
       if (k >= 1 && f.sprite.anims.isPlaying && f.sprite.anims.currentAnim?.key.endsWith('-run')) f.sprite.anims.stop();
     }
@@ -150,12 +149,7 @@ export class BattlePlayer {
     const d = v.deaths;
     for (; r.death < d.length && d[r.death] <= tick; r.death += 2) this.fall(r.fighters[d[r.death + 1]], speed);
 
-    // A won siege: the survivors go for the gate.
-    if (!r.sieging && v.siegeSeconds > 0 && now >= v.startedAt + v.fightSeconds) {
-      r.sieging = true;
-      this.siege(r, speed);
-    }
-    if (now >= v.startedAt + v.fightSeconds + v.siegeSeconds) this.end(id, r);
+    if (now >= v.startedAt + v.fightSeconds) this.end(id, r);
   }
 
   /** Only fights the player can see are heard: full volume in view, nothing outside it (a battle elsewhere would just be noise). */
@@ -217,31 +211,6 @@ export class BattlePlayer {
       targets: f.sprite, angle: f.sprite.flipX ? -80 : 80, alpha: 0, y: f.sprite.y + 6, duration: 650 / Math.min(speed, 4),
       onComplete: () => { if (f.sprite.active) f.sprite.destroy(); },
     });
-  }
-
-  /** The attackers still standing run at the gate and hit it until the siege is over. */
-  private siege(r: Replay, speed: number): void {
-    const attackers = r.fighters.filter((f): f is Fighter => !!f && !f.dead && f.side === 0);
-    attackers.forEach((f, i) => {
-      const spot = { x: r.gate.x + ((i % 6) - 2.5) * 22, y: r.gate.y + 18 + Math.floor(i / 6) * 18 };
-      this.walk(f.sprite, spot, 0.8 / speed, () => {
-        const look = LOOK[f.unit] ?? LOOK.kilicli;
-        const key = colorKey(r.view.sides[0].color, this.ownColor, look.attack ?? look.run);
-        if (this.scene.anims.exists(key)) f.sprite.play({ key, repeat: -1, timeScale: Math.min(3, speed) });
-        f.sprite.setFlipX(r.view.facing.x < 0); // facing the gate
-      });
-    });
-    const ours = r.view.sides.some((side) => side.color === this.ownColor);
-    for (let i = 0; i < 6; i++) {
-      this.scene.time.delayedCall((i * 700) / speed, () => {
-        this.fx.hit(r.gate.x + Phaser.Math.Between(-30, 30), r.gate.y - Phaser.Math.Between(0, 30), 'melee');
-        if (ours) this.fx.shake(140, 0.0035);
-        const fx = this.scene.add.sprite(r.gate.x + Phaser.Math.Between(-30, 30), r.gate.y - Phaser.Math.Between(0, 30), 'dust')
-          .setScale(1.6).setDepth(r.gate.y + 50);
-        fx.play('dust');
-        this.scene.time.delayedCall(600, () => fx.destroy());
-      });
-    }
   }
 
   private end(id: string, r: Replay): void {

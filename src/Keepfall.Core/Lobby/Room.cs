@@ -165,13 +165,12 @@ public sealed class Room
             return report.Winner == BattleWinner.Draw ? $"Yolda {them} ordusuyla çarpıştın: berabere."
                 : won ? $"Yolda {them} ordusunu yendin!" : $"Yolda {them} ordusuna yenildin.";
         }
-        int damage = (int)Math.Floor(report.CastleDamage + 1e-9); // same rounding as the panel
         return (attacking, report.Winner) switch
         {
-            (true, BattleWinner.Attacker) => $"{them} kalesine saldırın kazandı: {damage} kale hasarı.",
+            (true, BattleWinner.Attacker) => $"{them} kalesine saldırın kazandı: kaleyi düşürdün!",
             (true, BattleWinner.Defender) => $"{them} kalesine saldırın püskürtüldü.",
             (true, _) => $"{them} kalesine saldırı berabere bitti.",
-            (false, BattleWinner.Attacker) => $"{them} saldırısı savunmanı yendi: kalen {damage} hasar aldı.",
+            (false, BattleWinner.Attacker) => $"{them} saldırısı savunmanı yendi: kalen düştü.",
             (false, BattleWinner.Defender) => $"{them} saldırısını püskürttün!",
             _ => $"{them} saldırısı berabere bitti.",
         };

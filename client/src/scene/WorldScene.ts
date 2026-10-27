@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import type { ArmyView, Rect, ScoutReportView, SpectatorCastleView, SpectatorStateView, BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
-import { sfx } from '../audio';
 import { guarded } from '../error-report';
 import type { Minimap } from '../minimap';
 import type { Anchor, Target } from '../ui/windows';
@@ -91,7 +90,7 @@ export class WorldScene extends Phaser.Scene {
   private trees: { sprite: Phaser.GameObjects.Sprite; tile: Vec }[] = [];
   /** The server's clock at the last castle state, and when that arrived (to run it on between ticks). */
   private clock = { elapsed: 0, at: performance.now(), speed: 1 };
-  private otherCastles = new Map<number, { image: Phaser.GameObjects.Image; name: string; color: PlayerColor; wall?: { hp: number; max: number }; fallen?: boolean }>();
+  private otherCastles = new Map<number, { image: Phaser.GameObjects.Image; name: string; color: PlayerColor; fallen?: boolean }>();
   /** The latest scout report per rival (by seat), for the sign under their castle. */
   private reports = new Map<number, ScoutReportView>();
   private reportClock = 0;
@@ -105,10 +104,6 @@ export class WorldScene extends Phaser.Scene {
   private castleSprite!: Phaser.GameObjects.Image;
   /** The walls round the regions, by seat. */
   private walls = new Map<number, WallRing>();
-  private previewWalls = 0;
-  /** The highest wall level we know of each rival (seen at its gate, or in a scout report): a wall is physical, what we saw stays true until we see more. */
-  private wallKnown = new Map<number, number>();
-  private lastWallHp: number | null = null;
   /** Our own castle: has it fallen (null: not seen yet, so a castle already down is shown as a ruin without the show)? */
   private ownFallen: boolean | null = null;
   private lastPhase: string | null = null;
@@ -175,7 +170,6 @@ export class WorldScene extends Phaser.Scene {
     if (!this.ready) return;
     this.movers.sync(state);
     this.syncMarkers(state);
-    for (const w of state.walls ?? []) this.noteWall(w.seat, w.level);
     this.sites.sync(state.sites, state.elapsedSeconds);
   }
 
@@ -224,40 +218,30 @@ export class WorldScene extends Phaser.Scene {
       const c = this.otherCastles.get(p.seat);
       if (!c) continue;
       this.markFallen(p.seat, c, p.eliminated);
-      this.setEnemySign(p.seat, c, p.eliminated, c.wall);
+      this.setEnemySign(p.seat, c, p.eliminated);
     }
   }
 
   /** Another player's castle falls (everybody sees it: it is public): fireballs and a collapse; one already down when we first look is just a ruin. */
-  private markFallen(seat: number, c: { image: Phaser.GameObjects.Image; wall?: { hp: number; max: number }; fallen?: boolean }, fallen: boolean): void {
+  private markFallen(seat: number, c: { image: Phaser.GameObjects.Image; fallen?: boolean }, fallen: boolean): void {
     const was = c.fallen;
     c.fallen = fallen;
     c.image.setAlpha(fallen ? 0.45 : 1);
     if (fallen) this.walls.get(seat)?.ruin(this.fx);
     if (fallen && was === false) this.fx.collapse(c.image, c.image.x, c.image.y, CASTLE.scale);
     else if (fallen && was === undefined) this.fx.ruin(c.image, CASTLE.scale);
-    // Smoke and flames only where the walls' health is known (a spectator's pictures); a player never learns it for others.
-    if (this.spectating && c.wall) {
-      this.fx.damage(`castle:${seat}`, c.image.x, c.image.y, c.wall.hp / c.wall.max, fallen);
-      const gate = this.walls.get(seat)?.gatePoint();
-      if (gate) this.fx.wallDamage(`wall:${seat}`, gate.x, gate.y, c.wall.hp / c.wall.max, fallen);
-    }
   }
 
-  /** The sign under another player's castle: their name, and (to a spectator) the health of their walls. */
-  private setEnemySign(seat: number, c: { name: string; color: PlayerColor }, fallen: boolean, wall?: { hp: number; max: number }): void {
+  /** The sign under another player's castle: their name, and the last scout report we have of it. */
+  private setEnemySign(seat: number, c: { name: string; color: PlayerColor }, fallen: boolean): void {
     const region = this.layout.regions.find((r) => r.seat === seat)!;
     const base = toWorld(region.origin);
     const name = sign(`<i class="dot" style="background:${COLOR_CSS[c.color] ?? '#888'}"></i><b>${esc(c.name)}</b>${fallen ? ' <small>(düştü)</small>' : ''}`);
-    const p = wall ? Math.max(0, wall.hp / wall.max) : 0;
-    const hp = wall
-      ? `<div class="gbar wl-hp${p < 0.35 ? ' low' : ''}"><div class="fill" style="width:${100 * p}%"></div>
-          <span class="gbar-text">${fallen ? 'Kale düştü' : `${Math.ceil(wall.hp)} / ${wall.max}`}</span></div>` : '';
     // The last scout report stays under the castle: what we know of it, and how old that is. (A spectator sees all, so no report.)
     const report = this.spectating ? undefined : this.reports.get(seat);
     this.labels.set(`castle:${seat}`, {
       x: base.x + CASTLE.x, y: base.y + CASTLE.y + 16, anchor: 'top',
-      html: `<div class="wl-stack">${name}${hp}${report ? scoutSignHtml(report, this.reportClock) : ''}</div>`,
+      html: `<div class="wl-stack">${name}${report ? scoutSignHtml(report, this.reportClock) : ''}</div>`,
     });
   }
 
@@ -289,7 +273,7 @@ export class WorldScene extends Phaser.Scene {
       else this.applyOtherPicture(c);
     }
     // Armies, scouts and battles come as what others see of each other, but all of them; the clock is the picture's.
-    const map: MapStateView = { elapsedSeconds: frame.elapsedSeconds, vision: [], own: [], seen: frame.movers, battles: frame.battles, trail: [], sites: frame.sites, walls: [] };
+    const map: MapStateView = { elapsedSeconds: frame.elapsedSeconds, vision: [], own: [], seen: frame.movers, battles: frame.battles, trail: [], sites: frame.sites };
     this.map = map;
     this.movers.sync(map);
     this.syncMarkers(map);
@@ -311,7 +295,6 @@ export class WorldScene extends Phaser.Scene {
     if (!this.state) return;
     this.apply({
       ...this.state, buildings: c.buildings, jobs: c.jobs, units: c.units, elapsedSeconds: elapsed, eliminated: c.eliminated,
-      war: { ...this.state.war, wallHp: c.wallHp, maxWallHp: c.maxWallHp, wallLevel: c.wallLevel },
     });
   }
 
@@ -319,10 +302,8 @@ export class WorldScene extends Phaser.Scene {
     this.regions.get(c.seat)?.sync(c);
     const castle = this.otherCastles.get(c.seat);
     if (!castle) return;
-    castle.wall = { hp: c.wallHp, max: c.maxWallHp };
-    if (!this.previewWalls) this.walls.get(c.seat)?.setLevel(c.wallLevel); // a spectator sees everything
     this.markFallen(c.seat, castle, c.eliminated);
-    this.setEnemySign(c.seat, castle, c.eliminated, castle.wall);
+    this.setEnemySign(c.seat, castle, c.eliminated);
   }
 
   /** Point the camera at a spot on the map (minimap clicks). */
@@ -450,9 +431,8 @@ export class WorldScene extends Phaser.Scene {
     this.state = state;
     if (this.ready && !this.spectating) {
       this.reports = new Map(state.scouting.reports.map((r) => [r.targetSeat, r]));
-      for (const r of state.scouting.reports) this.noteWall(r.targetSeat, r.wallLevel);
       this.reportClock = state.elapsedSeconds;
-      for (const [seat, c] of this.otherCastles) this.setEnemySign(seat, c, !!c.fallen, c.wall);
+      for (const [seat, c] of this.otherCastles) this.setEnemySign(seat, c, !!c.fallen);
     }
     if (this.ready && !this.spectating) this.apply(state); // a spectator's castle is drawn from the delayed pictures
   }
@@ -497,36 +477,16 @@ export class WorldScene extends Phaser.Scene {
     this.updateWall(s);
   }
 
-  /** Castle HP bar above the towers, label inside it; the castle flashes red when it takes damage. */
+  /** The sign above our castle; a fallen castle collapses (or, when we first look, is just a ruin). */
   private updateWall(s: CastleView): void {
-    const { wallHp, maxWallHp } = s.war;
-    const p = Math.max(0, wallHp / maxWallHp);
     this.labels.set('castle:own', {
       x: CASTLE.x, y: WALL_SIGN_Y, anchor: 'top',
-      html: `<div class="wl-stack">${sign('<i class="ico ico-shield"></i><b>Kale</b>')}
-        <div class="gbar wl-hp${p < 0.35 ? ' low' : ''}"><div class="fill" style="width:${100 * p}%"></div>
-          <span class="gbar-text">${s.eliminated ? 'Kale düştü' : `${Math.ceil(wallHp)} / ${maxWallHp}`}</span></div></div>`,
+      html: `<div class="wl-stack">${sign(`<i class="ico ico-shield"></i><b>Kale</b>${s.eliminated ? ' <small>(düştü)</small>' : ''}`)}</div>`,
     });
-    if (this.lastWallHp !== null && wallHp < this.lastWallHp - 1e-6) {
-      this.castleSprite.setTint(0xff6b5e);
-      sfx.play('castleHit');
-      this.fx.shake(250, Math.min(0.01, 0.003 + ((this.lastWallHp - wallHp) / maxWallHp) * 0.05));
-      this.fx.hit(CASTLE.x, CASTLE.y - 70, 'melee');
-      this.fx.dust(CASTLE.x + Phaser.Math.Between(-60, 60), CASTLE.y - 30, 1.1, 0x8a7a66);
-      this.time.delayedCall(400, () => { if (!this.ownFallen) this.castleSprite.clearTint(); });
-    }
-    this.fx.damage('own', CASTLE.x, CASTLE.y, p, s.eliminated);
-    const ownWall = this.walls.get(this.mySeat);
-    if (ownWall) {
-      if (!this.previewWalls) ownWall.setLevel(s.war.wallLevel);
-      const gate = ownWall.gatePoint();
-      this.fx.wallDamage('own-wall', gate.x, gate.y, p, s.eliminated);
-      if (s.eliminated) ownWall.ruin(this.fx);
-    }
+    if (s.eliminated) this.walls.get(this.mySeat)?.ruin(this.fx);
     if (s.eliminated && this.ownFallen === false) this.fx.collapse(this.castleSprite, CASTLE.x, CASTLE.y, CASTLE.scale);
     else if (s.eliminated && this.ownFallen === null) this.fx.ruin(this.castleSprite, CASTLE.scale);
     this.ownFallen = s.eliminated;
-    this.lastWallHp = wallHp;
     this.castleSprite.setAlpha(s.eliminated ? 0.55 : 1);
   }
 
@@ -617,23 +577,14 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /** The other players' castles in their colour: where they are is public, what is inside is not. */
-  /** A wall round every castle's region, at the level we know of (our own from the castle state; a preview with ?sur=1..3). */
+  /** A wall round every castle's region; it always stands at its top level (a castle falls in one go, the wall has no health). */
   private drawWalls(): void {
-    const preview = Number(new URLSearchParams(window.location.search).get('sur')) || 0;
     for (const r of this.layout.regions) {
       if (r.seat === null || !r.color) continue;
       const ring = new WallRing(this, toWorld(r.origin), r.corner, r.color, this.color);
-      ring.setLevel(preview || 1);
+      ring.setLevel(3);
       this.walls.set(r.seat, ring);
-      this.previewWalls = preview;
     }
-  }
-
-  /** A rival's wall level we have just learnt (it only ever goes up). */
-  private noteWall(seat: number, level: number): void {
-    if (this.previewWalls || level <= (this.wallKnown.get(seat) ?? 0)) return;
-    this.wallKnown.set(seat, level);
-    this.walls.get(seat)?.setLevel(level);
   }
 
   private drawOtherCastles(): void {

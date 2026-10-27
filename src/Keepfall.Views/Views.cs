@@ -50,19 +50,17 @@ public sealed record BattleLineView(string UnitId, string Name, int Count, int L
 public sealed record BattleReportView(
     int Id, double At, bool Attacking, int OpponentSeat, string OpponentName, PlayerColor OpponentColor,
     IReadOnlyList<BattleLineView> AttackerUnits, IReadOnlyList<BattleLineView> DefenderUnits,
-    BattleWinner Winner, bool YouWon, double CastleDamage, double CastleHpAfter, double CastleHpMax, bool DefenderEliminated,
+    BattleWinner Winner, bool YouWon, bool DefenderEliminated,
     BattleKind Kind, LootView? Loot = null);
 /// <summary>What the army that brought a castle down took from it.</summary>
 public sealed record LootView(int Food, int Wood, int Iron, int Gold, int People);
 public sealed record DefenseView(IReadOnlyDictionary<string, Row> Rows, string? ArcherPriority);
 public sealed record WarView(
-    double WallHp, double MaxWallHp, bool Famine, double FamineStartsIn,
+    bool Famine, double FamineStartsIn,
     int SoldiersAway, IReadOnlyList<ArmyView> Armies, IReadOnlyList<IncomingView> Incoming,
-    IReadOnlyList<BattleReportView> Battles, DefenseView Defense,
-    int WallLevel = 1, WallUpgradeView? WallUpgrade = null);
+    IReadOnlyList<BattleReportView> Battles, DefenseView Defense);
 
 /// <summary>The wall upgrade: the one under way (seconds left, of how many) and what the next level costs (null Next* at the top level).</summary>
-public sealed record WallUpgradeView(double? Remaining, double Total, int? NextLevel, double NextHp, double NextWood, double NextIron, double NextSeconds);
 
 // Scouting. A report is all the client ever learns about another castle: approximate soldier
 // counts and building levels. Targets carry only public facts (seat, name, colour) and how far
@@ -77,7 +75,7 @@ public sealed record ScoutedUnitView(string UnitId, string Name, int Count);
 public sealed record ScoutBuildingView(BuildingType Type, string Name, int Level);
 public sealed record ScoutReportView(
     int TargetSeat, string TargetName, PlayerColor TargetColor, double ObservedAt, double DeliveredAt,
-    IReadOnlyList<ScoutedUnitView> Soldiers, IReadOnlyList<ScoutBuildingView> Buildings, int WallLevel = 1);
+    IReadOnlyList<ScoutedUnitView> Soldiers, IReadOnlyList<ScoutBuildingView> Buildings);
 public sealed record ScoutingView(
     int ScoutsAway, IReadOnlyList<ScoutTargetView> Targets,
     IReadOnlyList<ScoutMissionView> Missions, IReadOnlyList<ScoutReportView> Reports, IReadOnlyList<QuarterView> Quarters, int MaxScouts = 1, bool Locked = false);
@@ -185,7 +183,7 @@ public static class ViewMapper
             lines.Select(l => new BattleLineView(l.UnitId, l.Name, l.Count, l.Lost)).ToList();
 
         return new WarView(
-            c.WallHp, c.MaxWallHp, game.Famine, game.FamineStartsIn, c.SoldiersAway,
+            game.Famine, game.FamineStartsIn, c.SoldiersAway,
             game.ArmiesOf(player.CastleKey).Select(a =>
             {
                 var target = Other(a.Target);
@@ -208,15 +206,10 @@ public static class ViewMapper
                 bool youWon = attacking ? b.Winner == BattleWinner.Attacker : b.Winner == BattleWinner.Defender;
                 return new BattleReportView(b.Id, b.At, attacking, opponent?.Seat ?? 0, bandits ? "Haydutlar" : opponent?.Name ?? "?",
                     bandits ? PlayerColor.Black : opponent?.Color ?? PlayerColor.Blue, Lines(b.AttackerUnits), Lines(b.DefenderUnits), b.Winner, youWon,
-                    b.CastleDamage, b.CastleHpAfter, b.CastleHpMax, b.DefenderEliminated, b.Kind,
+                    b.DefenderEliminated, b.Kind,
                     b.Loot is { } l ? new LootView(l.Food, l.Wood, l.Iron, l.Gold, l.People) : null);
             }).ToList(),
-            new DefenseView(c.DefenseRows.ToDictionary(kv => kv.Key.Id, kv => kv.Value), c.DefensePriority?.Id),
-            c.WallLevel,
-            c.WallLevel < game.Rules.Walls.MaxLevel
-                ? new WallUpgradeView(c.WallUpgradeRemaining, c.WallUpgradeTotal, c.WallLevel + 1, game.Rules.Walls.HpOf(c.WallLevel + 1),
-                    game.Rules.Walls.UpgradeTo(c.WallLevel + 1).UpgradeWood, game.Rules.Walls.UpgradeTo(c.WallLevel + 1).UpgradeIron, game.Rules.Walls.UpgradeTo(c.WallLevel + 1).UpgradeSeconds)
-                : new WallUpgradeView(null, 0, null, 0, 0, 0, 0));
+            new DefenseView(c.DefenseRows.ToDictionary(kv => kv.Key.Id, kv => kv.Value), c.DefensePriority?.Id));
     }
 
     public static string SiteName(SiteKind kind) => kind switch
@@ -247,7 +240,7 @@ public static class ViewMapper
                 return new ScoutReportView(
                     target?.Seat ?? 0, target?.Name ?? "?", target?.Color ?? PlayerColor.Blue, r.ObservedAt, r.DeliveredAt,
                     r.Soldiers.Select(u => new ScoutedUnitView(u.UnitId, u.Name, u.Count)).ToList(),
-                    r.BuildingLevels.Select(kv => new ScoutBuildingView(kv.Key, Jobs.Name(kv.Key), kv.Value)).ToList(), r.WallLevel);
+                    r.BuildingLevels.Select(kv => new ScoutBuildingView(kv.Key, Jobs.Name(kv.Key), kv.Value)).ToList());
             }).ToList(),
             Enum.GetValues<Corner>().Select(q =>
             {

@@ -124,7 +124,6 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     public Task<CommandResultView> ArmWorkers(string unitId, int count, Job from) => Economy(new ArmWorkers(unitId, count, from));
     public Task<CommandResultView> DisarmSoldiers(string unitId, int count) => Economy(new DisarmSoldiers(unitId, count));
     public Task<CommandResultView> UpgradeBuilding(BuildingType building) => Economy(new UpgradeBuilding(building));
-    public Task<CommandResultView> UpgradeWall() => Economy(new UpgradeWall());
     public Task<CommandResultView> SetGrowth(bool enabled) => Economy(new SetGrowth(enabled));
     /// <summary>Send a scout to tour one quarter of the forest (named by its corner); it finds that quarter's places.</summary>
     public Task<CommandResultView> SendExplore(Corner quarter, Job from) => Economy(new SendExplore(quarter, from));

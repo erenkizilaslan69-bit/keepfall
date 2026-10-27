@@ -15,7 +15,6 @@ public class GuideViewTests
     {
         var g = GuideMapper.Of(Rules);
 
-        Assert.Equal(Rules.War.CastleHp, g.CastleHp);
         Assert.Equal(Rules.Match.ShortModePrepSeconds, g.ShortPrepSeconds);
         Assert.Equal(Rules.Match.LongModeWarSeconds, g.LongWarSeconds);
         Assert.Equal(Rules.Scouting.MaxScouts, g.MaxScouts);

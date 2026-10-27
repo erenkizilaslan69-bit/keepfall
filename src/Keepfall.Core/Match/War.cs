@@ -125,9 +125,6 @@ public sealed record BattleReport(
     IReadOnlyList<BattleUnitLine> AttackerUnits,
     IReadOnlyList<BattleUnitLine> DefenderUnits,
     BattleWinner Winner,
-    double CastleDamage,
-    double CastleHpAfter,
-    double CastleHpMax,
     bool DefenderEliminated,
     BattleKind Kind = BattleKind.Siege,
     FallLoot? Loot = null);
@@ -139,5 +136,4 @@ public sealed record MatchResult(IReadOnlyList<string> Winners, IReadOnlyList<Ra
 
 /// <summary>War figures for the end-of-match summary.</summary>
 public sealed record WarStats(
-    int AttacksLaunched, int SoldiersLost, int EnemiesKilled, double CastleDamageDealt, double CastleDamageTaken,
-    double WallHp, double MaxWallHp, bool Eliminated, double GoldGained = 0, double GoldSpent = 0, int MercenariesHired = 0);
+    int AttacksLaunched, int SoldiersLost, int EnemiesKilled, bool Eliminated, double GoldGained = 0, double GoldSpent = 0, int MercenariesHired = 0);

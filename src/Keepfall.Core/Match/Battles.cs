@@ -6,7 +6,7 @@ namespace Keepfall.Core.Match;
 
 public enum BattleKind
 {
-    /// <summary>An army at a castle gate against whoever defends it, then (if it wins) a siege of the gate.</summary>
+    /// <summary>An army at a castle gate against whoever defends it; if the attacker wins the castle falls.</summary>
     Siege,
     /// <summary>Two armies that met on the road.</summary>
     Field,
@@ -16,10 +16,9 @@ public enum BattleKind
 
 /// <summary>
 /// A battle that is being fought right now. It is simulated in full the moment it starts (so its
-/// record can be replayed), but it takes its time: for <see cref="FightSeconds"/> the soldiers fight
-/// and, after a won siege fight, the survivors hammer the gate for <see cref="SiegeSeconds"/>. Until
+/// record can be replayed), but it takes its time: for <see cref="FightSeconds"/> the soldiers fight. Until
 /// <see cref="EndsAt"/> everyone in it is held: the armies do not move and the defenders cannot be sent
-/// or disarmed. Only then are losses, castle damage and the report applied.
+/// or disarmed. Only then are losses and the report applied (and, if the attacker won at a castle, it falls).
 /// </summary>
 public sealed class ActiveBattle
 {
@@ -59,13 +58,10 @@ public sealed class ActiveBattle
     public IReadOnlyDictionary<UnitType, int> AttackerSurvivors { get; internal set; } = new Dictionary<UnitType, int>();
     public IReadOnlyDictionary<UnitType, int> DefenderSurvivors { get; internal set; } = new Dictionary<UnitType, int>();
     public BattleWinner Winner { get; internal set; }
-    /// <summary>Damage the gate takes when the siege is over (0 unless the attacker won at a castle).</summary>
-    public double CastleDamage { get; internal set; }
     public BattleRecord Record { get; internal set; } = null!;
 
     public double FightSeconds { get; internal set; }
-    public double SiegeSeconds { get; internal set; }
-    public double EndsAt => StartedAt + FightSeconds + SiegeSeconds;
+    public double EndsAt => StartedAt + FightSeconds;
 
     public bool Involves(string player) => Attacker.From == player || Defender == player;
 }

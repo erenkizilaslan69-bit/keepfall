@@ -47,8 +47,8 @@ console.log('scene ready', await evalJs(`(async()=>{for(let i=0;i<120;i++){ if(w
 console.log('battle', await evalJs(`(async()=>{
  const w=ms=>new Promise(r=>setTimeout(r,ms)); const s=window.keepfallScene; const g=s.sys.game; const now=s.gameNow().now;
  const side=(seat,color,n)=>({seat,color,name:'x',soldiers:Array.from({length:n},()=>({unitId:'kilicli',row:'front'}))});
- const v={id:'fake1',kind:'field',at:{x:20,y:20},facing:{x:1,y:0},startedAt:now,playback:1,tickSeconds:0.5,ticks:12,fightSeconds:6,siegeSeconds:0,
-  sides:[side(1,'red',4),side(2,'blue',4)],hits:[2,0,4,2,4,0],deaths:[4,0,4,1,4,2,4,3],advances:[],winner:'defender',castleDamage:0};
+ const v={id:'fake1',kind:'field',at:{x:20,y:20},facing:{x:1,y:0},startedAt:now,playback:1,tickSeconds:0.5,ticks:12,fightSeconds:6,
+  sides:[side(1,'red',4),side(2,'blue',4)],hits:[2,0,4,2,4,0],deaths:[4,0,4,1,4,2,4,3],advances:[],winner:'defender'};
  s.playBattle(v); const f0=g.getFrame(); await w(12000); const f1=g.getFrame(); await w(1500);
  return JSON.stringify({running:g.loop.running, framesDuring: f1-f0, framesLast1500: g.getFrame()-f1, active:s.battles.active.length});})()`));
 console.log(logs.join('\n') || 'no exceptions');

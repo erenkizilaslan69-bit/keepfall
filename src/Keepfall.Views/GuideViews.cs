@@ -28,14 +28,11 @@ public sealed record GuideView(
     double WorkerFoodPerMinute, double SoldierFoodPerMinute, double FoodPerMinute, double WoodPerMinute, double IronPerMinute,
     double NewPersonBaseCost, double NewPersonCostGrowth, double FamineStartSeconds, double FamineFoodMultiplier,
     IReadOnlyList<GuideLevelView> Levels, IReadOnlyList<GuideUnitView> Units,
-    double CastleHp, double SiegeSeconds, double ArcherSiegeMultiplier,
     int MaxScouts, double ScoutErrorPercent, double ArmySpeed, double ScoutSpeed,
     int ChestsPerCorner, int VillagesPerCorner, int CampsPerCorner,
     GuideChestView Chest, GuideVillageView Village, GuideCampView Camp, GuideCampView BigCamp,
     double FallLootShare, double FallWorkerShare,
-    IReadOnlyList<GuideWallLevelView>? Walls = null, double ArcherDefenseBonusPercent = 0);
-
-public sealed record GuideWallLevelView(int Level, double Hp, double UpgradeWood, double UpgradeIron, double UpgradeSeconds);
+    double ArcherDefenseBonusPercent = 0, double PrisonerShare = 0);
 
 public static class GuideMapper
 {
@@ -57,16 +54,12 @@ public static class GuideMapper
             e.WorkerFoodPerMinute, e.SoldierFoodPerMinute, rules.Production.FoodPerMinute, rules.Production.WoodPerMinute, rules.Production.IronPerMinute,
             e.NewPersonBaseCost, e.NewPersonCostGrowth, rules.War.FamineStartSeconds >= 0 ? rules.War.FamineStartSeconds : rules.War.FamineStart * rules.Match.ShortModeWarSeconds, rules.War.FamineFoodMultiplier,
             e.BuildingLevels.Select(l => new GuideLevelView(l.Level, l.Capacity, l.Multiplier, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList(), units,
-            rules.War.CastleHp, rules.War.SiegeSeconds, rules.War.ArcherSiegeMultiplier,
             rules.Scouting.MaxScouts, Math.Round(rules.Scouting.ReportError * 100), rules.Map.ArmySpeed, rules.Map.ScoutSpeed,
             f.ChestsPerCorner, f.VillagesPerCorner, f.CampsPerCorner,
             new GuideChestView(new(f.Chest.GoldMin, f.Chest.GoldMax), new(f.Chest.IronMin, f.Chest.IronMax)),
             new GuideVillageView(new(f.Village.GoldMin, f.Village.GoldMax), new(f.Village.FoodMin, f.Village.FoodMax),
                 new(f.Village.PeopleMin, f.Village.PeopleMax), f.Village.MinSoldiers),
             Camp(f.Camp), Camp(f.BigCamp), rules.War.FallLootShare, rules.War.FallWorkerShare,
-            Enumerable.Range(1, rules.Walls.MaxLevel).Select(l => l == 1
-                ? new GuideWallLevelView(1, rules.Walls.HpOf(1), 0, 0, 0)
-                : new GuideWallLevelView(l, rules.Walls.HpOf(l), rules.Walls.UpgradeTo(l).UpgradeWood, rules.Walls.UpgradeTo(l).UpgradeIron, rules.Walls.UpgradeTo(l).UpgradeSeconds)).ToList(),
-            Math.Round(rules.Walls.ArcherDefenseBonus * 100));
+            Math.Round(rules.Walls.ArcherDefenseBonus * 100), rules.War.PrisonerShare);
     }
 }

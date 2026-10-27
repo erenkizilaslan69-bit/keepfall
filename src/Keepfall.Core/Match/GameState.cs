@@ -228,21 +228,6 @@ public sealed class GameState
         return seen;
     }
 
-    /// <summary>
-    /// The wall level of every other castle whose gate is inside this player's vision right now (their castle, an army or a scout of theirs is there).
-    /// A wall is a thing you can see from outside; what is inside the walls still needs a scout's report.
-    /// </summary>
-    public IReadOnlyList<(string Castle, int Level)> WallsSeenBy(string playerKey)
-    {
-        var vision = VisionOf(playerKey);
-        if (vision.Count == 0) return [];
-        var seen = new List<(string, int)>();
-        foreach (var (other, corner) in _corners)
-            if (other != playerKey && _players.ContainsKey(other) && vision.Any(c => c.Contains(Map.RegionOf(corner).Gate)))
-                seen.Add((other, _players[other].Castle.WallLevel));
-        return seen;
-    }
-
     /// <summary>Battles being fought right now that this player is part of (a fallen castle keeps watching its own).</summary>
     public IReadOnlyList<ActiveBattle> ActiveBattlesOf(string playerKey) => _active.Where(b => b.Involves(playerKey)).ToList();
 
@@ -695,7 +680,7 @@ public sealed class GameState
             return new ScoutedUnit(u.Id, u.Name, seen);
         }).ToList();
         var levels = Jobs.Buildings.ToDictionary(b => b, b => castle.Building(b).Level);
-        return new ScoutReport(target, now, now, soldiers, levels, castle.WallLevel);
+        return new ScoutReport(target, now, now, soldiers, levels);
     }
 
     // ---- war ---------------------------------------------------------------------------------
@@ -984,7 +969,7 @@ public sealed class GameState
 
     /// <summary>
     /// The army fights whoever is at home in the target castle right now; they come down to the gate
-    /// and are held there until it is over. If the army wins, its survivors then hammer the gate.
+    /// and are held there until it is over. If the army wins, the castle falls.
     /// </summary>
     private void StartSiege(ArmyMarch a)
     {
@@ -994,19 +979,13 @@ public sealed class GameState
         var battle = new ActiveBattle(_nextId++, NewPublicId(), BattleKind.Siege, Map.RegionOf(_corners[a.Target]).Gate,
             a.Out.Direction, ElapsedSeconds, a, null, a.Target);
 
-        // While the wall stands the archers at the gate shoot from behind it.
+        // The archers at the gate shoot from behind the wall.
         var defendSetup = new ArmySetup("Savunan") { Targeting = castle.DefensePriority is { } d ? TargetPriority.Prefer(d) : TargetPriority.Front,
-            RangedDamageFactor = castle.WallHp > 1e-9 ? 1 + Rules.Walls.ArcherDefenseBonus : 1 };
+            RangedDamageFactor = 1 + Rules.Walls.ArcherDefenseBonus };
         foreach (var (type, n) in defenders) defendSetup.Add(type, n);
         foreach (var (type, row) in castle.DefenseRows) defendSetup.PlaceIn(type, row);
         Fight(battle, defendSetup, defenders);
 
-        if (battle.Winner == BattleWinner.Attacker)
-        {
-            // A wall cannot lose more than it has left (keeps damage stats honest).
-            battle.CastleDamage = Math.Min(SiegeDamage(battle.AttackerSurvivors), castle.WallHp);
-            battle.SiegeSeconds = Rules.War.SiegeSeconds;
-        }
         Begin(battle);
     }
 
@@ -1071,18 +1050,12 @@ public sealed class GameState
         if (b.Kind == BattleKind.Siege)
         {
             defender.DefendersBack(b.DefenderSurvivors, defendLost);
-            if (b.CastleDamage > 0)
-            {
-                defender.TakeWallDamage(b.CastleDamage);
-                attacker.Stats.CastleDamageDealt += b.CastleDamage;
-            }
-            fell = b.Winner == BattleWinner.Attacker && defender.WallHp <= 1e-9;
+            fell = b.Winner == BattleWinner.Attacker;
         }
 
         var loot = fell ? PlunderFallen(a, defender) : null;
         var report = new BattleReport(b.Id, ElapsedSeconds, a.From, b.Defender,
-            Lines(b.AttackerUnits, attackLost), Lines(b.DefenderUnits, defendLost), b.Winner, b.CastleDamage,
-            defender.WallHp, defender.MaxWallHp, fell, b.Kind, loot);
+            Lines(b.AttackerUnits, attackLost), Lines(b.DefenderUnits, defendLost), b.Winner, fell, b.Kind, loot);
         _battles.Add(report);
         Notify(a.From, new GameNotification(NotificationKind.BattleFought, b.Defender, ElapsedSeconds, BattleId: report.Id));
         Notify(b.Defender, new GameNotification(NotificationKind.BattleFought, a.From, ElapsedSeconds, BattleId: report.Id));
@@ -1136,7 +1109,7 @@ public sealed class GameState
         }
 
         var report = new BattleReport(b.Id, ElapsedSeconds, a.From, b.Defender,
-            Lines(b.AttackerUnits, attackLost), Lines(b.DefenderUnits, banditsLost), b.Winner, 0, 0, 0, false, BattleKind.Camp);
+            Lines(b.AttackerUnits, attackLost), Lines(b.DefenderUnits, banditsLost), b.Winner, false, BattleKind.Camp);
         _battles.Add(report);
         Notify(a.From, new GameNotification(NotificationKind.BattleFought, b.Defender, ElapsedSeconds, BattleId: report.Id));
         SendHome(a, b.AttackerSurvivors);
@@ -1154,11 +1127,6 @@ public sealed class GameState
             FinishBattle(b);
         }
     }
-
-    /// <summary>Σ surviving attackers × DPS × siege seconds; archers count only partly against walls.</summary>
-    public double SiegeDamage(IReadOnlyDictionary<UnitType, int> survivors) =>
-        survivors.Sum(kv => kv.Value * kv.Key.Dps * Rules.War.SiegeSeconds
-                            * (kv.Key.Range == AttackRange.Ranged ? Rules.War.ArcherSiegeMultiplier : 1));
 
     private void SendHome(ArmyMarch a, IReadOnlyDictionary<UnitType, int> survivors)
     {
@@ -1276,8 +1244,7 @@ public sealed class GameState
                 s.StarvingSeconds, s.IdleWorkerSeconds,
                 Jobs.Buildings.ToDictionary(b => b, b => c.Building(b).Level),
                 Samples.ToList(),
-                new WarStats(s.AttacksLaunched, s.SoldiersLost, s.EnemiesKilled, s.CastleDamageDealt, s.CastleDamageTaken,
-                    c.WallHp, c.MaxWallHp, eliminated, s.GoldGained, s.GoldSpent, s.MercenariesHired));
+                new WarStats(s.AttacksLaunched, s.SoldiersLost, s.EnemiesKilled, eliminated, s.GoldGained, s.GoldSpent, s.MercenariesHired));
         }
     }
 }

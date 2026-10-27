@@ -83,19 +83,6 @@ check('the map carries no token and no castle contents',
 check('lobby command refused in the match', !(await B.call('SetReady', false)).ok);
 check('host sets ×20', (await A.call('SetSpeed', 20)).ok);
 
-// ---- the wall: C raises it (the start has just enough wood and iron); only C's own picture says so ----------------------
-{
-  const until = async (pred, ms) => { for (let t = 0; t < ms; t += 250) { if (pred()) return true; await sleep(250); } return false; };
-  const c0 = C.of('CastleState').at(-1);
-  check('every castle picture carries the wall level and what the next level costs', c0.war.wallLevel === 1
-    && c0.war.wallUpgrade.nextLevel === 2 && c0.war.wallUpgrade.nextWood === 40 && c0.war.wallUpgrade.nextIron === 20 && c0.war.wallUpgrade.nextSeconds === 90);
-  check('C raises its wall', (await C.call('UpgradeWall')).ok);
-  check('one wall upgrade at a time', !(await C.call('UpgradeWall')).ok);
-  check('the wall rises to level 2 with 750 hit points', await until(() => { const w = C.of('CastleState').at(-1).war; return w.wallLevel === 2 && w.maxWallHp === 750 && w.wallHp === 750; }, 20000));
-  check('nobody else is told of it', [A, B].every((x) => x.of('CastleState').every((c) => c.war.wallLevel === 1)));
-  check('a rival that has not seen the gate learns nothing of the wall', [A, B].every((x) => x.of('MapState').every((m) => m.walls.every((w) => w.seat !== 3))));
-}
-
 // ---- B builds an army and keeps bows in storage; A forges swords; A scouts B -----------------
 await A.call('MoveWorkers', 'idle', 'blacksmith', 4);
 await A.call('QueueWeapon', 'kilicli', 4);
@@ -137,8 +124,8 @@ const realSpears = realB.units.find((u) => u.id === 'mizrakci').soldiers;
 const report = castlesA.at(-1).scouting.reports.find((r) => r.targetSeat === 2);
 check('A has a report on B', !!report);
 if (report) {
-  check('report has only target, time, soldiers, buildings and the wall level',
-    JSON.stringify(Object.keys(report).sort()) === JSON.stringify(['buildings', 'deliveredAt', 'observedAt', 'soldiers', 'targetColor', 'targetName', 'targetSeat', 'wallLevel']) && report.wallLevel === 1);
+  check('report has only target, time, soldiers, buildings',
+    JSON.stringify(Object.keys(report).sort()) === JSON.stringify(['buildings', 'deliveredAt', 'observedAt', 'soldiers', 'targetColor', 'targetName', 'targetSeat']));
   check('report soldiers have only id, name and count',
     report.soldiers.every((s) => JSON.stringify(Object.keys(s).sort()) === '["count","name","unitId"]'));
   const seen = report.soldiers.find((s) => s.unitId === 'mizrakci').count;
@@ -225,7 +212,7 @@ const battleB = B.of('CastleState').at(-1).war.battles[0];
 check('both sides got the battle report', !!battleA && !!battleB && battleA.id === battleB.id);
 if (battleA) {
   check('the attacker sees the defending army', battleA.defenderUnits.some((u) => u.unitId === 'mizrakci' && u.count === 6));
-  check('the report has losses and castle damage', battleA.attackerUnits.every((u) => 'lost' in u) && 'castleDamage' in battleA);
+  check('the report has losses and no castle health', battleA.attackerUnits.every((u) => 'lost' in u) && !('castleDamage' in battleA) && !('castleHpAfter' in battleA));
 }
 check('A was told about the battle, B too',
   A.of('Notification').slice(notesBefore.A).some((t) => t.includes('saldır'))
@@ -499,7 +486,7 @@ check(`pictures match X's real castle at that moment (${exact.length} compared)`
   const real = X.of('CastleState').find((c) => c.elapsedSeconds === f.elapsedSeconds);
   const seen = f.castles.find((c) => c.seat === 1);
   return real.units.every((u) => seen.units.find((v) => v.id === u.id)?.soldiers === u.soldiers)
-    && Math.abs(seen.wallHp - real.war.wallHp) < 1e-6;
+    && seen.eliminated === real.eliminated;
 }));
 check('movers in a picture carry no route, target or arrival',
   frames.every((f) => f.movers.every((m) => !/route|target|arriv|mode/i.test(JSON.stringify(Object.keys(m))))));

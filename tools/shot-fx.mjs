@@ -62,8 +62,8 @@ await run(`(async () => {
   const c = s.castleSprite;
   const tile = { x: c.x / 64 + 0.5, y: c.y / 64 - 2.5 };
   window.__fx = { c };
-  s.playBattle({ id: 'fx1', kind: 'field', at: tile, facing: { x: 1, y: 0 }, startedAt: now, playback: 1, tickSeconds: 0.5, ticks: 40, fightSeconds: 20, siegeSeconds: 0,
-    sides: [side(2, 'red'), side(3, 'yellow')], hits, deaths, advances: [], winner: 'attacker', castleDamage: 0 });
+  s.playBattle({ id: 'fx1', kind: 'field', at: tile, facing: { x: 1, y: 0 }, startedAt: now, playback: 1, tickSeconds: 0.5, ticks: 40, fightSeconds: 20,
+    sides: [side(2, 'red'), side(3, 'yellow')], hits, deaths, advances: [], winner: 'attacker' });
   s.cameras.main.setZoom(1.2); s.lookAt(tile);
   return 1; })()`);
 await sleep(3500);

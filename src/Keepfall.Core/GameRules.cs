@@ -20,7 +20,7 @@ public sealed class GameRules
         MatchRules match, EconomyRules economy, ScoutingRules scouting, WarRules war, MapRules map,
         IReadOnlyDictionary<string, double>? mercenaryPrices = null, ForestRules? forest = null, BotRules? bots = null, EnvoyRules? envoy = null, WallRules? walls = null)
     {
-        Walls = walls ?? new WallRules(war.CastleHp, []);
+        Walls = walls ?? new WallRules();
         Envoy = envoy ?? EnvoyRules.Default;
         Bots = bots ?? BotRules.Default;
         Forest = forest ?? ForestRules.None;

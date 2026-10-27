@@ -27,7 +27,7 @@ public sealed class Bot
         _level = rules.Bots.Of(difficulty);
         _rng = new Random(seed);
         _memory = new BotMemory(_level);
-        _modules = [new EconomyModule(), new BuildModule(), new WallModule(), new ScoutModule(), new ForesightModule(), new DefenseModule(), new AttackModule(), new ForestModule(), new MercenaryModule(), new ProductionModule()];
+        _modules = [new EconomyModule(), new BuildModule(), new ScoutModule(), new ForesightModule(), new DefenseModule(), new AttackModule(), new ForestModule(), new MercenaryModule(), new ProductionModule()];
         _simulator = new Keepfall.Core.Combat.BattleSimulator(rules);
         // Bots do not all wake up on the same second.
         _nextThink = _rng.NextDouble() * _level.ThinkMax;

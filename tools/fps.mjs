@@ -57,9 +57,9 @@ await run(`(async () => {
   const s = window.keepfallScene; const now = s.gameNow().now;
   const side = (seat, color, n, unit) => ({ seat, color, name: 'x', soldiers: Array.from({ length: n }, (_, i) => ({ unitId: ['kilicli', 'okcu', 'mizrakci', 'kalkanli'][i % 4], row: i % 4 === 1 ? 'back' : 'front' })) });
   const at = [{ x: 10, y: 8 }, { x: 16, y: 10 }, { x: 12, y: 14 }];
-  at.forEach((p, i) => s.playBattle({ id: 'fps' + i, kind: 'field', at: p, facing: { x: 1, y: 0 }, startedAt: now, playback: 1, tickSeconds: 0.5, ticks: 400, fightSeconds: 200, siegeSeconds: 0,
+  at.forEach((p, i) => s.playBattle({ id: 'fps' + i, kind: 'field', at: p, facing: { x: 1, y: 0 }, startedAt: now, playback: 1, tickSeconds: 0.5, ticks: 400, fightSeconds: 200,
     sides: [side(1, 'blue', 24), side(2, 'red', 24)],
-    hits: Array.from({ length: 300 }, (_, k) => [k * 0.4, k % 24, 24 + (k * 7) % 24]).flat(), deaths: [], advances: [], winner: 'defender', castleDamage: 0 }));
+    hits: Array.from({ length: 300 }, (_, k) => [k * 0.4, k % 24, 24 + (k * 7) % 24]).flat(), deaths: [], advances: [], winner: 'defender' }));
   return 1; })()`);
 await sleep(1500);
 await measure('crowded');

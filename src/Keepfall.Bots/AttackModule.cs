@@ -94,9 +94,8 @@ public sealed class AttackModule : IBotModule
         // An opportunist goes first for the rival somebody else is busy with (a besieged rival has less to throw at us).
         double Eager(int seat) => ctx.Level.Opportunist && ctx.Memory.GateFights.TryGetValue(seat, out var at) && ctx.Now - at < 90 ? 6 : 0;
         var pick = options.OrderBy(o => o.Needed + o.March * 0.1 - Eager(o.Seat)).First();
-        // Enough to win the fight, and if the rival is weak enough, enough to break the gate too (the last castle standing wins).
+        // Enough to win the fight at the gate (the winner brings the castle down).
         int send = medium ? (int)Math.Ceiling(pick.Needed * 1.1) : pick.Needed;
-        if (medium) send = Math.Max(send, SoldiersToBreak(ctx, spare, GateHp(ctx, pick.Seat)));
         var units = Tactics.Take(spare, Math.Min(send, spareTotal));
         if (units.Count == 0) return;
         if (ctx.Level.HoldWeapons && !ctx.ReadyToSend(units)) { ctx.Stats.Count("armingWaits"); return; }
@@ -150,31 +149,6 @@ public sealed class AttackModule : IBotModule
         if (!ctx.Memory.GateFights.TryGetValue(seat, out var fight) || ctx.Now - fight > 60) return guess;
         ctx.Stats.Count("opportunities");
         return guess.ToDictionary(kv => kv.Key, kv => (int)Math.Ceiling(kv.Value * 0.85));
-    }
-
-    /// <summary>What we know of a rival's gate: the hit points it had after the last siege we fought there (whole if we never have).</summary>
-    private static double GateHp(BotContext ctx, int seat)
-    {
-        var last = ctx.Castle.War.Battles.Where(b => b.Kind == BattleKind.Siege && b.Attacking && b.OpponentSeat == seat).OrderByDescending(b => b.At).FirstOrDefault();
-        // Never besieged it: what the wall level we have seen of it (a scout's report) is worth.
-        return last is null ? ctx.Rules.Walls.HpOf(ctx.LatestReport(seat)?.WallLevel ?? 1) : Math.Max(1, last.CastleHpAfter);
-    }
-
-    /// <summary>The fewest soldiers (in the mix we have) whose survivors would break a gate with <paramref name="hp"/> left, allowing for losses.</summary>
-    private static int SoldiersToBreak(BotContext ctx, IReadOnlyDictionary<string, int> spare, double hp)
-    {
-        int total = spare.Values.Sum();
-        for (int n = 1; n <= total; n++)
-        {
-            double damage = 0;
-            foreach (var (id, count) in Tactics.Take(spare, n))
-            {
-                var type = ctx.Rules.FindUnit(id)!;
-                damage += count * type.Dps * ctx.Rules.War.SiegeSeconds * (type.Range == AttackRange.Ranged ? ctx.Rules.War.ArcherSiegeMultiplier : 1);
-            }
-            if (damage * 0.7 >= hp) return n; // about 70 % of them are still standing at the gate
-        }
-        return total;
     }
 
     /// <summary>With nothing known of a rival: this share of the soldiers we have ourselves (at home and out), in our own mix.</summary>

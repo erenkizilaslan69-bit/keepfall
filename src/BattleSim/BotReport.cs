@@ -18,8 +18,8 @@ public sealed record BotReportOptions
     /// <summary>Experiment: when time runs out the winner is who has the most victory points, not the most people (nothing in the game changes).</summary>
     public bool ScoreRule { get; init; }
     public double PointsPerElimination { get; init; } = 150;
-    /// <summary>Per point of gate damage dealt (a whole gate is 500).</summary>
-    public double PointsPerDamage { get; init; } = 0.2;
+    /// <summary>Unused since the wall went (kept so old experiment flags still parse).</summary>
+    public double PointsPerDamage { get; init; }
     public double PointsPerKill { get; init; } = 2;
     public double PointsPerPerson { get; init; } = 1;
     /// <summary>Print one tab-separated line of the main numbers (for comparing runs).</summary>
@@ -31,7 +31,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
 {
     private sealed record SeatResult(
         int Seat, BotDifficulty Level, bool Won, bool Eliminated, double EliminatedAt, int PopWarStart, int SoldiersWarStart, int PopEnd, int PeakPop,
-        int Soldiers, double GoldGained, double GoldSpent, int Mercenaries, int SoldiersLost, int EnemiesKilled, double SiegeDamage,
+        int Soldiers, double GoldGained, double GoldSpent, int Mercenaries, int SoldiersLost, int EnemiesKilled,
         IReadOnlyDictionary<string, int> Bot, int HiredWarStart, int HiredEnd, int Eliminations, double Points);
 
     private sealed record MatchRecord(
@@ -103,7 +103,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
         {
             var c = game.CastleOf(p.CastleKey)!;
             int eliminations = game.BattlesOf(p.CastleKey).Count(b => b.Attacker == p.CastleKey && b.DefenderEliminated);
-            return (Eliminations: eliminations, Points: options.PointsPerElimination * eliminations + options.PointsPerDamage * c.Stats.CastleDamageDealt
+            return (Eliminations: eliminations, Points: options.PointsPerElimination * eliminations
                 + options.PointsPerKill * c.Stats.EnemiesKilled + options.PointsPerPerson * (game.IsEliminated(p.CastleKey) ? 0 : c.Population));
         });
         // With the experiment on, a match that runs out of time goes to whoever has the most points.
@@ -118,7 +118,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
             return new SeatResult(p.Seat, p.Bot!.Value, winners.Contains(p.Seat), game.IsEliminated(p.CastleKey),
                 game.Eliminated.GetValueOrDefault(p.CastleKey), pop0, sol0, c.Population, c.Stats.PeakPopulation,
                 c.SoldierCount + c.SoldiersAway, c.Stats.GoldGained, c.Stats.GoldSpent, c.Stats.MercenariesHired, c.Stats.SoldiersLost,
-                c.Stats.EnemiesKilled, c.Stats.CastleDamageDealt, host.Stats.TryGetValue(p.Seat, out var st) ? st.Counts : new Dictionary<string, int>(),
+                c.Stats.EnemiesKilled, host.Stats.TryGetValue(p.Seat, out var st) ? st.Counts : new Dictionary<string, int>(),
                 hired0, c.Mercenaries.Values.Sum(), points[p.Seat].Eliminations, points[p.Seat].Points);
         }).ToList();
 
@@ -205,12 +205,12 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
     private void PrintWar(MatchRecord[] matches)
     {
         Heading("3. Savaş");
-        var t = new Table("Zorluk", "Kale saldırısı/maç", "Pusu/maç", "Ort. kale hasarı", "Ölen asker", "Öldürülen düşman", "Savunma tepkisi/maç", "Yeni hedefe yönelme/maç");
+        var t = new Table("Zorluk", "Kale saldırısı/maç", "Pusu/maç", "Ölen asker", "Öldürülen düşman", "Savunma tepkisi/maç", "Yeni hedefe yönelme/maç");
         foreach (var level in Groups(matches))
         {
             var seats = matches.SelectMany(m => m.Seats).Where(s => s.Level == level).ToList();
             t.Add(Name(level), F(Avg(seats, s => s.Bot.GetValueOrDefault("attacks")), "0.00"), F(Avg(seats, s => s.Bot.GetValueOrDefault("intercepts")), "0.00"),
-                F(Avg(seats, s => s.SiegeDamage), "0"), F(Avg(seats, s => s.SoldiersLost)), F(Avg(seats, s => s.EnemiesKilled)),
+                F(Avg(seats, s => s.SoldiersLost)), F(Avg(seats, s => s.EnemiesKilled)),
                 F(Avg(seats, s => s.Bot.GetValueOrDefault("defenceThinks")), "0.0"), F(Avg(seats, s => s.Bot.GetValueOrDefault("regroups")), "0.00"));
         }
         t.Print();
