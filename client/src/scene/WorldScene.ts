@@ -23,6 +23,8 @@ import { WallRing } from './Walls';
 import { Workers } from './Workers';
 
 const MAX_ZOOM = 1.5;
+/** Open water all round the map (tiles), so the camera can centre a castle that sits in a corner. Roads and coordinates are untouched. */
+const WATER_PAD = 14;
 const PAN_SPEED = 900; // px per second at zoom 1 (keyboard)
 // Things stand in front of each other by their y; parts of the map lie at negative y, so the ground
 // layers sit far below anything that can stand on them.
@@ -496,7 +498,8 @@ export class WorldScene extends Phaser.Scene {
   private drawGround(): Phaser.Tilemaps.TilemapLayer {
     const topLeft = toWorld({ x: 0, y: 0 });
     const cols = this.layout.size, rows = this.layout.size;
-    this.add.tileSprite(topLeft.x, topLeft.y, cols * TILE, rows * TILE, 'water').setOrigin(0).setDepth(DEPTH_WATER);
+    this.add.tileSprite(topLeft.x - WATER_PAD * TILE, topLeft.y - WATER_PAD * TILE, (cols + 2 * WATER_PAD) * TILE, (rows + 2 * WATER_PAD) * TILE, 'water')
+      .setOrigin(0).setDepth(DEPTH_WATER);
     const data = Array.from({ length: rows }, (_, y) => Array.from({ length: cols }, (_, x) => {
       if (x === 0 || y === 0 || x === cols - 1 || y === rows - 1) return -1;
       const top = y === 1, bottom = y === rows - 2, left = x === 1, right = x === cols - 2;
@@ -609,7 +612,8 @@ export class WorldScene extends Phaser.Scene {
     const cam = this.cameras.main;
     const topLeft = toWorld({ x: 0, y: 0 });
     const size = this.layout.size * TILE;
-    cam.setBounds(topLeft.x, topLeft.y, size, size);
+    const pad = WATER_PAD * TILE;
+    cam.setBounds(topLeft.x - pad, topLeft.y - pad, size + 2 * pad, size + 2 * pad);
     this.centerOnCastle();
     // The canvas is the whole window: when it changes size, keep the map filling it.
     this.scale.on('resize', () => cam.setZoom(Math.max(cam.zoom, this.minZoom())));
