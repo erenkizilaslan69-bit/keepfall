@@ -27,7 +27,7 @@ Kullanıcıyla **Türkçe** konuş. Kısa ve öz raporla. Kod, yorum ve commit m
 9. Test sunucusunda tarayıcı bölmesi gizliyken Phaser çizmez; ekran testi için başsız Chrome (CDP) kullan (örnek: `tools/replay-check.mjs`).
 
 ## Test rutini
-`dotnet test -c Release` (241 test) → `node tools/run-smoke.mjs` (~2–3 dk; kendi test sunucusunu 5081'de, savaşı 15 dk olan geçici bir config kopyasıyla açar ve kapatır; Production çalışırken de koşar, kilitlemez) → istemci için `npm --prefix client run build` (tsc dahil).
+`dotnet test -c Release` (260 test) → `node tools/run-smoke.mjs` (~2–3 dk; kendi test sunucusunu 5081'de, savaşı 15 dk olan geçici bir config kopyasıyla açar ve kapatır; Production çalışırken de koşar, kilitlemez) → istemci için `npm --prefix client run build` (tsc dahil).
 Bot dengesi: `python tools/bot-deney.py 200 docs/bot-deney-son.md` (tablo `docs/`'ta).
 
 ## Son durum (2026-10-26)
@@ -91,6 +91,12 @@ Görev 0–6 ve kullanıcı istekleri bitti, hepsi push edildi; Production (5080
 - Işınlanma hatası (düzeltildi): yönlendirilen ordunun `Out` rotası yolun ortasından başlar; eve dönüş `Out.Route.Reversed()` ile kurulunca ordu kaleye değil yönlendirme noktasına "dönüp" kaleye ışınlanıyordu. Artık `GameState.WayHome` yönlendirilmiş ordular için bulunduğu yerden kendi kapısına rota kurar. `GameState.ContinuityViolations` her tick konum sıçramasını ve "eve vardı ama kapıda değil" durumunu sayar (hedef 0); `ContinuityTests` rastgele emirlerle (×1/×5/×20) denetler, BattleSim raporu da yazar.
 - Binalar: yükseltme süreleri yarıya (15/30 sn), Sv4 (10 kişi, ×2,5; 80 odun + 50 demir, 60 sn) ve ayrı görünümü (`layout.ts`). Kıtlık `war.famineStartSeconds` (240). Sandık altını 30–45 (köy 30–48, kamp 60–90), gözcü ve ulak hızı 2,5. Harita etrafına 14 karo su (`WATER_PAD`).
 - Ölçüm: `docs/gece/olcum.md` (BattleSim `--zorluk bekleyen` yalnız bekleyen bot deneyi için).
+
+## Yeni birlikler ve deste (2026-10-28)
+- 7 birlik: Keşiş (`heal` 6 / `healInterval` 2, `healBudget` 90: savaşta en yaralı dosta can verir, saldırmaz; yalnız keşişi kalan taraf biter), Mancınık (`backFirst`, `splashTargets` 2 ×0,5, `cost.people` 2: kuşanırken iki işçi harcar, işçiye dönerken iki geri verir), Süvari (`flank`: arka sıradaki okçu/mancınık/keşişe önce dalar; `speedFactor` 2: ordu hızı en yavaş birimin; `raider`: yalnız baskıncılı ordu kapıda kazanırsa kale düşmez, `war.raidBurnSeconds/Factor` tarla yanar, `Castle.ScorchLeft`). Sayılar BattleSim ile kalibre edildi: `docs/yeni-birlikler-tablo.md`.
+- Deste (`deck.enabled/size`): `Room.SetDeck` (lobide; seçmeyene rastgele), `GameState(decks:)`, `Castle.SetDeck/InDeck/UnitTypes` (görünümlerdeki birim listesi desteyle sınırlı), desteye uymayan ganimet silahı yarı fiyatla altına çevrilir; rakip destesi yalnız `ScoutReport.Deck`. Botlar: kolay rastgele, orta/zor `bots.decks` listesinden; `BotContext.Mix` karışımı deste içinde oranlar. Testler `RoomOptions.BotDeck = RoomOptions.ClassicDeck` ile eski 4 birimi sabitler.
+- Görseller: `client/src/scene/PixelArt.ts` (koddan çizilen chibi at + mancınık, 4 kareli koşu, ince sallanan kuyruk) ve `NewUnits.ts` (yüklemede her renk için doku/animasyon; süvarinin binicisi paketin Lancer sayfasından birleştirilir, hiçbir şey diske yazılmaz: kural 7). Keşiş paketin Monk'u (+ Heal_Effect). Deneme: `tools/shot-newunits.mjs`.
+- Ölçüm araçları: `BattleSim denge`, `BattleSim deste --deste-basi 50` (örnekleme; tam eşleşme `--cift N` çok uzun sürer), `KF_DECKS`/`KF_SERIAL` tanılama. Botlar süvari baskını yapmaz (yalnız `Tactics.WithBreaker`: saldırı ordusunda kaleyi düşürecek en az bir süvari-dışı asker bulundurur).
 
 ## Yollar (görünüm)
 - `client/src/scene/Roads.ts`: yol geometrisi sunucununki (değişmedi); zemin 4 px hücrelerle bir kez canvas dokularına çizilir (ragged kenar, tekerlek izi, çakıl, ormanda dar patika), kavşaklarda CC0 yön tabelası, kapı önü taş döşeme sur seviyesine göre (`GatePaving`). `tools/shot-roads.mjs`.

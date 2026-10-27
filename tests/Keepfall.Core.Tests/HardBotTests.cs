@@ -76,7 +76,7 @@ public class HardBotTests
         var castle = game.CastleOf(me.CastleKey)!;
         castle.AddWeapons(Sword, 30);
         castle.AddPeople(30);
-        game.CastleOf(rival.CastleKey)!.AddSoldiers(Sword, 30); // too strong to attack
+        game.CastleOf(rival.CastleKey)!.AddSoldiers(Sword, 60); // too strong to attack
         Assert.True(game.Execute(me.CastleKey, new SendScout(rival.CastleKey)).Ok);
         Run(room, bot, me, 250);
         int garrison = (int)Math.Ceiling(30 * Rules.Bots.Of(BotDifficulty.Hard).GarrisonShare);
