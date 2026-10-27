@@ -211,9 +211,9 @@ public class EconomyTests
     public void Weapon_queue_charges_up_front_and_refunds_on_cancel()
     {
         var castle = NewCastle();
-        Ok(castle.Execute(new QueueWeapon("okcu", 2))); // 1 iron + 4 wood each
-        Assert.Equal((32.0, 18.0), (castle.Wood, castle.Iron));
-        Assert.False(castle.Execute(new QueueWeapon("kilicli", 7)).Ok); // 21 iron needed, 18 left
+        Ok(castle.Execute(new QueueWeapon("okcu", 2))); // 2 iron + 8 wood each
+        Assert.Equal((24.0, 16.0), (castle.Wood, castle.Iron));
+        Assert.False(castle.Execute(new QueueWeapon("kilicli", 3)).Ok); // 30 iron needed, 16 left
 
         Ok(castle.Execute(new CancelWeapon(0)));
         Assert.Equal((40.0, 20.0), (castle.Wood, castle.Iron));

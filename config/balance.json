@@ -238,28 +238,28 @@
   "units": [
     {
       "id": "okcu", "name": "Okçu", "phase": 1,
-      "cost": { "iron": 1, "wood": 4, "food": 0, "people": 1 },
+      "cost": { "iron": 2, "wood": 8, "food": 0, "people": 1 },
       "buildSeconds": 25,
       "hp": 68, "damage": 9, "attackInterval": 1.2,
       "range": "ranged", "row": "back"
     },
     {
       "id": "kilicli", "name": "Kılıçlı", "phase": 1,
-      "cost": { "iron": 3, "wood": 2, "food": 0, "people": 1 },
+      "cost": { "iron": 6, "wood": 4, "food": 0, "people": 1 },
       "buildSeconds": 30,
       "hp": 100, "damage": 8.5, "attackInterval": 1.0,
       "range": "melee", "row": "front"
     },
     {
       "id": "mizrakci", "name": "Mızrakçı", "phase": 1,
-      "cost": { "iron": 1, "wood": 3, "food": 0, "people": 1 },
+      "cost": { "iron": 2, "wood": 6, "food": 0, "people": 1 },
       "buildSeconds": 20,
       "hp": 90, "damage": 10, "attackInterval": 1.2,
       "range": "melee", "row": "front"
     },
     {
       "id": "kalkanli", "name": "Kalkanlı", "phase": 1,
-      "cost": { "iron": 2, "wood": 3, "food": 0, "people": 1 },
+      "cost": { "iron": 4, "wood": 6, "food": 0, "people": 1 },
       "buildSeconds": 35,
       "hp": 135, "damage": 7, "attackInterval": 1.3,
       "range": "melee", "row": "front"
@@ -268,7 +268,7 @@
     // Keşiş: saldırmaz; her healInterval sn'de kendi ordusunda canı oranca en düşük müttefike heal can verir.
     {
       "id": "kesis", "name": "Keşiş", "phase": 1,
-      "cost": { "iron": 1, "wood": 4, "food": 0, "people": 1 },
+      "cost": { "iron": 2, "wood": 8, "food": 0, "people": 1 },
       "buildSeconds": 30,
       "hp": 60, "damage": 0, "attackInterval": 1.5,
       "range": "ranged", "row": "back",
@@ -278,7 +278,7 @@
     // people 2: kuşanırken iki işçi harcar (işçiye dönerken iki işçi geri gelir).
     {
       "id": "mancinik", "name": "Mancınık", "phase": 1,
-      "cost": { "iron": 2, "wood": 5, "food": 0, "people": 2 },
+      "cost": { "iron": 4, "wood": 10, "food": 0, "people": 2 },
       "buildSeconds": 60,
       "hp": 50, "damage": 17, "attackInterval": 3.0,
       "range": "ranged", "row": "back",
@@ -287,7 +287,7 @@
     // Süvari: yakın dövüş, arka sıradaki okçu/mancınık/keşiş yaşadıkça onlara vurur (flank); haritada speedFactor kat hızlı.
     {
       "id": "suvari", "name": "Süvari", "phase": 1,
-      "cost": { "iron": 3, "wood": 4, "food": 0, "people": 1 },
+      "cost": { "iron": 6, "wood": 8, "food": 0, "people": 1 },
       "buildSeconds": 45,
       "hp": 90, "damage": 9, "attackInterval": 1.0,
       "range": "melee", "row": "front",

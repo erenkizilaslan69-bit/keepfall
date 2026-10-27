@@ -42,13 +42,8 @@ public class ScoutingTests
     /// <summary>Gives <paramref name="player"/> <paramref name="spearmen"/> spearmen (≤ 10) and growth off everywhere.</summary>
     private static void Arm(GameState game, string player, int spearmen)
     {
-        Ok(game.Execute(player, new MoveWorkers(Job.Idle, Job.Blacksmith, 4)));
-        Ok(game.Execute(player, new QueueWeapon("mizrakci", spearmen)));
-        Run(game, spearmen * 5); // 4 blacksmiths: one 20 s spear every 5 s
-        int fromIdle = Math.Min(spearmen, game.CastleOf(player)!.Workers[Job.Idle]);
-        if (fromIdle > 0) Ok(game.Execute(player, new ArmWorkers("mizrakci", fromIdle)));
-        if (spearmen > fromIdle) Ok(game.Execute(player, new ArmWorkers("mizrakci", spearmen - fromIdle, Job.Blacksmith)));
-        Run(game, Rules.Match.ArmSeconds); // arming takes its time
+        // (Weapons cost more than the start stores hold for ten spears, so the soldiers are simply handed over.)
+        game.CastleOf(player)!.AddSoldiers(Rules.FindUnit("mizrakci")!, spearmen);
     }
 
     private static GameState GameWithGrowthOff(int players = 2, int seed = 1)

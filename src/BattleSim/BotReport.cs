@@ -32,7 +32,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
     private sealed record SeatResult(
         int Seat, BotDifficulty Level, bool Won, bool Eliminated, double EliminatedAt, int PopWarStart, int SoldiersWarStart, int PopEnd, int PeakPop,
         int Soldiers, double GoldGained, double GoldSpent, int Mercenaries, int SoldiersLost, int EnemiesKilled,
-        IReadOnlyDictionary<string, int> Bot, int HiredWarStart, int HiredEnd, int Eliminations, double Points, bool Passive = false);
+        IReadOnlyDictionary<string, int> Bot, int HiredWarStart, int HiredEnd, int Eliminations, double Points, bool Passive = false, int StockWarStart = 0);
 
     private sealed record MatchRecord(
         bool ByElimination, double Duration, IReadOnlyList<SeatResult> Seats, int SiegeBattles, int FieldBattles, int CampBattles, int CampWins,
@@ -89,14 +89,14 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
         var game = room.Game!;
         var host = new BotHost.BotHost(rules, seed);
         if (options.Difficulty == "bekleyen") host.PassiveSeats.Add(room.Players[index % room.Players.Count].Seat);
-        var atWarStart = new Dictionary<int, (int Pop, int Soldiers, int Hired)>();
+        var atWarStart = new Dictionary<int, (int Pop, int Soldiers, int Hired, int Stock)>();
         BotMatch.Play(rules, room, seed, (r, _) =>
         {
             if (atWarStart.Count == 0 && game.Phase == MatchPhase.War)
                 foreach (var p in r.Players)
                 {
                     var c = game.CastleOf(p.CastleKey)!;
-                    atWarStart[p.Seat] = (c.Population, c.SoldierCount + c.SoldiersAway, c.Mercenaries.Values.Sum());
+                    atWarStart[p.Seat] = (c.Population, c.SoldierCount + c.SoldiersAway, c.Mercenaries.Values.Sum(), (int)(c.Wood + c.Iron));
                 }
         }, host);
 
@@ -116,12 +116,12 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
         var seats = room.Players.Select(p =>
         {
             var c = game.CastleOf(p.CastleKey)!;
-            var (pop0, sol0, hired0) = atWarStart.GetValueOrDefault(p.Seat);
+            var (pop0, sol0, hired0, stock0) = atWarStart.GetValueOrDefault(p.Seat);
             return new SeatResult(p.Seat, p.Bot!.Value, winners.Contains(p.Seat), game.IsEliminated(p.CastleKey),
                 game.Eliminated.GetValueOrDefault(p.CastleKey), pop0, sol0, c.Population, c.Stats.PeakPopulation,
                 c.SoldierCount + c.SoldiersAway, c.Stats.GoldGained, c.Stats.GoldSpent, c.Stats.MercenariesHired, c.Stats.SoldiersLost,
                 c.Stats.EnemiesKilled, host.Stats.TryGetValue(p.Seat, out var st) ? st.Counts : new Dictionary<string, int>(),
-                hired0, c.Mercenaries.Values.Sum(), points[p.Seat].Eliminations, points[p.Seat].Points, host.PassiveSeats.Contains(p.Seat));
+                hired0, c.Mercenaries.Values.Sum(), points[p.Seat].Eliminations, points[p.Seat].Points, host.PassiveSeats.Contains(p.Seat), stock0);
         }).ToList();
 
         var reports = room.Players.SelectMany(p => game.BattlesOf(p.CastleKey).Select(b => (Player: p, Report: b))).ToList();
@@ -199,12 +199,12 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
     private void PrintEconomy(MatchRecord[] matches)
     {
         Heading("2. Ekonomi ve ordu");
-        var t = new Table("Zorluk", "Nüfus savaş başı", "Asker savaş başı", "Zirve nüfus", "Son nüfus", "Son asker", "Paralı oranı savaş başı", "Paralı oranı maç sonu", "En büyük saldırı ordusu", "Ort. saldırı ordusu");
+        var t = new Table("Zorluk", "Nüfus savaş başı", "Asker savaş başı", "Depo odun+demir savaş başı", "Zirve nüfus", "Son nüfus", "Son asker", "Paralı oranı savaş başı", "Paralı oranı maç sonu", "En büyük saldırı ordusu", "Ort. saldırı ordusu");
         foreach (var level in Groups(matches))
         {
             var seats = matches.SelectMany(m => m.Seats).Where(s => s.Level == level).ToList();
             var attackers = seats.Where(s => s.Bot.GetValueOrDefault("attacks") > 0).ToList();
-            t.Add(Name(level), F(Avg(seats, s => s.PopWarStart)), F(Avg(seats, s => s.SoldiersWarStart)), F(Avg(seats, s => s.PeakPop)), F(Avg(seats, s => s.PopEnd)),
+            t.Add(Name(level), F(Avg(seats, s => s.PopWarStart)), F(Avg(seats, s => s.SoldiersWarStart)), F(Avg(seats, s => s.StockWarStart), "0"), F(Avg(seats, s => s.PeakPop)), F(Avg(seats, s => s.PopEnd)),
                 F(Avg(seats, s => s.Soldiers)), Pct(MercShare(seats, s => s.HiredWarStart, s => s.SoldiersWarStart)), Pct(MercShare(seats, s => s.HiredEnd, s => s.Soldiers)),
                 F(seats.Max(s => s.Bot.GetValueOrDefault("biggestAttack")), "0"),
                 F(attackers.Count == 0 ? double.NaN : attackers.Sum(s => s.Bot["attackSoldiers"]) / (double)attackers.Sum(s => s.Bot["attacks"])));
