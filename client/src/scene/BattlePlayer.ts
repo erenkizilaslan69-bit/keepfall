@@ -58,6 +58,9 @@ interface Replay {
 
 export class BattlePlayer {
   private replays = new Map<string, Replay>();
+  /** Every battle that has been replayed here, for good: its "Savaş" cloud must not come back after the replay ends. */
+  private played = new Set<string>();
+  hasPlayed(id: string): boolean { return this.played.has(id); }
 
   /**
    * <paramref name="clock"/>: the server's game time right now (seconds) and the game speed.
@@ -78,6 +81,7 @@ export class BattlePlayer {
 
   start(view: BattleStartedView): void {
     if (this.replays.has(view.id)) return;
+    this.played.add(view.id);
     const f = normalise(view.facing);
     const p = { x: -f.y, y: f.x };
     // At a castle the fight is in front of the gate, on the road the attackers came along.

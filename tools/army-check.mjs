@@ -57,7 +57,7 @@ await evalJs(`(()=>{
  const end=s.battles.end.bind(s.battles);
  s.battles.end=(i,r)=>{ log.push(T()+' replay-end '+r.view.kind+' '+i+' now='+s.gameNow().now.toFixed(1)); return end(i,r); };
  window.__audit=new Set(); setInterval(()=>{ for(const p of s.movers.audit()) { if(!window.__audit.has(p)){ window.__audit.add(p); log.push(T()+' AUDIT '+p); } } }, 300);
- const clouds=new Set(); setInterval(()=>{ const act=new Set(s.battles.active.map(b=>b.id)); for(const b of (s.map?.battles??[])) if(!act.has(b.id)&&!clouds.has(b.id)){ clouds.add(b.id); log.push(T()+' CLOUD-WITHOUT-REPLAY '+b.id); } }, 300);
+ const clouds=new Set(); setInterval(()=>{ for(const b of (s.map?.battles??[])) if(!s.battles.hasPlayed(b.id)&&!clouds.has(b.id)){ clouds.add(b.id); log.push(T()+' CLOUD-WITHOUT-REPLAY '+b.id); } }, 300);
 })()`);
 
 const deadline = Date.now() + MINUTES * 60_000;

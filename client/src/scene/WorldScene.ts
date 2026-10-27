@@ -193,8 +193,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private syncMarkers(state: MapStateView): void {
-    const replaying = new Set(this.battles.active.map((b) => b.id));
-    const shown = new Set(state.battles.filter((b) => !replaying.has(b.id)).map((b) => b.id));
+    // A battle we fight in is shown by its replay (and not by the cloud, before it starts or after it ends).
+    const shown = new Set(state.battles.filter((b) => !this.battles.hasPlayed(b.id)).map((b) => b.id));
     for (const [id, parts] of this.markers) {
       if (shown.has(id)) continue;
       parts.forEach((p) => p.destroy());
