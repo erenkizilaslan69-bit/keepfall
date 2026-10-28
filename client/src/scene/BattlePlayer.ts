@@ -7,6 +7,7 @@ import type { BattleStartedView, PlayerColor, Vec } from '../types';
 import { SHIELD_SCALE, UNIT_SCALE, colorKey, playRandom, unitOriginY } from './assets';
 import type { Point } from './layout';
 import { toWorld } from './world';
+import { makeNewUnitArt } from './NewUnits';
 
 // Replays a battle we fight in, exactly as the server simulated it: the two sides line up facing
 // each other, the melee closes in during the approach, every hit in the record is an attack (archers
@@ -106,6 +107,11 @@ export class BattlePlayer {
     const p = { x: -f.y, y: f.x };
     // At a castle the fight is in front of the gate, on the road the attackers came along.
     const centre = view.kind === 'siege' ? { x: view.at.x - f.x * 1.6, y: view.at.y - f.y * 1.6 } : view.at;
+    // A colour whose cavalry and catapult pictures are not made yet (a battle right after the map came up, or one between players we have not met): make
+    // them now, so no soldier is drawn with the engine's black "missing texture" square.
+    if (view.sides.some((side) => !this.scene.textures.exists(colorKey(side.color, this.ownColor, 'suvari-run')))) {
+      try { makeNewUnitArt(this.scene, this.ownColor, view.sides.map((side) => side.color)); } catch (e) { reportError('battle-art', e, {}); }
+    }
     const fighters: (Fighter | null)[] = [];
     try {
     view.sides.forEach((side, s) => {
@@ -130,7 +136,8 @@ export class BattlePlayer {
           const start = place(k, list.length, isFront ? FRONT_START : BACK);
           const back = place(k, list.length, BACK);
           const at = courtyard ?? (isFront ? start : back);
-          const key = colorKey(side.color, this.ownColor, look.run);
+          let key = colorKey(side.color, this.ownColor, look.run);
+          if (!this.scene.textures.exists(key)) key = colorKey(side.color, this.ownColor, LOOK.kilicli.run); // (never the black square)
           const sprite = this.scene.add.sprite(at.x, at.y, key).setScale(look.scale).setOrigin(0.5, unitOriginY(look.run));
           sprite.setFlipX(sign > 0 ? f.x > 0 : f.x < 0).setDepth(at.y).setData('replay', view.id);
           playRandom(sprite, key);

@@ -83,7 +83,7 @@ export class Effects {
     this.alive++;
     const s = this.scene.add.sprite(x, y, key).setScale(scale).setDepth(DEPTH_FX + 1).setTint(tint).setAlpha(alpha);
     s.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => { s.destroy(); this.alive--; });
-    s.play(key);
+    s.play({ key, repeat: 0 }); // (the animation itself loops, for the building dust: this one plays once and is gone)
   }
 
   /** Shake the picture; the stronger one wins while it lasts, and nothing moves for people who asked for less motion. */
