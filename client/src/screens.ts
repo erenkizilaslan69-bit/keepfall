@@ -348,7 +348,9 @@ export class EndScreen {
       this.resultShown = true;
       const won = r.winners.includes(this.mySeat);
       sfx.play(won ? 'win' : 'lose');
-      void this.showEndArt(won, room.players.find((p) => p.seat === this.mySeat)?.color ?? 'blue');
+      // victory: the winner's colour (the ranking carries it); defeat: our own
+      const winnerColor = r.ranking.find((x) => r.winners.includes(x.seat))?.color;
+      void this.showEndArt(won, (won ? winnerColor : undefined) ?? room.players.find((p) => p.seat === this.mySeat)?.color ?? r.ranking.find((x) => x.seat === this.mySeat)?.color ?? 'blue');
       const names = r.ranking.filter((x) => r.winners.includes(x.seat)).map((x) => `${dot(x.color)}${esc(x.name)}`).join(', ');
       const title = this.root.querySelector<HTMLElement>('#end-title')!;
       title.innerHTML = won
