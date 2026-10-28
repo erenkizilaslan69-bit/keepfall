@@ -99,7 +99,8 @@ public sealed class AttackModule : IBotModule
         var units = Tactics.WithBreaker(ctx, spare, Tactics.Take(spare, Math.Min(send, spareTotal)));
         if (units.Count == 0) return;
         if (ctx.Level.HoldWeapons && !ctx.ReadyToSend(units)) { ctx.Stats.Count("armingWaits"); return; }
-        ctx.Wish(80, new SendArmy(CastleKeys.Of(pick.Seat), units, null, null, ArmyMode.Attack));
+        int? mask = KingdomModule.Disguise(ctx, pick.Seat);
+        ctx.Wish(80, new SendArmy(CastleKeys.Of(pick.Seat), units, null, null, ArmyMode.Attack, mask is { } m ? CastleKeys.Of(m) : null));
         ctx.Commit(units);
         ctx.Stats.Count("attacks");
         if (ctx.Stats["firstAttackAt"] == 0) ctx.Stats.Count("firstAttackAt", Math.Max(1, (int)ctx.Now));

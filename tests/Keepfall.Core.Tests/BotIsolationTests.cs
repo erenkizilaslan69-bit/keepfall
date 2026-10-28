@@ -32,6 +32,7 @@ public class BotIsolationTests
         "Keepfall.Core.Match.SendExplore", "Keepfall.Core.Match.SendChestScout", "Keepfall.Core.Match.SendArmy", "Keepfall.Core.Match.SendArmyToSite",
         "Keepfall.Core.Match.RecallArmy", "Keepfall.Core.Match.RedirectArmy", "Keepfall.Core.Match.SetDefense", "Keepfall.Core.Match.HireMercenary", "Keepfall.Core.Match.SetGrowth",
         "Keepfall.Core.Match.ArmyMode", "Keepfall.Core.Match.CastleKeys",
+        "Keepfall.Core.Match.SendDecoy", "Keepfall.Core.Match.SetFakeReport", "Keepfall.Core.Match.BribeArmy", "Keepfall.Core.Match.HireCamp",
         // Plain enums and tables the views are made of.
         "Keepfall.Core.Economy.Job", "Keepfall.Core.Economy.Jobs", "Keepfall.Core.Economy.BuildingType", "Keepfall.Core.Economy.Resource",
         "Keepfall.Core.Units.Row", "Keepfall.Core.Units.ResourceCost", "Keepfall.Core.Economy.DeckRules", "Keepfall.Core.Units.UnitType", "Keepfall.Core.World.Corner", "Keepfall.Core.World.SiteKind",

@@ -41,6 +41,10 @@ public sealed class BotMemory(BotLevelRules level)
     /// <summary>When a battle that is not ours was last seen at a rival's gate (it is being besieged by somebody else).</summary>
     public Dictionary<int, double> GateFights { get; } = [];
 
+    /// <summary>When the bot last used a kingdom ability that is not on a timer of its own (a hired camp, a phantom), and whether its false report is set.</summary>
+    public double KingdomAt { get; set; } = double.NegativeInfinity;
+    public bool FakeReportSet { get; set; }
+
     /// <summary>When the bot last sent riders to burn fields.</summary>
     public double RaidAt { get; set; } = double.NegativeInfinity;
 
