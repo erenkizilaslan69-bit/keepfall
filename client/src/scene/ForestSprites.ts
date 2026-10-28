@@ -6,7 +6,7 @@ import type { SiteKind } from '../types';
 
 export const FOREST_FILES = ['village', 'camp', 'bigCamp', 'chest'] as const;
 /** How wide each place is drawn (world px). */
-export const FOREST_WIDTH: Record<SiteKind, number> = { village: 165, camp: 125, bigCamp: 235, chest: 58 };
+export const FOREST_WIDTH: Record<SiteKind, number> = { village: 165, camp: 125, bigCamp: 235, chest: 80 };
 
 const srcKey = (name: string) => `forest:${name}`;
 
@@ -63,6 +63,51 @@ function emptyChest(c: HTMLCanvasElement): HTMLCanvasElement {
   return c;
 }
 
+/** Soot: a share of the picture's pixels turn charcoal (a fixed pattern, so the same place always looks the same). */
+function soot(d: Uint8ClampedArray, w: number, share: number): void {
+  for (let i = 0, n = 0; i < d.length; i += 4, n++) {
+    if (!d[i + 3]) continue;
+    if (((n * 2654435761) >>> 7) % 100 < share * 100) { d[i] = 38; d[i + 1] = 34; d[i + 2] = 36; }
+  }
+  void w;
+}
+
+/** The smoke of the fire (pale, nearly colourless pixels) is gone. */
+function clearSmoke(d: Uint8ClampedArray): void {
+  for (let i = 0; i < d.length; i += 4) {
+    if (!d[i + 3]) continue;
+    const [, s, v] = hsv(d[i], d[i + 1], d[i + 2]);
+    if (s < 0.16 && v > 0.58) d[i + 3] = 0;
+  }
+}
+
+/** Roofs, thatch and hay (brown and orange) are burnt black, with a few embers left. */
+function char(d: Uint8ClampedArray): void {
+  for (let i = 0, n = 0; i < d.length; i += 4, n++) {
+    if (!d[i + 3]) continue;
+    const [h, s, v] = hsv(d[i], d[i + 1], d[i + 2]);
+    if (h >= 12 && h <= 58 && s > 0.2 && v > 0.36) {
+      const k = 0.3 + ((n * 40503) % 17) / 100;
+      const grey = (0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2]) * k;
+      const ember = ((n * 2246822519) >>> 9) % 100 < 3;
+      d[i] = ember ? 150 : grey; d[i + 1] = ember ? 52 : grey * 0.95; d[i + 2] = ember ? 22 : grey * 0.92;
+    }
+  }
+}
+
+/** Two flags lying on the ground (a pole and a torn cloth), in front of a ruined camp. */
+function fallenFlags(c: HTMLCanvasElement): void {
+  const g = c.getContext('2d')!;
+  const put = (x: number, y: number, dir: number) => {
+    g.fillStyle = '#1a1424'; g.fillRect(x, y, 16 * dir, 3);
+    g.fillStyle = '#5a3a22'; g.fillRect(x, y + 1, 16 * dir, 1);
+    g.fillStyle = '#1a1424'; g.fillRect(x + 4 * dir, y + 3, 9 * dir, 6);
+    g.fillStyle = '#6a1f2a'; g.fillRect(x + 5 * dir, y + 4, 7 * dir, 4);
+  };
+  put(Math.round(c.width * 0.2), c.height - 9, 1);
+  put(Math.round(c.width * 0.78), c.height - 6, -1);
+}
+
 /** The texture of a place, full or emptied; made once from the loaded picture. */
 export function forestTexture(scene: Phaser.Scene, kind: SiteKind, gone: boolean): string | null {
   const name = kind;
@@ -75,19 +120,28 @@ export function forestTexture(scene: Phaser.Scene, kind: SiteKind, gone: boolean
   else {
     const g = c.getContext('2d', { willReadFrequently: true })!;
     const img = g.getImageData(0, 0, c.width, c.height);
-    if (kind !== 'village') putOutFire(img.data);
-    fade(img.data, kind === 'village' ? 0.55 : 0.6, kind === 'village' ? 0.78 : 0.82);
+    if (kind === 'village') {
+      char(img.data);
+      fade(img.data, 0.35, 0.8);
+      soot(img.data, c.width, 0.07);
+    } else {
+      putOutFire(img.data);
+      clearSmoke(img.data);
+      fade(img.data, 0.18, 0.78); // nearly grey
+      soot(img.data, c.width, 0.09);
+    }
     g.putImageData(img, 0, 0);
-    if (kind === 'camp') {
-      // The tent has fallen over: the whole picture squashed and leaning on its base.
+    if (kind !== 'village') {
+      // The tents have fallen over: the whole picture squashed and leaning, flags lying in front.
       const f = document.createElement('canvas');
       f.width = c.width + 8; f.height = c.height;
       const fg = f.getContext('2d')!;
       fg.imageSmoothingEnabled = false;
       fg.translate(f.width / 2, f.height);
-      fg.rotate(-0.1);
-      fg.scale(1, 0.68);
+      fg.rotate(kind === 'camp' ? -0.12 : -0.05);
+      fg.scale(1, kind === 'camp' ? 0.62 : 0.58);
       fg.drawImage(c, -c.width / 2, -c.height);
+      fallenFlags(f);
       c = f;
     }
   }

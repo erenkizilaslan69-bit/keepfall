@@ -5,6 +5,7 @@ import type { WorldLabels } from '../ui/world-labels';
 import { UNIT_SCALE, playRandom, unitOriginY } from './assets';
 import { sign } from './parts';
 import { toWorld } from './world';
+import { reducedEffects } from '../prefs';
 import { FOREST_WIDTH, forestTexture } from './ForestSprites';
 
 // The places of the forest we have found: a chest (a pile of gold), a village (black houses), a bandit camp (a
@@ -29,6 +30,8 @@ interface Item {
   signature: string;
   sprites: Phaser.GameObjects.Sprite[];
   zone: Phaser.GameObjects.Zone;
+  /** Short-lived decorations (the glint of a chest that has just been found). */
+  extras: Phaser.GameObjects.GameObject[];
 }
 
 export class SiteLayer {
@@ -36,6 +39,9 @@ export class SiteLayer {
   private readonly trails: Phaser.GameObjects.Graphics;
   private trailKey = '';
   private sites: SiteView[] = [];
+  /** Places already drawn once; a chest found after the first picture glints briefly. */
+  private readonly seen = new Set<string>();
+  private synced = false;
 
   constructor(private readonly scene: Phaser.Scene, private readonly labels: WorldLabels, private readonly onSelect: (id: string) => void) {
     this.trails = scene.add.graphics().setDepth(DEPTH_TRAIL);
@@ -56,6 +62,7 @@ export class SiteLayer {
 
   sync(sites: SiteView[], now: number): void {
     this.sites = sites;
+    queueMicrotask(() => { for (const s of sites) this.seen.add(s.id); this.synced = true; });
     const key = sites.map((s) => s.id).join(',');
     if (key !== this.trailKey) { this.trailKey = key; this.drawTrails(sites); }
     const alive = new Set(sites.map((s) => s.id));
@@ -69,7 +76,8 @@ export class SiteLayer {
       let item = this.items.get(s.id);
       if (!item || item.signature !== signature) {
         if (item) this.destroyItem(s.id, item, false);
-        item = this.build(s, signature);
+        const fresh = this.synced && !this.seen.has(s.id);
+        item = this.build(s, signature, fresh);
         this.items.set(s.id, item);
       }
       const p = toWorld(s.position);
@@ -90,8 +98,30 @@ export class SiteLayer {
     this.trails.destroy();
   }
 
+  /** A short glow and a few sparkles over a chest that has just been found. */
+  private glint(x: number, y: number, extras: Phaser.GameObjects.GameObject[]): void {
+    const key = 'kf-glint';
+    if (!this.scene.textures.exists(key)) {
+      const c = document.createElement('canvas');
+      c.width = c.height = 9;
+      const g = c.getContext('2d')!;
+      g.fillStyle = '#fff6c0'; g.fillRect(4, 0, 1, 9); g.fillRect(0, 4, 9, 1); g.fillStyle = '#ffffff'; g.fillRect(3, 3, 3, 3); g.fillStyle = '#ffd34a'; g.fillRect(2, 2, 1, 1); g.fillRect(6, 2, 1, 1); g.fillRect(2, 6, 1, 1); g.fillRect(6, 6, 1, 1);
+      this.scene.textures.addCanvas(key, c);
+    }
+    const depth = y + DEPTH_LIFT + 20;
+    const glow = this.scene.add.ellipse(x, y + 6, 104, 58, 0xffe27a, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(depth);
+    extras.push(glow);
+    this.scene.tweens.add({ targets: glow, fillAlpha: 0.55, duration: 420, yoyo: true, repeat: 2, ease: 'Sine.easeInOut', onComplete: () => glow.setVisible(false) });
+    for (let i = 0; i < 8; i++) {
+      const spark = this.scene.add.image(x + Phaser.Math.Between(-34, 34), y + Phaser.Math.Between(-24, 14), key).setScale(0.1).setAlpha(0).setDepth(depth + 1).setBlendMode(Phaser.BlendModes.ADD);
+      extras.push(spark);
+      this.scene.tweens.add({ targets: spark, alpha: { from: 0, to: 1 }, scale: { from: 0.2, to: 1.5 }, y: spark.y - 16, duration: 520, delay: i * 150, yoyo: true, repeat: 1, ease: 'Sine.easeOut', onComplete: () => spark.setVisible(false) });
+    }
+  }
+
   private destroyItem(id: string, item: Item, removeLabel = true): void {
     item.sprites.forEach((s) => s.destroy());
+    for (const e of item.extras) { this.scene.tweens.killTweensOf(e); e.destroy(); }
     item.zone.destroy();
     this.items.delete(id);
     if (removeLabel) this.labels.remove(`site:${id}`);
@@ -117,7 +147,7 @@ export class SiteLayer {
     }
   }
 
-  private build(s: SiteView, signature: string): Item {
+  private build(s: SiteView, signature: string, fresh = false): Item {
     const p = toWorld(s.position);
     const sprites: Phaser.GameObjects.Sprite[] = [];
     const add = (x: number, y: number, key: string, scale: number, depthShift = 0, originY = 0.9): Phaser.GameObjects.Sprite => {
@@ -158,6 +188,8 @@ export class SiteLayer {
     const zone = this.scene.add.zone(p.x, p.y - 10, s.kind === 'bigCamp' ? 260 : 130, s.kind === 'bigCamp' ? 200 : 110)
       .setDepth(15_000).setInteractive({ useHandCursor: true });
     zone.on('pointerup', () => this.onSelect(s.id));
-    return { signature, sprites, zone };
+    const extras: Phaser.GameObjects.GameObject[] = [];
+    if (fresh && s.kind === 'chest' && !s.gone && !reducedEffects()) this.glint(p.x, p.y, extras);
+    return { signature, sprites, zone, extras };
   }
 }

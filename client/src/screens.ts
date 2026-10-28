@@ -338,7 +338,7 @@ export class EndScreen {
         <ol class="ranking">${r.ranking.map((x) => `
           <li class="${r.winners.includes(x.seat) ? 'winner' : ''}" data-color="${x.color}">
             <span class="place">${x.place}.</span><i class="avatar" style="background-image:url('${avatar(x.seat)}')"></i>
-            <span class="pname">${botMark(x.seat)}${esc(x.name)}${x.seat === this.mySeat ? ' <span class="muted">(sen)</span>' : ''}</span>
+            <span class="pname">${r.winners.includes(x.seat) ? '<i class="ico ico-crown" title="Kazanan"></i>' : ''}${botMark(x.seat)}${esc(x.name)}${x.seat === this.mySeat ? ' <span class="muted">(sen)</span>' : ''}</span>
             <span class="muted small">${x.eliminated ? 'elendi' : `nüfus ${x.population}`}</span>
           </li>`).join('')}</ol>`;
       const mine = r.summaries.find((x) => x.seat === this.mySeat);
