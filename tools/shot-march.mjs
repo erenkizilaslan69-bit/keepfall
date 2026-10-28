@@ -26,14 +26,15 @@ document.querySelector('input').value='Test'; btn('Oda kur').click(); await w(15
 btn('Hazırım').click(); await w(800); btn('Maçı başlat').click(); await w(500);
 for(let i=0;i<120;i++){ if(window.keepfallScene?.ready) break; await w(300); } await w(3500); document.getElementById('kingdom-decree')?.remove(); return 1;})()`);
 console.log(await evalJs(`(async()=>{
-  const { toWorld } = await import('/src/scene/world.ts');
   const s = window.keepfallScene; s.apply = () => {};
-  const o = toWorld({ x: 0, y: 0 });
-  const c = { x: (s.castleSprite.x - o.x) / 64, y: (s.castleSprite.y - o.y) / 64 + ${Number(process.env.DY ?? 3)} };
+  // a long straight road (the army walks along it, the same way every run)
+  const roads = s.layout.roads.map((r) => r.points).filter((pts) => pts.length >= 2).sort((p, q) => Math.hypot(q[1].x - q[0].x, q[1].y - q[0].y) - Math.hypot(p[1].x - p[0].x, p[1].y - p[0].y));
+  const pts = roads[0], dir = { x: pts[1].x - pts[0].x, y: pts[1].y - pts[0].y }, len = Math.hypot(dir.x, dir.y);
+  const c = { x: pts[0].x + dir.x * 0.5, y: pts[0].y + dir.y * 0.5 };
   const units = [['suvari',3],['kalkanli',2],['kilicli',3],['okcu',2],['mancinik',1]].map(([unitId,count]) => ({ unitId, name: unitId, count }));
-  const route = [{ x: c.x - 6, y: c.y }, { x: c.x + 40, y: c.y }];
-  const state = { ...s.state, own: [{ id: 'fake1', kind: 'army', targetSeat: 1, returning: false, position: { x: c.x, y: c.y }, velocity: { x: 1.2, y: 0 }, units, route, travelled: 6, speed: 1.2, visionRadius: 8, fighting: false, missionKind: null, quarter: null, siteId: null }], seen: [] };
-  s.movers.sync(state); s.movers.sync = () => {}; s.cameras.main.setZoom(${Number(process.env.Z ?? 1.5)}); s.lookAt({ x: c.x + 2.2, y: c.y }); return JSON.stringify(c); })()`));
+  const route = pts;
+  const state = { ...s.state, own: [{ id: 'fake1', kind: 'army', targetSeat: 1, returning: false, position: { x: c.x, y: c.y }, velocity: { x: 1.2 * dir.x / len, y: 1.2 * dir.y / len }, units, route, travelled: len * 0.5, speed: 1.2, visionRadius: 8, fighting: false, missionKind: null, quarter: null, siteId: null }], seen: [] };
+  s.movers.sync(state); s.movers.sync = () => {}; s.cameras.main.setZoom(${Number(process.env.Z ?? 1.5)}); s.lookAt({ x: c.x + 2.2 * dir.x / len, y: c.y + 2.2 * dir.y / len }); return JSON.stringify(c); })()`));
 for (const [i, ms] of [[0, 2500], [1, 700]]) {
   await sleep(ms);
   const r = await send('Page.captureScreenshot', { format: 'png' });
