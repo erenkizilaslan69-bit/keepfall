@@ -115,3 +115,7 @@
 .emblem-guide { margin-right: calc(6px * var(--u, 1)); }
 .decree .decree-seal { top: calc(8px * var(--u, 1)); }
 .decree .decree-kicker { margin-top: calc(110px * var(--u, 1)); }
+
+/* ---- the end screen's victory / defeat picture ------------------------------------------------------------------------------ */
+.end-art { display: flex; justify-content: center; margin: calc(4px * var(--u, 1)) 0; min-height: calc(40px * var(--u, 1)); }
+.end-art img { display: block; max-width: 100%; height: auto; image-rendering: pixelated; filter: drop-shadow(0 calc(6px * var(--u, 1)) calc(6px * var(--u, 1)) rgba(0, 0, 0, .35)); }

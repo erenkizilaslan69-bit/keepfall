@@ -5,6 +5,8 @@ import type { GameConnection } from './net';
 import type { BotLevel, RoomView, SummaryView } from './types';
 import { loadGuide, type GuideUnit } from './ui/guide';
 import { mountPortrait } from './ui/portraits';
+import { recolor } from './scene/KingdomSprites';
+import type { PlayerColor } from './types';
 
 // Plain-HTML screens around the game: home, lobby and the end screen, in the same parchment-and-ribbon
 // look as the in-game UI (ui/ui.css).
@@ -294,6 +296,7 @@ export class EndScreen {
     const root = this.root = mount(parent, `
       <div class="screen menu paper end">
         <div class="title-ribbon ribbon ribbon-blue" id="end-title">Maç bitti</div>
+        <div class="end-art" id="end-art"></div>
         <p class="muted center" id="end-reason"></p>
         <div id="ranking"></div>
         <div id="summary"><p class="muted">Özet hazırlanıyor…</p></div>
@@ -313,6 +316,26 @@ export class EndScreen {
     });
   }
 
+  /** The victory picture (crowned castle) for a winner, the defeat picture (ruin) for everybody else, both with the blue flags in the player's own colour. */
+  private async showEndArt(won: boolean, color: PlayerColor): Promise<void> {
+    const box = this.root.querySelector<HTMLElement>('#end-art');
+    if (!box) return;
+    try {
+      const img = new Image();
+      img.src = `/art/ui/${won ? 'victory' : 'defeat'}-half.png`;
+      await img.decode();
+      const base = document.createElement('canvas');
+      base.width = img.naturalWidth; base.height = img.naturalHeight;
+      base.getContext('2d')!.drawImage(img, 0, 0);
+      const out = new Image();
+      out.src = recolor(base, color).toDataURL('image/png');
+      out.alt = won ? 'Zafer' : 'Yenilgi';
+      out.className = won ? 'end-victory' : 'end-defeat';
+      out.style.width = `calc(${base.width * 4}px * var(--u, 1))`;
+      box.replaceChildren(out);
+    } catch { box.replaceChildren(); /* the picture is a decoration: the result stands without it */ }
+  }
+
   setSummary(summary: SummaryView): void {
     if (this.summary) return;
     this.summary = summary;
@@ -325,6 +348,7 @@ export class EndScreen {
       this.resultShown = true;
       const won = r.winners.includes(this.mySeat);
       sfx.play(won ? 'win' : 'lose');
+      void this.showEndArt(won, room.players.find((p) => p.seat === this.mySeat)?.color ?? 'blue');
       const names = r.ranking.filter((x) => r.winners.includes(x.seat)).map((x) => `${dot(x.color)}${esc(x.name)}`).join(', ');
       const title = this.root.querySelector<HTMLElement>('#end-title')!;
       title.innerHTML = won
