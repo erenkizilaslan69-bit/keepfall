@@ -12,7 +12,7 @@ import { DEPTH } from './Terrain';
 
 export const PROP_NAMES = ['oak', 'pine', 'darkpine', 'berry', 'rocks', 'mossrock', 'flowers', 'stump', 'sign'] as const;
 /** The rarer, bigger details (a broken cart, a pond, a ruined tower ...): one or two in each quarter of the map, only on the meadows. */
-export const DETAIL_NAMES = ['d-cart', 'd-pond', 'd-tower', 'd-stones', 'd-field', 'd-well', 'd-mushlog', 'd-campfire', 'd-bridge'] as const;
+export const DETAIL_NAMES = ['d-cart', 'd-pond', 'd-tower', 'd-stones', 'd-field', 'd-well', 'd-mushlog', 'd-campfire'] as const; // (d-bridge.png is cleaned and waiting: it needs water, for a map with a river)
 const ALL_NAMES: readonly string[] = [...PROP_NAMES, ...DETAIL_NAMES];
 const SCALE = 2;
 const srcKey = (name: string) => `prop:${name}`;
@@ -118,7 +118,7 @@ export class MapProps {
     const placed: { x: number; y: number; r: number }[] = [];
     const radiusOf: Record<string, number> = {
       oak: 46, pine: 36, darkpine: 40, berry: 34, rocks: 34, mossrock: 40, flowers: 34, stump: 28,
-      'd-cart': 62, 'd-pond': 70, 'd-tower': 66, 'd-stones': 70, 'd-field': 66, 'd-well': 44, 'd-mushlog': 62, 'd-campfire': 62, 'd-bridge': 66,
+      'd-cart': 62, 'd-pond': 70, 'd-tower': 66, 'd-stones': 70, 'd-field': 66, 'd-well': 44, 'd-mushlog': 62, 'd-campfire': 62,
     };
     const tryPlace = (name: string, x: number, y: number, roadMargin: number): boolean => {
       const r = radiusOf[name] ?? 34;
