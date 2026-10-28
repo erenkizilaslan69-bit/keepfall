@@ -106,10 +106,24 @@ const LOOKS: Record<string, Draw> = {
   },
 };
 
+/** The drawings are made once into a texture (a Graphics object redraws every command each frame, which costs real frame rate). */
+const TEX_W = 640, TEX_H = 340, ORIGIN_X = 320, ORIGIN_Y = 322;
+
 export class KingdomArt {
-  private readonly groups = new Map<string, { look: string; team: PlayerColor; node: Phaser.GameObjects.Container }>();
+  private readonly groups = new Map<string, { look: string; team: PlayerColor; node: Phaser.GameObjects.Image }>();
 
   constructor(private readonly scene: Phaser.Scene) {}
+
+  private texture(look: string, team: PlayerColor): string {
+    const key = `kingdom-${look}-${team}`;
+    if (this.scene.textures.exists(key)) return key;
+    const g = this.scene.add.graphics();
+    g.translateCanvas(ORIGIN_X, ORIGIN_Y);
+    LOOKS[look](g, TEAM[team]);
+    g.generateTexture(key, TEX_W, TEX_H);
+    g.destroy();
+    return key;
+  }
 
   /** Puts up (or takes down, for a null look) the ornaments of the castle `key`, standing at (x, y) as the castle sprite does. */
   set(key: string, look: string | null, team: PlayerColor, x: number, y: number, scale: number): void {
@@ -117,10 +131,7 @@ export class KingdomArt {
     if (!look || !LOOKS[look]) { if (have) { have.node.destroy(); this.groups.delete(key); } return; }
     if (have && have.look === look && have.team === team) return;
     have?.node.destroy();
-    const g = this.scene.add.graphics();
-    LOOKS[look](g, TEAM[team]);
-    const node = this.scene.add.container(x, y, [g]).setScale(scale).setDepth(y + 2);
-    this.scene.tweens.add({ targets: g, angle: { from: -0.6, to: 0.6 }, duration: 1800 + (key.length % 3) * 200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const node = this.scene.add.image(x, y, this.texture(look, team)).setOrigin(ORIGIN_X / TEX_W, ORIGIN_Y / TEX_H).setScale(scale).setDepth(y + 2);
     this.groups.set(key, { look, team, node });
   }
 
