@@ -9,9 +9,17 @@ import type { BuildingType, PlayerColor } from '../types';
 
 export const KINGDOM_LOOKS = ['golge', 'tuccar', 'kahin', 'entrikaci'] as const;
 const FILES = ['castle', 'farm', 'lumberCamp', 'mine', 'forge'] as const;
+/**
+ * The pictures come in two sizes: "full" (one pixel per fake pixel, about twice as fine as the pack's art) and "half" (2×2 cells made one, the outline kept),
+ * drawn twice as large so the sprite is as big on the screen but its pixels are as chunky as the pack's.
+ */
+export type Variant = 'full' | 'half';
+export const VARIANT: Variant = 'half';
+const SIZE = VARIANT === 'half' ? 2 : 1;
 /** World pixels per grid pixel of the picture. */
-export const CASTLE_CELL = 2.2;
-export const BUILD_CELL = 1.9;
+export const CASTLE_CELL = 2.2 * SIZE;
+export const BUILD_CELL = 1.9 * SIZE;
+const DIR = VARIANT === 'half' ? 'kingdoms-half' : 'kingdoms';
 /** A building grows a little with each level. */
 export const LEVEL_SCALE = [1, 1.06, 1.12, 1.19];
 
@@ -20,7 +28,7 @@ export const kingdomKey = (look: string, name: string, color: PlayerColor) => `k
 export const isKingdomLook = (look: string | null | undefined): look is string => !!look && (KINGDOM_LOOKS as readonly string[]).includes(look);
 
 export function preloadKingdomArt(scene: Phaser.Scene): void {
-  for (const look of KINGDOM_LOOKS) for (const f of FILES) scene.load.image(srcKey(look, f), `/art/kingdoms/${look}-${f}.png`);
+  for (const look of KINGDOM_LOOKS) for (const f of FILES) scene.load.image(srcKey(look, f), `/art/${DIR}/${look}-${f}.png`);
 }
 
 const TEAM: Record<PlayerColor, [string, string, string]> = {
@@ -117,9 +125,40 @@ export function drawExtra(look: string, kind: ExtraKind): HTMLCanvasElement {
   }
 }
 
+/** Half the size: 2×2 pixels become one (a pixel stays when two of the four are filled, or one is dark outline), the darkest of an edge block wins. */
+export function halveCanvas(src: HTMLCanvasElement): HTMLCanvasElement {
+  const w = Math.ceil(src.width / 2), h = Math.ceil(src.height / 2);
+  const d = src.getContext('2d')!.getImageData(0, 0, src.width, src.height).data;
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const g = c.getContext('2d')!, out = g.createImageData(w, h);
+  const lum = (r: number, gg: number, b: number) => 0.299 * r + 0.587 * gg + 0.114 * b;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const cells: number[][] = [];
+    for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+      const sx = x * 2 + dx, sy = y * 2 + dy;
+      if (sx >= src.width || sy >= src.height) continue;
+      const i = (sy * src.width + sx) * 4;
+      if (d[i + 3] > 0) cells.push([d[i], d[i + 1], d[i + 2]]);
+    }
+    if (!cells.length) continue;
+    const dark = cells.reduce((m, q) => (lum(q[0], q[1], q[2]) < lum(m[0], m[1], m[2]) ? q : m), cells[0]);
+    const outline = lum(dark[0], dark[1], dark[2]) < 70;
+    if (cells.length < 2 && !outline) continue;
+    const col = outline && cells.length < 4 ? dark : [0, 1, 2].map((k) => cells.reduce((a, q) => a + q[k], 0) / cells.length);
+    const o = (y * w + x) * 4;
+    out.data[o] = col[0]; out.data[o + 1] = col[1]; out.data[o + 2] = col[2]; out.data[o + 3] = 255;
+  }
+  g.putImageData(out, 0, 0);
+  return c;
+}
+
 export function extraTexture(scene: Phaser.Scene, look: string, kind: ExtraKind, color: PlayerColor): string {
   const key = `kdx:${look}:${kind}:${color}`;
-  if (!scene.textures.exists(key)) scene.textures.addCanvas(key, recolor(drawExtra(look, kind), color));
+  if (!scene.textures.exists(key)) {
+    const art = drawExtra(look, kind);
+    scene.textures.addCanvas(key, recolor(VARIANT === 'half' ? halveCanvas(art) : art, color));
+  }
   return key;
 }
 

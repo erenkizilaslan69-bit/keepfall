@@ -238,7 +238,6 @@ export class WorldScene extends Phaser.Scene {
     const look = isKingdomLook(id) ? id : null;
     if (look === this.ownKingdom && this.castleSprite.getData('rest') !== undefined) return;
     this.ownKingdom = look;
-    this.workers.setKingdom(look);
     const key = look ? kingdomTexture(this, look, 'castle', this.color) : null;
     this.castleSprite.setTexture(key ?? 'castle');
     const rest = key ? CASTLE_CELL : CASTLE.scale;

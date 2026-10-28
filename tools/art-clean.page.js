@@ -123,6 +123,38 @@
     }
   }
 
+  // Half the size (2×2 cells become one), keeping the outline: a block with any dark outline pixel and not fully filled takes the darkest of them,
+  // a block with fewer than two filled cells and no outline is dropped, the rest take their mean colour.
+  function halve(img) {
+    const w = Math.ceil(img.w / 2), h = Math.ceil(img.h / 2), out = new Uint8ClampedArray(w * h * 4);
+    const lum = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const cells = [];
+      for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+        const sx = x * 2 + dx, sy = y * 2 + dy;
+        if (sx >= img.w || sy >= img.h) continue;
+        const i = (sy * img.w + sx) * 4;
+        if (img.data[i + 3]) cells.push([img.data[i], img.data[i + 1], img.data[i + 2]]);
+      }
+      if (!cells.length) continue;
+      const dark = cells.reduce((m, c) => (lum(...c) < lum(...m) ? c : m), cells[0]);
+      const hasOutline = lum(...dark) < 70;
+      if (cells.length < 2 && !hasOutline) continue;
+      const o = (y * w + x) * 4;
+      const c = hasOutline && cells.length < 4 ? dark : cells.reduce((a, c) => [a[0] + c[0] / cells.length, a[1] + c[1] / cells.length, a[2] + c[2] / cells.length], [0, 0, 0]);
+      out[o] = c[0]; out[o + 1] = c[1]; out[o + 2] = c[2]; out[o + 3] = 255;
+    }
+    return { w, h, data: out };
+  }
+
+  function trim(small) {
+    let x0 = small.w, y0 = small.h, x1 = 0, y1 = 0;
+    for (let y = 0; y < small.h; y++) for (let x = 0; x < small.w; x++) if (small.data[(y * small.w + x) * 4 + 3]) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    const tw = x1 - x0 + 1, th = y1 - y0 + 1, td = new Uint8ClampedArray(tw * th * 4);
+    for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) td.set(small.data.subarray(((y + y0) * small.w + x + x0) * 4, ((y + y0) * small.w + x + x0) * 4 + 4), (y * tw + x) * 4);
+    return { w: tw, h: th, data: td };
+  }
+
   const toPng = (img) => {
     const c = document.createElement('canvas'); c.width = img.w; c.height = img.h;
     c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(img.data), img.w, img.h), 0, 0);
@@ -151,14 +183,11 @@
       }
       const grid = findGrid(cd, cbg, cw, ch);
       const small = sampleGrid(cd, cbg, cw, ch, grid);
+      const half = halve(small);
       quantize(small, opts.colors ?? 28);
-      // Trim to the solid cells.
-      let x0 = small.w, y0 = small.h, x1 = 0, y1 = 0;
-      for (let y = 0; y < small.h; y++) for (let x = 0; x < small.w; x++) if (small.data[(y * small.w + x) * 4 + 3]) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
-      const tw = x1 - x0 + 1, th = y1 - y0 + 1, td = new Uint8ClampedArray(tw * th * 4);
-      for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) td.set(small.data.subarray(((y + y0) * small.w + x + x0) * 4, ((y + y0) * small.w + x + x0) * 4 + 4), (y * tw + x) * 4);
-      const out = { w: tw, h: th, data: td };
-      results.push({ name: cell.name, png: toPng(out), w: tw, h: th, period: +grid.p.toFixed(2), ratio: +grid.ratio.toFixed(2), source: [cw, ch] });
+      quantize(half, opts.colors ?? 28);
+      const out = trim(small), outHalf = trim(half);
+      results.push({ name: cell.name, png: toPng(out), pngHalf: toPng(outHalf), w: out.w, h: out.h, wHalf: outHalf.w, hHalf: outHalf.h, period: +grid.p.toFixed(2), ratio: +grid.ratio.toFixed(2), source: [cw, ch] });
     }
     return results;
   };

@@ -45,41 +45,35 @@ await sleep(4000);
 
 import { writeFileSync } from 'node:fs';
 const OUT = process.argv[2] ?? 'compare';
-await evalJs(`document.body.style.margin='0'; document.body.innerHTML='<canvas id="cmp" width="1700" height="870"></canvas>'; 1`);
+await evalJs(`document.body.style.margin='0'; document.body.innerHTML='<canvas id="cmp" width="1700" height="990"></canvas>'; 1`);
 const info = await evalJs(`(async()=>{
-  const K = await import('/src/scene/KingdomSprites.ts'), A = await import('/src/scene/CatapultArt.ts'), H = await import('/src/scene/WorkerHats.ts');
+  const K = await import('/src/scene/KingdomSprites.ts'), A = await import('/src/scene/CatapultArt.ts');
   for (let i=0;i<50 && !A.catapultReady();i++) await new Promise(r=>setTimeout(r,100));
   const load = (p)=>new Promise((res,rej)=>{const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=p;});
+  const asCanvas = (i)=>{const c=document.createElement('canvas');c.width=i.width;c.height=i.height;c.getContext('2d').drawImage(i,0,0);return c;};
   const TS='/assets/tiny-swords/Tiny Swords (Free Pack)/';
   const c = document.getElementById('cmp'), g = c.getContext('2d'); g.imageSmoothingEnabled=false;
-  g.fillStyle='#6fa83c'; g.fillRect(0,0,1700,870);
+  g.fillStyle='#6fa83c'; g.fillRect(0,0,1700,990);
   const looks=['golge','tuccar','kahin','entrikaci'], colors=['blue','red','yellow','purple'], folders={blue:'Blue',red:'Red',yellow:'Yellow',purple:'Purple'};
-  const rowH=214;
-  for (let r=0;r<4;r++) {
-    const look=looks[r], col=colors[r], y0=r*rowH+rowH-20;
-    g.fillStyle='rgba(0,0,0,.18)'; g.fillRect(0,r*rowH,1700,2);
-    const castle = K.recolor(await load('/art/kingdoms/'+look+'-castle.png').then(i=>{const c=document.createElement('canvas');c.width=i.width;c.height=i.height;c.getContext('2d').drawImage(i,0,0);return c;}), col);
-    const k=K.CASTLE_CELL*0.62; g.drawImage(castle, 20, y0-castle.height*k, castle.width*k, castle.height*k);
-    let x=20+castle.width*k+10;
-    for (const type of ['farm','lumberCamp','mine','forge']) {
-      const img = await load('/art/kingdoms/'+look+'-'+type+'.png'); const cv=document.createElement('canvas'); cv.width=img.width; cv.height=img.height; cv.getContext('2d').drawImage(img,0,0);
-      const rc=K.recolor(cv,col); const s=K.BUILD_CELL*0.62;
-      g.drawImage(rc,x,y0-rc.height*s,rc.width*s,rc.height*s);
-      // the same building at level 4 with its additions, right beside it, a little larger
-      const s4=s*K.LEVEL_SCALE[3]; const x4=x+rc.width*s+6; g.drawImage(rc,x4,y0-rc.height*s4,rc.width*s4,rc.height*s4);
-      for (const a of K.ADDITIONS) { const ex=K.recolor(K.drawExtra(look,a.kind),col); g.drawImage(ex, x4+rc.width*s4/2+a.x*rc.width*s4-ex.width*s/2, y0-a.y*rc.height*s4-ex.height*s, ex.width*s, ex.height*s); }
-      x = x4+rc.width*s4+14;
-    }
-    // a worker with the headpiece, a warrior, an archer (the same colour as the row)
-    const pawn=await load(TS+'Units/'+folders[col]+' Units/Pawn/Pawn_Idle.png'), war=await load(TS+'Units/'+folders[col]+' Units/Warrior/Warrior_Idle.png'), arc=await load(TS+'Units/'+folders[col]+' Units/Archer/Archer_Idle.png');
-    const S=0.55*1.0*1.6; const unit=(img,ux)=>{ g.drawImage(img,0,0,192,192,ux-96*S,y0-192*S*0.65-30,192*S,192*S); };
-    // pawn + hat
-    { const t=document.createElement('canvas'); t.width=192;t.height=192; const tg=t.getContext('2d'); tg.drawImage(pawn,0,0,192,192,0,0,192,192);
-      const head=H.scanHead(tg.getImageData(0,0,192,192).data,192,192); unit(pawn,x+30);
-      const ha=H.hatArt(look); if (head && ha) { const hx=x+30-96*S+head.x*S, hy=y0-192*S*0.65-30+head.y*S + ha.below*S; g.drawImage(ha.canvas,hx-ha.ax*S,hy-ha.ay*S,ha.canvas.width*S,ha.canvas.height*S); } }
-    unit(war,x+110); unit(arc,x+190);
-    const cat=A.catapultFrame(col,{}); const cs=0.55*1.6; g.drawImage(cat,0,0,cat.width,cat.height,x+230,y0-cat.height*0.88*cs-30,cat.width*cs,cat.height*cs);
-  }
+  const Z=0.62; // everything at 62% of the game's own scale
+  g.fillStyle='#000'; g.font='bold 16px sans-serif';
+  const section=async(dir,cell,bcell,label,y0)=>{
+    g.fillStyle='#fff'; g.fillText(label,10,y0-240);
+    let x=10;
+    for (let r=0;r<4;r++){ const look=looks[r], col=colors[r];
+      const castle=K.recolor(asCanvas(await load('/art/'+dir+'/'+look+'-castle.png')),col); const k=cell*Z;
+      g.drawImage(castle,x,y0-castle.height*k,castle.width*k,castle.height*k); x+=castle.width*k+14; }
+    // a warrior, an archer and the catapult for the pixel size
+    const war=await load(TS+'Units/Blue Units/Warrior/Warrior_Idle.png'), arc=await load(TS+'Units/Blue Units/Archer/Archer_Idle.png');
+    const S=0.55*Z*1.0; g.drawImage(war,0,0,192,192,x,y0-192*S*0.65-10,192*S,192*S); g.drawImage(arc,0,0,192,192,x+70,y0-192*S*0.65-10,192*S,192*S);
+    const cat=A.catapultFrame('blue',{}); g.drawImage(cat,0,0,cat.width,cat.height,x+150,y0-cat.height*0.88*S-10,cat.width*S,cat.height*S);
+    // the buildings of two kingdoms at level 1
+    let bx=10; const by=y0+125;
+    for (const look of looks) for (const type of ['farm','forge']) { const col=colors[looks.indexOf(look)];
+      const rc=K.recolor(asCanvas(await load('/art/'+dir+'/'+look+'-'+type+'.png')),col); const s=bcell*Z; g.drawImage(rc,bx,by-rc.height*s,rc.width*s,rc.height*s); bx+=rc.width*s+8; }
+  };
+  await section('kingdoms',2.2,1.9,'ÖNCE: tam çözünürlük (hücre başına 1 piksel)',265);
+  await section('kingdoms-half',4.4,3.8,'SONRA: yarı çözünürlük, 2 kat büyük çizilir',690);
   return 1; })()`);
 await sleep(500);
 const r = await send('Page.captureScreenshot', { format: 'png' });

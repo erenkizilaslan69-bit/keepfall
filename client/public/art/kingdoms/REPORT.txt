@@ -1,20 +1,20 @@
-entrikaci-farm: 87x82 cells, period 10.25px (confidence 2.77), source 912x860
-entrikaci-lumberCamp: 82x85 cells, period 10.25px (confidence 2.71), source 860x891
-entrikaci-mine: 87x74 cells, period 10.25px (confidence 2.68), source 911x778
-entrikaci-forge: 69x81 cells, period 10.25px (confidence 2.74), source 726x850
-golge-farm: 89x81 cells, period 10.25px (confidence 2.76), source 922x850
-golge-lumberCamp: 86x84 cells, period 10.25px (confidence 2.71), source 901x878
-golge-mine: 83x62 cells, period 10.25px (confidence 2.68), source 870x655
-golge-forge: 84x82 cells, period 10.25px (confidence 2.67), source 881x860
-kahin-farm: 80x87 cells, period 10.25px (confidence 2.93), source 840x911
-kahin-lumberCamp: 74x81 cells, period 10.25px (confidence 3.03), source 769x840
-kahin-mine: 89x89 cells, period 10.25px (confidence 3.04), source 931x931
-kahin-forge: 75x77 cells, period 10.25px (confidence 3), source 787x809
-tuccar-farm: 87x83 cells, period 10.25px (confidence 2.93), source 911x870
-tuccar-lumberCamp: 86x76 cells, period 10.25px (confidence 2.95), source 891x798
-tuccar-mine: 86x79 cells, period 10.25px (confidence 2.89), source 901x830
-tuccar-forge: 85x83 cells, period 10.25px (confidence 2.93), source 891x860
-entrikaci-castle: 165x162 cells, period 10.25px (confidence 2.63), source 1710x1679
-golge-castle: 149x159 cells, period 10.25px (confidence 2.66), source 1547x1648
-kahin-castle: 161x153 cells, period 10.25px (confidence 2.85), source 1669x1587
-tuccar-castle: 172x168 cells, period 10.25px (confidence 2.69), source 1782x1741
+entrikaci-farm: 87x82 cells (half 44x41), period 10.25px (confidence 2.77), source 912x860
+entrikaci-lumberCamp: 82x85 cells (half 41x43), period 10.25px (confidence 2.71), source 860x891
+entrikaci-mine: 87x74 cells (half 44x37), period 10.25px (confidence 2.68), source 911x778
+entrikaci-forge: 69x81 cells (half 35x41), period 10.25px (confidence 2.74), source 726x850
+golge-farm: 89x81 cells (half 45x41), period 10.25px (confidence 2.9), source 922x850
+golge-lumberCamp: 86x84 cells (half 43x42), period 10.25px (confidence 2.8), source 901x879
+golge-mine: 83x62 cells (half 42x31), period 10.25px (confidence 2.81), source 870x655
+golge-forge: 84x82 cells (half 42x41), period 10.25px (confidence 2.82), source 881x860
+kahin-farm: 80x87 cells (half 40x44), period 10.25px (confidence 2.93), source 840x911
+kahin-lumberCamp: 75x81 cells (half 38x41), period 10.25px (confidence 3.09), source 779x840
+kahin-mine: 91x89 cells (half 46x45), period 10.25px (confidence 3.1), source 933x932
+kahin-forge: 78x85 cells (half 39x43), period 10.25px (confidence 3), source 809x891
+tuccar-farm: 87x83 cells (half 44x42), period 10.25px (confidence 2.93), source 911x870
+tuccar-lumberCamp: 86x76 cells (half 43x38), period 10.25px (confidence 2.95), source 891x798
+tuccar-mine: 86x79 cells (half 43x40), period 10.25px (confidence 2.89), source 901x830
+tuccar-forge: 85x83 cells (half 43x42), period 10.25px (confidence 2.93), source 891x860
+entrikaci-castle: 165x162 cells (half 83x81), period 10.25px (confidence 2.63), source 1710x1679
+golge-castle: 149x159 cells (half 75x80), period 10.25px (confidence 2.66), source 1547x1648
+kahin-castle: 161x153 cells (half 81x77), period 10.25px (confidence 2.85), source 1669x1587
+tuccar-castle: 172x168 cells (half 86x84), period 10.25px (confidence 2.69), source 1782x1741

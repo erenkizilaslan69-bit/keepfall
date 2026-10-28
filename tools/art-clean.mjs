@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const inbox = join(root, 'art', 'inbox'), out = join(root, 'client', 'public', 'art', 'kingdoms');
 mkdirSync(out, { recursive: true });
+const outHalf = join(root, 'client', 'public', 'art', 'kingdoms-half');
+mkdirSync(outHalf, { recursive: true });
 const port = 9333 + Math.floor(Math.random() * 500);
 const chrome = spawn('C:/Program Files/Google/Chrome/Application/chrome.exe', [
   '--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${mkdtempSync(join(tmpdir(), 'kf-chrome-'))}`, '--window-size=800,600', '--no-first-run', '--disable-gpu', 'about:blank',
@@ -43,7 +45,8 @@ for (const file of readdirSync(inbox).filter((f) => f.endsWith('.jpg'))) {
   const results = await evalJs(`window.artClean(${JSON.stringify(url)}, { cells: ${JSON.stringify(cells)}, colors: 28 })`);
   for (const r of results) {
     writeFileSync(join(out, `${kingdom}-${r.name}.png`), Buffer.from(r.png.split(',')[1], 'base64'));
-    report.push(`${kingdom}-${r.name}: ${r.w}x${r.h} cells, period ${r.period}px (confidence ${r.ratio}), source ${r.source.join('x')}`);
+    writeFileSync(join(outHalf, `${kingdom}-${r.name}.png`), Buffer.from(r.pngHalf.split(',')[1], 'base64'));
+    report.push(`${kingdom}-${r.name}: ${r.w}x${r.h} cells (half ${r.wHalf}x${r.hHalf}), period ${r.period}px (confidence ${r.ratio}), source ${r.source.join('x')}`);
     console.log(report.at(-1));
   }
 }
