@@ -11,24 +11,27 @@ import { DEPTH } from './Terrain';
 // or walks, and they keep off the roads, the castle regions, the map's edge and each other.
 
 export const PROP_NAMES = ['oak', 'pine', 'darkpine', 'berry', 'rocks', 'mossrock', 'flowers', 'stump', 'sign'] as const;
+/** The rarer, bigger details (a broken cart, a pond, a ruined tower ...): one or two in each quarter of the map, only on the meadows. */
+export const DETAIL_NAMES = ['d-cart', 'd-pond', 'd-tower', 'd-stones', 'd-field', 'd-well', 'd-mushlog', 'd-campfire', 'd-bridge'] as const;
+const ALL_NAMES: readonly string[] = [...PROP_NAMES, ...DETAIL_NAMES];
 const SCALE = 2;
 const srcKey = (name: string) => `prop:${name}`;
 const ATLAS = 'kf-props';
 const CHUNK = 640;
 
 export function preloadPropsArt(scene: Phaser.Scene): void {
-  for (const n of PROP_NAMES) scene.load.image(srcKey(n), `/art/props/${n}.png`);
+  for (const n of ALL_NAMES) scene.load.image(srcKey(n), `/art/props/${n}.png`);
 }
 
 /** The atlas: every ornament drawn at SCALE with its shadow beneath; frame names are the ornament names. */
 function makeAtlas(scene: Phaser.Scene): Map<string, { w: number; h: number }> {
   const frames = new Map<string, { w: number; h: number }>();
   if (scene.textures.exists(ATLAS)) {
-    for (const n of PROP_NAMES) { const f = scene.textures.get(ATLAS).get(n); if (f && f.name === n) frames.set(n, { w: f.width, h: f.height }); }
+    for (const n of ALL_NAMES) { const f = scene.textures.get(ATLAS).get(n); if (f && f.name === n) frames.set(n, { w: f.width, h: f.height }); }
     return frames;
   }
   const items: { name: string; img: HTMLImageElement; w: number; h: number }[] = [];
-  for (const name of PROP_NAMES) {
+  for (const name of ALL_NAMES) {
     if (name === 'sign' || !scene.textures.exists(srcKey(name))) continue;
     const img = scene.textures.get(srcKey(name)).getSourceImage() as HTMLImageElement;
     items.push({ name, img, w: img.width * SCALE + 16, h: img.height * SCALE + 14 });
@@ -60,6 +63,10 @@ export class MapProps {
   private readonly chunks = new Map<string, { blitter: Phaser.GameObjects.Blitter; x: number; y: number }>();
   /** How many ornaments were placed (for the debug layer and tests). */
   count = 0;
+  /** How many of them are the big details (a cart, a pond ...). */
+  details = 0;
+  /** Where they stand (for the debug layer and the screenshot tools). */
+  readonly detailSpots: { name: string; x: number; y: number }[] = [];
 
   constructor(private readonly scene: Phaser.Scene, private readonly layout: MapLayoutView, seed: number) {
     const frames = makeAtlas(scene);
@@ -109,7 +116,10 @@ export class MapProps {
       return forests.some((f) => Math.hypot(t.x - f.center.x, t.y - f.center.y) < f.radius * 0.96);
     };
     const placed: { x: number; y: number; r: number }[] = [];
-    const radiusOf: Record<string, number> = { oak: 46, pine: 36, darkpine: 40, berry: 34, rocks: 34, mossrock: 40, flowers: 34, stump: 28 };
+    const radiusOf: Record<string, number> = {
+      oak: 46, pine: 36, darkpine: 40, berry: 34, rocks: 34, mossrock: 40, flowers: 34, stump: 28,
+      'd-cart': 62, 'd-pond': 70, 'd-tower': 66, 'd-stones': 70, 'd-field': 66, 'd-well': 44, 'd-mushlog': 62, 'd-campfire': 62, 'd-bridge': 66,
+    };
     const tryPlace = (name: string, x: number, y: number, roadMargin: number): boolean => {
       const r = radiusOf[name] ?? 34;
       if (x < a.x + 150 || x > b.x - 150 || y < a.y + 150 || y > b.y - 150) return false;
@@ -128,6 +138,19 @@ export class MapProps {
     const wood: [string, number][] = [['darkpine', 30], ['pine', 20], ['berry', 20], ['mossrock', 10], ['rocks', 8], ['stump', 12]];
     const tall = new Set(['oak', 'pine', 'darkpine']);
     const w = b.x - a.x, h = b.y - a.y;
+    // the details first, so the small ornaments make room for them: one or two in each quarter, each kind used once; away from the roads, the castle
+    // regions, the forests (their places and trails are in there) and the edge of the map
+    const kinds = [...DETAIL_NAMES];
+    for (let i = kinds.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [kinds[i], kinds[j]] = [kinds[j], kinds[i]]; }
+    let next = 0;
+    for (let quarter = 0; quarter < 4; quarter++) {
+      const x0 = a.x + (quarter % 2) * (w / 2), y0 = a.y + Math.floor(quarter / 2) * (h / 2), want = 1 + (rnd() < 0.5 ? 1 : 0);
+      for (let got = 0, tries = 0; got < want && tries < 400; tries++) {
+        const x = x0 + (0.1 + rnd() * 0.8) * (w / 2), y = y0 + (0.1 + rnd() * 0.8) * (h / 2), name = kinds[next % kinds.length];
+        if (inForest(x, y) || !awayFromRoads(x, y, 210) || !tryPlace(name, x, y, 210)) continue;
+        next++; got++; this.details++; this.detailSpots.push({ name, x, y });
+      }
+    }
     // the meadows between the castles
     for (let i = 0, n = 0; i < 2600 && n < 230; i++) {
       const x = a.x + rnd() * w, y = a.y + rnd() * h, name = pick(meadow);
