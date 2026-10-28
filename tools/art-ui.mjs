@@ -1,5 +1,5 @@
 // Cleans the interface pictures of art/inbox (icons, frames, cards) with the same pipeline as art-clean.mjs: usage `node tools/art-ui.mjs [job ...]`
-// (jobs: icons minimap panel cards; none = all). Output: client/public/art/ui/ (full and half-resolution variants for the frames).
+// (jobs: icons minimap panel cards logo; none = all). Output: client/public/art/ui/ (full and half-resolution variants for the frames).
 import { spawn } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -59,5 +59,10 @@ if (want('cards')) {
   const [bw, bh] = await size('kart-arka.jpg');
   const [b] = await clean('kart-arka.jpg', [{ name: 'back', x: 0, y: 0, w: bw, h: bh }], 40);
   save('card-back', b);
+}
+if (want('logo')) {
+  const [w, h] = await size('logo.jpg');
+  const [r] = await clean('logo.jpg', [{ name: 'logo', x: 0, y: 0, w, h }], 40);
+  save('logo', r);
 }
 ws.close(); chrome.kill(); process.exit(0);

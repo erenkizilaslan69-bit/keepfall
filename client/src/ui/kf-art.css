@@ -91,3 +91,7 @@
 .ucard-face.back .ucard-vs { color: #3a2a18; font-size: .58em; line-height: 1.2; }
 .ucard-check { top: 1%; right: 1%; }
 .ucard.on .ucard-face { border: 0; box-shadow: none; animation: none; filter: drop-shadow(0 0 calc(7px * var(--u, 1)) rgba(255, 214, 80, .95)) drop-shadow(0 0 calc(2px * var(--u, 1)) #fff2a8); }
+
+/* ---- the logo picture ---------------------------------------------------------------------------------------------- */
+.kf-logo-img { display: block; width: calc(300px * var(--u, 1)); max-width: 80%; height: auto; image-rendering: pixelated; filter: drop-shadow(0 calc(4px * var(--u, 1)) 0 rgba(30, 16, 6, .5)); }
+.screen.lobby .kf-logo-img { width: calc(230px * var(--u, 1)); }
