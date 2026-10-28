@@ -21,7 +21,7 @@ const RUN: Record<string, { anim: string; scale: number }> = {
   mizrakci: { anim: 'lancer-run', scale: UNIT_SCALE },
   okcu: { anim: 'archer-run', scale: UNIT_SCALE },
   kesis: { anim: 'monk-run', scale: UNIT_SCALE },
-  mancinik: { anim: 'mancinik-idle', scale: UNIT_SCALE },
+  mancinik: { anim: 'mancinik-run', scale: UNIT_SCALE },
   suvari: { anim: 'suvari-run', scale: UNIT_SCALE },
 };
 /** Marching order, front to back. */

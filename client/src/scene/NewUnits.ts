@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { PlayerColor } from '../types';
 import { catapultCanvas, flameCanvas, horsemanCanvas, type TeamName } from './PixelArt';
+import { catapultFrame, FIRE_ARM, RUN_POSE } from './CatapultArt';
 
 // The textures and animations of the cavalry and the catapult, made at load time in every player colour that is on the map:
 //   suvari-run (4 gallop frames), suvari-idle, suvari-attack (the Lancer's thrust over the horse),
@@ -65,8 +66,10 @@ export function newUnitArtJobs(scene: Phaser.Scene, own: PlayerColor, colors: Pl
       () => addStrip(scene, key(color, own, 'suvari-idle'), [horsemanCanvas(img, team, 1, 0)], w, h, 1, -1),
       () => addStrip(scene, key(color, own, 'suvari-attack'), [0, 1, 2].map((f) => horsemanCanvas(img, team, 2, f)), w, h, 8, 0),
       () => addStrip(scene, key(color, own, 'mancinik-idle'), [catapultCanvas(team, false, 0)], CATAPULT_FRAME.w, CATAPULT_FRAME.h, 1, -1),
-      () => addStrip(scene, key(color, own, 'mancinik-fire'), [catapultCanvas(team, true, 0.3), catapultCanvas(team, true, 0.6), catapultCanvas(team, false, 0.9)],
-        CATAPULT_FRAME.w, CATAPULT_FRAME.h, 4, 0),
+      () => addStrip(scene, key(color, own, 'mancinik-fire'),
+        FIRE_ARM.map((arm, i) => catapultFrame(team, { arm }) ?? catapultCanvas(team, i > 0 && i < 3, 0.3 * i)), CATAPULT_FRAME.w, CATAPULT_FRAME.h, 6, 0),
+      () => addStrip(scene, key(color, own, 'mancinik-run'),
+        RUN_POSE.map((pose) => catapultFrame(team, pose) ?? catapultCanvas(team, false, 0)), CATAPULT_FRAME.w, CATAPULT_FRAME.h, 5, -1),
     );
   }
   return jobs;

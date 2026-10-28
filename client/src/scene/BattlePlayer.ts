@@ -28,7 +28,7 @@ const LOOK: Record<string, { run: string; attack: string | null; scale: number }
   mizrakci: { run: 'lancer-run', attack: 'lancer-attack', scale: UNIT_SCALE },
   okcu: { run: 'archer-run', attack: 'archer-shoot', scale: UNIT_SCALE },
   kesis: { run: 'monk-run', attack: null, scale: UNIT_SCALE },
-  mancinik: { run: 'mancinik-idle', attack: 'mancinik-fire', scale: UNIT_SCALE },
+  mancinik: { run: 'mancinik-run', attack: 'mancinik-fire', scale: UNIT_SCALE },
   suvari: { run: 'suvari-run', attack: 'suvari-attack', scale: UNIT_SCALE },
 };
 /** They stand back and do not close in: shooters, the catapult and the monk. */

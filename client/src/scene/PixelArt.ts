@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { catapultFrame, FIRE_ARM } from './CatapultArt';
 // Pixel art drawn in code, so it can sit in the repository: the chibi horse of the cavalry and the catapult (Tiny Swords style: one dark
 // outline, three tones, team colour on the cloth). The rider of the cavalry is the pack's own Lancer, composed at load time from the
 // loaded sheet (nothing derived from the pack is ever written to disk). Everything here draws into plain canvases.
@@ -177,7 +178,8 @@ export function horsemanCanvas(lancerImage: CanvasImageSource, team: TeamName, p
 }
 /** One frame of the catapult: 180×130, ground at y≈114. */
 export function catapultCanvas(team: TeamName, fired: boolean, wheel = 0): HTMLCanvasElement {
-  return toCanvas(catapult(team, fired, wheel));
+  // The picture-based catapult once it has loaded (`wheel` 0..1 rocks it a little, as the deck cards and the menu use it); else the old drawing.
+  return catapultFrame(team, { arm: fired ? FIRE_ARM[2] : 0, bob: Math.round(Math.abs(Math.sin(wheel * Math.PI * 2)) * 1.5) }) ?? toCanvas(catapult(team, fired, wheel));
 }
 function toCanvas(s) {
   const c = document.createElement('canvas');
