@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const inbox = join(root, 'art', 'inbox'), out = join(root, 'client', 'public', 'art', 'ui');
 mkdirSync(join(out, 'icons'), { recursive: true });
+const outForest = join(root, 'client', 'public', 'art', 'forest');
+mkdirSync(outForest, { recursive: true });
 const port = 9333 + Math.floor(Math.random() * 500);
 const chrome = spawn('C:/Program Files/Google/Chrome/Application/chrome.exe', ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${mkdtempSync(join(tmpdir(), 'kf-chrome-'))}`, '--window-size=800,600', '--no-first-run', '--disable-gpu', 'about:blank'], { stdio: 'ignore' });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -64,5 +66,27 @@ if (want('logo')) {
   const [w, h] = await size('logo.jpg');
   const [r] = await clean('logo.jpg', [{ name: 'logo', x: 0, y: 0, w, h }], 40);
   save('logo', r);
+}
+if (want('forest')) {
+  const [w, h] = await size('orman-yerleri.jpg');
+  const names = ['village', 'camp', 'bigCamp', 'chest'];
+  const cells = names.map((name, i) => ({ name, x: (i % 2) * (w / 2), y: Math.floor(i / 2) * (h / 2), w: w / 2, h: h / 2, noPurple: true }));
+  for (const r of await clean('orman-yerleri.jpg', cells, 40)) {
+    writeFileSync(join(outForest, `${r.name}.png`), Buffer.from(r.png.split(',')[1], 'base64'));
+    writeFileSync(join(outForest, `${r.name}-half.png`), Buffer.from(r.pngHalf.split(',')[1], 'base64'));
+    console.log(`forest/${r.name}: ${r.w}x${r.h} cells (half ${r.wHalf}x${r.hHalf}), period ${r.period}`);
+  }
+}
+if (want('props')) {
+  const outProps = join(root, 'client', 'public', 'art', 'props');
+  mkdirSync(outProps, { recursive: true });
+  const [w, h] = await size('harita-susler.jpg');
+  const names = ['oak', 'pine', 'darkpine', 'berry', 'rocks', 'mossrock', 'flowers', 'stump', 'sign'];
+  const cells = names.map((name, i) => ({ name, x: Math.round((i % 3) * (w / 3)), y: Math.round(Math.floor(i / 3) * (h / 3)), w: Math.round(w / 3), h: Math.round(h / 3), noPurple: true }));
+  for (const r of await clean('harita-susler.jpg', cells, 32)) {
+    writeFileSync(join(outProps, `${r.name}.png`), Buffer.from(r.png.split(',')[1], 'base64'));
+    writeFileSync(join(outProps, `${r.name}-half.png`), Buffer.from(r.pngHalf.split(',')[1], 'base64'));
+    console.log(`props/${r.name}: ${r.w}x${r.h} cells (half ${r.wHalf}x${r.hHalf}), period ${r.period}`);
+  }
 }
 ws.close(); chrome.kill(); process.exit(0);

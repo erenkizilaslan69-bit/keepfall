@@ -194,6 +194,18 @@
       const d = data.data, w = cell.w, h = cell.h;
       const bg = backgroundMask(d, w, h, cell.fill ?? null);
       dropSpecks(bg, w, h, 400);
+      if (cell.noPurple) {
+        // The purple drop shadows under the pieces (violet, not the pure magenta of the background): they go, the piece's own colours stay.
+        for (let i = 0; i < w * h; i++) {
+          if (bg[i]) continue;
+          const r = d[i * 4] / 255, g2 = d[i * 4 + 1] / 255, b2 = d[i * 4 + 2] / 255, mx = Math.max(r, g2, b2), mn = Math.min(r, g2, b2);
+          if (mx < 0.2 || (mx - mn) / mx < 0.26) continue;
+          let hue = mx === r ? 60 * (((g2 - b2) / (mx - mn)) % 6) : mx === g2 ? 60 * ((b2 - r) / (mx - mn) + 2) : 60 * ((r - g2) / (mx - mn) + 4);
+          if (hue < 0) hue += 360;
+          if (hue >= 262 && hue <= 332) bg[i] = 1;
+        }
+        dropSpecks(bg, w, h, 250);
+      }
       if (cell.largest) keepLargest(bg, w, h);
       const b = bbox(bg, w, h);
       const cw = b.x1 - b.x0, ch = b.y1 - b.y0;

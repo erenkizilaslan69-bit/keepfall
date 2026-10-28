@@ -5,6 +5,7 @@ import type { WorldLabels } from '../ui/world-labels';
 import { UNIT_SCALE, playRandom, unitOriginY } from './assets';
 import { sign } from './parts';
 import { toWorld } from './world';
+import { FOREST_WIDTH, forestTexture } from './ForestSprites';
 
 // The places of the forest we have found: a chest (a pile of gold), a village (black houses), a bandit camp (a
 // tower, a fire and the bandits) and the big camp in the middle, each with its trail from the forest road. What
@@ -128,38 +129,29 @@ export class SiteLayer {
       const f = add(x, y, 'fire', scale, 5, 0.85);
       f.play({ key: 'fire', startFrame: Phaser.Math.Between(0, 5) });
     };
-    const ghost = (...list: Phaser.GameObjects.Sprite[]) => list.forEach((sp) => sp.setAlpha(0.35).setTint(0x999999));
 
-    switch (s.kind) {
-      case 'chest': {
-        const pile = add(p.x, p.y, 'gold-pile', 0.75, 0, 0.8);
-        if (s.gone) ghost(pile);
-        break;
-      }
-      case 'village': {
-        const houses = [add(p.x - 30, p.y + 8, 'black-house1', 0.62), add(p.x + 30, p.y + 2, 'black-house2', 0.62), add(p.x, p.y - 22, 'black-house3', 0.62)];
-        if (s.gone) { ghost(...houses); fire(p.x - 4, p.y + 6, 1.1); }
-        break;
-      }
-      case 'camp':
-      case 'bigCamp': {
-        const big = s.kind === 'bigCamp';
-        const base = add(p.x, p.y, big ? 'castle-black' : 'black-tower', big ? 0.8 : 0.7);
-        if (s.gone) { ghost(base); break; }
-        fire(p.x + (big ? 70 : 36), p.y + 10);
-        if (big) fire(p.x - 70, p.y + 10);
-        const list: string[] = [];
-        for (const b of s.bandits) for (let i = 0; i < b.count; i++) list.push(b.unitId);
-        const shown = list.slice(0, big ? 14 : 8);
-        shown.forEach((unit, i) => {
-          const a = (i / shown.length) * Math.PI * 2 + 0.4;
-          const r = (big ? 96 : 54) + (i % 2) * 10;
-          const key = BANDIT_ANIM[unit] ?? 'black-warrior-idle';
-          const sp = add(p.x + Math.cos(a) * r, p.y + 24 + Math.sin(a) * r * 0.55, key, UNIT_SCALE, 0, unitOriginY(key));
-          sp.setFlipX(Math.cos(a) > 0);
-          if (this.scene.anims.exists(key)) playRandom(sp, key, 5);
-        });
-        break;
+    const key = forestTexture(this.scene, s.kind, s.gone);
+    if (key) {
+      // The generated picture (full, or its emptied look); bandits stand inside a camp, a plundered village still smoulders.
+      const tex = this.scene.textures.get(key).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
+      const scale = FOREST_WIDTH[s.kind] / tex.width;
+      add(p.x, p.y + 10, key, scale, 0, 0.88);
+      if (s.kind === 'village' && s.gone) fire(p.x - 4, p.y + 6, 0.9);
+      if (s.kind === 'camp' || s.kind === 'bigCamp') {
+        if (!s.gone) {
+          const big = s.kind === 'bigCamp';
+          const list: string[] = [];
+          for (const b of s.bandits) for (let i = 0; i < b.count; i++) list.push(b.unitId);
+          const shown = list.slice(0, big ? 10 : 4);
+          shown.forEach((unit, i) => {
+            const a = (i / shown.length) * Math.PI * 2 + 0.4;
+            const r = (big ? 44 : 30) + (i % 2) * 6;
+            const bk = BANDIT_ANIM[unit] ?? 'black-warrior-idle';
+            const sp = add(p.x + Math.cos(a) * r, p.y + (big ? 30 : 22) + Math.sin(a) * r * 0.5, bk, UNIT_SCALE, 0, unitOriginY(bk));
+            sp.setFlipX(Math.cos(a) > 0);
+            if (this.scene.anims.exists(bk)) playRandom(sp, bk, 5);
+          });
+        }
       }
     }
 
