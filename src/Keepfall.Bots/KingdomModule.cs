@@ -41,10 +41,10 @@ public sealed class KingdomModule : IBotModule
             ctx.Wish(60, new SetFakeReport(new Dictionary<string, int> { [fighter.Id] = 30 }));
             ctx.Memory.FakeReportSet = true;
         }
-        if (k.DecoyReadyIn > 0 || k.DecoysOut >= k.Numbers.DecoyMax || ctx.Now - ctx.Memory.KingdomAt < 150 || ctx.Slip()) return;
+        if (k.DecoyReadyIn > 0 || k.DecoysOut >= k.Numbers.DecoyMax || ctx.Now - ctx.Memory.KingdomAt < 50 || ctx.Slip()) return;
         int size = Math.Min(k.Numbers.DecoyMaxSoldiers, 14);
         double cost = Math.Ceiling(size * k.Numbers.DecoyGoldPerSoldier);
-        if (ctx.Castle.Resources.Gold < cost + 20) return;
+        if (ctx.Castle.Resources.Gold < cost + 3) return;
         // At the rival that looks weakest: its defenders are the ones that react to a warning.
         var target = ctx.Rivals.OrderBy(r => ctx.EstimateOf(r.Seat)?.Total ?? 1000).FirstOrDefault();
         if (target is null) return;

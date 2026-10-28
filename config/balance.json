@@ -212,9 +212,9 @@
   // kılık değiştirme (disguiseCooldownSeconds bekleme; gerçek kimlik ilk savaştan disguiseRevealSeconds sonra ya da gözcü raporuyla çıkar).
   "kingdoms": {
     "enabled": true,
-    "decoyGoldPerSoldier": 1.5,
+    "decoyGoldPerSoldier": 0.5,
     "decoyMaxSoldiers": 20,
-    "decoyCooldownSeconds": 60,
+    "decoyCooldownSeconds": 45,
     "decoyMax": 2,
     "bribeGoldPerSoldier": 5,
     "bribeMaxShare": 0.4,

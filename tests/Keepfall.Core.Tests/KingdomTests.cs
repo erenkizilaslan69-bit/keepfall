@@ -54,7 +54,7 @@ public class KingdomTests
         game.CastleOf(A)!.AddGold(100);
         var gold = game.CastleOf(A)!.Gold;
         Ok(game.Execute(A, new SendDecoy(B, Units(10))));
-        Assert.Equal(gold - 15, game.CastleOf(A)!.Gold, 6); // 10 × 1.5
+        Assert.Equal(gold - 5, game.CastleOf(A)!.Gold, 6); // 10 × 0.5
         Assert.Equal(0, game.CastleOf(A)!.SoldiersAway); // nobody left the castle
         // The cooldown and the cap hold.
         Assert.False(game.Execute(A, new SendDecoy(B, Units(5))).Ok);

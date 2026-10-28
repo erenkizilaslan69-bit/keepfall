@@ -52,7 +52,7 @@ const LOOKS: Record<string, Draw> = {
     for (const sx of [-1, 1]) {
       banner(g, sx * 118, -214, team, accent, (cx, cy) => disc(g, 0xe9e2ff, cx, cy, 5), 30);
       // a dark obelisk with a glowing rune
-      const ox = sx * 270;
+      const ox = sx * 105;
       rect(g, 0x2a2140, ox - 10, -96, 20, 96); tri(g, 0x2a2140, ox - 10, -96, ox + 10, -96, ox, -122);
       rect(g, 0x7a5cc0, ox - 3, -80, 6, 22); rect(g, 0x7a5cc0, ox - 6, -70, 12, 4);
       g.fillStyle(0x9d7bff, 0.25); g.fillCircle(ox, -69, 20);
@@ -68,7 +68,7 @@ const LOOKS: Record<string, Draw> = {
     tri(g, accent, -64, -96, 64, -96, 0, -84);
     for (const sx of [-1, 1]) {
       banner(g, sx * 118, -210, team, accent, (cx, cy) => disc(g, 0xf4cc3c, cx, cy, 5), 30);
-      const ox = sx * 250;
+      const ox = sx * 105;
       // coin stacks and crates
       for (let i = 0; i < 4; i++) { g.fillStyle(0x8a5a10, 1); g.fillEllipse(ox, -8 - i * 8, 34, 12); g.fillStyle(0xf4cc3c, 1); g.fillEllipse(ox, -11 - i * 8, 34, 12); }
       rect(g, WOOD, ox + sx * 34 - 14, -26, 28, 26); rect(g, WOOD_DARK, ox + sx * 34 - 14, -16, 28, 3); rect(g, 0xd9a526, ox + sx * 34 - 3, -26, 6, 26);
@@ -81,10 +81,10 @@ const LOOKS: Record<string, Draw> = {
       banner(g, sx * 118, -214, team, accent, (cx, cy) => { disc(g, 0xe8f3ff, cx, cy, 5); rect(g, 0xe8f3ff, cx - 1, cy - 9, 2, 18); rect(g, 0xe8f3ff, cx - 9, cy - 1, 18, 2); }, 30);
     }
     // a crystal ball on a stone pedestal, and a rune stone
-    rect(g, 0x7a808c, 214, -26, 36, 26); rect(g, 0x9aa1ae, 210, -30, 44, 6);
-    g.fillStyle(0x7fc4ff, 0.3); g.fillCircle(232, -52, 34);
-    disc(g, 0x9edcff, 232, -52, 20); disc(g, 0xe8f6ff, 225, -60, 5);
-    const rx = -250;
+    rect(g, 0x7a808c, 90, -26, 36, 26); rect(g, 0x9aa1ae, 86, -30, 44, 6);
+    g.fillStyle(0x7fc4ff, 0.3); g.fillCircle(108, -52, 34);
+    disc(g, 0x9edcff, 108, -52, 20); disc(g, 0xe8f6ff, 101, -60, 5);
+    const rx = -105;
     rect(g, 0x646b78, rx - 14, -110, 28, 110); tri(g, 0x646b78, rx - 14, -110, rx + 14, -110, rx, -132);
     rect(g, 0x7fc4ff, rx - 3, -92, 6, 28); rect(g, 0x7fc4ff, rx - 8, -82, 16, 4);
     g.fillStyle(0x7fc4ff, 0.22); g.fillCircle(rx, -78, 22);
@@ -95,13 +95,13 @@ const LOOKS: Record<string, Draw> = {
     for (const sx of [-1, 1]) {
       banner(g, sx * 118, -214, team, 0x3f7a4a, (cx, cy) => { rect(g, 0xf0e6d0, cx - 5, cy - 6, 10, 12); rect(g, INK, cx - 3, cy - 2, 2, 2); rect(g, INK, cx + 1, cy - 2, 2, 2); }, 30);
       // a mask on a pole
-      const ox = sx * 250;
+      const ox = sx * 105;
       rect(g, WOOD_DARK, ox - 2, -92, 4, 92); mask(g)(ox, -104);
       // striped red/green ribbon
       for (let i = 0; i < 6; i++) rect(g, i % 2 ? 0x3f7a4a : accent, ox + sx * 28 + i * 6 * sx - 3, -40, 6, 14);
     }
     // a hooded figure at the foot of the keep
-    const hx = 214;
+    const hx = 175;
     tri(g, 0x4a1f26, hx - 22, 0, hx + 22, 0, hx, -64); disc(g, 0x4a1f26, hx, -66, 13); rect(g, INK, hx - 7, -68, 14, 9); disc(g, 0xf4d24a, hx - 3, -64, 1.5); disc(g, 0xf4d24a, hx + 3, -64, 1.5);
   },
 };
