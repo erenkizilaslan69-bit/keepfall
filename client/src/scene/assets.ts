@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { PlayerColor } from '../types';
 import { makeNewUnitArt } from './NewUnits';
+import { preloadKingdomArt } from './KingdomSprites';
 
 // Tiny Swords (Free Pack) by Pixel Frog — not in the repo, see README. Units and buildings are
 // loaded in the player's own colour; terrain and props are shared.
@@ -160,6 +161,8 @@ export function preloadAssets(scene: Phaser.Scene, color: PlayerColor, others: P
   for (const c of others) if (c !== 'black') scene.load.image(`${c}-tower`, url(buildingImages(c).tower));
   // Everyone's castle, for the other corners of the map.
   for (const [c, folder] of Object.entries(COLOR_FOLDER)) scene.load.image(`castle-${c}`, url(`Buildings/${folder} Buildings/Castle.png`));
+  // The kingdoms' pictures: every client loads all of them, whoever holds which kingdom.
+  preloadKingdomArt(scene);
 }
 
 /** Building images that come in the owner colour (our own have plain keys, the others get "<colour>-<key>"). */

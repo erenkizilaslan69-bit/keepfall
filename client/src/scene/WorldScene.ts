@@ -1,4 +1,4 @@
-import { KingdomArt, LOOK_OF } from './KingdomArt';
+import { CASTLE_CELL, isKingdomLook, kingdomBuildingParts, kingdomTexture } from './KingdomSprites';
 import Phaser from 'phaser';
 import type { ArmyView, Rect, ScoutReportView, SpectatorCastleView, SpectatorStateView, BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
 import { guarded, reportError } from '../error-report';
@@ -10,7 +10,7 @@ import { makeCampfire, newUnitArtJobs } from './NewUnits';
 import { createAnimations, playFrom, loadSpectatorAssets, preloadAssets } from './assets';
 import { CAMP, CASTLE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH } from './layout';
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
-import { buildingSign, placePart, setShadeHook, sign } from './parts';
+import { buildingSign, placeKingdomPart, placePart, setShadeHook, sign } from './parts';
 import { RegionDisplay } from './RegionDisplay';
 import { SiteLayer } from './Sites';
 import { scoutSignHtml } from '../ui/scout-report';
@@ -115,8 +115,9 @@ export class WorldScene extends Phaser.Scene {
   /** The places of the forest we have found. */
   sites!: SiteLayer;
   private castleSprite!: Phaser.GameObjects.Image;
-  /** The kingdoms' ornaments on the castles: ours always, a rival's only while their castle is in live sight. */
-  kingdomArt!: KingdomArt;
+  /** Our own kingdom (its castle and buildings are drawn in its own style), and the rivals' that we may show: their castle in live sight, or a scout report. */
+  private ownKingdom: string | null = null;
+  private sightKingdoms = new Map<number, string>();
   /** The walls round the regions, by seat. */
   private walls = new Map<number, WallRing>();
   /** Our own castle: has it fallen (null: not seen yet, so a castle already down is shown as a ruin without the show)? */
@@ -161,7 +162,6 @@ export class WorldScene extends Phaser.Scene {
     this.terrain.shade(CASTLE.x, CASTLE.y - 6, 470, 130);
     this.castleSprite = this.add.image(CASTLE.x, CASTLE.y, 'castle').setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(CASTLE.y);
     this.castleSprite.setInteractive({ useHandCursor: true }).on('pointerup', () => this.select({ kind: 'castle' }));
-    this.kingdomArt = new KingdomArt(this);
     for (const type of Object.keys(SITES) as BuildingType[]) this.createSite(type);
     this.workers = new Workers(this, this.labels);
     this.soldiers = new Soldiers(this, this.labels);
@@ -216,10 +216,35 @@ export class WorldScene extends Phaser.Scene {
 
   /** A rival's ornaments are up only for a castle in live sight (the server names their kingdom only then); under the fog the castle is plain. */
   private syncKingdoms(state: MapStateView): void {
+    this.sightKingdoms = new Map((state.kingdoms ?? []).map((k) => [k.seat, k.faction]));
+    this.refreshRivalCastles();
+  }
+
+  /** A rival's castle is drawn in its kingdom's style while we know it (in live sight now, or from a scout report), else plain. */
+  private refreshRivalCastles(): void {
     for (const [seat, c] of this.otherCastles) {
-      const k = state.kingdoms?.find((x) => x.seat === seat);
-      this.kingdomArt.set(`seat:${seat}`, k && !c.fallen ? LOOK_OF[k.faction] ?? null : null, c.color, c.image.x, c.image.y, 1);
+      const look = this.sightKingdoms.get(seat) ?? this.reports.get(seat)?.kingdom ?? null;
+      const key = isKingdomLook(look) ? kingdomTexture(this, look, 'castle', c.color) : null;
+      const want = key ?? `castle-${c.color}`;
+      const rest = key ? CASTLE_CELL : CASTLE.scale;
+      if (c.image.texture.key !== want) c.image.setTexture(want);
+      c.image.setScale(c.image.scaleX, c.image.scaleY).setData('rest', rest);
+      if (!c.fallen) c.image.setScale(rest);
     }
+  }
+
+  /** Our own castle and buildings take our kingdom's pictures (the plain Tiny Swords ones when the match has no kingdoms). */
+  setOwnKingdom(id: string | null): void {
+    const look = isKingdomLook(id) ? id : null;
+    if (look === this.ownKingdom && this.castleSprite.getData('rest') !== undefined) return;
+    this.ownKingdom = look;
+    this.workers.setKingdom(look);
+    const key = look ? kingdomTexture(this, look, 'castle', this.color) : null;
+    this.castleSprite.setTexture(key ?? 'castle');
+    const rest = key ? CASTLE_CELL : CASTLE.scale;
+    this.castleSprite.setData('rest', rest);
+    if (!this.ownFallen) this.castleSprite.setScale(rest);
+    for (const slot of this.buildings.values()) slot.level = 0; // drawn again in the new style
   }
 
   private syncMarkers(state: MapStateView): void {
@@ -293,8 +318,9 @@ export class WorldScene extends Phaser.Scene {
     c.fallen = fallen;
     c.image.setAlpha(fallen ? 0.45 : 1);
     if (fallen) this.walls.get(seat)?.ruin(this.fx);
-    if (fallen && was === false) this.fx.collapse(c.image, c.image.x, c.image.y, CASTLE.scale);
-    else if (fallen && was === undefined) this.fx.ruin(c.image, CASTLE.scale);
+    const rest = c.image.getData('rest') ?? CASTLE.scale;
+    if (fallen && was === false) this.fx.collapse(c.image, c.image.x, c.image.y, rest);
+    else if (fallen && was === undefined) this.fx.ruin(c.image, rest);
   }
 
   /** The sign under another player's castle: their name, and the last scout report we have of it. */
@@ -541,7 +567,7 @@ export class WorldScene extends Phaser.Scene {
     this.workers.sync(s.jobs);
     this.soldiers.sync(s.units);
     this.movers.setGameSpeed(s.speed);
-    this.kingdomArt.set('own', s.eliminated ? null : LOOK_OF[s.kingdom?.id ?? ''] ?? null, this.color, CASTLE.x, CASTLE.y, 1);
+    this.setOwnKingdom(s.kingdom?.id ?? null);
     this.clock = { elapsed: s.elapsedSeconds, at: performance.now(), speed: s.speed };
     this.updateWall(s);
   }
@@ -553,8 +579,9 @@ export class WorldScene extends Phaser.Scene {
       html: `<div class="wl-stack">${sign(`<i class="ico ico-shield"></i><b>Kale</b>${s.eliminated ? ' <small>(düştü)</small>' : ''}`)}</div>`,
     });
     if (s.eliminated) this.walls.get(this.mySeat)?.ruin(this.fx);
-    if (s.eliminated && this.ownFallen === false) this.fx.collapse(this.castleSprite, CASTLE.x, CASTLE.y, CASTLE.scale);
-    else if (s.eliminated && this.ownFallen === null) this.fx.ruin(this.castleSprite, CASTLE.scale);
+    const rest = this.castleSprite.getData('rest') ?? CASTLE.scale;
+    if (s.eliminated && this.ownFallen === false) this.fx.collapse(this.castleSprite, CASTLE.x, CASTLE.y, rest);
+    else if (s.eliminated && this.ownFallen === null) this.fx.ruin(this.castleSprite, rest);
     this.ownFallen = s.eliminated;
     this.castleSprite.setAlpha(s.eliminated ? 0.55 : 1);
   }
@@ -750,7 +777,12 @@ export class WorldScene extends Phaser.Scene {
     const site = SITES[b.type];
     if (slot.level !== b.level) {
       for (const sprite of slot.sprites) sprite.destroy();
-      slot.sprites = site.parts(b.level).map((p) => placePart(this, p));
+      const plain = this.ownKingdom ? site.parts(b.level).filter((p) => !/^(house|tower|barracks|archery)/.test(p.key)) : site.parts(b.level);
+      slot.sprites = plain.map((p) => placePart(this, p));
+      if (this.ownKingdom) {
+        const baseY = site.center.y + site.area.h * 0.22;
+        for (const kp of kingdomBuildingParts(this, this.ownKingdom, b.type, b.level, this.color, site.center.x + (b.type === 'lumberCamp' ? -84 : 0), baseY)) slot.sprites.push(placeKingdomPart(this, kp));
+      }
       slot.level = b.level;
     }
 

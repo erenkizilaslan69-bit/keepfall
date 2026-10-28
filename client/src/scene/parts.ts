@@ -32,6 +32,13 @@ export function placePart(scene: Phaser.Scene, p: Part, off: Point = NO_OFFSET, 
   return sprite;
 }
 
+/** A sprite of a kingdom's picture (feet at the bottom of the picture), with the soft shadow the other parts get. */
+export function placeKingdomPart(scene: Phaser.Scene, p: { key: string; x: number; y: number; scale: number; depthY: number }): Phaser.GameObjects.Sprite {
+  const sprite = scene.add.sprite(p.x, p.y, p.key).setOrigin(0.5, 1).setScale(p.scale).setDepth(p.depthY);
+  if (shadeHook && sprite.width * p.scale > 60) { const shade = shadeHook(p.x, p.y, sprite.width * p.scale * 0.8, 40); sprite.once('destroy', () => shade.destroy()); }
+  return sprite;
+}
+
 export const sign = (inner: string, cls = '') => `<div class="wl-sign ${cls}">${inner}</div>`;
 
 /** The sign over a building: level badge, name, workers, and the upgrade's progress while it is being built. */

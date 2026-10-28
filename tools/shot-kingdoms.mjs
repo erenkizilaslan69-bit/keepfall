@@ -53,16 +53,22 @@ btn('Hazırım').click(); await w(800); btn('Maçı başlat').click(); await w(5
 for(let i=0;i<120;i++){ if(window.keepfallScene?.ready) break; await w(300); } await w(2500); return 1;})()`);
 await sleep(1500);
 await shot('decree');
+const plainKey = await evalJs(`[...window.keepfallScene.otherCastles.values()].map(c => c.image.texture.key).join(',')`);
+console.log('rival castle before any sight or report:', plainKey, /^castle-[a-z]+(,castle-[a-z]+)*$/.test(plainKey) ? 'PLAIN (ok)' : 'LEAK: a kingdom picture is showing');
+if (!/^castle-[a-z]+(,castle-[a-z]+)*$/.test(plainKey)) process.exitCode = 1;
 console.log('kingdom:', await evalJs(`JSON.stringify(window.keepfallUi?.castle?.kingdom?.name ?? null)`));
 await evalJs(`document.querySelector('#kingdom-decree [data-close]')?.click(); document.querySelector('.kingdom-fab')?.click(); 1`);
 await sleep(600);
 await shot('panel');
 await evalJs(`document.querySelector('.kingdom-panel')?.classList.add('hidden'); 1`);
-await evalJs(`window.keepfallScene.apply = () => {}; 1`);
-for (const look of ['shadow', 'merchant', 'oracle', 'schemer']) {
-  await evalJs(`(()=>{const s=window.keepfallScene; s.kingdomArt.set('own', ${JSON.stringify(look)}, s.color, 512, 430, 1); s.cameras.main.setZoom(0.9); s.cameras.main.centerOn(512,330); return 1;})()`);
-  await sleep(900);
-  await shot(look);
+for (const look of ['golge', 'tuccar', 'kahin', 'entrikaci']) {
+  for (const level of [1, 4]) {
+    await evalJs(`(()=>{const s=window.keepfallScene; s.setOwnKingdom(${JSON.stringify(look)}); s.apply = () => {};
+      for (const b of s.state.buildings) { s.buildings.get(b.type).level = 0; s.updateBuilding({ ...b, level: ${level} }, s.state); }
+      s.cameras.main.setZoom(0.62); s.cameras.main.centerOn(512, 420); return 1;})()`);
+    await sleep(1200);
+    await shot(`${look}-lv${level}`);
+  }
 }
 console.log(logs.join(' / ') || 'no exceptions');
 ws.close(); chrome.kill(); process.exit(0);

@@ -5,6 +5,7 @@ import type { WorldLabels } from '../ui/world-labels';
 import { UNIT_SCALE, playRandom, unitOriginY } from './assets';
 import { GATE, IDLE_AREA, JOB_LOOK, SITES, type Point } from './layout';
 import { NO_OFFSET } from './parts';
+import { hatTexture, placeHat } from './WorkerHats';
 
 // Animated pawns. The server only sends how many people each job has; this keeps the same number
 // of pawns per job and invents the walking around it. Nothing here affects the economy.
@@ -37,6 +38,9 @@ interface Pawn {
 export class Workers {
   private pawns: Pawn[] = [];
   private placed = false;
+  /** Our kingdom's headpieces (only on our own workers: a rival's are never in view). */
+  private hatLook: string | null = null;
+  private readonly hats = new Map<Phaser.GameObjects.Sprite, Phaser.GameObjects.Image>();
 
   /**
    * <paramref name="off"/>: where this castle's corner is (a spectator sees the other castles too);
@@ -49,7 +53,30 @@ export class Workers {
     this.drawPen();
   }
 
-  debugSprites(): Phaser.GameObjects.Sprite[] { return this.pawns.map((p) => p.sprite); }
+  debugSprites(): Phaser.GameObjects.Sprite[] { return [...this.pawns.map((p) => p.sprite), ...this.hats.values() as Iterable<Phaser.GameObjects.Sprite>]; }
+
+  /** The kingdom whose headpiece the workers wear (null: none). */
+  setKingdom(look: string | null): void {
+    if (!this.warnIdle || look === this.hatLook) return;
+    this.hatLook = look;
+    for (const h of this.hats.values()) h.destroy();
+    this.hats.clear();
+  }
+
+  private updateHats(): void {
+    const art = this.hatLook ? hatTexture(this.scene, this.hatLook) : null;
+    for (const pawn of this.pawns) {
+      const s = pawn.sprite;
+      let hat = this.hats.get(s);
+      if (!art || !s.active) { if (hat) { hat.destroy(); this.hats.delete(s); } continue; }
+      if (!hat) {
+        hat = this.scene.add.image(0, 0, art.key);
+        this.hats.set(s, hat);
+        s.once('destroy', () => { this.hats.get(s)?.destroy(); this.hats.delete(s); });
+      }
+      placeHat(hat, s, art);
+    }
+  }
 
   private pen: Phaser.GameObjects.Graphics | null = null;
 
@@ -70,6 +97,8 @@ export class Workers {
     this.pen = null;
     for (const p of this.pawns) p.sprite.destroy();
     this.pawns = [];
+    for (const h of this.hats.values()) h.destroy();
+    this.hats.clear();
     this.labels.remove('idle');
   }
 
@@ -101,6 +130,7 @@ export class Workers {
   }
 
   update(dt: number): void {
+    this.updateHats();
     for (const pawn of [...this.pawns]) {
       if (!pawn.sprite.active) continue; // already gone (left the castle)
       try {
