@@ -19,7 +19,8 @@ const evalJs = async (expression) => { const r = await send('Runtime.evaluate', 
 await send('Runtime.enable'); await send('Page.enable');
 await send('Page.navigate', { url: URL });
 await sleep(3500);
-for (const [name, mySeat, color] of [['victory', 0, 'red'], ['defeat', 1, 'purple']]) {
+const C = process.env.COLORS ? process.env.COLORS.split(',') : ['red', 'purple'];
+for (const [name, mySeat, color] of [['victory', 0, C[0]], ['defeat', 1, C[1]]]) {
   const r = await evalJs(`(async()=>{
     const { EndScreen } = await import('/src/screens.ts');
     document.querySelectorAll('.screen').forEach((e) => e.remove());

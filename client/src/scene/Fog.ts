@@ -18,6 +18,8 @@ export class Fog {
   private readonly hole: Phaser.GameObjects.Image;
   /** A plain rectangle, to wipe a corner's fog clean before it is laid down again. */
   private readonly eraser: Phaser.GameObjects.Graphics;
+  /** The same rectangle in fog colour, drawn the way the eraser is. */
+  private readonly refog: Phaser.GameObjects.Graphics;
   private lastDraw = 0;
 
   /** The fog texture's top-left corner (scene px): it reaches <paramref name="pad"/> tiles beyond the map, over the sea too, so the water never changes shade at the map's edge. */
@@ -32,6 +34,7 @@ export class Fog {
     this.rt.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
     this.hole = scene.make.image({ key: Fog.holeTexture(scene), add: false });
     this.eraser = scene.make.graphics({ x: 0, y: 0 }, false);
+    this.refog = scene.make.graphics({ x: 0, y: 0 }, false);
   }
 
   setVisible(visible: boolean): void {
@@ -60,10 +63,15 @@ export class Fog {
     // What is inside a castle's corner is learned from reports, not by looking at it from the road.
     for (const r of foreign) {
       const p = toWorld({ x: r.x, y: r.y });
-      const x = (p.x - topLeft.x) / SCALE, y = (p.y - topLeft.y) / SCALE, w = (r.w * TILE) / SCALE, h = (r.h * TILE) / SCALE;
-      // Wiped with a drawn rectangle (a scaled image bleeds a pixel or two past its edge: a bright stripe along the border), then fogged again.
-      this.eraser.clear().fillStyle(0xffffff, 1).fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
-      this.rt.erase(this.eraser).fill(FOG_COLOR, FOG_ALPHA, Math.round(x), Math.round(y), Math.round(w) + 1, Math.round(h) + 1);
+      // The same whole-pixel rectangle for the wipe and for the fog laid back (rounded from both corners, never as x + width: two roundings that disagree
+      // by a pixel left a bright line along the border where the wipe went further than the fog, or a dark one where the fog went further).
+      const x0 = Math.round((p.x - topLeft.x) / SCALE), y0 = Math.round((p.y - topLeft.y) / SCALE);
+      const x1 = Math.round((p.x - topLeft.x + r.w * TILE) / SCALE), y1 = Math.round((p.y - topLeft.y + r.h * TILE) / SCALE);
+      // Both the wipe and the fog laid back are drawn as graphics, so they cover exactly the same pixels (RenderTexture.fill puts its rectangle one pixel off
+      // to the left and up, which left a bright, unfogged line along the right and bottom edge of the corner and a double-dark one along the left and top).
+      this.eraser.clear().fillStyle(0xffffff, 1).fillRect(x0, y0, x1 - x0, y1 - y0);
+      this.refog.clear().fillStyle(FOG_COLOR, FOG_ALPHA).fillRect(x0, y0, x1 - x0, y1 - y0);
+      this.rt.erase(this.eraser).draw(this.refog);
     }
     for (const c of [...fixed, ...moving]) open(c, 1);
   }
