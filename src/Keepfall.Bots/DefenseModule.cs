@@ -21,7 +21,8 @@ public sealed class DefenseModule : IBotModule
         ctx.Stats.Count("defenceThinks");
 
         // The strongest of the armies coming, as far as we can tell (nothing known: assume as many as we have at home).
-        var estimates = threats.Select(t => (Threat: t, Estimate: ctx.EstimateOf(t.Seat))).ToList();
+        // What is walking at us in plain sight counts for more than an old scout report: its soldiers are on the map.
+        var estimates = threats.Select(t => (Threat: t, Estimate: WithSeen(ctx, t.Seat, ctx.EstimateOf(t.Seat)))).ToList();
         var rival = estimates.OrderByDescending(x => x.Estimate?.Total ?? 0).First();
         var theirs = rival.Estimate is { } known
             ? Tactics.Setup(ctx, "Rival", Scale(known.Units, medium ? 1.2 : 1.0))
@@ -75,6 +76,17 @@ public sealed class DefenseModule : IBotModule
             ctx.Commit(units);
             ctx.Stats.Count("intercepts");
         }
+    }
+
+    /// <summary>The estimate of a rival, raised to the army of theirs that is in view right now when that is bigger (what the bot sees, nothing more).</summary>
+    private static RivalEstimate? WithSeen(BotContext ctx, int seat, RivalEstimate? known)
+    {
+        var seen = new Dictionary<string, int>();
+        foreach (var m in (ctx.Map?.Seen ?? []).Where(m => m.Kind == Keepfall.Core.World.MoverKind.Army && m.OwnerSeat == seat))
+            foreach (var u in m.Units) seen[u.UnitId] = seen.GetValueOrDefault(u.UnitId) + u.Count;
+        int total = seen.Values.Sum();
+        if (total == 0 || (known is not null && known.Total >= total)) return known;
+        return new RivalEstimate(seen, ctx.Now, false);
     }
 
     private static Dictionary<string, int> Scale(IReadOnlyDictionary<string, int> units, double factor) =>
