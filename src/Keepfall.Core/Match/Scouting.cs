@@ -50,6 +50,8 @@ public sealed class ScoutMission
     /// <summary>What other players see it as: random, so it gives nothing away.</summary>
     public string PublicId { get; }
     public string From { get; }
+    /// <summary>Schemers: an envoy that goes under another player's name (null = its own).</summary>
+    public string? ShownAs { get; internal set; }
     public string Target { get; }
     public double StartedAt { get; }
     public Traveller Out { get; }
@@ -84,7 +86,9 @@ public sealed record ScoutReport(
     double DeliveredAt,
     IReadOnlyList<ScoutedUnit> Soldiers,
     IReadOnlyDictionary<BuildingType, int> BuildingLevels,
-    IReadOnlyList<string>? Deck = null);
+    IReadOnlyList<string>? Deck = null,
+    string? Faction = null,
+    bool Faked = false);
 
 public enum NotificationKind
 {
@@ -104,10 +108,14 @@ public enum NotificationKind
     EnvoyArrived,
     /// <summary>Our envoy reached OtherPlayer.</summary>
     EnvoyDelivered,
+    /// <summary>Some soldiers of an army of ours were bribed to turn back on the road.</summary>
+    Bribed,
+    /// <summary>A disguised army's real owner (OtherPlayer) came out.</summary>
+    Unmasked,
 }
 
 /// <summary>What an envoy left at a castle: who from, the goods and the message. Only the receiver ever sees it.</summary>
-public sealed record Letter(int Id, string From, double At, int Food, int Wood, int Iron, int Gold, string? Message);
+public sealed record Letter(int Id, string From, double At, int Food, int Wood, int Iron, int Gold, string? Message, string? RealFrom = null);
 
 /// <summary>Something that happened to a player because of another one.</summary>
 public sealed record GameNotification(NotificationKind Kind, string OtherPlayer, double At,

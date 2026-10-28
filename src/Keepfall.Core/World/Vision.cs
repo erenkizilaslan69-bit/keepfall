@@ -23,4 +23,5 @@ public enum MoverKind { Army, Scout, Envoy }
 /// about the owner, the target or how many others there are.
 /// </summary>
 public sealed record SeenMover(
-    string Id, MoverKind Kind, string Owner, Vec Position, Vec Velocity, IReadOnlyDictionary<UnitType, int> Units);
+    string Id, MoverKind Kind, string Owner, Vec Position, Vec Velocity, IReadOnlyDictionary<UnitType, int> Units,
+    bool Fake = false, string? RealOwner = null);

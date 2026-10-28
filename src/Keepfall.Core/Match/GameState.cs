@@ -41,7 +41,7 @@ public sealed record EconomySummary(
 /// castles are only ever touched through the rules here: a scout looks (and learns what a
 /// <see cref="ScoutReport"/> holds), an army arrives and fights (and both sides get a <see cref="BattleReport"/>).
 /// </summary>
-public sealed class GameState
+public sealed partial class GameState
 {
     public const double SampleIntervalSeconds = 30;
 
@@ -83,9 +83,10 @@ public sealed class GameState
     /// <param name="corners">Which corner of the map each player gets; default: <see cref="AssignCorners"/>.</param>
     public GameState(GameRules rules, IEnumerable<string> playerKeys, double? prepSeconds = null,
         double? warSeconds = null, Random? rng = null, IReadOnlyDictionary<string, Corner>? corners = null, int? forestSeed = null,
-        IReadOnlyDictionary<string, IReadOnlyList<string>>? decks = null)
+        IReadOnlyDictionary<string, IReadOnlyList<string>>? decks = null, IReadOnlyDictionary<string, string>? factions = null)
     {
         Rules = rules;
+        if (factions is not null) foreach (var (k, f) in factions) _factions[k] = f;
         // Its own randomness, so seeded matches play their battles the same whatever the forest looks like.
         ForestSites = ForestLayout.Generate(WorldMap.Standard, rules.Forest, new Random(forestSeed ?? RandomNumberGenerator.GetInt32(int.MaxValue)));
         Map = WorldMap.Standard.WithSites(ForestSites);
@@ -198,7 +199,7 @@ public sealed class GameState
     /// </summary>
     public IReadOnlyList<(string From, double ArrivesAt)> IncomingWarningsOf(string playerKey) =>
         _armies.Where(a => a.Target == playerKey && a.State == ArmyState.Marching && a.Sighted && a.Battle is null && !a.Out.Arrived)
-            .Select(a => (a.From, ArrivesAt: ElapsedSeconds + a.SecondsLeft))
+            .Select(a => (From: ShownOwner(a, playerKey), ArrivesAt: ElapsedSeconds + a.SecondsLeft))
             .OrderBy(a => a.ArrivesAt)
             .ToList();
 
@@ -231,12 +232,21 @@ public sealed class GameState
         if (vision.Count == 0) return [];
         bool Visible(Vec p) => vision.Any(c => c.Contains(p)) || SeenThroughTrail(playerKey, p);
         var seen = new List<SeenMover>();
+        bool oracle = IsFaction(playerKey, Factions.Oracle);
         foreach (var a in _armies.Where(a => a.From != playerKey && a.Battle is null && Visible(a.Position)))
-            seen.Add(new SeenMover(a.PublicId, MoverKind.Army, a.From, a.Position, a.Velocity,
-                a.Walking.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value)));
+        {
+            string shown = ShownOwner(a, playerKey);
+            seen.Add(new SeenMover(a.PublicId, MoverKind.Army, shown, a.Position, a.Velocity,
+                a.Walking.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value),
+                oracle && (a.Decoy || shown != a.From), oracle && (a.Decoy || shown != a.From) ? a.From : null));
+        }
         foreach (var m in _missions.Where(m => m.From != playerKey && Visible(m.Position)))
-            seen.Add(new SeenMover(m.PublicId, m.Kind == MissionKind.Envoy ? MoverKind.Envoy : MoverKind.Scout, m.From,
-                m.Position, m.Velocity, new Dictionary<UnitType, int>())); // an envoy walks in its sender's colour, like a scout
+        {
+            string shown = m.ShownAs ?? m.From;
+            seen.Add(new SeenMover(m.PublicId, m.Kind == MissionKind.Envoy ? MoverKind.Envoy : MoverKind.Scout, shown,
+                m.Position, m.Velocity, new Dictionary<UnitType, int>(),
+                oracle && shown != m.From, oracle && shown != m.From ? m.From : null)); // an envoy walks in its sender's colour, like a scout
+        }
         return seen;
     }
 
@@ -337,6 +347,7 @@ public sealed class GameState
         ElapsedSeconds += dt;
         AdvanceScouts(dt);
         AdvanceArmies(dt);
+        AdvanceKingdoms();
         CheckContinuity(Rules.Map.ArmySpeed * Rules.Units.Max(u => u.SpeedFactor) * dt + 1e-6);
         RefreshSight();
         if (Phase == MatchPhase.Ended) return; // the last castle standing ended it
@@ -400,6 +411,10 @@ public sealed class GameState
             SendEnvoy envoy => LaunchEnvoy(playerKey, player, envoy),
             SendArmyToSite raid => LaunchRaid(playerKey, player, raid),
             SendArmy army => LaunchArmy(playerKey, player, army),
+            SendDecoy decoy => LaunchDecoy(playerKey, player, decoy),
+            SetFakeReport fake => SetFakeTable(playerKey, fake),
+            BribeArmy bribe => Bribe(playerKey, player, bribe),
+            HireCamp camp => RentCamp(playerKey, player, camp),
             RecallArmy recall => Recall(playerKey, recall.ArmyId),
             RedirectArmy redirect => Redirect(playerKey, redirect),
             _ => player.Castle.Execute(command),
@@ -462,6 +477,8 @@ public sealed class GameState
         if (!message.Ok) return CommandResult.Fail(message.Error!);
         if (total == 0 && message.Text is null) return CommandResult.Fail("Ulağın taşıyacak bir şeyi yok: yük ya da mesaj ekle.");
         if (ScoutsAvailable(from, envoy: true) is { Ok: false } busy) return busy;
+        if (CheckAs(from, c.AsKey, c.TargetKey) is { Ok: false } badAs) return badAs;
+        string? asKey = c.AsKey;
         var castle = player.Castle;
         if (castle.Food + 1e-9 < c.Food || castle.Wood + 1e-9 < c.Wood || castle.Iron + 1e-9 < c.Iron || castle.Gold + 1e-9 < c.Gold)
             return CommandResult.Fail("Kasada bu kadar yok.");
@@ -470,7 +487,7 @@ public sealed class GameState
         castle.TrySpendCargo(c.Food, c.Wood, c.Iron, c.Gold);
         _missions.Add(new ScoutMission(NewPublicId(), from, c.TargetKey, ElapsedSeconds, RouteBetween(from, c.TargetKey), Rules.Map.ScoutSpeed, MissionKind.Envoy)
         {
-            GiftFood = c.Food, GiftWood = c.Wood, GiftIron = c.Iron, GiftGold = c.Gold, Message = message.Text,
+            GiftFood = c.Food, GiftWood = c.Wood, GiftIron = c.Iron, GiftGold = c.Gold, Message = message.Text, ShownAs = asKey,
         });
         return CommandResult.Success;
     }
@@ -486,9 +503,9 @@ public sealed class GameState
         castle.AddGoods(m.GiftFood, m.GiftWood, m.GiftIron);
         castle.AddGold(m.GiftGold);
         if (!_letters.TryGetValue(m.Target, out var list)) _letters[m.Target] = list = [];
-        list.Add(new Letter(_nextLetter++, m.From, ElapsedSeconds, m.GiftFood, m.GiftWood, m.GiftIron, m.GiftGold, m.Message));
+        list.Add(new Letter(_nextLetter++, m.ShownAs ?? m.From, ElapsedSeconds, m.GiftFood, m.GiftWood, m.GiftIron, m.GiftGold, m.Message, m.ShownAs is null ? null : m.From));
         if (list.Count > MaxLetters) list.RemoveAt(0);
-        Notify(m.Target, new GameNotification(NotificationKind.EnvoyArrived, m.From, ElapsedSeconds));
+        Notify(m.Target, new GameNotification(NotificationKind.EnvoyArrived, m.ShownAs ?? m.From, ElapsedSeconds));
         Notify(m.From, new GameNotification(NotificationKind.EnvoyDelivered, m.Target, ElapsedSeconds));
     }
 
@@ -582,7 +599,7 @@ public sealed class GameState
                 m.Out.Advance(dt);
                 LayTrail(m);
                 if (!m.Out.Arrived) continue;
-                m.Report = Observe(m.Target, ElapsedSeconds);
+                m.Report = Observe(m.Target, ElapsedSeconds, m.From);
                 Notify(m.Target, new GameNotification(NotificationKind.ScoutedBy, m.From, ElapsedSeconds));
                 m.Back = new Traveller(m.Out.Route.Reversed(), m.Out.Speed);
                 continue;
@@ -679,20 +696,22 @@ public sealed class GameState
     /// rounded. The type is always right: 0 when there are none, at least 1 when there are any.
     /// Building levels are exact. Nothing else.
     /// </summary>
-    private ScoutReport Observe(string target, double now)
+    private ScoutReport Observe(string target, double now, string observer)
     {
         var castle = _players[target].Castle;
+        var shown = ShownSoldiers(target, observer);
         double error = Rules.Scouting.ReportError;
         var soldiers = Rules.Units.Select(u =>
         {
-            int real = castle.Soldiers[u];
+            int real = shown is null ? castle.Soldiers[u] : shown.GetValueOrDefault(u);
             double spread = Math.Max(real * error, 1);
             int seen = real == 0 ? 0
                 : Math.Max(1, (int)Math.Round(real + (_rng.NextDouble() * 2 - 1) * spread, MidpointRounding.AwayFromZero));
             return new ScoutedUnit(u.Id, u.Name, seen);
         }).ToList();
         var levels = Jobs.Buildings.ToDictionary(b => b, b => castle.Building(b).Level);
-        return new ScoutReport(target, now, now, soldiers, levels, castle.UnitTypes.Select(u => u.Id).ToList());
+        UnmaskFor(target, observer);
+        return new ScoutReport(target, now, now, soldiers, levels, castle.UnitTypes.Select(u => u.Id).ToList(), FactionOf(target), IsFaction(observer, Factions.Oracle) && FakeReportOf(target) is not null);
     }
 
     // ---- war ---------------------------------------------------------------------------------
@@ -707,10 +726,12 @@ public sealed class GameState
         var parsed = ParseArmy(c.Units, c.Rows, c.ArcherPriority, out var units, out var rows, out var priority);
         if (!parsed.Ok) return parsed;
 
+        if (CheckAs(from, c.AsKey, c.TargetKey, disguise: true) is { Ok: false } badAs) return badAs;
         var sent = player.Castle.DispatchArmy(units);
         if (!sent.Ok) return sent;
         _armies.Add(new ArmyMarch(_nextId++, NewPublicId(), from, c.TargetKey, units, rows, priority, ElapsedSeconds,
-            RouteBetween(from, c.TargetKey), SpeedOf(units), c.Mode));
+            RouteBetween(from, c.TargetKey), SpeedOf(units), c.Mode) { ShownAs = c.AsKey });
+        if (c.AsKey is not null) StartDisguiseCooldown(from);
         return CommandResult.Success;
     }
 
@@ -768,6 +789,7 @@ public sealed class GameState
         var a = _armies.FirstOrDefault(x => x.Id == c.ArmyId && x.From == from);
         if (a is null) return CommandResult.Fail("Böyle bir ordun yok.");
         if (a.Battle is not null) return CommandResult.Fail("Savaştaki ordu yeni emir alamaz.");
+        if (a.Decoy) return CommandResult.Fail("Hayalet ordu yeni emir almaz.");
         int soldiers = a.Walking.Values.Sum();
         string target, node;
         SiteState? site = null;
@@ -839,13 +861,14 @@ public sealed class GameState
         {
             if (!CastleVisionOf(a.Target).Contains(a.Position)) continue;
             a.Sighted = true;
-            Notify(a.Target, new GameNotification(NotificationKind.ArmyIncoming, a.From, ElapsedSeconds, ElapsedSeconds + a.SecondsLeft));
+            Notify(a.Target, new GameNotification(NotificationKind.ArmyIncoming, ShownOwner(a, a.Target), ElapsedSeconds, ElapsedSeconds + a.SecondsLeft));
         }
 
         // Armies at their target's gate lay siege one at a time per castle, earliest sent first; the rest wait.
         foreach (var a in _armies.Where(a => a.State == ArmyState.Marching && a.Battle is null && a.Out.Arrived).OrderBy(a => a.Id).ToList())
         {
             if (Phase == MatchPhase.Ended) return;
+            if (a.Decoy) { _armies.Remove(a); continue; } // a phantom fades away at the gate
             if (a.Site is not null) { ArriveAtSite(a); continue; }
             if (_eliminated.ContainsKey(a.Target)) { SendHome(a, a.Units); continue; } // nothing left to attack
             if (_active.Any(b => b.Kind == BattleKind.Siege && b.Defender == a.Target)) continue;
@@ -854,6 +877,7 @@ public sealed class GameState
 
         foreach (var a in _armies.Where(a => a.State == ArmyState.Returning && a.Back!.Arrived).ToList())
         {
+            if (a.Decoy || a.Rented) { _armies.Remove(a); continue; }
             var castle = _players[a.From].Castle;
             if (a.Position.DistanceTo(Map.RegionOf(_corners[a.From]).Gate) > 1.0) ContinuityViolations++; // home means at its own gate
             castle.ArmyReturned(a.Survivors);
@@ -922,7 +946,8 @@ public sealed class GameState
             }
 
             // Armies meet on the road only in the war (in preparation they walk through each other: only the forest's raids go out then).
-            var free = Phase == MatchPhase.War ? _armies.Where(a => a.Battle is null).OrderBy(a => a.Id).ToList() : [];
+            DissolveDecoysThatMet(radius);
+            var free = Phase == MatchPhase.War ? _armies.Where(a => a.Battle is null && !a.Decoy).OrderBy(a => a.Id).ToList() : [];
             for (int x = 0; x < free.Count; x++)
                 for (int y = x + 1; y < free.Count; y++)
                 {
@@ -1055,7 +1080,7 @@ public sealed class GameState
         var defender = _players[b.Defender].Castle;
         var attackLost = Lost(b.AttackerUnits, b.AttackerSurvivors);
         var defendLost = Lost(b.DefenderUnits, b.DefenderSurvivors);
-        attacker.ArmyLost(attackLost);
+        if (!a.Rented) attacker.ArmyLost(attackLost);
         attacker.Stats.EnemiesKilled += defendLost.Values.Sum();
         defender.Stats.EnemiesKilled += attackLost.Values.Sum();
 
@@ -1063,7 +1088,7 @@ public sealed class GameState
         if (b.Opponent is { } o)
         {
             o.Battle = null;
-            defender.ArmyLost(defendLost);
+            if (!o.Rented) defender.ArmyLost(defendLost);
         }
         if (b.Kind == BattleKind.Siege)
         {
@@ -1078,15 +1103,17 @@ public sealed class GameState
             }
         }
 
-        var prisoners = fell ? TakePrisoners(b, attacker) : new Dictionary<UnitType, int>();
+        var prisoners = fell && !a.Rented ? TakePrisoners(b, attacker) : new Dictionary<UnitType, int>();
         var loot = fell ? PlunderFallen(a, defender, prisoners.Values.Sum()) : null;
         var report = new BattleReport(b.Id, ElapsedSeconds, a.From, b.Defender,
             Lines(b.AttackerUnits, attackLost), Lines(b.DefenderUnits, defendLost), b.Winner, fell, b.Kind, loot, raid);
         _battles.Add(report);
+        RecordDisguise(report, a);
         Notify(a.From, new GameNotification(NotificationKind.BattleFought, b.Defender, ElapsedSeconds, BattleId: report.Id));
-        Notify(b.Defender, new GameNotification(NotificationKind.BattleFought, a.From, ElapsedSeconds, BattleId: report.Id));
+        Notify(b.Defender, new GameNotification(NotificationKind.BattleFought, ShownOwner(a, b.Defender), ElapsedSeconds, BattleId: report.Id));
 
-        if (b.Kind == BattleKind.Siege) SendHome(a, Merge(b.AttackerSurvivors, prisoners));
+        if (a.Rented && b.Kind == BattleKind.Siege) FinishRented(a);
+        else if (b.Kind == BattleKind.Siege) SendHome(a, Merge(b.AttackerSurvivors, prisoners));
         else
         {
             GoOn(a, b.AttackerSurvivors);
@@ -1210,7 +1237,7 @@ public sealed class GameState
         _trail.RemoveAll(t => t.Owner == player);
         foreach (var a in _armies.Where(a => a.From == player && a.State == ArmyState.Returning && a.Battle is null).ToList())
         {
-            _players[player].Castle.ArmyLost(a.Survivors);
+            if (!a.Decoy && !a.Rented) _players[player].Castle.ArmyLost(a.Survivors);
             _armies.Remove(a);
         }
         foreach (var key in _players.Keys)

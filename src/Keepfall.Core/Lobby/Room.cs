@@ -31,6 +31,8 @@ public sealed record RoomOptions
     public int? ForestSeed { get; init; }
     /// <summary>Tests: every bot gets exactly this deck (null: bots pick their own).</summary>
     public IReadOnlyList<string>? BotDeck { get; init; }
+    /// <summary>Every player gets a random kingdom at the start (when the balance config allows it). Off: no abilities at all (old measurements, some tests).</summary>
+    public bool Kingdoms { get; init; } = true;
     /// <summary>The four units the game had before the deck: tests that count on them use it.</summary>
     public static readonly IReadOnlyList<string> ClassicDeck = ["okcu", "kilicli", "mizrakci", "kalkanli"];
 }
@@ -153,6 +155,8 @@ public sealed class Room
                 NotificationKind.EnvoyArrived => $"{ColorGenitive(other?.Color)} ulağı kaleye geldi: yük ve mesaj fermanda.",
                 NotificationKind.EnvoyDelivered => "Ulağın ulaştı.",
                 NotificationKind.FieldsBurned => $"{ColorGenitive(other?.Color)} süvarileri tarlalarını yaktı!",
+                NotificationKind.Bribed => $"Ordunun {n.Detail} askeri yolda rüşvet alıp geri döndü!",
+                NotificationKind.Unmasked => $"Maskeler düştü: {ColorGenitive(PlayerOfCastle(n.Detail ?? "")?.Color)} adıyla gelen ordunun gerçek sahibi {ColorName(other?.Color)} çıktı!",
                 NotificationKind.LootHome => $"{ColorAblative(other?.Color)} aldığın ganimet kaleye ulaştı: {n.Detail}.",
                 _ => n.Kind.ToString(),
             };
@@ -167,7 +171,7 @@ public sealed class Room
             return report.Winner == BattleWinner.Attacker ? "Haydut kampını temizledin! Ödül ordun eve dönünce gelir."
                 : report.Winner == BattleWinner.Draw ? "Haydut kampıyla savaş berabere bitti." : "Haydut kampına yenildin.";
         bool attacking = report.Attacker == player.CastleKey;
-        var other = PlayerOfCastle(attacking ? report.Defender : report.Attacker);
+        var other = PlayerOfCastle(attacking ? report.Defender : Game!.AttackerSeenBy(report, player.CastleKey));
         string them = ColorName(other?.Color);
         if (report.Kind == BattleKind.Field)
         {
@@ -347,11 +351,13 @@ public sealed class Room
             foreach (var p in _players) p.Deck ??= p.IsBot ? BotDeck(p.Bot!.Value, deckRng) : _rules.RandomDeck(deckRng);
             decks = _players.ToDictionary(p => p.CastleKey, p => p.Deck!);
         }
+        Dictionary<string, string>? factions = null;
+        if (_rules.Kingdoms.Enabled && Options.Kingdoms) factions = Factions.Assign(keys, Options.Seed is { } ks ? new Random(ks + 71) : new Random());
         if (Options.Seed is { } seed)
             Game = new GameState(_rules, keys, Options.PrepSeconds, Options.WarSeconds, new Random(seed),
-                GameState.AssignCorners(keys, new Random(seed + 17)), Options.ForestSeed ?? new Random(seed + 31).Next(), decks);
+                GameState.AssignCorners(keys, new Random(seed + 17)), Options.ForestSeed ?? new Random(seed + 31).Next(), decks, factions);
         else
-            Game = new GameState(_rules, keys, Options.PrepSeconds, Options.WarSeconds, forestSeed: Options.ForestSeed, decks: decks);
+            Game = new GameState(_rules, keys, Options.PrepSeconds, Options.WarSeconds, forestSeed: Options.ForestSeed, decks: decks, factions: factions);
         Phase = RoomPhase.Preparation;
     }
 

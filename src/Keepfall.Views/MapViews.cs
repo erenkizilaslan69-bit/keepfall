@@ -28,11 +28,15 @@ public sealed record VisionView(VecView Center, double Radius);
 public sealed record OwnMoverView(
     string Id, MoverKind Kind, int TargetSeat, bool Returning, VecView Position, VecView Velocity,
     IReadOnlyList<ArmyUnitView> Units, IReadOnlyList<VecView> Route, double Travelled, double Speed, double VisionRadius, bool Fighting,
-    MissionKind? MissionKind = null, Corner? Quarter = null, string? SiteId = null);
+    MissionKind? MissionKind = null, Corner? Quarter = null, string? SiteId = null, bool Decoy = false);
 
 /// <summary>Someone else's army or scout inside the player's vision. Nothing more than this.</summary>
 public sealed record SeenMoverView(
-    string Id, MoverKind Kind, int OwnerSeat, PlayerColor OwnerColor, VecView Position, VecView Velocity, IReadOnlyList<ArmyUnitView> Units);
+    string Id, MoverKind Kind, int OwnerSeat, PlayerColor OwnerColor, VecView Position, VecView Velocity, IReadOnlyList<ArmyUnitView> Units,
+    bool Fake = false, int? RealSeat = null);
+
+/// <summary>A rival whose castle is in live sight right now, and its kingdom (the client draws the kingdom's ornaments only for these).</summary>
+public sealed record SeatKingdomView(int Seat, string Faction);
 
 /// <summary>A battle going on that the player can see. Deliberately only where it is: not who, not how it goes.</summary>
 public sealed record BattleMarkerView(string Id, VecView At);
@@ -50,7 +54,8 @@ public sealed record SiteView(
 
 public sealed record MapStateView(
     double ElapsedSeconds, IReadOnlyList<VisionView> Vision, IReadOnlyList<OwnMoverView> Own, IReadOnlyList<SeenMoverView> Seen,
-    IReadOnlyList<BattleMarkerView> Battles, IReadOnlyList<TrailView> Trail, IReadOnlyList<SiteView> Sites);
+    IReadOnlyList<BattleMarkerView> Battles, IReadOnlyList<TrailView> Trail, IReadOnlyList<SiteView> Sites,
+    IReadOnlyList<SeatKingdomView>? Kingdoms = null);
 
 // A battle, for the two sides fighting it and nobody else: both armies soldier by soldier and the whole
 // record (hits [tick, attacker, target], deaths [tick, soldier], advances [tick, soldier]; soldiers are
@@ -90,7 +95,7 @@ public static class MapViewMapper
         foreach (var a in game.ArmiesOf(key))
             own.Add(new OwnMoverView(a.PublicId, MoverKind.Army, SeatOf(a.Target), a.State == ArmyState.Returning,
                 VecView.Of(a.Position), VecView.Of(a.Velocity), Units(a.Walking),
-                a.Leg.Route.Points.Select(VecView.Of).ToList(), a.Leg.Travelled, a.Leg.Speed, game.Rules.Map.ArmyVision, a.Battle is not null));
+                a.Leg.Route.Points.Select(VecView.Of).ToList(), a.Leg.Travelled, a.Leg.Speed, game.Rules.Map.ArmyVision, a.Battle is not null, Decoy: a.Decoy));
         foreach (var m in game.MissionsOf(key))
             own.Add(new OwnMoverView(m.PublicId, m.Kind == MissionKind.Envoy ? MoverKind.Envoy : MoverKind.Scout, SeatOf(m.Target), m.Back is not null,
                 VecView.Of(m.Position), VecView.Of(m.Velocity), [],
@@ -101,7 +106,7 @@ public static class MapViewMapper
         {
             var owner = room.PlayerOfCastle(s.Owner);
             return new SeenMoverView(s.Id, s.Kind, owner?.Seat ?? 0, owner?.Color ?? PlayerColor.Blue,
-                VecView.Of(s.Position), VecView.Of(s.Velocity), Units(s.Units));
+                VecView.Of(s.Position), VecView.Of(s.Velocity), Units(s.Units), s.Fake, s.RealOwner is { } real ? room.PlayerOfCastle(real)?.Seat : null);
         }).ToList();
 
         return new MapStateView(game.ElapsedSeconds,
@@ -110,14 +115,15 @@ public static class MapViewMapper
             game.TrailOf(key).Select(t => new TrailView(VecView.Of(t.Center), t.Radius, t.Fade)).ToList(),
             game.KnownSitesOf(key).Select(k => new SiteView(k.Site.Id, k.Site.Kind, VecView.Of(k.Site.Position),
                 k.Site.Spur.Select(VecView.Of).ToList(), k.Site.Quadrant, k.Gone, Units(k.BanditsSeen), k.DiscoveredAt, k.SeenAt,
-                k.Site.Kind == SiteKind.Village ? game.Rules.Forest.Village.MinSoldiers : 0)).ToList());
+                k.Site.Kind == SiteKind.Village ? game.Rules.Forest.Village.MinSoldiers : 0)).ToList(),
+            game.FactionsInSightOf(key).Select(f => new SeatKingdomView(SeatOf(f.Player), f.Faction)).ToList() is { Count: > 0 } kingdoms ? kingdoms : null);
     }
 
     /// <summary>More hits than this and only the deaths are sent (the client then animates attacks loosely).</summary>
     private const int MaxHits = 20_000;
 
     /// <summary>The full battle; only ever for a player who fights in it.</summary>
-    public static BattleStartedView BattleOf(Room room, GameState game, ActiveBattle b)
+    public static BattleStartedView BattleOf(Room room, GameState game, ActiveBattle b, string? viewer = null)
     {
         var record = b.Record;
         BattleSideView Side(int side, string key, bool attacker)
@@ -132,17 +138,17 @@ public static class MapViewMapper
         return new BattleStartedView(
             b.PublicId, b.Kind, VecView.Of(b.Position), VecView.Of(b.Facing), b.StartedAt, game.Rules.War.BattlePlayback,
             record.TickSeconds, record.Ticks, b.FightSeconds,
-            [Side(0, b.Attacker.From, true), Side(1, b.Defender, false)],
+            [Side(0, game.AttackerShownTo(b, viewer), true), Side(1, b.Defender, false)],
             record.HitCount > MaxHits ? [] : record.Hits, record.Deaths, record.Advances, b.Winner, record.Heals);
     }
 
     /// <summary>Battles <paramref name="player"/> fights in that started since the last call.</summary>
     public static List<BattleStartedView> StartedBattlesOf(Room room, RoomPlayer player) =>
-        room.Game is { } game ? game.TakeStartedBattles(player.CastleKey).Select(b => BattleOf(room, game, b)).ToList() : [];
+        room.Game is { } game ? game.TakeStartedBattles(player.CastleKey).Select(b => BattleOf(room, game, b, player.CastleKey)).ToList() : [];
 
     /// <summary>Every battle <paramref name="player"/> is fighting right now (after a reconnect).</summary>
     public static List<BattleStartedView> ActiveBattlesOf(Room room, RoomPlayer player) =>
-        room.Game is { } game ? game.ActiveBattlesOf(player.CastleKey).Select(b => BattleOf(room, game, b)).ToList() : [];
+        room.Game is { } game ? game.ActiveBattlesOf(player.CastleKey).Select(b => BattleOf(room, game, b, player.CastleKey)).ToList() : [];
 
     private static List<ArmyUnitView> Units(IReadOnlyDictionary<UnitType, int> units) =>
         units.Where(kv => kv.Value > 0).OrderBy(kv => kv.Key.Index).Select(kv => new ArmyUnitView(kv.Key.Id, kv.Key.Name, kv.Value)).ToList();

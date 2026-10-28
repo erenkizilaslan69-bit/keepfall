@@ -205,6 +205,29 @@
     "profanityFilter": false
   },
 
+  // Krallıklar (2026-10-28 gece; ayrıntı: src/Keepfall.Core/Match/Factions.cs). Maç başında her oyuncuya rastgele, tekrarsız bir krallık verilir.
+  // Gölge: hayalet ordu (asker harcamaz, altın ister; savaşa/kapıya varınca dağılır) ve sahte rapor. Tüccar: rüşvet (yaklaşan ordudan asker başına altın,
+  // en çok bribeMaxShare kadarı döner) ve haydut kampı kiralama (kamp boşalır; düşen kalenin ganimetinin campLootShare'i Tüccar'a gider).
+  // Kâhin: maç başında herkesin krallığı ve destesi, rakip başına kazanma tahmini (oddsSimulations deneme, ± oddsMargin payı). Entrikacı: sahte ulak ve
+  // kılık değiştirme (disguiseCooldownSeconds bekleme; gerçek kimlik ilk savaştan disguiseRevealSeconds sonra ya da gözcü raporuyla çıkar).
+  "kingdoms": {
+    "enabled": true,
+    "decoyGoldPerSoldier": 1.5,
+    "decoyMaxSoldiers": 20,
+    "decoyCooldownSeconds": 60,
+    "decoyMax": 2,
+    "bribeGoldPerSoldier": 5,
+    "bribeMaxShare": 0.4,
+    "bribeCooldownSeconds": 45,
+    "campPriceSmall": 45,
+    "campPriceBig": 90,
+    "campLootShare": 0.4,
+    "oddsSimulations": 24,
+    "oddsMargin": 0.12,
+    "disguiseCooldownSeconds": 90,
+    "disguiseRevealSeconds": 120
+  },
+
   // Excel "Binalar" sekmesi: tarla, oduncu kampı, maden ve demirhane aynı tabloyu kullanır.
   // Sıra = seviye (ilki seviye 1). upgrade* = o seviyeye çıkmanın maliyeti ve süresi (sn). Süreler yarıya indirildi; Sv4 eklendi (2026-10-27 gece).
   // Demirhanede multiplier = silah üretim hızı.

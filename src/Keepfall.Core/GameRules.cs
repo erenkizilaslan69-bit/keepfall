@@ -18,8 +18,9 @@ public sealed class GameRules
 {
     public GameRules(IReadOnlyList<UnitType> units, CounterMatrix counters, CombatSettings combat, ProductionRates production,
         MatchRules match, EconomyRules economy, ScoutingRules scouting, WarRules war, MapRules map,
-        IReadOnlyDictionary<string, double>? mercenaryPrices = null, ForestRules? forest = null, BotRules? bots = null, EnvoyRules? envoy = null, WallRules? walls = null, DeckRules? deck = null)
+        IReadOnlyDictionary<string, double>? mercenaryPrices = null, ForestRules? forest = null, BotRules? bots = null, EnvoyRules? envoy = null, WallRules? walls = null, DeckRules? deck = null, KingdomRules? kingdoms = null)
     {
+        Kingdoms = kingdoms ?? KingdomRules.Default;
         Deck = deck ?? DeckRules.Off;
         Walls = walls ?? new WallRules();
         Envoy = envoy ?? EnvoyRules.Default;
@@ -51,6 +52,7 @@ public sealed class GameRules
     public EnvoyRules Envoy { get; }
     public WallRules Walls { get; }
     public DeckRules Deck { get; }
+    public KingdomRules Kingdoms { get; }
     /// <summary>Gold per soldier when hiring (by unit id); a unit without a price cannot be hired.</summary>
     public IReadOnlyDictionary<string, double> MercenaryPrices { get; }
 

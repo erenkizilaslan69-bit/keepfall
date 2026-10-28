@@ -217,7 +217,7 @@ public class ScoutingTests
 
         // Structurally, a report can only ever carry these fields.
         Assert.Equal(
-            new[] { "BuildingLevels", "Deck", "DeliveredAt", "ObservedAt", "Soldiers", "Target" },
+            new[] { "BuildingLevels", "Deck", "DeliveredAt", "Faction", "Faked", "ObservedAt", "Soldiers", "Target" },
             typeof(ScoutReport).GetProperties().Select(p => p.Name).Order());
         Assert.Equal(
             new[] { "Count", "Name", "UnitId" },

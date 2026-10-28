@@ -24,6 +24,7 @@ public sealed class BalanceConfig
     public EnvoyConfig Envoy { get; set; } = new();
     public WallsConfig Walls { get; set; } = new();
     public DeckConfig Deck { get; set; } = new();
+    public KingdomsConfig Kingdoms { get; set; } = new();
     /// <summary>Gold price of hiring one soldier of each unit type (by unit id).</summary>
     public Dictionary<string, double> Mercenary { get; set; } = [];
     public List<UnitConfig> Units { get; set; } = [];
@@ -213,6 +214,25 @@ public sealed class DeckConfig
 public sealed class WallsConfig
 {
     public double ArcherDefenseBonus { get; set; }
+}
+
+public sealed class KingdomsConfig
+{
+    public bool Enabled { get; set; } = true;
+    public double DecoyGoldPerSoldier { get; set; } = 1.5;
+    public int DecoyMaxSoldiers { get; set; } = 20;
+    public double DecoyCooldownSeconds { get; set; } = 60;
+    public int DecoyMax { get; set; } = 2;
+    public double BribeGoldPerSoldier { get; set; } = 5;
+    public double BribeMaxShare { get; set; } = 0.4;
+    public double BribeCooldownSeconds { get; set; } = 45;
+    public double CampPriceSmall { get; set; } = 45;
+    public double CampPriceBig { get; set; } = 90;
+    public double CampLootShare { get; set; } = 0.4;
+    public int OddsSimulations { get; set; } = 24;
+    public double OddsMargin { get; set; } = 0.12;
+    public double DisguiseCooldownSeconds { get; set; } = 90;
+    public double DisguiseRevealSeconds { get; set; } = 120;
 }
 
 public sealed class EnvoyConfig
@@ -538,7 +558,11 @@ public static class BalanceConfigLoader
                 config.Bots.Hard is null ? null : BotLevel(config.Bots.Hard, true), config.Bots.GiftThreshold, config.Bots.GiftPeaceSeconds, config.Bots.Decks.Select(d => (IReadOnlyList<string>)d).ToList()),
             new EnvoyRules(config.Envoy.MaxCargo, config.Envoy.MaxMessageLength, config.Envoy.ProfanityFilter),
             new WallRules(config.Walls.ArcherDefenseBonus),
-            new DeckRules(config.Deck.Enabled, config.Deck.Size));
+            new DeckRules(config.Deck.Enabled, config.Deck.Size),
+            new KingdomRules(config.Kingdoms.Enabled, config.Kingdoms.DecoyGoldPerSoldier, config.Kingdoms.DecoyMaxSoldiers, config.Kingdoms.DecoyCooldownSeconds,
+                config.Kingdoms.DecoyMax, config.Kingdoms.BribeGoldPerSoldier, config.Kingdoms.BribeMaxShare, config.Kingdoms.BribeCooldownSeconds,
+                config.Kingdoms.CampPriceSmall, config.Kingdoms.CampPriceBig, config.Kingdoms.CampLootShare, config.Kingdoms.OddsSimulations, config.Kingdoms.OddsMargin,
+                config.Kingdoms.DisguiseCooldownSeconds, config.Kingdoms.DisguiseRevealSeconds));
     }
 
     private static BotLevelRules BotLevel(BotLevelConfig c, bool good) => new(c.ThinkMin, c.ThinkMax, c.ReactMin, c.ReactMax, c.Commands, c.Mistake, c.Slack, c.EcoMistake < 0 ? c.Mistake : c.EcoMistake,

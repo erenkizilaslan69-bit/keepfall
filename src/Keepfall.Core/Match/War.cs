@@ -54,6 +54,15 @@ public sealed class ArmyMarch
     public string From { get; }
     /// <summary>The player whose castle it marches on, or "site:ID" for a place in the forest.</summary>
     public string Target { get; private set; }
+    /// <summary>Shadow kingdom: a phantom that costs no soldiers and dissolves when it meets anything.</summary>
+    public bool Decoy { get; internal set; }
+    /// <summary>Merchant republic: bandits of a hired camp. They are nobody's soldiers: no losses or survivors are booked on the owner's castle.</summary>
+    public bool Rented { get; internal set; }
+    /// <summary>Schemers: the player this army pretends to be (null = itself), until it is revealed to someone or its time is up.</summary>
+    public string? ShownAs { get; internal set; }
+    public HashSet<string> RevealedTo { get; } = [];
+    /// <summary>From this moment the disguise no longer holds (set after its first battle).</summary>
+    public double? RevealAt { get; internal set; }
     /// <summary>The place in the forest it goes to; null for an army marching on a castle.</summary>
     public SiteState? Site { get; internal set; }
     /// <summary>What it carries home from a place it plundered: arrives with it.</summary>

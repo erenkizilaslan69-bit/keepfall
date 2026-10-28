@@ -84,7 +84,7 @@ public class VisionTests
         Assert.Matches("^[0-9a-f]{16}$", seen.Id);
 
         // Structurally, a seen mover can only ever carry these fields: no target, road or arrival time.
-        Assert.Equal(new[] { "Id", "Kind", "Owner", "Position", "Units", "Velocity" },
+        Assert.Equal(new[] { "Fake", "Id", "Kind", "Owner", "Position", "RealOwner", "Units", "Velocity" },
             typeof(SeenMover).GetProperties().Select(p => p.Name).Order());
         Assert.Empty(game.SeenBy(A)); // never your own
         Assert.Empty(game.SeenBy(C)); // C sees nothing of it

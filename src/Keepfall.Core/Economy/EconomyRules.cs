@@ -56,6 +56,18 @@ public sealed record EnvoyRules(int MaxCargo = 40, int MaxMessageLength = 140, b
     public static EnvoyRules Default { get; } = new();
 }
 
+/// <summary>The numbers of the four kingdoms' abilities (see Match/Factions.cs).</summary>
+public sealed record KingdomRules(
+    bool Enabled = true,
+    double DecoyGoldPerSoldier = 1.5, int DecoyMaxSoldiers = 20, double DecoyCooldownSeconds = 60, int DecoyMax = 2,
+    double BribeGoldPerSoldier = 5, double BribeMaxShare = 0.4, double BribeCooldownSeconds = 45,
+    double CampPriceSmall = 45, double CampPriceBig = 90, double CampLootShare = 0.4,
+    int OddsSimulations = 24, double OddsMargin = 0.12,
+    double DisguiseCooldownSeconds = 90, double DisguiseRevealSeconds = 120)
+{
+    public static KingdomRules Default { get; } = new();
+}
+
 /// <param name="NoScoutLastPrepSeconds">No scout (spying, touring a quarter, a chest run) can leave in the last this many seconds of the preparation (0 = always allowed).</param>
 public sealed record ScoutingRules(double ReportError, int MaxScouts = 1, double NoScoutLastPrepSeconds = 0);
 

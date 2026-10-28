@@ -44,7 +44,7 @@ public sealed record ArmyUnitView(string UnitId, string Name, int Count);
 public sealed record ArmyView(
     int Id, int TargetSeat, string TargetName, PlayerColor TargetColor, ArmyState State,
     IReadOnlyList<ArmyUnitView> Units, double Distance, double RemainingSeconds, ArmyMode Mode, bool Fighting,
-    string? SiteId = null, SiteKind? SiteKind = null);
+    string? SiteId = null, SiteKind? SiteKind = null, bool Decoy = false);
 public sealed record IncomingView(int FromSeat, string FromName, PlayerColor FromColor, double ArrivesInSeconds);
 public sealed record BattleLineView(string UnitId, string Name, int Count, int Lost);
 public sealed record BattleReportView(
@@ -75,7 +75,8 @@ public sealed record ScoutedUnitView(string UnitId, string Name, int Count);
 public sealed record ScoutBuildingView(BuildingType Type, string Name, int Level);
 public sealed record ScoutReportView(
     int TargetSeat, string TargetName, PlayerColor TargetColor, double ObservedAt, double DeliveredAt,
-    IReadOnlyList<ScoutedUnitView> Soldiers, IReadOnlyList<ScoutBuildingView> Buildings, IReadOnlyList<string>? Deck = null);
+    IReadOnlyList<ScoutedUnitView> Soldiers, IReadOnlyList<ScoutBuildingView> Buildings, IReadOnlyList<string>? Deck = null,
+    string? Kingdom = null, bool Faked = false);
 public sealed record ScoutingView(
     int ScoutsAway, IReadOnlyList<ScoutTargetView> Targets,
     IReadOnlyList<ScoutMissionView> Missions, IReadOnlyList<ScoutReportView> Reports, IReadOnlyList<QuarterView> Quarters, int MaxScouts = 1, bool Locked = false);
@@ -94,10 +95,30 @@ public sealed record CastleView(
     double ArmSeconds = 0,
     IReadOnlyList<LetterView>? Letters = null,
     EnvoyRulesView? Envoy = null,
-    IReadOnlyList<string>? Deck = null);
+    IReadOnlyList<string>? Deck = null,
+    KingdomView? Kingdom = null,
+    IReadOnlyList<RivalKingdomView>? Rivals = null,
+    IReadOnlyList<OddsView>? Odds = null);
+
+// Kingdoms. A player always knows their own (KingdomView, with the waiting times of its abilities). Another player's is only ever sent for a castle in
+// live sight (MapStateView.Kingdoms), in a scout report, and, for the Oracle, in Rivals. Nothing here marks a lie as one except for the Oracle.
+public sealed record AbilityView(string Id, string Name, string Text);
+public sealed record KingdomInfoView(string Id, string Name, string Title, string Look);
+public sealed record KingdomNumbersView(
+    double DecoyGoldPerSoldier, int DecoyMaxSoldiers, int DecoyMax, double BribeGoldPerSoldier, double BribeMaxShare,
+    double CampPriceSmall, double CampPriceBig, double CampLootShare, double DisguiseRevealSeconds);
+public sealed record KingdomView(
+    string Id, string Name, string Title, string Look, string Decree, IReadOnlyList<AbilityView> Abilities,
+    double DecoyReadyIn, int DecoysOut, double BribeReadyIn, double DisguiseReadyIn, IReadOnlyDictionary<string, int>? FakeReport,
+    KingdomNumbersView Numbers, IReadOnlyList<KingdomInfoView> Catalog);
+/// <summary>Oracle only: a rival's kingdom and deck, known from the start.</summary>
+public sealed record RivalKingdomView(int Seat, string Faction, IReadOnlyList<string> Deck);
+/// <summary>Oracle only: the chance (a range) that our soldiers at home win against what the latest scout report says is at that castle.</summary>
+public sealed record OddsView(int Seat, bool Known, double Low, double High);
 
 /// <summary>What an envoy left at our castle: who from, the goods and the message (plain text, shown as plain text). Only ever sent to the receiver.</summary>
-public sealed record LetterView(int Id, int FromSeat, string FromName, PlayerColor FromColor, double At, int Food, int Wood, int Iron, int Gold, string? Message);
+public sealed record LetterView(int Id, int FromSeat, string FromName, PlayerColor FromColor, double At, int Food, int Wood, int Iron, int Gold, string? Message,
+    bool Fake = false, int? RealSeat = null);
 
 /// <summary>The envoy limits the client shows in its form.</summary>
 public sealed record EnvoyRulesView(int MaxCargo, int MaxMessageLength);
@@ -168,10 +189,26 @@ public static class ViewMapper
             game.LettersOf(player.CastleKey).Select(l =>
             {
                 var from = room.PlayerOfCastle(l.From);
-                return new LetterView(l.Id, from?.Seat ?? 0, from?.Name ?? "?", from?.Color ?? PlayerColor.Blue, l.At, l.Food, l.Wood, l.Iron, l.Gold, l.Message);
+                bool oracle = game.IsFaction(player.CastleKey, Factions.Oracle) && l.RealFrom is not null;
+                return new LetterView(l.Id, from?.Seat ?? 0, from?.Name ?? "?", from?.Color ?? PlayerColor.Blue, l.At, l.Food, l.Wood, l.Iron, l.Gold, l.Message,
+                    oracle, oracle ? room.PlayerOfCastle(l.RealFrom!)?.Seat : null);
             }).ToList(),
             new EnvoyRulesView(game.Rules.Envoy.MaxCargo, game.Rules.Envoy.MaxMessageLength),
-            c.UnitTypes.Select(u => u.Id).ToList());
+            c.UnitTypes.Select(u => u.Id).ToList(),
+            KingdomOf(room, game, player),
+            game.OracleKnowledgeOf(player.CastleKey).Select(k => new RivalKingdomView(room.PlayerOfCastle(k.Player)?.Seat ?? 0, k.Faction, k.Deck)).ToList() is { Count: > 0 } rivals ? rivals : null,
+            game.OddsOf(player.CastleKey).Select(o => new OddsView(room.PlayerOfCastle(o.Target)?.Seat ?? 0, o.Known, o.Low, o.High)).ToList() is { Count: > 0 } odds ? odds : null);
+    }
+
+    private static KingdomView? KingdomOf(Room room, GameState game, RoomPlayer player)
+    {
+        if (game.KingdomStatusOf(player.CastleKey) is not { } st || Factions.Find(st.Faction) is not { } f) return null;
+        var k = game.Rules.Kingdoms;
+        return new KingdomView(f.Id, f.Name, f.Title, f.Look, f.Decree, f.Abilities.Select(a => new AbilityView(a.Id, a.Name, a.Text)).ToList(),
+            st.DecoyReadyIn, st.DecoysOut, st.BribeReadyIn, st.DisguiseReadyIn, st.FakeReport,
+            new KingdomNumbersView(k.DecoyGoldPerSoldier, k.DecoyMaxSoldiers, k.DecoyMax, k.BribeGoldPerSoldier, k.BribeMaxShare, k.CampPriceSmall, k.CampPriceBig,
+                k.CampLootShare, k.DisguiseRevealSeconds),
+            Factions.All.Select(x => new KingdomInfoView(x.Id, x.Name, x.Title, x.Look)).ToList());
     }
 
     private static WarView WarOf(Room room, GameState game, RoomPlayer player, Castle c)
@@ -192,7 +229,7 @@ public static class ViewMapper
                 string name = a.Site is { } site ? SiteName(site.Site.Kind) : target?.Name ?? "?";
                 return new ArmyView(a.Id, target?.Seat ?? 0, name, target?.Color ?? PlayerColor.Blue, a.State,
                     Units(a.State == ArmyState.Marching ? a.Units : a.Survivors), a.Distance, RemainingOf(a), a.Mode, a.Battle is not null,
-                    a.Site?.Site.Id, a.Site?.Site.Kind);
+                    a.Site?.Site.Id, a.Site?.Site.Kind, a.Decoy);
             }).ToList(),
             // Only who and when: an incoming army's size and units are never part of this.
             game.IncomingWarningsOf(player.CastleKey).Select(w =>
@@ -203,7 +240,7 @@ public static class ViewMapper
             game.BattlesOf(player.CastleKey).TakeLast(10).Reverse().Select(b =>
             {
                 bool attacking = b.Attacker == player.CastleKey;
-                var opponent = Other(attacking ? b.Defender : b.Attacker);
+                var opponent = Other(attacking ? b.Defender : game.AttackerSeenBy(b, player.CastleKey));
                 bool bandits = b.Kind == BattleKind.Camp;
                 bool youWon = attacking ? b.Winner == BattleWinner.Attacker : b.Winner == BattleWinner.Defender;
                 return new BattleReportView(b.Id, b.At, attacking, opponent?.Seat ?? 0, bandits ? "Haydutlar" : opponent?.Name ?? "?",
@@ -242,7 +279,7 @@ public static class ViewMapper
                 return new ScoutReportView(
                     target?.Seat ?? 0, target?.Name ?? "?", target?.Color ?? PlayerColor.Blue, r.ObservedAt, r.DeliveredAt,
                     r.Soldiers.Where(u => r.Deck is null || r.Deck.Contains(u.UnitId)).Select(u => new ScoutedUnitView(u.UnitId, u.Name, u.Count)).ToList(),
-                    r.BuildingLevels.Select(kv => new ScoutBuildingView(kv.Key, Jobs.Name(kv.Key), kv.Value)).ToList(), r.Deck);
+                    r.BuildingLevels.Select(kv => new ScoutBuildingView(kv.Key, Jobs.Name(kv.Key), kv.Value)).ToList(), r.Deck, r.Faction, r.Faked);
             }).ToList(),
             Enum.GetValues<Corner>().Select(q =>
             {

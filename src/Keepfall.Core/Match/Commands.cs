@@ -27,7 +27,7 @@ public sealed record UpgradeBuilding(BuildingType Building) : GameCommand;
 public sealed record SendScout(string TargetKey, Job From = Job.Idle) : GameCommand;
 
 /// <summary>Send one person from <paramref name="From"/> as an envoy to <paramref name="TargetKey"/>'s castle with goods and/or a message.</summary>
-public sealed record SendEnvoy(string TargetKey, int Food, int Wood, int Iron, int Gold, string? Message = null, Job From = Job.Idle) : GameCommand;
+public sealed record SendEnvoy(string TargetKey, int Food, int Wood, int Iron, int Gold, string? Message = null, Job From = Job.Idle, string? AsKey = null) : GameCommand;
 
 /// <summary>Send one person from <paramref name="From"/> to explore one quarter of the forest (named by its corner): they walk its road, find its places and come home.</summary>
 public sealed record SendExplore(World.Corner Quarter, Job From = Job.Idle) : GameCommand;
@@ -53,7 +53,8 @@ public sealed record SendArmy(
     IReadOnlyDictionary<string, int> Units,
     IReadOnlyDictionary<string, Row>? Rows = null,
     string? ArcherPriority = null,
-    ArmyMode Mode = ArmyMode.Attack) : GameCommand;
+    ArmyMode Mode = ArmyMode.Attack,
+    string? AsKey = null) : GameCommand;
 
 /// <summary>War: send soldiers to a place in the forest the player has found (plunder a village, clear a bandit camp).</summary>
 public sealed record SendArmyToSite(
@@ -77,6 +78,18 @@ public sealed record SetDefense(IReadOnlyDictionary<string, Row>? Rows, string? 
 
 /// <summary>Hire soldiers for gold at the castle: they are there at once and cannot become workers.</summary>
 public sealed record HireMercenary(string UnitId, int Count) : GameCommand;
+
+/// <summary>Shadow kingdom: a phantom army walks towards <paramref name="TargetKey"/>; rivals see it like a real one, and it fades away when it meets something.</summary>
+public sealed record SendDecoy(string TargetKey, IReadOnlyDictionary<string, int> Units) : GameCommand;
+
+/// <summary>Shadow kingdom: the false army table a rival's scout will read at our castle (an empty table switches the lie off).</summary>
+public sealed record SetFakeReport(IReadOnlyDictionary<string, int> Units) : GameCommand;
+
+/// <summary>Merchant republic: pay some soldiers of an approaching army (one we can see, by its public id) to turn back.</summary>
+public sealed record BribeArmy(string ArmyId, int Count) : GameCommand;
+
+/// <summary>Merchant republic: hire a bandit camp we have found; its bandits march on <paramref name="TargetKey"/>.</summary>
+public sealed record HireCamp(string SiteId, string TargetKey) : GameCommand;
 
 /// <summary>Turn automatic population growth on or off.</summary>
 public sealed record SetGrowth(bool Enabled) : GameCommand;

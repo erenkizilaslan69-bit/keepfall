@@ -171,6 +171,30 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
         ArmyMode mode = ArmyMode.Attack) =>
         Economy(new SendArmy(Room.CastleKeyOf(targetSeat), units ?? [], rows, archerPriority, mode));
 
+    // ---- kingdoms (the server checks that the caller's kingdom may do it) ---------------------------
+
+    /// <summary>Shadow: a phantom army towards a rival.</summary>
+    public Task<CommandResultView> SendDecoy(int targetSeat, Dictionary<string, int> units) =>
+        Economy(new SendDecoy(Room.CastleKeyOf(targetSeat), units ?? []));
+
+    /// <summary>Shadow: the false army table a rival's scout will read.</summary>
+    public Task<CommandResultView> SetFakeReport(Dictionary<string, int> units) => Economy(new SetFakeReport(units ?? []));
+
+    /// <summary>Merchant: bribe some soldiers of an approaching army we see (its id is from the map).</summary>
+    public Task<CommandResultView> BribeArmy(string armyId, int count) => Economy(new BribeArmy(armyId ?? "", count));
+
+    /// <summary>Merchant: hire a bandit camp we have found to march on a rival.</summary>
+    public Task<CommandResultView> HireCamp(string siteId, int targetSeat) => Economy(new HireCamp(siteId ?? "", Room.CastleKeyOf(targetSeat)));
+
+    /// <summary>Schemer: an envoy under another player's name.</summary>
+    public Task<CommandResultView> SendEnvoyAs(int targetSeat, int asSeat, int food, int wood, int iron, int gold, string? message, Job from) =>
+        Economy(new SendEnvoy(Room.CastleKeyOf(targetSeat), food, wood, iron, gold, message, from, Room.CastleKeyOf(asSeat)));
+
+    /// <summary>Schemer: an army in another player's colour.</summary>
+    public Task<CommandResultView> SendArmyAs(int targetSeat, int asSeat, Dictionary<string, int> units, Dictionary<string, Row>? rows, string? archerPriority,
+        ArmyMode mode = ArmyMode.Attack) =>
+        Economy(new SendArmy(Room.CastleKeyOf(targetSeat), units ?? [], rows, archerPriority, mode, Room.CastleKeyOf(asSeat)));
+
     /// <summary>Call one of our own armies home (the id is from our own castle view).</summary>
     public Task<CommandResultView> RecallArmy(int armyId) => Economy(new RecallArmy(armyId));
 
