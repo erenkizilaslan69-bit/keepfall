@@ -37,3 +37,5 @@ logs/
 
 # Production build (dotnet publish -c Release -o publish)
 publish/
+
+art/shots/

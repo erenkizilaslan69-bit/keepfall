@@ -72,7 +72,7 @@ export interface RoomView {
   result: ResultView | null;
 }
 
-export interface RankView { seat: number; name: string; color: PlayerColor; place: number; population: number; eliminated: boolean }
+export interface RankView { seat: number; name: string; color: PlayerColor; place: number; population: number; eliminated: boolean; kingdom?: string | null }
 export interface ResultView {
   winners: number[];
   byElimination: boolean;

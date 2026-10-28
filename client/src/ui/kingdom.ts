@@ -1,4 +1,5 @@
 import { esc } from '../format';
+import { emblemHtml } from './emblem';
 import type { GameConnection } from '../net';
 import type { CastleView, KingdomView, MapStateView, RoomView } from '../types';
 
@@ -45,7 +46,7 @@ export class KingdomUi {
     const k = c.kingdom;
     if (!k || c.eliminated) { this.fab.classList.add('hidden'); this.panel.classList.add('hidden'); return; }
     this.fab.classList.remove('hidden');
-    this.fab.innerHTML = `<i class="kd-badge kd-${esc(k.look)}"></i>${esc(k.name)}`;
+    this.fab.innerHTML = `${emblemHtml(k.look, 'emblem-fab')}${esc(k.name)}`;
     if (!this.decreeShown) { this.decreeShown = true; this.showDecree(k); }
     if (this.built !== `${k.id}:${this.signature(c)}`) this.build(k, c);
     this.refreshDynamic(k, c);
@@ -61,7 +62,7 @@ export class KingdomUi {
     box.className = 'guide-overlay kingdom-decree';
     box.innerHTML = `
       <div class="decree paper kd-${esc(k.look)}" role="dialog" aria-label="Ferman">
-        <div class="decree-seal kd-badge kd-${esc(k.look)} big"></div>
+        <div class="decree-seal">${emblemHtml(k.look, 'emblem-decree')}</div>
         <div class="decree-kicker">Ferman</div>
         <h2>${esc(k.name)}</h2>
         <p class="decree-title">${esc(k.title)}</p>

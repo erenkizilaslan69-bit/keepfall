@@ -224,5 +224,54 @@
     }
     return results;
   };
+  // A row of frames drawn on one sheet (cleaned together, so one grid): split by connected pieces, aligned on the centre of the blue blanket (the saddle
+  // cloth sits at the same point of every frame), and put on a sheet of equal cells whose bottom is the lowest hoof of the whole run.
+  window.artSplit = async (url, count) => {
+    const img = await load(url);
+    const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0);
+    const w = c.width, h = c.height, d = g.getImageData(0, 0, w, h).data;
+    const seen = new Int32Array(w * h).fill(-1), comps = [];
+    for (let s = 0; s < w * h; s++) {
+      if (!d[s * 4 + 3] || seen[s] >= 0) continue;
+      const k = comps.length, list = [s]; seen[s] = k;
+      for (let q = 0; q < list.length; q++) {
+        const i = list[q], x = i % w, y = (i - x) / w;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+          const j = ny * w + nx; if (d[j * 4 + 3] && seen[j] < 0) { seen[j] = k; list.push(j); }
+        }
+      }
+      comps.push(list);
+    }
+    comps.sort((a, b) => b.length - a.length);
+    const big = comps.slice(0, count);
+    const mid = (list) => list.reduce((a, i) => a + (i % w), 0) / list.length;
+    big.sort((a, b) => mid(a) - mid(b));
+    const frames = big.map((list) => {
+      let x0 = w, y0 = h, x1 = 0, y1 = 0, bx = 0, by = 0, bn = 0;
+      for (const i of list) {
+        const x = i % w, y = (i - x) / w;
+        x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+        const r = d[i * 4], gg = d[i * 4 + 1], b = d[i * 4 + 2];
+        if (b > r + 40 && b > gg + 10) { bx += x; by += y; bn++; }
+      }
+      return { list, x0, y0, x1, y1, ax: Math.round(bx / bn), ay: Math.round(by / bn) };
+    });
+    // each frame is placed so its anchor lands at (AX, AY) of an equal cell
+    const left = Math.max(...frames.map((f) => f.ax - f.x0)), right = Math.max(...frames.map((f) => f.x1 - f.ax)) + 1;
+    const up = Math.max(...frames.map((f) => f.ay - f.y0)), down = Math.max(...frames.map((f) => f.y1 - f.ay)) + 1;
+    const fw = left + right, fh = up + down;
+    const out = document.createElement('canvas'); out.width = fw * count; out.height = fh;
+    const og = out.getContext('2d'), od = og.createImageData(out.width, out.height);
+    frames.forEach((f, n) => {
+      for (const i of f.list) {
+        const x = i % w, y = (i - x) / w, tx = n * fw + (x - f.ax + left), ty = y - f.ay + up, o = (ty * out.width + tx) * 4;
+        od.data.set(d.subarray(i * 4, i * 4 + 4), o);
+      }
+    });
+    og.putImageData(od, 0, 0);
+    return { png: out.toDataURL('image/png'), fw, fh, frames: frames.length, anchors: { x: left, y: up } };
+  };
   return true;
 })();

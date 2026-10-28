@@ -592,6 +592,8 @@ if (allOut?.allHumansOut) {
   await sleep(500);
   const end = H.of('RoomState').at(-1);
   check('the room is over with a result, won by a bot', end.phase === 'ended' && !!end.result && end.result.winners.every((w) => end.players.find((x) => x.seat === w)?.isBot));
+  check('only now (the match is over) the ranking names every player kingdom, and they are real ones', end.result.ranking.every((x) => ['golge', 'tuccar', 'kahin', 'entrikaci'].includes(x.kingdom)));;
+  check('while the match runs no room view carries a kingdom for anybody', H.of('RoomState').slice(0, -1).every((r) => !JSON.stringify(r).includes('kingdom')));
   check('both humans got their summary, and the bots got no connection', H.of('MatchEnded').length === 1 && K.of('MatchEnded').length === 1);
   check('it cannot be ended twice', !(await H.call('FinishMatch')).ok);
 }

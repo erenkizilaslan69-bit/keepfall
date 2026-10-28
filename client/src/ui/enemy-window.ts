@@ -1,4 +1,5 @@
 import { BACK_LINE, COLOR_NAMES, SHOOTERS, botMark, clock, esc } from '../format';
+import { emblemHtml, rivalKingdom } from './emblem';
 import type { ArmyMode, CastleView, Job, PlayerView, RoomView, Row, ScoutReportView, ScoutTargetView } from '../types';
 import { ago, scoutButton, scoutReportHtml } from './scout-report';
 import { Win, type WinContext, type WinData } from './windows';
@@ -26,7 +27,7 @@ export class EnemyWin extends Win {
     const priority = `<option value="">ön sıra</option>${s.units.map((u) => `<option value="${u.id}">önce ${esc(u.name)}</option>`).join('')}`;
     const sources = s.jobs.map((j) => `<option value="${j.job}"></option>`).join('');
     this.body.innerHTML = `
-      <div class="who"><i class="avatar big" style="background-image:url('${AVATAR(seat)}')"></i>
+      <div class="who"><i class="avatar big" style="background-image:url('${AVATAR(seat)}')"></i><span data-f="emblem"></span>
         <div><b data-f="name"></b><div class="muted-ink small" data-f="state"></div></div></div>
       <h4>Gözcü</h4>
       <div class="row"><select data-f="source" title="Gözcü hangi meslekten çıksın">${sources}</select>
@@ -85,6 +86,9 @@ export class EnemyWin extends Win {
     const color = t?.color ?? p?.color ?? 'red';
     this.setTitle(`${botMark(this.seat)}${esc(name)} <small>${COLOR_NAMES[color] ?? ''}</small>`);
     this.q('[data-f="name"]').textContent = name;
+    const emblem = emblemHtml(rivalKingdom(this.seat, s.scouting.reports.find((r) => r.targetSeat === this.seat)), 'emblem-who');
+    const emblemBox = this.q('[data-f="emblem"]');
+    if (emblemBox.dataset.html !== emblem) { emblemBox.dataset.html = emblem; emblemBox.innerHTML = emblem; }
     const out = !!p?.eliminated;
     this.q('[data-f="state"]').textContent = out ? 'Kalesi düştü' : p && !p.connected ? 'Bağlantısı yok' : 'Kalesi ayakta';
 

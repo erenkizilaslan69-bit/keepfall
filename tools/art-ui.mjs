@@ -89,4 +89,48 @@ if (want('props')) {
     console.log(`props/${r.name}: ${r.w}x${r.h} cells (half ${r.wHalf}x${r.hHalf}), period ${r.period}`);
   }
 }
+if (want('emblems')) {
+  const outE = join(out, 'emblems');
+  mkdirSync(outE, { recursive: true });
+  const [w, h] = await size('amblemler.jpg');
+  const names = ['shadow', 'merchant', 'seer', 'schemer'];
+  const cells = names.map((name, i) => ({ name, x: (i % 2) * (w / 2), y: Math.floor(i / 2) * (h / 2), w: w / 2, h: h / 2 }));
+  for (const r of await clean('amblemler.jpg', cells, 40)) {
+    writeFileSync(join(outE, `${r.name}.png`), Buffer.from(r.png.split(',')[1], 'base64'));
+    writeFileSync(join(outE, `${r.name}-half.png`), Buffer.from(r.pngHalf.split(',')[1], 'base64'));
+    console.log(`emblems/${r.name}: ${r.w}x${r.h} (half ${r.wHalf}x${r.hHalf}), period ${r.period}`);
+  }
+}
+if (want('endscreen')) {
+  const [w, h] = await size('mac-sonu.jpg');
+  const cells = ['victory', 'defeat'].map((name, i) => ({ name, x: i * (w / 2), y: 0, w: w / 2, h }));
+  for (const r of await clean('mac-sonu.jpg', cells, 40)) {
+    writeFileSync(join(out, `${r.name}.png`), Buffer.from(r.png.split(',')[1], 'base64'));
+    writeFileSync(join(out, `${r.name}-half.png`), Buffer.from(r.pngHalf.split(',')[1], 'base64'));
+    console.log(`ui/${r.name}: ${r.w}x${r.h} (half ${r.wHalf}x${r.hHalf}), period ${r.period}`);
+  }
+}
+if (want('details')) {
+  const outProps = join(root, 'client', 'public', 'art', 'props');
+  mkdirSync(outProps, { recursive: true });
+  const [w, h] = await size('harita-detaylar.jpg');
+  const names = ['cart', 'pond', 'tower', 'stones', 'field', 'well', 'mushlog', 'campfire', 'bridge'];
+  const cells = names.map((name, i) => ({ name, x: Math.round((i % 3) * (w / 3)), y: Math.round(Math.floor(i / 3) * (h / 3)), w: Math.round(w / 3), h: Math.round(h / 3), noPurple: true }));
+  for (const r of await clean('harita-detaylar.jpg', cells, 40)) {
+    writeFileSync(join(outProps, `d-${r.name}.png`), Buffer.from(r.png.split(',')[1], 'base64'));
+    writeFileSync(join(outProps, `d-${r.name}-half.png`), Buffer.from(r.pngHalf.split(',')[1], 'base64'));
+    console.log(`props/d-${r.name}: ${r.w}x${r.h} (half ${r.wHalf}x${r.hHalf}), period ${r.period}`);
+  }
+}
+if (want('horse')) {
+  const outH = join(root, 'client', 'public', 'art', 'horse');
+  mkdirSync(outH, { recursive: true });
+  const [w, h] = await size('at.jpg');
+  const [r] = await clean('at.jpg', [{ name: 'horse', x: 0, y: 0, w, h, noPurple: true }], 40);
+  for (const [suffix, png] of [['', r.png], ['-half', r.pngHalf]]) {
+    const sheet = await evalJs(`window.artSplit(${JSON.stringify(png)}, 5)`);
+    writeFileSync(join(outH, `horse${suffix}.png`), Buffer.from(sheet.png.split(',')[1], 'base64'));
+    console.log(`horse${suffix}: frames ${sheet.frames} of ${sheet.fw}x${sheet.fh}, anchors ${JSON.stringify(sheet.anchors)}`);
+  }
+}
 ws.close(); chrome.kill(); process.exit(0);

@@ -1,4 +1,5 @@
 import { esc } from '../format';
+import { emblemHtml } from './emblem';
 
 // "Nasıl oynanır": a short decree (a parchment over the screen) opened with the "?" button, in the menus and in the game. Every number in it
 // comes from the server (/api/guide, which reads config/balance.json), so it follows the settings when they change.
@@ -69,7 +70,7 @@ export function guideHtml(g: Guide): string {
     ['Krallıklar', g.kingdoms?.length ? [
       'Maç başında her oyuncuya <b>rastgele bir krallık</b> verilir (aynı maçta ikisi aynı olmaz); seçmezsin. Ne olduğunu başta bir fermanla öğrenirsin, düğmeleri sol üstteki krallık panelinde bulursun. Yetenekler bir kuralı değiştirir, sayı bonusu vermez.',
       'Rakibin kalesinin krallık süsleri (bayrak, sancaklar, minik eşyalar) <b>yalnız kalesi canlı görüşündeyken</b> ya da gözcü raporunda görünür; sisin altında kale sade çizilir.',
-      ...g.kingdoms.map((k) => `<b>${esc(k.name)}</b> — ${esc(k.decree)} ${k.abilities.map((a) => `<i>${esc(a.name)}</i>: ${esc(a.text)}`).join(' ')}`),
+      ...g.kingdoms.map((k) => `${emblemHtml(k.id, 'emblem-guide')}<b>${esc(k.name)}</b> — ${esc(k.decree)} ${k.abilities.map((a) => `<i>${esc(a.name)}</i>: ${esc(a.text)}`).join(' ')}`),
     ] : []],
     ['Gözcü', [
       `Aynı anda en çok ${g.maxScouts} gözcü. Bir rakibe gönder: dönünce <b>rapor</b> gelir (asker sayıları ±${num(g.scoutErrorPercent)}% şaşabilir). Rakip gözetlendiğini öğrenir.`,

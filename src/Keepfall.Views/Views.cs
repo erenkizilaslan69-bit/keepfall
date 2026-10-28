@@ -130,7 +130,7 @@ public sealed record PlayerView(int Seat, string Name, PlayerColor Color, bool R
     bool IsBot = false, BotDifficulty? BotLevel = null);
 
 /// <summary>Sent to everyone once the match is over: the hidden-information rule ends with the match.</summary>
-public sealed record RankView(int Seat, string Name, PlayerColor Color, int Place, int Population, bool Eliminated);
+public sealed record RankView(int Seat, string Name, PlayerColor Color, int Place, int Population, bool Eliminated, string? Kingdom = null);
 public sealed record PlayerSummaryView(int Seat, string Name, PlayerColor Color, SummaryView Summary);
 public sealed record ResultView(
     IReadOnlyList<int> Winners, bool ByElimination, IReadOnlyList<RankView> Ranking, IReadOnlyList<PlayerSummaryView> Summaries);
@@ -160,7 +160,8 @@ public static class ViewMapper
             result.Ranking.Select(r =>
             {
                 var p = room.PlayerOfCastle(r.Player);
-                return new RankView(p?.Seat ?? 0, p?.Name ?? "?", p?.Color ?? PlayerColor.Blue, r.Place, r.Population, r.Eliminated);
+                // The match is over: every kingdom is public now.
+                return new RankView(p?.Seat ?? 0, p?.Name ?? "?", p?.Color ?? PlayerColor.Blue, r.Place, r.Population, r.Eliminated, game.KingdomStatusOf(r.Player)?.Faction);
             }).ToList(),
             room.Players
                 .Where(p => game.SummaryOf(p.CastleKey) is not null)

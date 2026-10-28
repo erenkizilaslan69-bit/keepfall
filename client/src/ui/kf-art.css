@@ -100,3 +100,18 @@
 /* ---- the logo picture ---------------------------------------------------------------------------------------------- */
 .kf-logo-img { display: block; width: calc(300px * var(--u, 1)); max-width: 80%; height: auto; image-rendering: pixelated; filter: drop-shadow(0 calc(4px * var(--u, 1)) 0 rgba(30, 16, 6, .5)); }
 .screen.lobby .kf-logo-img { width: calc(230px * var(--u, 1)); }
+
+/* ---- the kingdom emblems ----------------------------------------------------------------------------------------------- */
+.emblem { display: inline-block; flex: none; width: calc(22px * var(--u, 1)); height: calc(26px * var(--u, 1)); vertical-align: middle; background: center / contain no-repeat; image-rendering: pixelated; }
+.emblem-golge { background-image: url('/art/ui/emblems/golge.png'); }
+.emblem-tuccar { background-image: url('/art/ui/emblems/tuccar.png'); }
+.emblem-kahin { background-image: url('/art/ui/emblems/kahin.png'); }
+.emblem-entrikaci { background-image: url('/art/ui/emblems/entrikaci.png'); }
+.emblem-fab { width: calc(26px * var(--u, 1)); height: calc(30px * var(--u, 1)); }
+.emblem-decree { width: calc(84px * var(--u, 1)); height: calc(100px * var(--u, 1)); }
+.emblem-inline, .emblem-who { margin-right: calc(6px * var(--u, 1)); }
+.emblem-who { width: calc(36px * var(--u, 1)); height: calc(42px * var(--u, 1)); }
+.emblem-rank { margin: 0 calc(4px * var(--u, 1)); width: calc(24px * var(--u, 1)); height: calc(28px * var(--u, 1)); }
+.emblem-guide { margin-right: calc(6px * var(--u, 1)); }
+.decree .decree-seal { top: calc(8px * var(--u, 1)); }
+.decree .decree-kicker { margin-top: calc(110px * var(--u, 1)); }

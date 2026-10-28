@@ -16,6 +16,7 @@ import { GENITIVE, scoutKey, scoutReportHtml } from './scout-report';
 import { TopBar } from './topbar';
 import { WorldLabels } from './world-labels';
 import { KingdomUi } from './kingdom';
+import { setLiveKingdoms } from './emblem';
 
 // Everything drawn over the map: the top bar, ribbons, report tags (and, step by step, the windows).
 // One instance per game screen; `update` takes every castle state the server sends.
@@ -321,6 +322,7 @@ export class GameUi {
   /** The latest map state (the kingdom panel lists the armies we can bribe, the camps we can hire and what the Oracle sees through). */
   setMapState(state: MapStateView): void {
     this.kingdom.setMap(state);
+    setLiveKingdoms(state.kingdoms);
   }
 
   setRoom(room: RoomView): void {
