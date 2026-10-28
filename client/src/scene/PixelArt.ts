@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { catapultFrame, FIRE_ARM } from './CatapultArt';
-// Pixel art drawn in code, so it can sit in the repository: the chibi horse of the cavalry and the catapult (Tiny Swords style: one dark
+// Pixel art drawn in code, so it can sit in the repository: the catapult's fallback drawing and the camp fire (Tiny Swords style: one dark
 // outline, three tones, team colour on the cloth). The rider of the cavalry is the pack's own Lancer, composed at load time from the
 // loaded sheet (nothing derived from the pack is ever written to disk). Everything here draws into plain canvases.
 // Tiny pixel-art toolkit: parts are masks painted with an outline, a shade on the lower-right and a light on the upper-left.
@@ -55,86 +55,6 @@ const TEAM = {
   blue: ['#3f78c4', '#2a4f8e', '#79aee8'], red: ['#d4503f', '#97302a', '#f08a74'], yellow: ['#e0b73a', '#a47c22', '#f6dc7c'], black: ['#4a4f5c', '#2c3038', '#8a90a0'], purple: ['#9a58c8', '#683a8e', '#c590ea'],
 };
 
-// Chibi horseman: a round, chubby horse (big head, short thick legs, fluffy mane and tail) with the pack's Lancer sunk into the saddle.
-// phase: 0..3 is one of the four run frames.
-function horseman(lancerImg, team = 'blue', phase = 0, lf = 0) {
-  const S = new Spr(240, 150); S.oy = 24; // everything below is drawn 24 px lower
-  const [t1, t2, t3] = TEAM[team];
-  const coat = ['#c08a56', '#94643a', '#e0b07a', '#6e4526'];       // base, shade, light, deep
-  const mane = ['#5c3a24', '#432818', '#7a5236', '#2e1a10'];
-  const cream = ['#f0dcb4', '#cdb48a', '#fff4d8', '#a58e66'];
-  const hoof = ['#3a2c36', '#261c26', '#54444e', '#1a121a'];
-  const gold = ['#f0d070', '#c29a3a', '#fff0a8'];
-  // Four clearly different gallop poses: stretched out (body up), gathered under the body, contact (body down), gathered again.
-  const POSES = [
-    { front: [15, 3], back: [-15, 2], bob: -4, sway: -4 },
-    { front: [2, 11], back: [-2, 11], bob: 0, sway: 0 },
-    { front: [7, 0], back: [-7, 0], bob: 4, sway: 4 },
-    { front: [-6, 10], back: [5, 10], bob: -1, sway: 0 },
-  ];
-  const pose = POSES[((phase % 4) + 4) % 4];
-  const bob = pose.bob;
-  const T = (m, c) => S.part3(m, c[0], c[1], c[2], c[3]);
-  // legs: thick, short; a leg is described by how far its foot swings and how high it is lifted
-  const leg = (hx, swing, lift, far) => {
-    const fx = hx + swing, fy = 118 - lift, top = 100 + bob;
-    const c = far ? [coat[1], coat[3], coat[0], '#4a2c18'] : coat;
-    T(S.union(S.line(hx, top, (hx + fx) / 2, (top + fy) / 2, 11), S.line((hx + fx) / 2, (top + fy) / 2, fx, fy - 3, 10)), c);
-    T(S.union(S.ell(fx, fy - 1, 5.5, 4)), hoof);
-  };
-  leg(40, pose.back[0] * 0.8, pose.back[1] + 1, true); leg(80, pose.front[0] * 0.8, pose.front[1] + 1, true);
-  // tail (fluffy blobs) and body
-  const sw = pose.sway; // thin tail in the mane's tone hanging from the rump, swinging with the stride
-  T(S.poly([[27, 80 + bob], [22, 86 + bob], [17 + sw, 100], [13 + sw, 110], [19 + sw, 109], [26 + sw, 96], [31, 86 + bob]]), mane);
-  T(S.union(S.ell(58, 92 + bob, 30, 18), S.ell(82, 90 + bob, 16, 16), S.ell(40, 92 + bob, 16, 17)), coat);
-  // belly patch
-  S.flat(S.ell(60, 107 + bob, 18, 4), cream[0]);
-  const H = new Spr(240, 150); H.oy = 24;
-  const TH = (m, c) => H.part3(m, c[0], c[1], c[2], c[3]);
-  // fluffy mane down the neck, then the big round head
-  TH(H.union(H.ell(88, 58 + bob, 9, 10), H.ell(82, 72 + bob, 9, 10), H.ell(78, 86 + bob, 8, 9), H.ell(92, 48 + bob, 7, 7)), mane);
-  TH(H.union(H.ell(100, 68 + bob, 20, 19), H.ell(114, 77 + bob, 11, 9)), coat);
-  TH(H.ell(117, 79 + bob, 9, 7), cream);                                        // muzzle
-  H.flat(H.rect(121, 77 + bob, 124, 80 + bob), '#4a2c2c');                        // nostril
-  // ears joined to the head, with pink insides
-  TH(H.poly([[86, 58 + bob], [87, 38 + bob], [99, 52 + bob]]), coat);
-  TH(H.poly([[103, 50 + bob], [110, 37 + bob], [117, 56 + bob]]), coat);
-  H.flat(H.poly([[90, 54 + bob], [90, 44 + bob], [96, 52 + bob]]), '#e8a0a0');
-  H.flat(H.poly([[106, 51 + bob], [110, 44 + bob], [113, 54 + bob]]), '#e8a0a0');
-  // forelock and a big shiny eye
-  TH(H.union(H.ell(98, 52 + bob, 9, 6), H.ell(110, 55 + bob, 7, 5)), mane);
-  H.flat(H.ell(110, 69 + bob, 4.2, 5.2), '#150f1a'); H.flat(H.rect(109, 66 + bob, 111.5, 69 + bob), '#ffffff');
-  // bridle
-  TH(H.poly([[104, 74 + bob], [114, 80 + bob], [111, 85 + bob], [102, 79 + bob]]), [t1, t2, t3, t2]);
-  // composite: horse behind, the pack's lancer sitting in the saddle (its soft ground shadow is dropped)
-  const C = new Spr(240, 150);
-  for (let y = 0; y < S.h; y++) for (let x = 0; x < S.w; x++) { const c = S.px[y * S.w + x]; if (c) C.set(x, y, c); }
-  C.blit(lancerImg, lf * 320 + 135, 120, 175, 75, 27, 30 + bob);
-  // the horse's near flank and the saddle cloth cover the rider's lower half so it sits IN the saddle
-  const B2 = new Spr(240, 150); B2.oy = 24;
-  const flank = B2.mask((x, y) => ((x - 58) ** 2) / 30 ** 2 + ((y - 90 - bob) ** 2) / 21 ** 2 <= 1 && y > 88 + bob);
-  for (let i = 0; i < flank.length; i++) if (flank[i]) { const x = i % 240, y = (i / 240) | 0; const c = S.px[i]; if (c) C.set(x, y, c); }
-  for (let y = 0; y < H.h; y++) for (let x = 0; x < H.w; x++) { const c = H.px[y * H.w + x]; if (c) C.set(x, y, c); }
-  // ornate saddle cloth: scalloped hem and gold trim
-  const cloth = C.mask((x, y) => x >= 44 && x <= 78 && y >= 100 + bob && y <= 118 + bob);
-  const sc = C;
-  sc.ox = 0; sc.oy = 0;
-  const hem = [];
-  for (let k = 0; k < 4; k++) hem.push([46 + k * 8.5, 118 + bob], [50 + k * 8.5, 124 + bob], [54 + k * 8.5, 118 + bob]);
-  sc.part3(sc.poly([[44, 98 + bob], [78, 98 + bob], [80, 118 + bob], ...hem.reverse(), [42, 118 + bob]]), t1, t2, t3, t2);
-  sc.flat(sc.rect(44, 101 + bob, 79, 103 + bob), gold[0]);
-  sc.flat(sc.rect(44, 111 + bob, 79, 113 + bob), gold[0]);
-  for (let k = 0; k < 4; k++) sc.flat(sc.rect(49 + k * 8.5, 105 + bob, 52 + k * 8.5, 109 + bob), gold[0]);
-  // the rider's boot dangling at the flank (inside the cloth's edge)
-  sc.part3(sc.union(sc.line(72, 98 + bob, 74, 114 + bob, 8)), '#2f4a86', '#1f3466', '#4a68a8', '#162650');
-  sc.part3(sc.ell(75, 118 + bob, 6.5, 4), '#6a4a34', '#4a3224', '#8a6448', '#32201a');
-  // near legs on top of everything below the belly
-  S.px = new Array(S.w * S.h).fill(null);
-  leg(50, pose.back[0], pose.back[1], false); leg(88, pose.front[0], pose.front[1], false);
-  for (let y = 0; y < S.h; y++) for (let x = 0; x < S.w; x++) { const c = S.px[y * S.w + x]; if (c) C.set(x, y, c); }
-  return C;
-}
-
 // Catapult (side view, facing right): wooden frame, two spoked wheels, a throwing arm with a bucket; team colour on the cloth and the wheel hubs.
 function catapult(team = 'blue', fired = false, wheel = 0) {
   const S = new Spr(180, 130); S.ox = 26; S.oy = 30; const [t1, t2, t3] = TEAM[team];
@@ -172,10 +92,6 @@ function catapult(team = 'blue', fired = false, wheel = 0) {
 
 
 export type TeamName = 'blue' | 'red' | 'yellow' | 'black' | 'purple';
-/** One frame of the cavalry: `phase` 0..3 is a gallop pose, `lancerFrame` 0..2 the Lancer's thrust. 240×150, feet at y≈142. */
-export function horsemanCanvas(lancerImage: CanvasImageSource, team: TeamName, phase = 0, lancerFrame = 0): HTMLCanvasElement {
-  return toCanvas(horseman(lancerImage, team, phase, lancerFrame));
-}
 /** One frame of the catapult: 180×130, ground at y≈114. */
 export function catapultCanvas(team: TeamName, fired: boolean, wheel = 0): HTMLCanvasElement {
   // The picture-based catapult once it has loaded (`wheel` 0..1 rocks it a little, as the deck cards and the menu use it); else the old drawing.

@@ -1,5 +1,6 @@
 import { assetUrl } from '../scene/assets';
-import { catapultCanvas, horsemanCanvas, type TeamName } from '../scene/PixelArt';
+import { catapultCanvas, type TeamName } from '../scene/PixelArt';
+import { horseReady, horsemanFrame } from '../scene/HorseArt';
 import type { PlayerColor } from '../types';
 
 // The portraits on the deck cards: each unit's own sprite in the player's team colour, idling (the swordsman breathes, the horse paws the
@@ -16,7 +17,7 @@ const SHEETS: Record<string, Sheet> = {
   kesis: { path: (f) => `Units/${f} Units/Monk/Idle.png`, frame: 192, crop: { x: 48, y: 44, w: 96, h: 100 } },
   mizrakci: { path: (f) => `Units/${f} Units/Lancer/Lancer_Idle.png`, frame: 320, crop: { x: 104, y: 112, w: 112, h: 118 } },
 };
-const LANCER_ATTACK = (f: string) => `Units/${f} Units/Lancer/Lancer_Right_Attack.png`;
+const LANCER = (f: string, sheet: string) => `Units/${f} Units/Lancer/Lancer_${sheet}.png`;
 
 const images = new Map<string, HTMLImageElement>();
 function image(path: string): HTMLImageElement | null {
@@ -33,8 +34,8 @@ function codeFrames(unitId: string, color: PlayerColor): HTMLCanvasElement[] | n
   let frames: HTMLCanvasElement[] | null = null;
   if (unitId === 'mancinik') frames = [0, 0.25, 0.5, 0.75].map((w) => catapultCanvas(color as TeamName, false, w));
   else if (unitId === 'suvari') {
-    const lancer = image(LANCER_ATTACK(FOLDER[color]));
-    if (lancer) frames = [1, 2, 1, 0].map((p) => horsemanCanvas(lancer, color as TeamName, p, 0));
+    const sheets = { idle: image(LANCER(FOLDER[color], 'Idle')), run: image(LANCER(FOLDER[color], 'Run')), attack: image(LANCER(FOLDER[color], 'Right_Attack')) };
+    if (sheets.idle && sheets.run && sheets.attack && horseReady()) frames = [0, 3, 6, 9].map((f) => horsemanFrame(sheets as never, color, 'idle', f));
   }
   if (frames) made.set(key, frames);
   return frames;

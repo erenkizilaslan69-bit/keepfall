@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
 import type { PlayerColor } from '../types';
-import { catapultCanvas, flameCanvas, horsemanCanvas, type TeamName } from './PixelArt';
+import { catapultCanvas, flameCanvas, type TeamName } from './PixelArt';
+import { horsemanFrame, type LancerSheets } from './HorseArt';
 import { catapultFrame, FIRE_ARM, RUN_POSE } from './CatapultArt';
 
 // The textures and animations of the cavalry and the catapult, made at load time in every player colour that is on the map:
-//   suvari-run (4 gallop frames), suvari-idle, suvari-attack (the Lancer's thrust over the horse),
+//   suvari-run (4 gallop frames), suvari-idle (the horse stands, the Lancer idles), suvari-attack (the horse stands, the Lancer thrusts),
 //   mancinik-idle (loaded) and mancinik-fire (the throw).
 // A colour other than our own gets the usual "<colour>-" prefix. The Lancer riding the horse comes from the loaded Lancer sheet.
 
@@ -57,14 +58,18 @@ export function newUnitArtJobs(scene: Phaser.Scene, own: PlayerColor, colors: Pl
     // (A spectator's late load passes a made-up own colour so that every real colour gets its prefix: it has no art of its own.)
     if (!['blue', 'red', 'yellow', 'purple', 'black'].includes(color)) continue;
     const lancer = key(color, own, 'lancer-attack');
-    if (!scene.textures.exists(lancer)) continue;
-    const img = scene.textures.get(lancer).getSourceImage() as HTMLImageElement;
+    if (!scene.textures.exists(lancer) || !scene.textures.exists(key(color, own, 'lancer-idle')) || !scene.textures.exists(key(color, own, 'lancer-run'))) continue;
+    const sheets: LancerSheets = {
+      idle: scene.textures.get(key(color, own, 'lancer-idle')).getSourceImage() as HTMLImageElement,
+      run: scene.textures.get(key(color, own, 'lancer-run')).getSourceImage() as HTMLImageElement,
+      attack: scene.textures.get(lancer).getSourceImage() as HTMLImageElement,
+    };
     const team = color as TeamName;
     const { w, h } = HORSE_FRAME;
     jobs.push(
-      () => addStrip(scene, key(color, own, 'suvari-run'), [0, 1, 2, 3].map((p) => horsemanCanvas(img, team, p, 0)), w, h, 10, -1),
-      () => addStrip(scene, key(color, own, 'suvari-idle'), [horsemanCanvas(img, team, 1, 0)], w, h, 1, -1),
-      () => addStrip(scene, key(color, own, 'suvari-attack'), [0, 1, 2].map((f) => horsemanCanvas(img, team, 2, f)), w, h, 8, 0),
+      () => addStrip(scene, key(color, own, 'suvari-run'), [0, 1, 2, 3].map((p) => horsemanFrame(sheets, team, 'run', p)), w, h, 10, -1),
+      () => addStrip(scene, key(color, own, 'suvari-idle'), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((f) => horsemanFrame(sheets, team, 'idle', f)), w, h, 8, -1),
+      () => addStrip(scene, key(color, own, 'suvari-attack'), [0, 1, 2].map((f) => horsemanFrame(sheets, team, 'attack', f)), w, h, 8, 0),
       () => addStrip(scene, key(color, own, 'mancinik-idle'), [catapultCanvas(team, false, 0)], CATAPULT_FRAME.w, CATAPULT_FRAME.h, 1, -1),
       () => addStrip(scene, key(color, own, 'mancinik-fire'),
         FIRE_ARM.map((arm, i) => catapultFrame(team, { arm }) ?? catapultCanvas(team, i > 0 && i < 3, 0.3 * i)), CATAPULT_FRAME.w, CATAPULT_FRAME.h, 6, 0),

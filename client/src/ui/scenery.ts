@@ -1,5 +1,6 @@
 import { assetUrl } from '../scene/assets';
-import { catapultCanvas, flameCanvas, horsemanCanvas } from '../scene/PixelArt';
+import { catapultCanvas, flameCanvas } from '../scene/PixelArt';
+import { horseReady, horsemanFrame } from '../scene/HorseArt';
 import type { PlayerColor } from '../types';
 
 // The living picture behind the home, lobby and end screens: the generated lobby picture (public/art/ui/lobby-bg.jpg, scaled to cover the window with
@@ -116,10 +117,10 @@ class Scenery {
       if (hs.next > 0) return;
       hs.t = 0;
     }
-    const lancer = image('Units/Red Units/Lancer/Lancer_Right_Attack.png');
-    if (!lancer) { hs.t = -1; hs.next = 4; return; }
+    const sheets = { idle: image('Units/Red Units/Lancer/Lancer_Idle.png'), run: image('Units/Red Units/Lancer/Lancer_Run.png'), attack: image('Units/Red Units/Lancer/Lancer_Right_Attack.png') };
+    if (!sheets.idle || !sheets.run || !sheets.attack || !horseReady()) { hs.t = -1; hs.next = 4; return; }
     hs.t += dt;
-    if (!this.cache.has('horse:red')) this.cache.set('horse:red', [1, 2, 1, 0].map((p) => horsemanCanvas(lancer, 'red', p, 0)));
+    if (!this.cache.has('horse:red')) this.cache.set('horse:red', [0, 1, 2, 3].map((p) => horsemanFrame(sheets as never, 'red', 'run', p)));
     const frames = this.cache.get('horse:red')!;
     const k = Math.min(1, hs.t / 7);
     const f = frames[Math.floor(hs.t * 8) % frames.length];

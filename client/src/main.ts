@@ -25,6 +25,7 @@ import { mountGuideButton } from './ui/guide';
 import { CloudCurtain } from './ui/clouds';
 import { warmUp } from './preload';
 import { mountScenery } from './ui/scenery';
+import { loadHorse } from './scene/HorseArt';
 import { mountSettingsButton, setLeaveAction } from './ui/settings';
 import { guarded, installErrorReporting } from './error-report';
 import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
@@ -59,6 +60,7 @@ window.addEventListener('pointerdown', () => sfx.unlock(), { capture: true });
 window.addEventListener('keydown', () => sfx.unlock(), { capture: true });
 document.addEventListener('click', (e) => { if ((e.target as HTMLElement | null)?.closest?.('button')) sfx.play('click'); }, true);
 
+void loadHorse();
 installErrorReporting(() => ({
   room: /^\/oda\/([A-Za-z]{4})/.exec(location.pathname)?.[1]?.toUpperCase(),
   seat: net.seat,

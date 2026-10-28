@@ -57,7 +57,7 @@ await evalJs(`(async()=>{
  const heals=[]; for(let k=0;k<10;k++){ heals.push(6+k*3, 6+(k%2), (k*2)%6); }
  const v={id:'nu1',kind:'field',at:{x:20,y:20},facing:{x:1,y:0},startedAt:now,playback:1,tickSeconds:0.5,ticks:60,fightSeconds:40,
   sides:[A,B],hits,deaths:[30,nA+1,34,nA+2],advances:[],heals,winner:'attacker'};
- s.lookAt({x:20,y:20}); s.cameras.main.setZoom(1.6); s.playBattle(v); return 1;})()`);
+ document.getElementById('kingdom-decree')?.remove(); s.lookAt({x:20,y:20}); s.cameras.main.setZoom(1.6); s.playBattle(v); return 1;})()`);
 for (const [i, ms] of [[0, 4500], [1, 5500]]) {
   await sleep(ms);
   const r = await send('Page.captureScreenshot', { format: 'png' });
