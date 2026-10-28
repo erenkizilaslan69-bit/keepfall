@@ -134,9 +134,7 @@ export class MapProps {
       for (const [n, w] of table) { t -= w; if (t <= 0) return n; }
       return table[0][0];
     };
-    const meadow: [string, number][] = [['flowers', 30], ['rocks', 14], ['mossrock', 6], ['berry', 12], ['stump', 7], ['oak', 14], ['pine', 8], ['darkpine', 9]];
-    const wood: [string, number][] = [['darkpine', 30], ['pine', 20], ['berry', 20], ['mossrock', 10], ['rocks', 8], ['stump', 12]];
-    const tall = new Set(['oak', 'pine', 'darkpine']);
+    const wood: [string, number][] = [['darkpine', 32], ['pine', 22], ['berry', 22], ['mossrock', 4], ['rocks', 8], ['stump', 12]];
     const w = b.x - a.x, h = b.y - a.y;
     // the details first, so the small ornaments make room for them: one or two in each quarter, each kind used once; away from the roads, the castle
     // regions, the forests (their places and trails are in there) and the edge of the map
@@ -151,26 +149,44 @@ export class MapProps {
         next++; got++; this.details++; this.detailSpots.push({ name, x, y });
       }
     }
-    // the meadows between the castles
-    for (let i = 0, n = 0; i < 2600 && n < 230; i++) {
-      const x = a.x + rnd() * w, y = a.y + rnd() * h, name = pick(meadow);
+    // The roads keep a wide verge (about three tiles each side) clear of everything; the trees stand in a few small groves with wide open meadow between.
+    const VERGE = 200, TREE_VERGE = 230;
+    // the meadows between the castles: only small ornaments (flower clumps, bushes, small rocks, a few stumps and big rocks)
+    const small: [string, number][] = [['flowers', 40], ['rocks', 22], ['berry', 22], ['stump', 10], ['mossrock', 4]];
+    for (let i = 0, n = 0; i < 2000 && n < 90; i++) {
+      const x = a.x + rnd() * w, y = a.y + rnd() * h;
       if (inForest(x, y)) continue;
-      if (tryPlace(name, x, y, tall.has(name) ? 150 : 90)) n++;
+      if (tryPlace(pick(small), x, y, VERGE)) n++;
     }
-    // the edges of the map: rows of trees and bushes along the coast
-    for (let i = 0, n = 0; i < 2000 && n < 110; i++) {
+    // groves: three to five trees close together, here and there on the meadows
+    const grove = (cx: number, cy: number, trees: number, mix: [string, number][]): number => {
+      let got = 0;
+      for (let i = 0; i < 24 && got < trees; i++) {
+        const ang = rnd() * Math.PI * 2, d = 20 + rnd() * 120;
+        if (tryPlace(pick(mix), cx + Math.cos(ang) * d, cy + Math.sin(ang) * d * 0.8, TREE_VERGE)) got++;
+      }
+      return got;
+    };
+    const groveMix: [string, number][] = [['oak', 36], ['pine', 24], ['darkpine', 28], ['berry', 12]];
+    for (let i = 0, groves = 0; i < 400 && groves < 11; i++) {
+      const x = a.x + rnd() * w, y = a.y + rnd() * h;
+      if (inForest(x, y) || !awayFromRoads(x, y, TREE_VERGE + 60)) continue;
+      if (grove(x, y, 3 + Math.floor(rnd() * 3), groveMix) >= 2) groves++;
+    }
+    // the edges of the map: a few small groups of trees along the coast
+    for (let i = 0, groups = 0; i < 300 && groups < 7; i++) {
       const side = Math.floor(rnd() * 4), t = rnd(), depth = 150 + rnd() * 150;
       const x = side === 0 ? a.x + depth : side === 1 ? b.x - depth : a.x + t * w;
       const y = side === 2 ? a.y + depth : side === 3 ? b.y - depth : a.y + t * h;
-      if (inForest(x, y)) continue;
-      if (tryPlace(pick([['pine', 25], ['darkpine', 25], ['oak', 25], ['berry', 15], ['mossrock', 10]]), x, y, 120)) n++;
+      if (inForest(x, y) || !awayFromRoads(x, y, TREE_VERGE + 40)) continue;
+      if (grove(x, y, 2 + Math.floor(rnd() * 2), [['pine', 30], ['darkpine', 30], ['oak', 30], ['berry', 10]]) >= 2) groups++;
     }
-    // through the forest, between the pack's trees
+    // through the forest, between the pack's trees (half of what there was)
     for (const f of forests) {
       const c = toWorld(f.center), r = f.radius * 64;
-      for (let i = 0, n = 0; i < 1500 && n < 90; i++) {
+      for (let i = 0, n = 0; i < 900 && n < 40; i++) {
         const ang = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * r * 0.95;
-        if (tryPlace(pick(wood), c.x + Math.cos(ang) * d, c.y + Math.sin(ang) * d * 0.9, 100)) n++;
+        if (tryPlace(pick(wood), c.x + Math.cos(ang) * d, c.y + Math.sin(ang) * d * 0.9, VERGE - 40)) n++;
       }
     }
   }

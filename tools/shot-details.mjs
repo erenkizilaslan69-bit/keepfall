@@ -55,6 +55,7 @@ const shot = async (name, clip) => { const r = await send('Page.captureScreensho
 await evalJs(`(()=>{const s=window.keepfallScene; s.cameras.main.setZoom(0.45); s.cameras.main.centerOn(1800,1800); return 1;})()`);
 await sleep(1500);
 await shot('overview');
+console.log('props placed:', await evalJs(`window.keepfallScene.props.count`));
 const spots = JSON.parse(await evalJs(`JSON.stringify(window.keepfallScene.props.detailSpots)`));
 console.log('details:', spots.map((d) => `${d.name}@${Math.round(d.x)},${Math.round(d.y)}`).join(' '));
 let n = 0;
