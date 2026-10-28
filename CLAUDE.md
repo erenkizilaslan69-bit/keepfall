@@ -76,6 +76,13 @@ Bot dengesi: `BattleSim bot --mac 400 --zorluk karisik|bekleyen|orta|zor-orta` (
 - **Orman yerleri**: `scene/ForestSprites.ts` (tam çözünürlük; boş haller kodla türetilir: soluk/isli köy, ateşi sönmüş + devrik çadır, açık boş sandık). **Harita süsleri**: `scene/MapProps.ts` (tek atlas + Blitter parçaları, maç tohumuyla, yol/bölge/kenar kuralları; gizli yerlere bakmaz). Tabela `prop:sign`.
 - Araçlar: `tools/shot-ui.mjs` (genel görünüm, üst şerit, bina penceresi, mini harita), `shot-forest-sites.mjs`, `collage.mjs` (önce/sonra yan yana).
 
+## Amblemler, maç sonu görselleri, harita detayları, süvari atı (2026-10-29)
+- **Amblemler** (`art/ui/emblems/<golge|tuccar|kahin|entrikaci>.png`, `ui/emblem.ts`): ferman, sol üstteki krallık düğmesi, rehber; rakibinki yalnız canlı görüşte (`setLiveKingdoms`) ya da gözcü raporunda (`rivalKingdom`, rapor başlığı + rakip penceresi); maç sonu sıralamasında herkesinki (`RankView.Kingdom`, yalnız `Result` ile gider). Duman testi iki yönü denetler.
+- **Maç sonu**: `art/ui/victory|defeat(-half).png`, `EndScreen.showEndArt`: kazanan zafer, diğerleri yenilgi; mavi bayraklar oyuncunun renginde (`recolor`). Önizleme: `tools/shot-endscreen.mjs`.
+- **Harita detayları** (`props/d-*.png`, `MapProps.DETAIL_NAMES`): çeyrek başına 1-2, her tür bir kez, yalnız çayırda, yoldan 210 px; aynı Blitter atlası. `tools/shot-details.mjs`.
+- **Süvari atı** (`art/horse/horse.png`, `scene/HorseArt.ts`; temizleme `node tools/art-ui.mjs horse`: 5 kare, örtü merkezine hizalı): kodla çizilen at kalktı. Bekleme/saldırı kare 0 + mızrakçının bekleme/saldırı kareleri, koşu kare 1-4 + zıplama; mızrakçı %62'ye küçük, belden aşağısı eyerin arkasında. Önizleme: `tools/shot-horse.mjs` (`ZOOM=1`), `shot-march.mjs` (yürüyen ordu).
+- `tools/page-shot.mjs`: herhangi bir sayfanın ekran görüntüsü. Ekran görüntüleri `art/shots/` (git'e girmez).
+
 ## Önemli tasarım kararları (kısa)
 - **Kale düşmesi**: kale canı, sur seviyeleri, `UpgradeWall` kalktı; saldıran kapıdaki savaşı kazanırsa (boş kale dahil) kale düşer. `walls.archerDefenseBonus` (+%25) kapıdaki savunan okçulara hep geçerli. Düşüren ordu depodaki yemek/odun/demir/altının yarısını (`war.fallLootShare`) ve hayatta kalan işçilerin üçte birini (`war.fallWorkerShare`) eve getirir. Esir: `war.prisonerShare` 0,5 (savunanın savaşa giren ordusunun payı, saldıranın askeri olur, yolda yemek yer, nüfusa sayılır; kullanıcı kararıyla olduğu gibi kalır).
 - **Işınlanma hatası** düzeltildi: `GameState.WayHome` yönlendirilmiş ordular için bulunduğu yerden kapıya rota kurar; `ContinuityViolations` her tick konum sıçramasını sayar (hedef 0; `ContinuityTests` ×1/×5/×20).
