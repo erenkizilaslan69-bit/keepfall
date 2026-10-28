@@ -27,6 +27,7 @@ Birimler (7): Kılıçlı, Mızrakçı, Kalkanlı, Okçu + **Keşiş** (saldırm
 7. **Tiny Swords asset'leri repoda değil** (`client/public/assets/` .gitignore'da). Ekleme/commit etme. İSTİSNA: CC0 sesler repoda (`client/public/audio/`: Kenney arayüz/etki sesleri, RandomMind müzikleri; kaynaklar README'de); Tiny Swords'un "TS_old version_CC0" paketinden alınan dosyalar (CC0) `client/public/cc0/` altında. Free Pack'ten türetilen hiçbir şey (kesilmiş, birleştirilmiş görüntü dahil) repoya girmez.
 8. Satır sonu: dosyaların mevcut biçimini koru (çoğu LF; BOM ekleme). Python ile dosya düzenlerken BOM/CRLF değiştirme.
 9. Test sunucusunda tarayıcı bölmesi gizliyken Phaser çizmez; ekran testi için başsız Chrome (CDP) kullan (örnek: `tools/replay-check.mjs`).
+10. **Görsel değişikliklerde önce/sonra ekran görüntüsü**: Görünümü etkileyen her değişiklikten sonra ilgili ekranların önce/sonra ekran görüntülerini çek ve kullanıcıya göster (oyun ölçeğinde, gerekirse 1280x720 ve 1920x1080). Görsel değişmeyen işlerde gerek yok. Free Pack içeren görüntüler repoya girmesin (`art/shots/` .gitignore'da). Araçlar: `tools/collage.mjs`, `shot-*.mjs`, `page-shot.mjs`.
 
 ## Test rutini
 `dotnet test -c Release` (275 test) → `node tools/run-smoke.mjs` (~2–3 dk; kendi test sunucusunu 5081'de, savaşı 15 dk olan geçici bir config kopyasıyla açar ve kapatır; CPU yükü altında ölçümle çakışırsa bazı zamanlama denetimleri düşebilir, tek başına koşunca geçer) → istemci için `npm --prefix client run build` (tsc dahil).
