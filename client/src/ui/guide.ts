@@ -27,6 +27,7 @@ export interface Guide {
   prisonerShare: number;
   deckEnabled: boolean; deckSize: number;
   raidBurnSeconds?: number;
+  kingdoms?: { id: string; name: string; title: string; decree: string; abilities: { id: string; name: string; text: string }[] }[] | null;
 }
 
 let cached: Promise<Guide> | null = null;
@@ -65,6 +66,11 @@ export function guideHtml(g: Guide): string {
       ...g.units.filter((u) => u.backFirst).map((u) => `<b>${esc(u.name)}</b>: savaşın başından itibaren düşmanın <b>arka sırasına</b> vurur, hedefin yanındaki ${u.splashTargets ?? 0} kişiye de yarım hasar; ${u.people ?? 2} kişi harcar. Yakın dövüşte çok zayıftır.`),
       ...g.units.filter((u) => u.flank).map((u) => `<b>${esc(u.name)}</b>: arka sırada okçu, mancınık ya da keşiş yaşadıkça ön sırayı aşıp onlara dalar; mızrakçıdan korkar. Haritada ×${num(u.speedFactor ?? 1)} hızlıdır. <b>Yalnız süvariden oluşan ordu</b> kapıda kazanırsa kale düşmez, rakibin tarlaları yanar (yemek üretimi ${num(g.raidBurnSeconds ?? 60)} sn yarıya iner).`),
     ]],
+    ['Krallıklar', g.kingdoms?.length ? [
+      'Maç başında her oyuncuya <b>rastgele bir krallık</b> verilir (aynı maçta ikisi aynı olmaz); seçmezsin. Ne olduğunu başta bir fermanla öğrenirsin, düğmeleri sol üstteki krallık panelinde bulursun. Yetenekler bir kuralı değiştirir, sayı bonusu vermez.',
+      'Rakibin kalesinin krallık süsleri (bayrak, sancaklar, minik eşyalar) <b>yalnız kalesi canlı görüşündeyken</b> ya da gözcü raporunda görünür; sisin altında kale sade çizilir.',
+      ...g.kingdoms.map((k) => `<b>${esc(k.name)}</b> — ${esc(k.decree)} ${k.abilities.map((a) => `<i>${esc(a.name)}</i>: ${esc(a.text)}`).join(' ')}`),
+    ] : []],
     ['Gözcü', [
       `Aynı anda en çok ${g.maxScouts} gözcü. Bir rakibe gönder: dönünce <b>rapor</b> gelir (asker sayıları ±${num(g.scoutErrorPercent)}% şaşabilir). Rakip gözetlendiğini öğrenir.`,
       `Gözcü ormanın bir çeyreğini de gezer: bulduğu yerler haritada kalır. Hızı ${num(g.scoutSpeed)} karo/sn; ordu ${num(g.armySpeed)}.`,

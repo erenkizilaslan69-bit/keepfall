@@ -33,7 +33,11 @@ public sealed record GuideView(
     int ChestsPerCorner, int VillagesPerCorner, int CampsPerCorner,
     GuideChestView Chest, GuideVillageView Village, GuideCampView Camp, GuideCampView BigCamp,
     double FallLootShare, double FallWorkerShare,
-    double ArcherDefenseBonusPercent = 0, double PrisonerShare = 0, bool DeckEnabled = false, int DeckSize = 4, double RaidBurnSeconds = 60);
+    double ArcherDefenseBonusPercent = 0, double PrisonerShare = 0, bool DeckEnabled = false, int DeckSize = 4, double RaidBurnSeconds = 60,
+    IReadOnlyList<GuideKingdomView>? Kingdoms = null);
+
+/// <summary>A kingdom as the "how to play" page tells it: public rules only (who gets which kingdom in a match is never part of it).</summary>
+public sealed record GuideKingdomView(string Id, string Name, string Title, string Decree, IReadOnlyList<AbilityView> Abilities);
 
 public static class GuideMapper
 {
@@ -62,6 +66,8 @@ public static class GuideMapper
             new GuideVillageView(new(f.Village.GoldMin, f.Village.GoldMax), new(f.Village.FoodMin, f.Village.FoodMax),
                 new(f.Village.PeopleMin, f.Village.PeopleMax), f.Village.MinSoldiers),
             Camp(f.Camp), Camp(f.BigCamp), rules.War.FallLootShare, rules.War.FallWorkerShare,
-            Math.Round(rules.Walls.ArcherDefenseBonus * 100), rules.War.PrisonerShare, rules.Deck.Enabled, rules.Deck.Size, rules.War.RaidBurnSeconds);
+            Math.Round(rules.Walls.ArcherDefenseBonus * 100), rules.War.PrisonerShare, rules.Deck.Enabled, rules.Deck.Size, rules.War.RaidBurnSeconds,
+            rules.Kingdoms.Enabled ? Keepfall.Core.Match.Factions.All.Select(k => new GuideKingdomView(k.Id, k.Name, k.Title, k.Decree,
+                k.Abilities.Select(a => new AbilityView(a.Id, a.Name, a.Text)).ToList())).ToList() : null);
     }
 }
