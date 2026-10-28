@@ -8,6 +8,7 @@ import { loadUiArt } from './ui/sprites';
 import { watchUiScale } from './ui/scale';
 import './ui/ui.css';
 import './ui/theme.css';
+import './ui/kf-art.css';
 import '@fontsource/pixelify-sans/latin-400.css';
 import '@fontsource/pixelify-sans/latin-ext-400.css';
 import '@fontsource/pixelify-sans/latin-700.css';

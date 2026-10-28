@@ -133,5 +133,5 @@ export function mountSettingsButton(): void {
 }
 
 export function gearSvg(): string {
-  return `<svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8.6 1.5h2.8l.5 2.2c.5.2.9.4 1.3.7l2.1-.8 1.4 2.4-1.7 1.5c.1.5.1 1 0 1.5l1.7 1.5-1.4 2.4-2.1-.8c-.4.3-.8.5-1.3.7l-.5 2.2H8.6l-.5-2.2c-.5-.2-.9-.4-1.3-.7l-2.1.8-1.4-2.4 1.7-1.5a5 5 0 0 1 0-1.5L3.3 6l1.4-2.4 2.1.8c.4-.3.8-.5 1.3-.7zM10 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>`;
+  return '<i class="ico ico-gear" aria-hidden="true"></i>';
 }

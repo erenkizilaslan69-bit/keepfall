@@ -1,0 +1,93 @@
+/* The generated interface art (client/public/art/ui, cleaned by tools/art-ui.mjs): icons, the 9-slice panel frame, the minimap ring and the unit cards.
+   Loaded after theme.css, it replaces the CSS-drawn frames and the pack's icons. Buttons stay the CSS ones. */
+
+/* ---- icons ---------------------------------------------------------------------------------------------------- */
+.ico-meat, .ico-wood, .ico-iron, .ico-coin, .ico-hammer, .ico-sword, .ico-shield, .ico-gear, .ico-people, .ico-hourglass, .ico-heart, .ico-scout,
+.ico-envoy, .ico-skull, .ico-chest, .ico-crown {
+  background-color: transparent; border-radius: 0; background-size: contain; background-position: center; background-repeat: no-repeat;
+  image-rendering: pixelated; filter: none;
+}
+.ico-meat { background-image: url('/art/ui/icons/meat.png'); }
+.ico-wood { background-image: url('/art/ui/icons/wood.png'); }
+.ico-iron { background-image: url('/art/ui/icons/iron.png'); }
+.ico-coin { background-image: url('/art/ui/icons/gold.png'); }
+.ico-hammer { background-image: url('/art/ui/icons/hammer.png'); }
+.ico-sword { background-image: url('/art/ui/icons/swords.png'); }
+.ico-shield { background-image: url('/art/ui/icons/shield.png'); }
+.ico-gear { background-image: url('/art/ui/icons/gear.png'); }
+.ico-people { background-image: url('/art/ui/icons/people.png'); }
+.ico-hourglass { background-image: url('/art/ui/icons/hourglass.png'); }
+.ico-heart { background-image: url('/art/ui/icons/heart.png'); }
+.ico-scout { background-image: url('/art/ui/icons/scout.png'); }
+.ico-envoy { background-image: url('/art/ui/icons/envoy.png'); }
+.ico-skull { background-image: url('/art/ui/icons/skull.png'); }
+.ico-chest { background-image: url('/art/ui/icons/chest.png'); }
+.ico-crown { background-image: url('/art/ui/icons/crown.png'); }
+.btn-round .ico-gear { width: calc(20px * var(--u, 1)); height: calc(20px * var(--u, 1)); }
+.tb-clock::before { background: no-repeat center / contain url('/art/ui/icons/hourglass.png'); image-rendering: pixelated; }
+.tb-pop .ico-people { width: calc(22px * var(--u, 1)); height: calc(22px * var(--u, 1)); }
+
+/* ---- the panel frame (9-slice: the corners keep their size, the edges stretch) ----------------------------------- */
+.kf-panel, .paper {
+  --frame: calc(18px * var(--u, 1));
+  border: var(--frame) solid transparent; border-radius: 0; padding: calc(4px * var(--u, 1));
+  border-image: url('/art/ui/panel-frame-half.png') 12 / var(--frame) / 0 stretch;
+  background: var(--face) padding-box; box-shadow: none; image-rendering: pixelated;
+  filter: drop-shadow(0 calc(6px * var(--u, 1)) calc(8px * var(--u, 1)) rgba(0, 0, 0, .35));
+}
+.kf-panel--dark, .paper-dark {
+  --frame: calc(18px * var(--u, 1));
+  border: var(--frame) solid transparent; border-radius: 0; padding: calc(4px * var(--u, 1));
+  border-image: url('/art/ui/panel-frame-half.png') 12 / var(--frame) / 0 stretch;
+  background: var(--face) padding-box; box-shadow: none; image-rendering: pixelated;
+  filter: drop-shadow(0 calc(6px * var(--u, 1)) calc(8px * var(--u, 1)) rgba(0, 0, 0, .35));
+}
+.win.paper { border-radius: 0; }
+/* the top bar's boxes hang from the top edge: the same frame without the top side */
+.strip:not(.tb-pop) {
+  border: 0; border-style: solid; border-color: transparent; border-width: 0 calc(12px * var(--u, 1)) calc(12px * var(--u, 1)); border-radius: 0;
+  border-image: url('/art/ui/panel-frame-half.png') 12 / 0 calc(12px * var(--u, 1)) calc(12px * var(--u, 1)) / 0 stretch;
+  background: radial-gradient(ellipse at 50% 20%, var(--kf-parch-hi), var(--kf-parch) 60%, var(--kf-parch-lo)) padding-box; box-shadow: none; image-rendering: pixelated;
+  filter: drop-shadow(0 calc(4px * var(--u, 1)) calc(5px * var(--u, 1)) rgba(0, 0, 0, .3));
+}
+
+/* ---- the minimap ring ---------------------------------------------------------------------------------------------- */
+.kf-minimap {
+  border: 0; border-radius: 0; background: none; box-shadow: none; overflow: visible;
+}
+.kf-minimap::before {
+  content: ''; position: absolute; inset: 0; top: 0; left: 0; width: 100%; height: 100%; margin: 0; border: 0; border-radius: 0; z-index: 2; pointer-events: none;
+  background: url('/art/ui/minimap-frame.png') center / 100% 100% no-repeat; image-rendering: pixelated;
+  filter: drop-shadow(0 calc(5px * var(--u, 1)) calc(7px * var(--u, 1)) rgba(0, 0, 0, .4));
+}
+.kf-minimap::after { display: none; }
+.kf-minimap > .minimap {
+  position: absolute; left: 50%; top: 50%; width: 61%; height: 61%; transform: translate(-50%, -50%); border: 0; border-radius: 50%; box-shadow: none;
+  background: #1a4d68; z-index: 1;
+}
+
+/* ---- the unit cards ------------------------------------------------------------------------------------------------- */
+.ucard { aspect-ratio: 137 / 186; }
+.ucard-face {
+  padding: 0; border: 0; border-radius: 0; box-shadow: none; background: url('/art/ui/card-front-half.png') center / 100% 100% no-repeat; image-rendering: pixelated;
+  display: block; color: var(--ink); overflow: visible;
+}
+.ucard-face.back { background: url('/art/ui/card-back-half.png') center / 100% 100% no-repeat; color: var(--ink); border: 0; }
+.ucard-face > * { position: absolute; }
+.ucard-art { left: 17%; top: 12.6%; width: 66%; height: 36%; border: 0; border-radius: 0; flex: none; }
+.ucard-face.front .ucard-name { left: 19%; width: 62%; top: 53%; height: 8%; display: grid; place-items: center; font-size: .78em; color: #3a2a18; text-shadow: none; }
+.ucard-face.front .ucard-tag { left: 22%; right: 22%; top: 70.5%; text-align: center; white-space: nowrap; font-size: .56em; padding: 0; }
+.ucard-face.front .ucard-btns, .ucard-face.back .ucard-btns { left: 15%; right: 15%; top: 81%; bottom: auto; margin: 0; width: auto; height: 11%; align-items: stretch; }
+.ucard-btns .btn { min-height: 0; height: 100%; font-size: .66em; }
+.ucard-face.back .ucard-name { left: 25%; width: 50%; top: 10.5%; height: 6.5%; display: grid; place-items: center; font-size: .78em; color: #3a2a18; }
+.ucard-face.back { display: flex; flex-direction: column; gap: 1.5%; padding: 24% 15% 22% 17%; overflow: hidden; }
+.ucard-face.back > * { position: static; }
+.ucard-face.back .ucard-btns { position: absolute; }
+.ucard-face.back .ucard-name { position: absolute; }
+.ucard-face.back dl { margin: 0; font-family: var(--font-text); font-size: .68em; }
+.ucard-face.back dt { color: #6b4a22; font-family: var(--font-pixel); }
+.ucard-face.back dd { font-family: var(--font-text); font-weight: 700; }
+.ucard-face.back .ucard-role { color: #3a2a18; font-size: .58em; line-height: 1.2; }
+.ucard-face.back .ucard-vs { color: #3a2a18; font-size: .58em; line-height: 1.2; }
+.ucard-check { top: 1%; right: 1%; }
+.ucard.on .ucard-face { border: 0; box-shadow: none; animation: none; filter: drop-shadow(0 0 calc(7px * var(--u, 1)) rgba(255, 214, 80, .95)) drop-shadow(0 0 calc(2px * var(--u, 1)) #fff2a8); }

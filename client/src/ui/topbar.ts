@@ -35,7 +35,7 @@ export class TopBar {
           <span class="res" data-r="gold" title="Altın: ormandan gelir; kale penceresinde asker kiralanır"><i class="ico ico-coin"></i><b></b><small></small></span>
         </div>
         <div class="strip hit tb-pop" title="Nüfus ve asker sayısı">
-          <span class="pop"><span class="lbl">Nüfus</span><b data-f="pop"></b></span>
+          <span class="pop"><i class="ico ico-people"></i><span class="lbl">Nüfus</span><b data-f="pop"></b></span>
           <span class="pop"><i class="ico ico-sword"></i><b data-f="soldiers"></b></span>
           <span class="idle-warn ribbon ribbon-sm ribbon-red hidden" data-f="idle" title="Boştaki işçiler yemek yer ama üretmez"></span>
         </div>

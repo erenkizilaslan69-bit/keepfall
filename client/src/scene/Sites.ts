@@ -19,7 +19,7 @@ const CLEARING: Record<SiteKind, number> = { chest: 46, village: 96, camp: 84, b
 const TRAIL_COLOR = 0xd8b779, TRAIL_EDGE = 0xa98b57;
 
 export const SITE_NAME: Record<SiteKind, string> = { chest: 'Sandık', village: 'Köy', camp: 'Haydut kampı', bigCamp: 'Büyük haydut kampı' };
-const ICON: Record<SiteKind, string> = { chest: 'ico-coin', village: 'ico-meat', camp: 'ico-sword', bigCamp: 'ico-sword' };
+const ICON: Record<SiteKind, string> = { chest: 'ico-chest', village: 'ico-meat', camp: 'ico-skull', bigCamp: 'ico-skull' };
 
 /** Bandit sprites by unit id (blue sheets' black twins). */
 const BANDIT_ANIM: Record<string, string> = { kilicli: 'black-warrior-idle', kalkanli: 'black-warrior-guard', okcu: 'black-archer-idle', mizrakci: 'black-lancer-idle' };

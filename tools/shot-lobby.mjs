@@ -54,7 +54,7 @@ document.querySelector('input').value='Eren'; btn('Oda kur').click(); await w(15
 [...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Kolay')[0].click(); await w(1500);
 const cards=[...document.querySelectorAll('.ucard')]; const pick=(i)=>cards[i]?.querySelector('[data-a="deckpick"]')?.click();
 pick(0); pick(3); pick(6); await w(400);
-cards[1]?.classList.add('flipped'); return cards.length;})()`);
+cards[1]?.classList.add('flipped'); cards[4]?.classList.add('flipped'); return cards.length;})()`);
 await sleep(2500);
 await shot('lobby');
 console.log('fits:', await evalJs(`JSON.stringify({scrollH:document.documentElement.scrollHeight, innerH:innerHeight, innerW:innerWidth})`));

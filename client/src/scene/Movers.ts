@@ -282,7 +282,7 @@ export class Movers {
     });
     // A sign with the number of soldiers over the column (scouts have none); hidden while the fight is replayed.
     const total = t.units.reduce((n, u) => n + u.count, 0);
-    if (t.envoy) this.labels.set(`army:${t.key}`, { x: lead.x, y: lead.y - 44, anchor: 'bottom', minZoom: 0.45, cls: 'wl-small', html: '<div class="wl-sign">✉</div>' });
+    if (t.envoy) this.labels.set(`army:${t.key}`, { x: lead.x, y: lead.y - 44, anchor: 'bottom', minZoom: 0.45, cls: 'wl-small', html: '<div class="wl-sign"><i class="ico ico-envoy"></i></div>' });
     else if (t.scout || t.fighting) this.labels.remove(`army:${t.key}`);
     else this.labels.set(`army:${t.key}`, {
       x: lead.x, y: lead.y - 44, anchor: 'bottom', minZoom: 0.45, cls: 'wl-small',

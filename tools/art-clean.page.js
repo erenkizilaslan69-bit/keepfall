@@ -5,7 +5,7 @@
   const magenta = (r, g, b) => (r + b) / 2 - g;
 
   // Flood the magenta from the picture's border; then eat the pink fringe of what is left (a few passes, only pinkish pixels touching the background).
-  function backgroundMask(d, w, h) {
+  function backgroundMask(d, w, h, fill) {
     const bg = new Uint8Array(w * h);
     const isBg = (i) => { const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2]; return magenta(r, g, b) > 95 && r > 140 && b > 140; };
     const stack = [];
@@ -19,7 +19,9 @@
       if (x > 0) stack.push(i - 1); if (x < w - 1) stack.push(i + 1); if (y > 0) stack.push(i - w); if (y < h - 1) stack.push(i + w);
     }
     // Enclosed magenta (inside a loop of the picture) too: only the clearly pure ones.
-    for (let i = 0; i < w * h; i++) if (!bg[i] && magenta(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]) > 150 && d[i * 4] > 200 && d[i * 4 + 2] > 200) bg[i] = 1;
+    for (let i = 0; i < w * h; i++) if (!bg[i] && magenta(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]) > 150 && d[i * 4] > 200 && d[i * 4 + 2] > 200) {
+      if (fill) { d[i * 4] = fill[0]; d[i * 4 + 1] = fill[1]; d[i * 4 + 2] = fill[2]; } else bg[i] = 1;
+    }
     for (let pass = 0; pass < 5; pass++) {
       const eat = [];
       for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
@@ -51,6 +53,23 @@
       }
       if (comp.length < min) for (const i of comp) bg[i] = 1;
     }
+  }
+
+  // Keeps only the biggest connected piece (a stray object inside a frame goes).
+  function keepLargest(bg, w, h) {
+    const seen = new Uint8Array(w * h); let best = null;
+    for (let s0 = 0; s0 < w * h; s0++) {
+      if (bg[s0] || seen[s0]) continue;
+      const comp = [s0]; seen[s0] = 1;
+      for (let k = 0; k < comp.length; k++) {
+        const i = comp[k], x = i % w, y = (i - x) / w;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue; const j = ny * w + nx; if (!bg[j] && !seen[j]) { seen[j] = 1; comp.push(j); } }
+      }
+      if (!best || comp.length > best.length) best = comp;
+    }
+    const keep = new Uint8Array(w * h);
+    for (const i of best ?? []) keep[i] = 1;
+    for (let i = 0; i < w * h; i++) if (!keep[i]) bg[i] = 1;
   }
 
   function bbox(bg, w, h) {
@@ -161,6 +180,7 @@
     return c.toDataURL('image/png');
   };
 
+  window.artSize = async (url) => { const i = await load(url); return [i.naturalWidth, i.naturalHeight]; };
   window.artClean = async (url, opts) => {
     const img = await load(url);
     const c = document.createElement('canvas');
@@ -172,8 +192,9 @@
     for (const cell of cells) {
       const data = g.getImageData(cell.x, cell.y, cell.w, cell.h);
       const d = data.data, w = cell.w, h = cell.h;
-      const bg = backgroundMask(d, w, h);
+      const bg = backgroundMask(d, w, h, cell.fill ?? null);
       dropSpecks(bg, w, h, 400);
+      if (cell.largest) keepLargest(bg, w, h);
       const b = bbox(bg, w, h);
       const cw = b.x1 - b.x0, ch = b.y1 - b.y0;
       const cd = new Uint8ClampedArray(cw * ch * 4), cbg = new Uint8Array(cw * ch);
