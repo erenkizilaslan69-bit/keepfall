@@ -139,7 +139,8 @@ export function bakeRoads(scene: Phaser.Scene, roads: RoadView[], mapSize: numbe
  * Small wooden signposts where roads meet (the pack's own, CC0): one by every junction, a little off the road, none on top of another.
  */
 export function placeSignposts(scene: Phaser.Scene, roads: RoadView[], seed: number): Phaser.GameObjects.Image[] {
-  if (!scene.textures.exists('signpost')) return [];
+  const key = scene.textures.exists('prop:sign') ? 'prop:sign' : 'signpost';
+  if (!scene.textures.exists(key)) return [];
   const rnd = seeded(seed ^ 0x51a9);
   const ends = new Map<string, { p: { x: number; y: number }; n: number }>();
   for (const road of roads)
@@ -155,7 +156,7 @@ export function placeSignposts(scene: Phaser.Scene, roads: RoadView[], seed: num
     const w = toWorld(p);
     const side = rnd() < 0.5 ? -1 : 1;
     const x = w.x + side * 44, y = w.y - 30;
-    out.push(scene.add.image(x, y, 'signpost').setOrigin(0.5, 0.88).setScale(0.8).setFlipX(side < 0).setDepth(y));
+    out.push(scene.add.image(x, y, key).setOrigin(0.5, 0.9).setScale(key === 'prop:sign' ? 1.7 : 0.8).setFlipX(side < 0).setDepth(y));
   }
   return out;
 }

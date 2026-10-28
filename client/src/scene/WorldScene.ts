@@ -23,6 +23,7 @@ import { Movers } from './Movers';
 import { Soldiers } from './Soldiers';
 import { Terrain } from './Terrain';
 import { bakeRoads, placeSignposts } from './Roads';
+import { MapProps } from './MapProps';
 import { WallRing } from './Walls';
 import { Workers } from './Workers';
 
@@ -116,6 +117,7 @@ export class WorldScene extends Phaser.Scene {
   sites!: SiteLayer;
   private castleSprite!: Phaser.GameObjects.Image;
   /** Our own kingdom (its castle and buildings are drawn in its own style), and the rivals' that we may show: their castle in live sight, or a scout report. */
+  private props: MapProps | null = null;
   private ownKingdom: string | null = null;
   private sightKingdoms = new Map<number, string>();
   /** The walls round the regions, by seat. */
@@ -155,6 +157,7 @@ export class WorldScene extends Phaser.Scene {
     this.terrain = new Terrain(this, this.layout, this.seed, ground);
     setShadeHook((x, y, w, h) => this.terrain.shade(x, y, w, h));
     this.drawRoads();
+    this.props = new MapProps(this, this.layout, this.seed);
     this.drawForest();
     this.drawOtherCastles();
     this.drawWalls();
@@ -536,6 +539,7 @@ export class WorldScene extends Phaser.Scene {
       this.scale.resize(window.innerWidth, window.innerHeight);
     // Each part on its own: a failure in one must not end the frame loop (the whole picture would freeze).
     guarded('scene-update', () => this.terrain.update(dt, this.cameras.main.worldView), 'terrain');
+    guarded('scene-update', () => this.props?.cull(this.cameras.main.worldView), 'props');
     guarded('scene-update', () => this.workers.update(dt), 'workers');
     guarded('scene-update', () => { for (const r of this.regions.values()) r.update(dt); }, 'regions');
     guarded('scene-update', () => this.movers.update(dt), 'movers');

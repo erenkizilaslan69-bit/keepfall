@@ -58,7 +58,7 @@ for (const size of SIZES) {
   await send('Page.navigate', { url: URL });
   await sleep(3500);
   await run(`(async () => { const n = window.keepfallNet; await n.createRoom('Eren'); for (const l of ['easy', 'medium', 'easy']) await n.addBot(l); await n.setReady(true); await n.startMatch(); return 1; })()`);
-  await run(`(async () => { for (let i = 0; i < 120; i++) { if (window.keepfallScene?.battles) break; await new Promise(r => setTimeout(r, 500)); } await new Promise(r => setTimeout(r, 2500)); document.querySelector('.ui-root').style.visibility = 'hidden'; return 1; })()`);
+  await run(`(async () => { for (let i = 0; i < 120; i++) { if (window.keepfallScene?.battles) break; await new Promise(r => setTimeout(r, 500)); } await new Promise(r => setTimeout(r, 2500)); document.getElementById('kingdom-decree')?.remove(); document.querySelectorAll('.ui-root, .kingdom-fab, .kingdom-panel, .cam-btns, .kf-minimap').forEach((e) => { e.style.visibility = 'hidden'; }); return 1; })()`);
   for (const [name, tile, zoom] of [
     ['castle', null, 1], ['castle-fog', null, 1], ['wide-fog', { x: 28, y: 28 }, 0.5], ['coast-west', { x: 3, y: 12 }, 1], ['coast-north', { x: 16, y: 3 }, 1], ['corner', { x: 3, y: 3 }, 1], ['road', { x: 17, y: 14 }, 1],
     ['forest', { x: 28, y: 28 }, 1], ['forest-edge', { x: 20, y: 30 }, 1], ['wide', { x: 28, y: 28 }, 0.5],
