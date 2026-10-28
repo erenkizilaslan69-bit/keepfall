@@ -1,3 +1,4 @@
+import { KingdomArt, LOOK_OF } from './KingdomArt';
 import Phaser from 'phaser';
 import type { ArmyView, Rect, ScoutReportView, SpectatorCastleView, SpectatorStateView, BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
 import { guarded, reportError } from '../error-report';
@@ -114,6 +115,8 @@ export class WorldScene extends Phaser.Scene {
   /** The places of the forest we have found. */
   sites!: SiteLayer;
   private castleSprite!: Phaser.GameObjects.Image;
+  /** The kingdoms' ornaments on the castles: ours always, a rival's only while their castle is in live sight. */
+  kingdomArt!: KingdomArt;
   /** The walls round the regions, by seat. */
   private walls = new Map<number, WallRing>();
   /** Our own castle: has it fallen (null: not seen yet, so a castle already down is shown as a ruin without the show)? */
@@ -158,6 +161,7 @@ export class WorldScene extends Phaser.Scene {
     this.terrain.shade(CASTLE.x, CASTLE.y - 6, 470, 130);
     this.castleSprite = this.add.image(CASTLE.x, CASTLE.y, 'castle').setOrigin(0.5, 1).setScale(CASTLE.scale).setDepth(CASTLE.y);
     this.castleSprite.setInteractive({ useHandCursor: true }).on('pointerup', () => this.select({ kind: 'castle' }));
+    this.kingdomArt = new KingdomArt(this);
     for (const type of Object.keys(SITES) as BuildingType[]) this.createSite(type);
     this.workers = new Workers(this, this.labels);
     this.soldiers = new Soldiers(this, this.labels);
@@ -205,8 +209,17 @@ export class WorldScene extends Phaser.Scene {
     this.map = state;
     if (!this.ready) return;
     this.movers.sync(state);
+    this.syncKingdoms(state);
     this.syncMarkers(state);
     this.sites.sync(state.sites, state.elapsedSeconds);
+  }
+
+  /** A rival's ornaments are up only for a castle in live sight (the server names their kingdom only then); under the fog the castle is plain. */
+  private syncKingdoms(state: MapStateView): void {
+    for (const [seat, c] of this.otherCastles) {
+      const k = state.kingdoms?.find((x) => x.seat === seat);
+      this.kingdomArt.set(`seat:${seat}`, k && !c.fallen ? LOOK_OF[k.faction] ?? null : null, c.color, c.image.x, c.image.y, 1);
+    }
   }
 
   private syncMarkers(state: MapStateView): void {
@@ -528,6 +541,7 @@ export class WorldScene extends Phaser.Scene {
     this.workers.sync(s.jobs);
     this.soldiers.sync(s.units);
     this.movers.setGameSpeed(s.speed);
+    this.kingdomArt.set('own', s.eliminated ? null : LOOK_OF[s.kingdom?.id ?? ''] ?? null, this.color, CASTLE.x, CASTLE.y, 1);
     this.clock = { elapsed: s.elapsedSeconds, at: performance.now(), speed: s.speed };
     this.updateWall(s);
   }

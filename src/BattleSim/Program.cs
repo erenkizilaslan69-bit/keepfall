@@ -15,6 +15,7 @@ const string Usage = """
       BattleSim savas  <ordu A> <ordu B> [--hedef-a X] [--hedef-b X] [--tekrar N] [--seed N]
       BattleSim bot    [--mac 200] [--oyuncu 2|3|4] [--mod 20|30] [--zorluk orta|kolay|zor|zor-orta|bekleyen|karisik] [--seed 1] [--puan evet] [--agirlik 150,0.2,2,1] [--ozet 1]
                        (bot vs bot istatistikleri; bekleyen: koltuklardan biri yalnız bekler; --puan: süre bitince kazanan zafer puanına göre sayılır (deney); --ozet: karşılaştırma satırı)
+      BattleSim krallik [--mac 100] [--oyuncu 2|3|4] [--mod 20|30] [--seed 1]   (krallık dengesi: her krallığın kazanma payı ve yetenek kullanımı)
       BattleSim deste  [--cift 8] [--seed 1] [--zorluk orta|zor] [--cikti docs/deste.md]   (her deste her desteyle: bot maçlarıyla kazanma payı)
       BattleSim bot --izle [--oyuncu 2] [--zorluk orta|kolay] [--mod 15|30] [--seed 1] [--aralik 60]   (tek maçı dakika dakika göster)
       BattleSim kontrol
@@ -124,6 +125,10 @@ try
             Console.WriteLine($"Sonuç: kazanan {string.Join(", ", result.Winners.Select(w => room.PlayerOfCastle(w)?.Name))} ({(result.ByElimination ? "eleme" : "süre sonu")})");
             return 0;
         }
+
+        case "krallik":
+            new KingdomReport(rules, Int(flags, "mac", 100), Int(flags, "oyuncu", 2), Int(flags, "mod", 20), Int(flags, "seed", 1)).Run();
+            return 0;
 
         case "deste":
             new DeckReport(rules, Int(flags, "cift", 8), Int(flags, "seed", 1), flags.GetValueOrDefault("cikti"), flags.GetValueOrDefault("zorluk", "orta"), Int(flags, "deste-basi", 0)).Run();

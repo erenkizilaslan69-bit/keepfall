@@ -157,6 +157,8 @@ export interface ScoutReportView {
   deliveredAt: number;
   soldiers: { unitId: string; name: string; count: number }[];
   buildings: { type: BuildingType; name: string; level: number }[];
+  /** The rival's kingdom id (a scout report shows it), and for the Oracle whether the army table is a lie. */
+  kingdom?: string | null; faked?: boolean;
   /** The rival's deck (unit ids): only a scout report shows it. */
   deck?: string[];
 }
@@ -205,11 +207,32 @@ export interface CastleView {
   envoy: { maxCargo: number; maxMessageLength: number };
   /** The units we can make (our deck). */
   deck?: string[];
+  /** Our kingdom and its abilities (null when the match has none). */
+  kingdom?: KingdomView | null;
+  /** Oracle only: every rival's kingdom and deck. */
+  rivals?: { seat: number; faction: string; deck: string[] }[] | null;
+  /** Oracle only: the chance (a range) our soldiers at home beat what the latest scout report says is at that castle. */
+  odds?: { seat: number; known: boolean; low: number; high: number }[] | null;
 }
 
 export interface LetterView {
   id: number; fromSeat: number; fromName: string; fromColor: PlayerColor; at: number;
   food: number; wood: number; iron: number; gold: number; message: string | null;
+  /** Oracle only: the sender is not who the letter says (realSeat is who). */
+  fake?: boolean; realSeat?: number | null;
+}
+
+export interface KingdomInfo { id: string; name: string; title: string; look: string }
+export interface KingdomView extends KingdomInfo {
+  decree: string;
+  abilities: { id: string; name: string; text: string }[];
+  decoyReadyIn: number; decoysOut: number; bribeReadyIn: number; disguiseReadyIn: number;
+  fakeReport: Record<string, number> | null;
+  numbers: {
+    decoyGoldPerSoldier: number; decoyMaxSoldiers: number; decoyMax: number; bribeGoldPerSoldier: number; bribeMaxShare: number;
+    campPriceSmall: number; campPriceBig: number; campLootShare: number; disguiseRevealSeconds: number;
+  };
+  catalog: KingdomInfo[];
 }
 
 export interface CommandResult { ok: boolean; error: string | null }
@@ -238,9 +261,15 @@ export interface OwnMoverView {
   fighting: boolean;
   /** For a scout: what it is out for. */
   missionKind: MissionKind | null; quarter: Corner | null; siteId: string | null;
+  /** A phantom army of the Shadow (only we know). */
+  decoy?: boolean;
 }
 /** Someone else's army or scout inside our vision: never its target, road or arrival time. */
-export interface SeenMoverView { id: string; kind: MoverKind; ownerSeat: number; ownerColor: PlayerColor; position: Vec; velocity: Vec; units: MoverUnit[] }
+export interface SeenMoverView {
+  id: string; kind: MoverKind; ownerSeat: number; ownerColor: PlayerColor; position: Vec; velocity: Vec; units: MoverUnit[];
+  /** Oracle only: a phantom, a disguised army or a false envoy (realSeat is who is behind it). */
+  fake?: boolean; realSeat?: number | null;
+}
 /** A battle we can see but are not in: only where it is. */
 export interface BattleMarkerView { id: string; at: Vec }
 /** What we see right now (fog of war applied by the server). */
@@ -248,6 +277,8 @@ export interface MapStateView {
   elapsedSeconds: number; vision: VisionView[]; own: OwnMoverView[]; seen: SeenMoverView[]; battles: BattleMarkerView[]; trail: TrailView[];
   /** The places of the forest we have found, as we last saw them. */
   sites: SiteView[];
+  /** Rivals whose castle is in live sight, with their kingdom (their ornaments are drawn only then). */
+  kingdoms?: { seat: number; faction: string }[] | null;
 }
 
 export type SiteKind = 'chest' | 'village' | 'camp' | 'bigCamp';

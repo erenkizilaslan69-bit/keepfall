@@ -2,7 +2,7 @@ import { botMark, esc } from '../format';
 import { sfx } from '../audio';
 import { guarded } from '../error-report';
 import type { GameConnection } from '../net';
-import type { CastleView, Corner, RoomView, SiteView } from '../types';
+import type { CastleView, Corner, MapStateView, RoomView, SiteView } from '../types';
 import type { WorldScene } from '../scene/WorldScene';
 import { BuildingWin } from './building-window';
 import { CastleWin } from './castle-window';
@@ -15,6 +15,7 @@ import { ReportTags } from './reports';
 import { GENITIVE, scoutKey, scoutReportHtml } from './scout-report';
 import { TopBar } from './topbar';
 import { WorldLabels } from './world-labels';
+import { KingdomUi } from './kingdom';
 
 // Everything drawn over the map: the top bar, ribbons, report tags (and, step by step, the windows).
 // One instance per game screen; `update` takes every castle state the server sends.
@@ -37,6 +38,7 @@ export class GameUi {
   private readonly notes: Notifications;
   private readonly reports: ReportTags;
   private readonly windows: WindowManager;
+  private readonly kingdom: KingdomUi;
   private readonly ctx: WinContext;
   private scene: WorldScene | null = null;
   private castle: CastleView | null = null;
@@ -145,6 +147,7 @@ export class GameUi {
         .map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0));
     this.ctx = { net, say: (m) => this.error(m), info: (m) => { sfx.play('uiConfirm'); this.notes.push(m, 'info', 3500); }, open: (t) => this.open(t), close: () => this.windows.close(),
       army: (id) => this.scene?.resolveArmy(id), seat, sites: () => this.sites };
+    this.kingdom = new KingdomUi(root, { net, say: (m) => this.error(m), info: (m) => { sfx.play('uiConfirm'); this.notes.push(m, 'info', 3500); }, seat });
     window.addEventListener('keydown', this.onKey);
   }
 
@@ -190,6 +193,7 @@ export class GameUi {
     window.clearInterval(this.waitTimer);
     this.labels.destroy();
     this.labelRoot.remove();
+    this.kingdom.destroy();
   }
 
   update(s: CastleView): void {
@@ -197,6 +201,7 @@ export class GameUi {
     // Each part on its own: one that fails must not keep the rest of the screen from updating.
     guarded('ui-update', () => this.windows.update({ castle: s, room: this.room }), 'windows');
     guarded('ui-update', () => this.bar.update(s), 'top bar');
+    guarded('ui-update', () => this.kingdom.update(s), 'kingdom');
     guarded('ui-update', () => this.renderScroll(), 'scroll');
     guarded('ui-update', () => this.reports.update(s.war.battles, s.elapsedSeconds), 'report tags');
     guarded('ui-update', () => this.updateNotes(s), 'ribbons');
@@ -313,8 +318,14 @@ export class GameUi {
     this.sites = sites;
   }
 
+  /** The latest map state (the kingdom panel lists the armies we can bribe, the camps we can hire and what the Oracle sees through). */
+  setMapState(state: MapStateView): void {
+    this.kingdom.setMap(state);
+  }
+
   setRoom(room: RoomView): void {
     this.room = room;
+    this.kingdom.setRoom(room);
     this.bar.setRoom(room);
     // One camera button per rival castle, in that player's colour.
     const rivals = room.players.filter((p) => p.seat !== this.mySeat);

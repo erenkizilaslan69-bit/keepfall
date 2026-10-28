@@ -109,6 +109,15 @@ export class GameConnection {
   upgradeBuilding = (building: BuildingType) => this.call('UpgradeBuilding', building);
   sendEnvoy = (targetSeat: number, food: number, wood: number, iron: number, gold: number, message: string, from: Job) =>
     this.call('SendEnvoy', targetSeat, food, wood, iron, gold, message || null, from);
+  // Kingdoms
+  sendDecoy = (targetSeat: number, units: Record<string, number>) => this.call('SendDecoy', targetSeat, units);
+  setFakeReport = (units: Record<string, number>) => this.call('SetFakeReport', units);
+  bribeArmy = (armyId: string, count: number) => this.call('BribeArmy', armyId, count);
+  hireCamp = (siteId: string, targetSeat: number) => this.call('HireCamp', siteId, targetSeat);
+  sendEnvoyAs = (targetSeat: number, asSeat: number, food: number, wood: number, iron: number, gold: number, message: string, from: Job) =>
+    this.call('SendEnvoyAs', targetSeat, asSeat, food, wood, iron, gold, message || null, from);
+  sendArmyAs = (targetSeat: number, asSeat: number, units: Record<string, number>, rows: Record<string, Row> | null, archerPriority: string | null) =>
+    this.call('SendArmyAs', targetSeat, asSeat, units, rows, archerPriority, 'attack');
   sendExplore = (quarter: string, from: Job) => this.call('SendExplore', quarter, from);
   sendChestScout = (siteId: string, from: Job) => this.call('SendChestScout', siteId, from);
   sendArmyToSite = (siteId: string, units: Record<string, number>, rows: Record<string, Row> | null, archerPriority: string | null) =>

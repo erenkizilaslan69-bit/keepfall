@@ -84,6 +84,32 @@ check('the map carries no token and no castle contents',
   ![ja.token, jb.token, jc.token].some((t) => JSON.stringify(layouts[0]).includes(t))
   && !/soldier|units|wallHp|weapon|food|wood|iron/i.test(JSON.stringify(layouts[0])));
 check('lobby command refused in the match', !(await B.call('SetReady', false)).ok);
+// ---- kingdoms: everybody gets a different one, and nobody learns another's unless they may -----------------
+await sleep(1500);
+const kds = [A, B, C].map((x) => x.of('CastleState').at(-1)?.kingdom);
+check('everybody got a kingdom, and they differ', kds.every(Boolean) && new Set(kds.map((k) => k.id)).size === 3);
+check('the kingdom comes with its decree and abilities', kds.every((k) => k.decree && k.abilities.length >= 2 && k.catalog.length === 4));
+const oracleSeat = kds.findIndex((k) => k.id === 'kahin');
+for (const [i, c] of [A, B, C].entries()) {
+  const last = c.of('CastleState').at(-1);
+  if (i === oracleSeat) {
+    check('the oracle knows every rival kingdom and deck, and it is the truth',
+      last.rivals?.length === 2 && last.rivals.every((r) => r.faction === kds[r.seat - 1].id && r.deck.length === 4));
+  } else {
+    check(`player ${i + 1} (not the oracle) got no rival kingdoms, decks or odds`, !last.rivals && !last.odds);
+  }
+}
+for (const [i, c] of [A, B, C].entries()) {
+  const early = c.of('MapState').slice(0, 3);
+  check(`player ${i + 1} sees no rival kingdom before any castle is in sight`, early.every((m) => !m.kingdoms || m.kingdoms.length === 0));
+}
+const refused = async (c, name, ...args) => !(await c.call(name, ...args)).ok;
+const idxOf = (id) => kds.findIndex((k) => k.id === id);
+const other = (id) => [A, B, C][[0, 1, 2].find((i) => i !== idxOf(id))];
+check('only the Shadow can send phantoms or set a false report', await refused(other('golge'), 'SendDecoy', 1, { kilicli: 3 }) && await refused(other('golge'), 'SetFakeReport', { kilicli: 30 }));
+check('only the Merchant can bribe or hire a camp', await refused(other('tuccar'), 'BribeArmy', 'abc', 2) && await refused(other('tuccar'), 'HireCamp', 'x', 1));
+check('only the Schemer can go under another name', await refused(other('entrikaci'), 'SendEnvoyAs', 1, 2, 0, 0, 0, 0, 'hi', 'idle')
+  && await refused(other('entrikaci'), 'SendArmyAs', 1, 2, { kilicli: 1 }, null, null, 'attack'));
 check('host sets ×20', (await A.call('SetSpeed', 20)).ok);
 
 // ---- B builds an army and keeps bows in storage; A forges swords; A scouts B -----------------
@@ -128,7 +154,9 @@ const report = castlesA.at(-1).scouting.reports.find((r) => r.targetSeat === 2);
 check('A has a report on B', !!report);
 if (report) {
   check('report has only target, time, soldiers, buildings',
-    JSON.stringify(Object.keys(report).sort()) === JSON.stringify(['buildings', 'deck', 'deliveredAt', 'observedAt', 'soldiers', 'targetColor', 'targetName', 'targetSeat']) && JSON.stringify(report.deck) === JSON.stringify(FOUR));
+    JSON.stringify(Object.keys(report).filter((k) => !['kingdom', 'faked'].includes(k)).sort()) === JSON.stringify(['buildings', 'deck', 'deliveredAt', 'observedAt', 'soldiers', 'targetColor', 'targetName', 'targetSeat']) && JSON.stringify(report.deck) === JSON.stringify(FOUR));
+  const kdB = B.of('CastleState').at(-1)?.kingdom?.id;
+  check("the scout report names B's real kingdom (and only a scout report does it this early)", !!kdB && report.kingdom === kdB);
   check('report soldiers have only id, name and count',
     report.soldiers.every((s) => JSON.stringify(Object.keys(s).sort()) === '["count","name","unitId"]'));
   const seen = report.soldiers.find((s) => s.unitId === 'mizrakci').count;
@@ -181,7 +209,7 @@ check('A and C (who sent scouts) got trails, B (who never did) never did',
   mapsA.some((m) => m.trail.length > 0) && mapsC.some((m) => m.trail.length > 0) && mapsB.every((m) => m.trail.length === 0));
 const allSeen = [...mapsA, ...mapsB, ...mapsC].flatMap((m) => m.seen);
 check('a seen mover carries only id, kind, owner, position, heading and units',
-  allSeen.every((s) => JSON.stringify(Object.keys(s).sort()) === '["id","kind","ownerColor","ownerSeat","position","units","velocity"]'));
+  allSeen.every((s) => JSON.stringify(Object.keys(s).filter((k) => !['fake', 'realSeat'].includes(k)).sort()) === '["id","kind","ownerColor","ownerSeat","position","units","velocity"]'));
 check('nothing seen ever mentions a target, road or arrival',
   !allSeen.some((s) => /target|route|travelled|arriv|remaining|returning/i.test(JSON.stringify(s))));
 check('seen ids are random', allSeen.every((s) => /^[0-9a-f]{16}$/.test(s.id)));

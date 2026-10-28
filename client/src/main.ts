@@ -89,6 +89,7 @@ const net = new GameConnection({
     lastMap = state;
     guarded('map-state', () => scene?.setMap(state), 'scene');
     guarded('map-state', () => ui?.setSites(state.sites), 'ui');
+    guarded('map-state', () => ui?.setMapState(state), 'ui');
   },
   spectatorState: (frame) => {
     lastSpectator = frame;
