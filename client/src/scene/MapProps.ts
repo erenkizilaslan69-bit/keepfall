@@ -13,6 +13,8 @@ import { DEPTH } from './Terrain';
 export const PROP_NAMES = ['oak', 'pine', 'darkpine', 'berry', 'rocks', 'mossrock', 'flowers', 'stump', 'sign'] as const;
 /** The rarer, bigger details (a broken cart, a pond, a ruined tower ...): one or two in each quarter of the map, only on the meadows. */
 export const DETAIL_NAMES = ['d-cart', 'd-pond', 'd-tower', 'd-stones', 'd-field', 'd-well', 'd-mushlog', 'd-campfire'] as const; // (d-bridge.png is cleaned and waiting: it needs water, for a map with a river)
+/** The details that stand on the meadows: a pond, a well, standing stones and a scarecrow (the cart, tower, mushroom log and camp fire are not used there). */
+const MEADOW_DETAILS = ['d-pond', 'd-well', 'd-stones', 'd-field'] as const;
 const ALL_NAMES: readonly string[] = [...PROP_NAMES, ...DETAIL_NAMES];
 const SCALE = 2;
 const srcKey = (name: string) => `prop:${name}`;
@@ -138,7 +140,7 @@ export class MapProps {
     const w = b.x - a.x, h = b.y - a.y;
     // the details first, so the small ornaments make room for them: one or two in each quarter, each kind used once; away from the roads, the castle
     // regions, the forests (their places and trails are in there) and the edge of the map
-    const kinds = [...DETAIL_NAMES];
+    const kinds: string[] = [...MEADOW_DETAILS];
     for (let i = kinds.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [kinds[i], kinds[j]] = [kinds[j], kinds[i]]; }
     let next = 0;
     for (let quarter = 0; quarter < 4; quarter++) {
@@ -149,37 +151,14 @@ export class MapProps {
         next++; got++; this.details++; this.detailSpots.push({ name, x, y });
       }
     }
-    // The roads keep a wide verge (about three tiles each side) clear of everything; the trees stand in a few small groves with wide open meadow between.
-    const VERGE = 200, TREE_VERGE = 230;
-    // the meadows between the castles: only small ornaments (flower clumps, bushes, small rocks, a few stumps and big rocks)
-    const small: [string, number][] = [['flowers', 40], ['rocks', 22], ['berry', 22], ['stump', 10], ['mossrock', 4]];
+    // The roads keep a wide verge (about three tiles each side) clear of everything.
+    const VERGE = 200;
+    // the meadows between the castles: only flower clumps, bushes and small stones (no trees, stumps or big rocks outside the forests)
+    const small: [string, number][] = [['flowers', 46], ['rocks', 24], ['berry', 24]];
     for (let i = 0, n = 0; i < 2000 && n < 90; i++) {
       const x = a.x + rnd() * w, y = a.y + rnd() * h;
       if (inForest(x, y)) continue;
       if (tryPlace(pick(small), x, y, VERGE)) n++;
-    }
-    // groves: three to five trees close together, here and there on the meadows
-    const grove = (cx: number, cy: number, trees: number, mix: [string, number][]): number => {
-      let got = 0;
-      for (let i = 0; i < 24 && got < trees; i++) {
-        const ang = rnd() * Math.PI * 2, d = 20 + rnd() * 120;
-        if (tryPlace(pick(mix), cx + Math.cos(ang) * d, cy + Math.sin(ang) * d * 0.8, TREE_VERGE)) got++;
-      }
-      return got;
-    };
-    const groveMix: [string, number][] = [['oak', 36], ['pine', 24], ['darkpine', 28], ['berry', 12]];
-    for (let i = 0, groves = 0; i < 400 && groves < 11; i++) {
-      const x = a.x + rnd() * w, y = a.y + rnd() * h;
-      if (inForest(x, y) || !awayFromRoads(x, y, TREE_VERGE + 60)) continue;
-      if (grove(x, y, 3 + Math.floor(rnd() * 3), groveMix) >= 2) groves++;
-    }
-    // the edges of the map: a few small groups of trees along the coast
-    for (let i = 0, groups = 0; i < 300 && groups < 7; i++) {
-      const side = Math.floor(rnd() * 4), t = rnd(), depth = 150 + rnd() * 150;
-      const x = side === 0 ? a.x + depth : side === 1 ? b.x - depth : a.x + t * w;
-      const y = side === 2 ? a.y + depth : side === 3 ? b.y - depth : a.y + t * h;
-      if (inForest(x, y) || !awayFromRoads(x, y, TREE_VERGE + 40)) continue;
-      if (grove(x, y, 2 + Math.floor(rnd() * 2), [['pine', 30], ['darkpine', 30], ['oak', 30], ['berry', 10]]) >= 2) groups++;
     }
     // through the forest, between the pack's trees (half of what there was)
     for (const f of forests) {
