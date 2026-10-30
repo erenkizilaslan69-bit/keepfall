@@ -206,7 +206,7 @@ function ramp(look: string, l: number): [number, number, number] {
   return mix(stops[i], stops[i + 1], t - i) as [number, number, number];
 }
 
-/** A copy of a picture whose stone pixels take the kingdom's ramp by their brightness. `keepTeam`: pixels of a clear colour (a tower's roof) stay as they are. */
+/** A copy of a picture whose stone pixels take the kingdom's ramp by their brightness. `keepTeam`: warm pixels (a tower's wooden top) stay as they are. */
 function restone(src: CanvasImageSource & { width: number; height: number }, look: string, keepTeam: boolean): HTMLCanvasElement {
   const c = document.createElement('canvas');
   c.width = src.width; c.height = src.height;
@@ -216,7 +216,10 @@ function restone(src: CanvasImageSource & { width: number; height: number }, loo
   for (let i = 0; i < d.length; i += 4) {
     if (!d[i + 3]) continue;
     const max = Math.max(d[i], d[i + 1], d[i + 2]), min = Math.min(d[i], d[i + 1], d[i + 2]);
-    if (keepTeam && max > 0 && (max - min) / max > 0.34 && max > 70) continue;
+    if (keepTeam && max > 0 && (max - min) / max > 0.3) {
+      const h = max === d[i] ? 60 * (((d[i + 1] - d[i + 2]) / (max - min) + 6) % 6) : max === d[i + 1] ? 60 * ((d[i + 2] - d[i]) / (max - min) + 2) : 60 * ((d[i] - d[i + 1]) / (max - min) + 4);
+      if (h < 60 || h > 340) continue; // the warm colours (the tower's wooden top, a red team's trim) stay
+    }
     const l = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
     const out = ramp(look, Math.pow(l, 0.9));
     d[i] = out[0]; d[i + 1] = out[1]; d[i + 2] = out[2];
@@ -235,7 +238,7 @@ export function stoneSheet(scene: Phaser.Scene, look: string, sheet: string, fra
   return key;
 }
 
-/** A tower picture with its stone in the kingdom's colour (the team-coloured roof and flags stay). */
+/** A tower picture with its stone in the kingdom's colour (its wooden top stays). */
 export function stoneTower(scene: Phaser.Scene, look: string, towerKey: string): string {
   const key = `${towerKey}:${look}`;
   if (!scene.textures.exists(key)) scene.textures.addCanvas(key, restone(scene.textures.get(towerKey).getSourceImage() as HTMLImageElement, look, true));

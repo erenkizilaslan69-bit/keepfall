@@ -104,11 +104,11 @@ await run(`window.__qaMode = ${JSON.stringify(MODE)}; window.__qa = { done: {}, 
   await once('jobs', async () => { for (const [j, k] of [['farmer', 3], ['lumberjack', 3], ['miner', 2], ['blacksmith', 2]]) fail('move ' + j, await n.moveWorkers('idle', j, k)); });
   await every('upg', 25, async () => { for (const b of ['farm', 'forge', 'lumberCamp', 'mine']) { const r = await n.upgradeBuilding(b); if (r.ok) { q.events.push('upgrade ' + b); break; } } });
   if (!die) {
-    await every('weapon', 4, async () => {
-      for (const id of deck) { const u = c.units.find((x) => x.id === id); if (u && c.queue.length < 3 && c.resources.iron >= u.iron && c.resources.wood >= u.wood) { fail('queue ' + id, await n.queueWeapon(id, 1)); break; } }
+    await every('weapon', 2, async () => {
+      for (const id of deck) { const u = c.units.find((x) => x.id === id); if (u && c.queue.length < 4 && c.resources.iron >= u.iron && c.resources.wood >= u.wood) { fail('queue ' + id, await n.queueWeapon(id, 1)); break; } }
     });
-    await every('arm', 6, async () => {
-      for (const u of c.units) if (u.weapons > 0 && t > 150) { const from = from; const r = await n.armWorkers(u.id, Math.min(u.weapons, 3), from); if (r.ok) q.events.push('arm ' + u.id); else fail('arm', r); break; }
+    await every('arm', 3, async () => {
+      for (const u of c.units) if (u.weapons > 0 && t > 150) { const r = await n.armWorkers(u.id, Math.min(u.weapons, 3), from); if (r.ok) q.events.push('arm ' + u.id); else fail('arm', r); break; }
     });
     // scouts, explore, chests, envoy, mercenaries
     await every('scout', 70, async () => { const seat = rivals[Math.floor(Math.random() * rivals.length)]; if (seat) fail('scout', await n.sendScout(seat, from)); });
@@ -138,9 +138,9 @@ await run(`window.__qaMode = ${JSON.stringify(MODE)}; window.__qa = { done: {}, 
     if (c.phase === 'war') {
       const home = Object.fromEntries(c.units.filter((u) => u.soldiers > 0).map((u) => [u.id, u.soldiers])); const total = Object.values(home).reduce((a, b) => a + b, 0);
       await every('attack', 30, async () => {
-        if (total >= 8 && c.war.armies.length < 2) {
+        if (total >= 14 && c.war.armies.length < 2) {
           const seat = rivals[Math.floor(Math.random() * rivals.length)];
-          const send = Object.fromEntries(Object.entries(home).map(([k, v]) => [k, Math.ceil(v * 0.7)]));
+          const send = Object.fromEntries(Object.entries(home).map(([k, v]) => [k, Math.ceil(v * 0.5)]));
           const r = await n.sendArmy(seat, send, {}, null, Math.random() < 0.3 ? 'intercept' : 'attack'); if (r.ok) q.events.push('army sent to ' + seat); else fail('send army', r);
         }
       });
@@ -178,6 +178,7 @@ while (Date.now() - t0 < MAX_MS) {
     await sleep(2500); await shot('spectator-1');
     const btns = await run(`[...document.querySelectorAll('.cam-btns button, .report-toggle, .minimap')].map(b=>b.textContent.trim().slice(0,20)||b.className)`);
     log.push('spectator buttons: ' + JSON.stringify(btns));
+    log.push('own kingdom in scene: ' + (await run(`JSON.stringify({own: window.keepfallScene.ownKingdom, state: window.keepfallScene.state?.kingdom?.id ?? null, elim: window.keepfallScene.state?.eliminated})`)));
   }
   if (spectated) {
     if (spectatorShots < 8 && Date.now() - lastShot > 6000) {
