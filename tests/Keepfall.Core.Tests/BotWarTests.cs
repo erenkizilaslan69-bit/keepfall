@@ -14,7 +14,7 @@ public class BotWarTests
     // Easy is pinned to the plain poor bot (see PoorBotRules); Medium is whatever balance.json says.
     private static readonly GameRules Rules = PoorBotRules.From(BalanceConfigLoader.LoadFromFile(
         BalanceConfigLoader.FindDefaultPath(AppContext.BaseDirectory)
-        ?? throw new InvalidOperationException("config/balance.json bulunamadı.")));
+        ?? throw new InvalidOperationException("config/balance.json bulunamadı.")).WithWalls(new WallRules(0.25)));
 
     private static UnitType U(string id) => Rules.FindUnit(id)!;
 

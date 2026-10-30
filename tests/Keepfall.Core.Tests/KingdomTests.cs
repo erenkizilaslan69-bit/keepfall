@@ -1,3 +1,4 @@
+using Keepfall.Core.Economy;
 using Keepfall.Core.Config;
 using Keepfall.Core.Match;
 using Keepfall.Core.Units;
@@ -10,7 +11,7 @@ public class KingdomTests
 {
     private static readonly GameRules Rules = BalanceConfigLoader.LoadFromFile(
         BalanceConfigLoader.FindDefaultPath(AppContext.BaseDirectory)
-        ?? throw new InvalidOperationException("config/balance.json bulunamadı."));
+        ?? throw new InvalidOperationException("config/balance.json bulunamadı.")).WithWalls(new WallRules(0.25));
 
     private const string A = "o1", B = "o2", C = "o3";
     private static readonly UnitType Sword = Rules.FindUnit("kilicli")!;

@@ -55,6 +55,8 @@ public sealed class ActiveBattle
 
     public IReadOnlyDictionary<UnitType, int> AttackerUnits { get; internal set; } = new Dictionary<UnitType, int>();
     public IReadOnlyDictionary<UnitType, int> DefenderUnits { get; internal set; } = new Dictionary<UnitType, int>();
+    /// <summary>How many of the defending swordsmen are the castle's gate guards (not soldiers; counted inside <see cref="DefenderUnits"/>).</summary>
+    public int DefenderGuards { get; internal set; }
     public IReadOnlyDictionary<UnitType, int> AttackerSurvivors { get; internal set; } = new Dictionary<UnitType, int>();
     public IReadOnlyDictionary<UnitType, int> DefenderSurvivors { get; internal set; } = new Dictionary<UnitType, int>();
     public BattleWinner Winner { get; internal set; }

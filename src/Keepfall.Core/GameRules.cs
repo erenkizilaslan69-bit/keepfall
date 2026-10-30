@@ -38,6 +38,9 @@ public sealed class GameRules
         Map = map;
     }
 
+    /// <summary>The same rules with other walls (tests and measurements: e.g. no gate guards).</summary>
+    public GameRules WithWalls(WallRules walls) => new(Units, Counters, Combat, Production, Match, Economy, Scouting, War, Map, MercenaryPrices, Forest, Bots, Envoy, walls, Deck, Kingdoms);
+
     public IReadOnlyList<UnitType> Units { get; }
     public CounterMatrix Counters { get; }
     public CombatSettings Combat { get; }

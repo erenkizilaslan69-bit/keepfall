@@ -191,7 +191,11 @@
   "deck": { "enabled": true, "size": 4 },
 
   "walls": {
-    "archerDefenseBonus": 0.25
+    "archerDefenseBonus": 0.25,
+    // Her kalenin kapısında bedava muhafızlar (kılıçlı gücünde; nüfusa sayılmaz, yemek yemez, gönderilemez, yalnız kendi kalesini savunur).
+    // Ölen muhafız guardRespawnSeconds sonra geri gelir (sırayla, biri). Ordu dışarıdayken küçük bir baskın kaleyi düşüremesin diye.
+    "guards": 4,
+    "guardRespawnSeconds": 60
   },
 
   // Ulak: bir rakip kaleye yemek, odun, demir, altın ve/veya kısa bir mesaj taşır. Gözcüyle aynı hakkı (maxScouts) ve hızı kullanır, bilgi toplamaz,

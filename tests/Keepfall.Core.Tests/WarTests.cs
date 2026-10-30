@@ -11,9 +11,10 @@ namespace Keepfall.Core.Tests;
 /// <summary>War phase: marching, the sentry warning, battles, siege, elimination and the winner.</summary>
 public class WarTests
 {
+    // These tests are about the armies (an empty castle falls at once ...): no gate guards (GuardTests has them).
     private static readonly GameRules Rules = BalanceConfigLoader.LoadFromFile(
         BalanceConfigLoader.FindDefaultPath(AppContext.BaseDirectory)
-        ?? throw new InvalidOperationException("config/balance.json bulunamadı."));
+        ?? throw new InvalidOperationException("config/balance.json bulunamadı.")).WithWalls(new WallRules(0.25));
 
     private const string A = "o1", B = "o2", C = "o3";
     private static readonly UnitType Archer = Rules.FindUnit("okcu")!;
