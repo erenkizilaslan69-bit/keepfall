@@ -144,7 +144,7 @@ export class GameUi {
     });
     root.appendChild(this.cam);
     this.windows = new WindowManager(root, () => this.top.getBoundingClientRect().bottom, () =>
-      [this.cam, document.querySelector('.kf-minimap'), root.querySelector('.report-tags')].filter((e): e is Element => !!e)
+      [this.cam, document.querySelector('.kf-minimap'), root.querySelector('.report-tags'), root.querySelector('.report-toggle')].filter((e): e is Element => !!e)
         .map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0));
     this.ctx = { net, say: (m) => this.error(m), info: (m) => { sfx.play('uiConfirm'); this.notes.push(m, 'info', 3500); }, open: (t) => this.open(t), close: () => this.windows.close(),
       army: (id) => this.scene?.resolveArmy(id), seat, sites: () => this.sites };

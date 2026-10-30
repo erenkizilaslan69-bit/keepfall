@@ -273,6 +273,9 @@
   background: radial-gradient(ellipse at 50% 20%, var(--kf-parch-hi), var(--kf-parch) 60%, var(--kf-parch-lo));
   box-shadow: 0 0 0 calc(2px * var(--u, 1)) var(--kf-wood-edge), 0 calc(4px * var(--u, 1)) 0 var(--kf-wood-edge); }
 .report-tag.won b { color: #2c7a22; } .report-tag.lost b { color: #b0352a; }
+.report-toggle { color: var(--ink); border: calc(3px * var(--u, 1)) solid var(--kf-wood); border-radius: calc(9px * var(--u, 1));
+  background: radial-gradient(ellipse at 50% 20%, var(--kf-parch-hi), var(--kf-parch) 60%, var(--kf-parch-lo));
+  box-shadow: 0 0 0 calc(2px * var(--u, 1)) var(--kf-wood-edge), 0 calc(3px * var(--u, 1)) 0 var(--kf-wood-edge); }
 
 /* ---- the guide ------------------------------------------------------------------------------------ */
 .guide-close, .win-close { z-index: 3; }

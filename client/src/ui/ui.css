@@ -185,10 +185,15 @@ html.in-menu .guide-fab { display: inline-grid; }
 .note span { overflow: hidden; text-overflow: ellipsis; }
 
 /* ---- report tags and the report window -------------------------------------------------------- */
-.report-tags { position: absolute; left: calc(8px * var(--u)); bottom: calc(8px * var(--u)); display: flex; flex-direction: column-reverse; gap: calc(4px * var(--u)); align-items: flex-start; }
+.report-tags { position: absolute; left: calc(8px * var(--u)); bottom: calc(46px * var(--u)); display: flex; flex-direction: column-reverse; gap: calc(4px * var(--u)); align-items: flex-start; }
 .report-tag { display: inline-flex; align-items: center; gap: calc(6px * var(--u)); cursor: pointer; color: var(--ink); text-align: left; font: inherit; }
 .report-tag.won b { color: #2f7a2a; } .report-tag.lost b { color: #b23a2e; }
 .report-tag.fresh { animation: tag-flash 1s ease-in-out 3; }
+.report-tag.leaving { animation: tag-out .8s ease-in forwards; pointer-events: none; }
+@keyframes tag-out { to { opacity: 0; transform: translateX(calc(-14px * var(--u))); } }
+.report-toggle { position: absolute !important; left: calc(8px * var(--u)); bottom: calc(8px * var(--u)); display: inline-flex; align-items: center; gap: calc(6px * var(--u)); cursor: pointer; color: var(--ink); font: inherit; font-size: .85em; padding: 3px 9px; }
+.report-toggle b { background: var(--kf-wood); color: #fff3d0; border-radius: 999px; padding: 0 .5em; font-size: .9em; }
+.report-toggle.on { filter: brightness(1.12); }
 @keyframes tag-flash { 50% { transform: scale(1.08); filter: brightness(1.25); } }
 .report-tag { padding: 4px 8px; }
 .dot { display: inline-block; width: .7em; height: .7em; border-radius: 50%; margin-right: .3em; border: 1px solid rgba(0,0,0,.4); vertical-align: baseline; }
