@@ -1,0 +1,55 @@
+Ayar dosyası: C:\Users\Eren\Desktop\Cladue Projeleri\Keepfall\config\balance.json
+Bot maçları: 400 maç · 2 oyuncu · 15 dk (10+10) · zorluk: bekleyen · tohum: 1
+
+1. Sonuçlar
+───────────
+   Elemeyle biten: 125/400 (%31,3) · süre sonunda biten: 275
+   Ortalama maç süresi: 18,2 dk (oyun saati)
+   Hiç kale saldırısı olmayan maç: 7/400 (%1,8)
+   İlk elemenin zamanı (savaş başlangıcından): 4,1 dk (125 maçta eleme oldu)
+   Işınlanma (süreklilik) ihlali: 0 (hedef 0; ihlalli maç: 0)
+   Yalnız bekleyen botun kazanma oranı: %12,8 (400 maç; elenen: %31,3)
+
+   Zorluk  Koltuk  Kazanma payı  Elenme  Ort. son nüfus
+   ------  ------  ------------  ------  --------------
+   Orta       800         %50,0   %15,6            33,7
+
+2. Ekonomi ve ordu
+──────────────────
+   Zorluk  Nüfus savaş başı  Asker savaş başı  Depo odun+demir savaş başı  Zirve nüfus  Son nüfus  Son asker  Paralı oranı savaş başı  Paralı oranı maç sonu  En büyük saldırı ordusu  Ort. saldırı ordusu
+   ------  ----------------  ----------------  --------------------------  -----------  ---------  ---------  -----------------------  ---------------------  -----------------------  -------------------
+   Orta                38,7              20,8                         199         44,1       33,7       17,8                    %27,4                  %19,6                       25                  9,9
+   Nüfus/asker savaş başlarken (hazırlığın sonu), zirve ve maç sonu; askerler yoldakiler dahil.
+
+3. Savaş
+────────
+   Zorluk  Kale saldırısı/maç  Pusu/maç  Ölen asker  Öldürülen düşman  Savunma tepkisi/maç  Yeni hedefe yönelme/maç  Süvari baskını/maç
+   ------  ------------------  --------  ----------  ----------------  -------------------  -----------------------  ------------------
+   Orta                  1,28      0,31        18,6              27,9                  6,2                     0,00                0,00
+   Maç başına: kale savaşı 1,92 · yol savaşı 0,62
+
+4. Orman
+────────
+   Zorluk  Kazanılan altın  Harcanan altın  Paralı asker  Köy yağması  Kamp saldırısı  Büyük kamp  Gözcü sandığı  Casusluk
+   ------  ---------------  --------------  ------------  -----------  --------------  ----------  -------------  --------
+   Orta                306             297           9,7          2,0             1,6        0,03            6,9       4,2
+   Maç sonunda kullanılmış yerler: sandık %98,1 · köy %99,4 · küçük kamp %77,1 · büyük kamp %5,5
+   Kamp savaşlarının kazanılma oranı: %100,0 (1255 savaş)
+
+5. Kazananın stratejisi
+───────────────────────
+   Strateji                             Koltuk  Kazanan  Kazanma oranı  Kazananlar içinde pay
+   -----------------------------------  ------  -------  -------------  ---------------------
+   ormancı (köy+kamp ≥ 4, altın ≥ 150)     400      356          %89,0                  %86,0
+   paralı (≥ 6 kiralık)                    400      356          %89,0                  %86,0
+   saldırgan (≥ 1 kale saldırısı)          400      356          %89,0                  %86,0
+   savunmacı (hiç saldırmadı)              400       58          %14,5                  %14,0
+   pusucu (≥ 1 pusu)                       158       25          %15,8                   %6,0
+   büyük ordu (savaşa ≥ 15 asker)          712      409          %57,4                  %98,8
+   Berabere biten maçta (süre sonunda en çok nüfus aynıysa) birden çok kazanan sayılır.
+
+Özet
+────
+  Eşik dışında kalan bir şey yok.
+
+Süre: 76,4 sn

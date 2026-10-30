@@ -1014,27 +1014,20 @@ public sealed partial class GameState
     /// The army fights whoever is at home in the target castle right now; they come down to the gate
     /// and are held there until it is over. If the army wins, the castle falls.
     /// </summary>
-    /// <summary>The unit the gate guards fight as (the swordsman).</summary>
-    private UnitType? GuardUnit => Rules.Walls.Guards > 0 ? Rules.FindUnit("kilicli") : null;
-
     private void StartSiege(ArmyMarch a)
     {
         var castle = _players[a.Target].Castle;
         var defenders = castle.Soldiers.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
         castle.CommitDefenders(defenders);
-        // The gate guards fight beside the soldiers as swordsmen (they are not soldiers: no population, no food, nothing to send).
-        int guards = GuardUnit is { } sword ? castle.Guards : 0;
-        var fighters = defenders.ToDictionary(kv => kv.Key, kv => kv.Value);
-        if (guards > 0) fighters[GuardUnit!] = fighters.GetValueOrDefault(GuardUnit!) + guards;
         var battle = new ActiveBattle(_nextId++, NewPublicId(), BattleKind.Siege, Map.RegionOf(_corners[a.Target]).Gate,
-            a.Out.Direction, ElapsedSeconds, a, null, a.Target) { DefenderGuards = guards };
+            a.Out.Direction, ElapsedSeconds, a, null, a.Target);
 
         // The archers at the gate shoot from behind the wall.
         var defendSetup = new ArmySetup("Savunan") { Targeting = castle.DefensePriority is { } d ? TargetPriority.Prefer(d) : TargetPriority.Front,
             RangedDamageFactor = 1 + Rules.Walls.ArcherDefenseBonus };
-        foreach (var (type, n) in fighters) defendSetup.Add(type, n);
+        foreach (var (type, n) in defenders) defendSetup.Add(type, n);
         foreach (var (type, row) in castle.DefenseRows) defendSetup.PlaceIn(type, row);
-        Fight(battle, defendSetup, fighters);
+        Fight(battle, defendSetup, defenders);
 
         Begin(battle);
     }
@@ -1099,20 +1092,7 @@ public sealed partial class GameState
         }
         if (b.Kind == BattleKind.Siege)
         {
-            // Losses of swordsmen are shared between the guards and the soldiers in proportion (nobody can tell them apart in a battle).
-            var soldiersSurvived = b.DefenderSurvivors.ToDictionary(kv => kv.Key, kv => kv.Value);
-            var soldiersLost = defendLost.ToDictionary(kv => kv.Key, kv => kv.Value);
-            int guardsAlive = 0;
-            if (b.DefenderGuards > 0 && GuardUnit is { } sword)
-            {
-                int total = b.DefenderUnits.GetValueOrDefault(sword), lostSwords = defendLost.GetValueOrDefault(sword);
-                int guardsLost = Math.Min(b.DefenderGuards, (int)Math.Round(lostSwords * (double)b.DefenderGuards / Math.Max(1, total), MidpointRounding.AwayFromZero));
-                guardsAlive = b.DefenderGuards - guardsLost;
-                soldiersLost[sword] = Math.Max(0, lostSwords - guardsLost);
-                soldiersSurvived[sword] = Math.Max(0, b.DefenderSurvivors.GetValueOrDefault(sword) - guardsAlive);
-            }
-            defender.DefendersBack(soldiersSurvived, soldiersLost);
-            defender.GuardsBack(guardsAlive);
+            defender.DefendersBack(b.DefenderSurvivors, defendLost);
             // An attacker that won with nothing but raiders left (cavalry) cannot take the castle: it burns the fields and rides home.
             raid = b.Winner == BattleWinner.Attacker && b.AttackerSurvivors.Where(kv => kv.Value > 0).All(kv => kv.Key.Raider);
             fell = b.Winner == BattleWinner.Attacker && !raid;
@@ -1150,9 +1130,8 @@ public sealed partial class GameState
     {
         var taken = new Dictionary<UnitType, int>();
         if (Rules.War.PrisonerShare <= 0) return taken;
-        foreach (var (type, count) in b.DefenderUnits)
+        foreach (var (type, n) in b.DefenderUnits)
         {
-            int n = count - (type == GuardUnit ? b.DefenderGuards : 0); // the gate guards are no army: they are not taken
             int k = Math.Min(n, (int)Math.Round(n * Rules.War.PrisonerShare, MidpointRounding.AwayFromZero));
             if (k > 0) taken[type] = k;
         }

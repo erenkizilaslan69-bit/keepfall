@@ -14,7 +14,7 @@ namespace Keepfall.Views;
 public sealed record SpectatorCastleView(
     int Seat, bool Eliminated,
     IReadOnlyList<BuildingView> Buildings, IReadOnlyList<JobView> Jobs, IReadOnlyList<UnitView> Units,
-    string? Kingdom = null, int Guards = 0);
+    string? Kingdom = null);
 
 /// <param name="ElapsedSeconds">The game time this picture is of (the live game, or match.spectatorDelaySeconds behind it).</param>
 /// <param name="Movers">Every army and scout; they carry no route, like what a player sees of others.</param>
@@ -39,7 +39,7 @@ public static class SpectatorMapper
         {
             if (game.CastleOf(p.CastleKey) is not { } c) continue;
             castles.Add(new SpectatorCastleView(p.Seat, game.IsEliminated(p.CastleKey),
-                ViewMapper.BuildingsOf(c), ViewMapper.JobsOf(c), ViewMapper.UnitsOf(c), game.FactionOf(p.CastleKey), c.Guards));
+                ViewMapper.BuildingsOf(c), ViewMapper.JobsOf(c), ViewMapper.UnitsOf(c), game.FactionOf(p.CastleKey)));
         }
         var movers = game.AllMovers().Select(s =>
         {

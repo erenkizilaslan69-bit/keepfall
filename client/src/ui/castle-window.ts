@@ -55,7 +55,6 @@ export class CastleWin extends Win {
       <div class="pane" data-pane="defense">
         <p class="muted-ink small">Kale saldırıya uğrayınca evdeki askerler böyle dizilir. Kapıdaki okçular surun arkasından %25 fazla hasar verir; savaşı kaybedersen kale düşer.</p>
         ${rows}
-        <div class="row" data-f="guards-row" title="Her kalede kapıda bedava muhafızlar durur: kılıçlı gücünde, nüfusa sayılmaz, yemek yemez, gönderilemez. Ölen muhafız bir dakikada geri gelir."><span>Kapı muhafızları</span><b data-f="guards"></b></div>
         ${s.units.some((u) => SHOOTERS.includes(u.id)) ? `<div class="row"><span>${s.units.some((u) => u.id === 'okcu') ? 'Okçu hedefi' : 'Mancınık hedefi'}</span><select data-d="priority">${priority}</select></div>` : ''}
         <div class="row center"><button class="btn" data-act="save-defense">Kaydet</button></div>
       </div>`;
@@ -105,9 +104,6 @@ export class CastleWin extends Win {
       + (arming > 0 ? ` Kuşanıyor: ${arming}.` : '');
     this.q('[data-f="arming-row"]').classList.toggle('hidden', arming === 0);
     this.q('[data-f="arming-n"]').textContent = String(arming);
-
-    this.q('[data-f="guards-row"]').classList.toggle('hidden', !(s.guardsMax ?? 0));
-    this.q('[data-f="guards"]').textContent = `${s.guards ?? 0} / ${s.guardsMax ?? 0}`;
 
     // growth
     this.q('[data-f="pop"]').textContent = String(s.population);

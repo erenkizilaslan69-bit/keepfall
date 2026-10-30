@@ -34,7 +34,6 @@ public sealed class RaidModule : IBotModule
             var defenders = est.Units.ToDictionary(kv => kv.Key, kv => (int)Math.Ceiling(kv.Value * athome * rules.AttackMargin));
             var enemy = Tactics.Setup(ctx, "Savunma", defenders);
             enemy.RangedDamageFactor = ctx.WallArcherFactor;
-            ctx.AddGuards(enemy, ctx.Rules.Walls.Guards);
             int needed = Tactics.SmallestWinning(ctx, spare, enemy, rules.AttackRate).Needed;
             if (needed < 2) continue;
             double cost = needed + target.MarchSeconds * 0.1 - (athome < 1 ? 3 : 0);

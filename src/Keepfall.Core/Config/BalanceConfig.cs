@@ -214,10 +214,6 @@ public sealed class DeckConfig
 public sealed class WallsConfig
 {
     public double ArcherDefenseBonus { get; set; }
-    /// <summary>Free guards at every castle's gate (sword stats, not population, never sent out). 0 = none.</summary>
-    public int Guards { get; set; }
-    /// <summary>A fallen guard is back after this long (one at a time).</summary>
-    public double GuardRespawnSeconds { get; set; } = 60;
 }
 
 public sealed class KingdomsConfig
@@ -457,8 +453,6 @@ public static class BalanceConfigLoader
         if (sc.ReportError < 0 || sc.ReportError >= 1) errors.Add("scouting.reportError 0 ile 1 arasında olmalı.");
         if (sc.MaxScouts < 1) errors.Add("scouting.maxScouts en az 1 olmalı.");
         if (config.Walls.ArcherDefenseBonus < 0) errors.Add("walls.archerDefenseBonus negatif olamaz.");
-        if (config.Walls.Guards < 0) errors.Add("walls.guards negatif olamaz.");
-        if (config.Walls.GuardRespawnSeconds <= 0) errors.Add("walls.guardRespawnSeconds sıfırdan büyük olmalı.");
         if (config.Envoy.MaxCargo < 0) errors.Add("envoy.maxCargo negatif olamaz.");
         if (config.Envoy.MaxMessageLength is < 0 or > 500) errors.Add("envoy.maxMessageLength 0 ile 500 arasında olmalı.");
         if (sc.NoScoutLastPrepSeconds < 0) errors.Add("scouting.noScoutLastPrepSeconds negatif olamaz.");
@@ -563,7 +557,7 @@ public static class BalanceConfigLoader
                 config.Bots.StaleReportSeconds, config.Bots.BlindMargin, config.Bots.BlindRivalShare, config.Bots.BlindAfterWarSeconds,
                 config.Bots.Hard is null ? null : BotLevel(config.Bots.Hard, true), config.Bots.GiftThreshold, config.Bots.GiftPeaceSeconds, config.Bots.Decks.Select(d => (IReadOnlyList<string>)d).ToList()),
             new EnvoyRules(config.Envoy.MaxCargo, config.Envoy.MaxMessageLength, config.Envoy.ProfanityFilter),
-            new WallRules(config.Walls.ArcherDefenseBonus, config.Walls.Guards, config.Walls.GuardRespawnSeconds),
+            new WallRules(config.Walls.ArcherDefenseBonus),
             new DeckRules(config.Deck.Enabled, config.Deck.Size),
             new KingdomRules(config.Kingdoms.Enabled, config.Kingdoms.DecoyGoldPerSoldier, config.Kingdoms.DecoyMaxSoldiers, config.Kingdoms.DecoyCooldownSeconds,
                 config.Kingdoms.DecoyMax, config.Kingdoms.BribeGoldPerSoldier, config.Kingdoms.BribeMaxShare, config.Kingdoms.BribeCooldownSeconds,

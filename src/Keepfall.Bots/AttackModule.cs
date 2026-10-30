@@ -69,14 +69,13 @@ public sealed class AttackModule : IBotModule
                 double bold = ctx.Level.ScoreAware ? 1 : Math.Max(0, ctx.WarProgress - 0.3) / 0.7;
                 var enemy = Tactics.Setup(ctx, "Savunma", Scale(guess, (rules.AttackMargin - (rules.AttackMargin - 1.0) * bold) * (1 + doubt)));
                 enemy.RangedDamageFactor = ctx.WallArcherFactor; // its archers stand behind a wall
-                ctx.AddGuards(enemy, ctx.Rules.Walls.Guards);
                 needed = Tactics.SmallestWinning(ctx, spare, enemy, rules.AttackRate - 0.25 * bold).Needed;
                 if (needed == 0) wanted = wanted == 0 ? guess.Values.Sum() : Math.Min(wanted, guess.Values.Sum());
             }
             else
             {
                 // A head count: send everything if there are more of us than of them.
-                int theirs = guess.Values.Sum() + ctx.Rules.Walls.Guards; // the gate guards count as heads too
+                int theirs = guess.Values.Sum();
                 needed = spareTotal >= theirs * ctx.Level.HeadCountRatio ? spareTotal : 0;
                 if (needed == 0) wanted = wanted == 0 ? theirs : Math.Min(wanted, theirs);
             }
@@ -131,7 +130,6 @@ public sealed class AttackModule : IBotModule
             if (ctx.EstimateOf(target.Seat) is not { } est || ctx.Now - est.At > rules.StaleReportSeconds) continue;
             var enemy = Tactics.Setup(ctx, "Savunma", Scale(Grow(est, ctx.Now, true), rules.AttackMargin - (rules.AttackMargin - 1.0) * bold));
             enemy.RangedDamageFactor = ctx.WallArcherFactor;
-            ctx.AddGuards(enemy, ctx.Rules.Walls.Guards);
             int needed = Tactics.SmallestWinning(ctx, units, enemy, rules.AttackRate - 0.25 * bold).Needed;
             if (needed == 0 || needed > total) continue;
             double cost = needed + target.MarchSeconds * 0.1;

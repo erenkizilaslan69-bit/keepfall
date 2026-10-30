@@ -42,9 +42,7 @@ renginde göründü (izleyici dahil).
 5. **Kesirli ölçek bloklu görünüm veriyordu** (kullanıcının "kalitesiz/bloklu" şikâyetinin bir parçası): nearest-neighbour'da 1,9×/2,2×/1,6×
    ölçek bazı pikselleri öbürlerinden geniş çiziyor. Krallık bina/kale ve orman yerleri tam sayı ölçeğe (×2, ×3) alındı; bina boyutu
    seviyeyle büyümez (seviyenin eklediği bayrak/sandık/çit/fener kalır).
-6. **Muhafızlar botları bozdu**: botlar muhafızı bilmeyince (Orta, Kolay) saldırı hesapları şaştı; Orta vs Kolay %77,8 → %59,9 oldu. Botlar
-   muhafızı (herkese açık kural) hesaba katar hâle getirildi (`BotContext.AddGuards`; Kolay baş sayımına ekler). Tablolar
-   `docs/gece/muhafiz-*.txt`. **Sayılar değiştirilmedi.**
+6. **Muhafızlar** (bu turda eklenip sonra kullanıcı kararıyla kaldırıldı) botların denge ölçümünü bozuyordu; tablolar `docs/gece/muhafiz-*.txt`.
 
 ## Bulunup çözülmeyenler / gözlemler
 
@@ -58,13 +56,4 @@ renginde göründü (izleyici dahil).
 
 ## Ölçümler (muhafız)
 
-Bkz. CLAUDE.md "Cila turu" ve `docs/gece/muhafiz-*.txt` (400 maç, 2 oyuncu, 15 dk):
-
-| | Muhafızsız | 4 muhafız (botlar bilmiyor) | 4 muhafız (botlar biliyor) |
-|---|---|---|---|
-| Yalnız bekleyen bot: elemeyle biten | %31,3 | %3,3 | %10,5 |
-| Yalnız bekleyen botun kazanma oranı | %12,8 | %24,5 | %16,4 |
-| Karışık: elemeyle biten | %83,5 | %53,3 | %71,8 |
-| Orta vs Kolay (koltuk başına kazanma) | %77,8 / %22,3 | %59,9 / %40,1 | %86,8 / %13,3 |
-
-Yan seçenekler (botlar bilmeyen koşuda): 3 muhafız/90 sn → bekleyen %24,3, eleme %8,3; 2 muhafız/60 sn → bekleyen %19,6, eleme %12,8.
+Muhafızlar kaldırıldı; geçmiş ölçümler `docs/gece/muhafiz-*.txt` içinde, kaldırma sonrası doğrulama `muhafiz-kaldirildi-*.txt`.

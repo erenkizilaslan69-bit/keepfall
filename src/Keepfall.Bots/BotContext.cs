@@ -81,12 +81,6 @@ public sealed class BotContext(GameRules rules, BotInput input, BotMemory memory
     /// <summary>How much harder the archers at a gate shoot from behind a standing wall (a public rule).</summary>
     public double WallArcherFactor => 1 + Rules.Walls.ArcherDefenseBonus;
 
-    /// <summary>A castle's gate guards (a public rule: every castle has them standing unless they fell lately) fight with its soldiers as swordsmen.</summary>
-    public void AddGuards(Keepfall.Core.Combat.ArmySetup setup, int count)
-    {
-        if (count > 0 && Rules.FindUnit("kilicli") is { } sword) setup.Add(sword, count);
-    }
-
     /// <summary>A scout or an army is already on its way to this place.</summary>
     public bool SiteBusy(string siteId) =>
         Castle.Scouting.Missions.Any(m => m.SiteId == siteId) || Castle.War.Armies.Any(a => a.SiteId == siteId);

@@ -98,8 +98,7 @@ public sealed record CastleView(
     IReadOnlyList<string>? Deck = null,
     KingdomView? Kingdom = null,
     IReadOnlyList<RivalKingdomView>? Rivals = null,
-    IReadOnlyList<OddsView>? Odds = null,
-    int Guards = 0, int GuardsMax = 0);
+    IReadOnlyList<OddsView>? Odds = null);
 
 // Kingdoms. A player always knows their own (KingdomView, with the waiting times of its abilities). Another player's is only ever sent for a castle in
 // live sight (MapStateView.Kingdoms), in a scout report, and, for the Oracle, in Rivals. Nothing here marks a lie as one except for the Oracle.
@@ -199,8 +198,7 @@ public static class ViewMapper
             c.UnitTypes.Select(u => u.Id).ToList(),
             KingdomOf(room, game, player),
             game.OracleKnowledgeOf(player.CastleKey).Select(k => new RivalKingdomView(room.PlayerOfCastle(k.Player)?.Seat ?? 0, k.Faction, k.Deck)).ToList() is { Count: > 0 } rivals ? rivals : null,
-            game.OddsOf(player.CastleKey).Select(o => new OddsView(room.PlayerOfCastle(o.Target)?.Seat ?? 0, o.Known, o.Low, o.High)).ToList() is { Count: > 0 } odds ? odds : null,
-            c.Guards, c.GuardsMax);
+            game.OddsOf(player.CastleKey).Select(o => new OddsView(room.PlayerOfCastle(o.Target)?.Seat ?? 0, o.Known, o.Low, o.High)).ToList() is { Count: > 0 } odds ? odds : null);
     }
 
     private static KingdomView? KingdomOf(Room room, GameState game, RoomPlayer player)

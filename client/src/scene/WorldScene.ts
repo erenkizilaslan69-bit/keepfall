@@ -17,7 +17,6 @@ import { scoutSignHtml } from '../ui/scout-report';
 import { BattlePlayer } from './BattlePlayer';
 import { Effects } from './Effects';
 import { Chimneys } from './Chimneys';
-import { Guards } from './Guards';
 import { drawBuilding } from './BuildingArt';
 import { Fog } from './Fog';
 import { DebugLayer } from './DebugLayer';
@@ -132,7 +131,6 @@ export class WorldScene extends Phaser.Scene {
   private lastPhase: string | null = null;
   private fx!: Effects;
   private chimneys!: Chimneys;
-  private guards!: Guards;
   private debug: DebugLayer | null = null;
 
   /** <paramref name="color"/>: the player's colour; units and buildings are drawn in it. */
@@ -175,7 +173,6 @@ export class WorldScene extends Phaser.Scene {
     for (const type of Object.keys(SITES) as BuildingType[]) this.createSite(type);
     this.workers = new Workers(this, this.labels);
     this.soldiers = new Soldiers(this, this.labels);
-    this.guards = new Guards(this);
     this.movers = new Movers(this, this.color, this.labels);
     this.sites = new SiteLayer(this, this.labels, (id) => this.select({ kind: 'site', id }));
     this.movers.onSelect = (t) => this.select(t);
@@ -188,7 +185,7 @@ export class WorldScene extends Phaser.Scene {
     if (import.meta.env.DEV) {
       setTraceClock(() => this.gameNow().now);
       this.debug = new DebugLayer(this, this.movers, this.battles,
-        () => [...this.workers.debugSprites(), ...this.soldiers.debugSprites(), ...this.guards.debugSprites(), ...this.sites.debugSprites(), ...[...this.regions.values()].flatMap((r) => r.debugSprites())],
+        () => [...this.workers.debugSprites(), ...this.soldiers.debugSprites(), ...this.sites.debugSprites(), ...[...this.regions.values()].flatMap((r) => r.debugSprites())],
         () => this.clock.speed, () => this.gameNow().now);
       this.debug.setRoads(this.layout.roads.map((r) => r.points));
       this.debug.setForests(this.layout.features.map((f) => ({ center: f.center, radius: f.radius })));
@@ -249,7 +246,8 @@ export class WorldScene extends Phaser.Scene {
   /** Our own castle and buildings take our kingdom's pictures (the plain Tiny Swords ones when the match has no kingdoms). */
   setOwnKingdom(id: string | null): void {
     const look = isKingdomLook(id) ? id : null;
-    if (look === this.ownKingdom && this.castleSprite.getData('rest') !== undefined) return;
+    // Done only when the castle already wears the kingdom's picture; if that was not loaded yet the plain castle stays and the next picture tries again.
+    if (look === this.ownKingdom && this.castleSprite.getData('rest') !== undefined && (look === null || this.castleSprite.texture.key.startsWith('kd:'))) return;
     this.ownKingdom = look;
     this.walls.get(this.mySeat)?.setLook(look);
     const key = look ? kingdomTexture(this, look, 'castle', this.color) : null;
@@ -583,7 +581,6 @@ export class WorldScene extends Phaser.Scene {
     for (const b of s.buildings) this.updateBuilding(b, s);
     this.workers.sync(s.jobs);
     this.soldiers.sync(s.units);
-    this.guards.sync(s.guards ?? 0);
     this.movers.setGameSpeed(s.speed);
     this.setOwnKingdom(s.kingdom?.id ?? null);
     this.clock = { elapsed: s.elapsedSeconds, at: performance.now(), speed: s.speed };

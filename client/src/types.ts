@@ -213,9 +213,6 @@ export interface CastleView {
   rivals?: { seat: number; faction: string; deck: string[] }[] | null;
   /** Oracle only: the chance (a range) our soldiers at home beat what the latest scout report says is at that castle. */
   odds?: { seat: number; known: boolean; low: number; high: number }[] | null;
-  /** The gate guards standing now, and the most there are (free swordsmen at the gate; no population). */
-  guards?: number;
-  guardsMax?: number;
 }
 
 export interface LetterView {
@@ -311,7 +308,6 @@ export interface SpectatorCastleView {
   buildings: BuildingView[]; jobs: JobView[]; units: UnitView[];
   /** The castle's kingdom (a spectator is told all of them). */
   kingdom?: string | null;
-  guards?: number;
 }
 export interface SpectatorStateView {
   elapsedSeconds: number; castles: SpectatorCastleView[]; movers: SeenMoverView[]; battles: BattleMarkerView[]; started: BattleStartedView[];

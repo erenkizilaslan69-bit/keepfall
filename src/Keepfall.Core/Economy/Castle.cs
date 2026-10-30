@@ -68,7 +68,6 @@ public sealed class Castle
         _rules = rules;
         var m = rules.Match;
         _workers[Job.Idle] = m.StartingPopulation;
-        Guards = rules.Walls.Guards;
         Food = m.StartingFood;
         Wood = m.StartingWood;
         Iron = m.StartingIron;
@@ -96,19 +95,6 @@ public sealed class Castle
     /// <summary>Soldiers down at the gate in a battle: they cannot be sent or disarmed until it is over.</summary>
     public int SoldiersDefending { get; private set; }
 
-    // ---- gate guards ----
-    /// <summary>Guards standing at the gate now (they fight like swordsmen, but are no soldiers: not in the population, never sent, eat nothing).</summary>
-    public int Guards { get; private set; }
-    /// <summary>Seconds until the next fallen guard is back (0 when all stand).</summary>
-    public double GuardRespawnLeft { get; private set; }
-    public int GuardsMax => _rules.Walls.Guards;
-
-    /// <summary>The guards come out for a battle at the gate; afterwards <paramref name="survivors"/> of them stand again and the rest are being replaced.</summary>
-    internal void GuardsBack(int survivors)
-    {
-        Guards = Math.Clamp(survivors, 0, GuardsMax);
-        if (Guards < GuardsMax && GuardRespawnLeft <= 0) GuardRespawnLeft = _rules.Walls.GuardRespawnSeconds;
-    }
     /// <summary>How the soldiers at home line up when attacked: row per type, archers' preferred target.</summary>
     public IReadOnlyDictionary<UnitType, Row> DefenseRows => _defenseRows;
     public UnitType? DefensePriority { get; private set; }
@@ -350,12 +336,6 @@ public sealed class Castle
         Food += food; Wood += wood; Iron += iron;
         Stats.ProducedFood += food; Stats.ProducedWood += wood; Stats.ProducedIron += iron;
         if (ScorchLeft > 0) ScorchLeft = Math.Max(0, ScorchLeft - dt);
-        if (Guards < GuardsMax)
-        {
-            if (GuardRespawnLeft <= 0) GuardRespawnLeft = _rules.Walls.GuardRespawnSeconds;
-            GuardRespawnLeft -= dt;
-            if (GuardRespawnLeft <= 1e-9) { Guards++; GuardRespawnLeft = Guards < GuardsMax ? _rules.Walls.GuardRespawnSeconds : 0; }
-        }
 
         RunForge(ForgeSpeed * dt);
 

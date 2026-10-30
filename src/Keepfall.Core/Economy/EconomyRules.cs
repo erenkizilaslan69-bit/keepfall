@@ -33,10 +33,9 @@ public sealed record WarRules(
 
 /// <summary>
 /// The wall round every castle: it always stands (a castle falls when its attacker wins at the gate). <see cref="ArcherDefenseBonus"/>:
-/// the archers defending the gate shoot this much harder from behind it (0.25 = +25 %). <see cref="Guards"/>: free gate guards every castle has (fighting like
-/// swordsmen, not part of the population, never sent out); a dead one comes back <see cref="GuardRespawnSeconds"/> later, one at a time.
+/// the archers defending the gate shoot this much harder from behind it (0.25 = +25 %).
 /// </summary>
-public sealed record WallRules(double ArcherDefenseBonus = 0, int Guards = 0, double GuardRespawnSeconds = 60);
+public sealed record WallRules(double ArcherDefenseBonus = 0);
 
 /// <summary>
 /// The deck: before the match every player picks <see cref="Size"/> of the units; only those can be forged, armed or hired.
