@@ -499,9 +499,28 @@ public sealed class Room
 
     private string CleanName(string? name, int seat)
     {
-        var clean = new string((name ?? "").Where(c => !char.IsControl(c)).ToArray()).Trim();
-        if (clean.Length > Options.MaxNameLength) clean = clean[..Options.MaxNameLength].TrimEnd();
+        var clean = StripUnsafe(name ?? "").Trim();
+        if (clean.Length > Options.MaxNameLength)
+        {
+            int cut = Options.MaxNameLength;
+            if (char.IsHighSurrogate(clean[cut - 1])) cut--; // never split an emoji in two: a lone half cannot be sent as JSON
+            clean = clean[..cut].TrimEnd();
+        }
         return clean.Length == 0 ? $"Oyuncu {seat}" : clean;
+    }
+
+    /// <summary>Drops control and direction-override characters and any half of a surrogate pair (the browser could not show them and JSON cannot carry a lone half).</summary>
+    private static string StripUnsafe(string s)
+    {
+        var sb = new System.Text.StringBuilder(s.Length);
+        for (int i = 0; i < s.Length; i++)
+        {
+            char c = s[i];
+            if (char.IsHighSurrogate(c) && i + 1 < s.Length && char.IsLowSurrogate(s[i + 1])) { sb.Append(c).Append(s[++i]); continue; }
+            if (char.IsSurrogate(c) || char.IsControl(c) || char.GetUnicodeCategory(c) == System.Globalization.UnicodeCategory.Format) continue;
+            sb.Append(c);
+        }
+        return sb.ToString();
     }
 
     private static bool FixedTimeEquals(string a, string b) =>

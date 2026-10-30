@@ -184,6 +184,9 @@ public class EnvoyMessageTests
         var rules = BalanceConfigLoader.LoadFromFile(BalanceConfigLoader.FindDefaultPath(AppContext.BaseDirectory)!);
         Assert.False(rules.Envoy.ProfanityFilter);
         Assert.Equal("fuck you", EnvoyMessage.Check("fuck you", Off).Text);
+        // An emoji is fine, half of one cannot be sent as JSON.
+        Assert.True(EnvoyMessage.Check("selam \U0001F600", Off).Ok);
+        Assert.False(EnvoyMessage.Check("selam \ud83d", Off).Ok);
     }
 
     [Theory]

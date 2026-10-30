@@ -106,6 +106,19 @@ public class RoomTests
     }
 
     [Fact]
+    public void Names_never_hold_half_an_emoji_or_hidden_characters()
+    {
+        var room = NewRoom();
+        // 15 letters then an emoji (two UTF-16 units) would be cut in the middle at 16.
+        var a = Join(room, new string('a', 15) + "\U0001F600");
+        Assert.Equal(new string('a', 15), a.Name);
+        Ok(room.SetName(a.Token, "x\ud800y‮z\u0000"));
+        Assert.Equal("xyz", a.Name);
+        Ok(room.SetName(a.Token, "Ay\U0001F600"));
+        Assert.Equal("Ay\U0001F600", a.Name);
+    }
+
+    [Fact]
     public void Host_passes_on_only_after_the_host_has_been_gone_a_while()
     {
         var room = NewRoom();

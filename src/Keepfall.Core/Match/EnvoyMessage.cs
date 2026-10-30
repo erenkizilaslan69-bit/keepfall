@@ -15,9 +15,12 @@ public static class EnvoyMessage
         string text = (message ?? "").Trim();
         if (text.Length == 0) return new(true, null, null);
         if (text.Length > rules.MaxMessageLength) return new(false, null, $"Mesaj en fazla {rules.MaxMessageLength} karakter olabilir.");
-        foreach (var ch in text)
+        for (int i = 0; i < text.Length; i++)
         {
+            var ch = text[i];
+            if (char.IsHighSurrogate(ch) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1])) { i++; continue; }
             var category = char.GetUnicodeCategory(ch);
+            if (char.IsSurrogate(ch)) return new(false, null, "Mesajda geçersiz karakter var.");
             if (char.IsControl(ch) || category is UnicodeCategory.Format or UnicodeCategory.LineSeparator or UnicodeCategory.ParagraphSeparator
                 or UnicodeCategory.PrivateUse or UnicodeCategory.OtherNotAssigned)
                 return new(false, null, "Mesajda satır sonu, denetim ya da görünmez karakter olamaz.");
