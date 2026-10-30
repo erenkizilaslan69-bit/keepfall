@@ -51,24 +51,16 @@
   filter: drop-shadow(0 calc(4px * var(--u, 1)) calc(5px * var(--u, 1)) rgba(0, 0, 0, .3));
 }
 
-/* ---- the minimap ring ---------------------------------------------------------------------------------------------- */
+/* ---- the minimap in the panel frame (square: the whole map fits, nothing is cut off) -------------------------------- */
 .kf-minimap {
-  border: 0; border-radius: 0; background: none; box-shadow: none; overflow: visible;
-}
-.kf-minimap::before {
-  content: ''; position: absolute; inset: 0; top: 0; left: 0; width: 100%; height: 100%; margin: 0; border: 0; border-radius: 0; z-index: 2; pointer-events: none;
-  background: url('/art/ui/minimap-frame.png') center / 100% 100% no-repeat; image-rendering: pixelated;
+  --frame: calc(16px * var(--u, 1));
+  display: block; border-radius: 0; padding: 0; overflow: visible; aspect-ratio: 1;
+  border: var(--frame) solid transparent; border-image: url('/art/ui/panel-frame-half.png') 12 / var(--frame) / 0 stretch;
+  background: #12354a padding-box; box-shadow: none; image-rendering: pixelated;
   filter: drop-shadow(0 calc(5px * var(--u, 1)) calc(7px * var(--u, 1)) rgba(0, 0, 0, .4));
 }
-.kf-minimap::after {
-  content: ''; position: absolute; left: 50%; top: 50%; width: 61%; height: 61%; transform: translate(-50%, -50%); border-radius: 50%; z-index: 0; border: 0; margin: 0;
-  background: radial-gradient(circle at 50% 40%, #1d5a76, #12354a 75%);
-}
-/* the square map is shrunk to fit whole inside the circle (its corners touch the circle, nothing is cut off) */
-.kf-minimap > .minimap {
-  position: absolute; left: 50%; top: 50%; width: 42.8%; height: 42.8%; transform: translate(-50%, -50%); border: 0; border-radius: 0; box-shadow: none;
-  background: #12354a; z-index: 1;
-}
+.kf-minimap::before, .kf-minimap::after { content: none; display: none; }
+.kf-minimap > .minimap { position: static; display: block; width: 100%; height: 100%; border: 0; border-radius: 0; box-shadow: none; background: #12354a; }
 
 /* ---- the unit cards ------------------------------------------------------------------------------------------------- */
 .ucard { aspect-ratio: 137 / 186; }
