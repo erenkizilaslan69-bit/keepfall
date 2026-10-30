@@ -427,3 +427,6 @@ html.in-menu .settings-fab.btn-round { display: inline-grid; }
   .screen.lobby .deck-cards { grid-template-columns: repeat(4, 1fr); gap: calc(8px * var(--u, 1)); padding-bottom: calc(4px * var(--u, 1)); }
   .screen.lobby .players li { padding-top: calc(4px * var(--u, 1)); padding-bottom: calc(4px * var(--u, 1)); }
 }
+
+/* ---- full-screen colour washes at the big moments (ui/transitions.ts) ----------------------------------------------- */
+.kf-wash { position: fixed; inset: 0; z-index: 60; pointer-events: none; }

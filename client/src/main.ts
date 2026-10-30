@@ -23,6 +23,7 @@ import { setBotSeats } from './format';
 import { music, sfx } from './audio';
 import { mountGuideButton } from './ui/guide';
 import { CloudCurtain } from './ui/clouds';
+import { fadeFrom } from './ui/transitions';
 import { warmUp } from './preload';
 import { mountScenery } from './ui/scenery';
 import { loadHorse } from './scene/HorseArt';
@@ -278,6 +279,7 @@ function showEnd(r: RoomView): void {
   document.documentElement.classList.add('in-menu');
   screen = 'end';
   end = new EndScreen(app, net, net.seat);
+  fadeFrom('#0b0a14', 900);
   if (summary) end.setSummary(summary);
   end.update(r);
 }

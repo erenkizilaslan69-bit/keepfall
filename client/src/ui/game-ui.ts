@@ -1,3 +1,4 @@
+import { fadeFrom } from './transitions';
 import { botMark, esc } from '../format';
 import { sfx } from '../audio';
 import { guarded } from '../error-report';
@@ -303,6 +304,7 @@ export class GameUi {
   setSpectating(lagSeconds: number): void {
     if (!this.spectating) {
       this.spectating = true;
+      fadeFrom('#000000', 900, 0.9);
       this.windows.close();
       window.clearInterval(this.waitTimer);
       this.waitTimer = 0;

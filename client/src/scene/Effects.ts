@@ -189,14 +189,15 @@ export class Effects {
   }
 
   /** The castle falls: fireballs along its walls, dust, a hard shake, and the stone sinks and goes dark. */
-  collapse(image: Phaser.GameObjects.Image, x: number, y: number, restScale: number): void {
+  collapse(image: Phaser.GameObjects.Image, x: number, y: number, restScale: number, own = false): void {
     const blasts: [number, number, number][] = [[-120, -100, 1.3], [110, -130, 1.5], [0, -190, 1.7], [-50, -60, 1.2], [70, -50, 1.4]];
     blasts.forEach(([dx, dy, sc], i) => this.scene.time.delayedCall(i * 170, () => {
       this.explosion(x + dx, y + dy, sc);
       this.dust(x + dx, y + dy + 20, sc * 1.4, 0x8a7a66);
       this.sparks?.explode(10, x + dx, y + dy);
     }));
-    this.shake(900, 0.012);
+    if (own) this.shake(1000, 0.014);
+    else if (this.seen(x, y, 200)) this.shake(500, 0.005); // a neighbour's castle in view: a smaller tremor; far away, none
     this.scene.tweens.add({
       targets: image, scaleY: restScale * 0.8, duration: 1100, ease: 'Cubic.easeIn',
       onUpdate: (tw) => { const v = 255 - Math.round(tw.progress * 120); image.setTint(Phaser.Display.Color.GetColor(v, v, v)); },
