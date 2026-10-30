@@ -145,6 +145,6 @@ export const JOB_LOOK: Record<Job, JobLook> = {
   idle: { idle: 'pawn-idle', run: 'pawn-run' },
   farmer: { building: 'farm', idle: 'pawn-idle-knife', run: 'pawn-run-knife', work: 'pawn-work-knife', carry: 'pawn-run-meat' },
   lumberjack: { building: 'lumberCamp', idle: 'pawn-idle-axe', run: 'pawn-run-axe', work: 'pawn-work-axe', carry: 'pawn-run-wood' },
-  miner: { building: 'mine', idle: 'pawn-idle-pickaxe', run: 'pawn-run-pickaxe', work: 'pawn-work-pickaxe', carry: 'pawn-run-gold' },
+  miner: { building: 'mine', idle: 'pawn-idle-pickaxe', run: 'pawn-run-pickaxe', work: 'pawn-work-pickaxe', carry: 'pawn-run-ore' },
   blacksmith: { building: 'forge', idle: 'pawn-idle-hammer', run: 'pawn-run-hammer', work: 'pawn-work-hammer' },
 };

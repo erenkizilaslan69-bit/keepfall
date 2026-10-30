@@ -200,8 +200,36 @@ export function createAnimations(scene: Phaser.Scene, color: PlayerColor, others
   createSheetAnimations(scene, [...sheets(color), ...moverSheets(others)]);
 }
 
+/**
+ * The miners carry grey ore, not gold: the pack's gold-carrying pawn gets its yellow turned to stone grey (a new sheet "...pawn-run-ore" with its
+ * animation). Gold is what the forest gives, the mine gives iron.
+ */
+function oreSheet(scene: Phaser.Scene, goldKey: string): void {
+  const key = goldKey.replace('pawn-run-gold', 'pawn-run-ore');
+  if (scene.textures.exists(key) || !scene.textures.exists(goldKey)) return;
+  const img = scene.textures.get(goldKey).getSourceImage() as HTMLImageElement;
+  const c = document.createElement('canvas');
+  c.width = img.width; c.height = img.height;
+  const g = c.getContext('2d', { willReadFrequently: true })!;
+  g.drawImage(img, 0, 0);
+  const data = g.getImageData(0, 0, c.width, c.height), d = data.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], gr = d[i + 1], b = d[i + 2];
+    const max = Math.max(r, gr, b), min = Math.min(r, gr, b);
+    if (!d[i + 3] || max < 90 || (max - min) / max < 0.42 || b > gr || r < gr * 0.9) continue; // only the yellow-orange of the gold
+    const l = 0.299 * r + 0.587 * gr + 0.114 * b;
+    d[i] = Math.min(255, l * 0.86 + 6); d[i + 1] = Math.min(255, l * 0.92 + 8); d[i + 2] = Math.min(255, l * 1.02 + 18);
+  }
+  g.putImageData(data, 0, 0);
+  const tex = scene.textures.addCanvas(key, c)!;
+  const frames = Math.floor(c.width / 192);
+  for (let f = 0; f < frames; f++) tex.add(f, 0, f * 192, 0, 192, c.height);
+  scene.anims.create({ key, frames: scene.anims.generateFrameNumbers(key, { start: 0, end: frames - 1 }), frameRate: 10, repeat: -1 });
+}
+
 function createSheetAnimations(scene: Phaser.Scene, list: SheetDef[]): void {
   const rates: Record<string, number> = { 'pawn-run': 12, dust: 14, explosion: 14 };
+  for (const s of list) if (/pawn-run-gold$/.test(s.key)) oreSheet(scene, s.key);
   for (const s of list) {
     if (scene.anims.exists(s.key)) continue;
     if (s.key === 'tiles') continue;
