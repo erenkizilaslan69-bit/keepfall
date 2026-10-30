@@ -79,6 +79,8 @@ export class BattlePlayer {
   /** Every battle that has been replayed here, for good: its "Savaş" cloud must not come back after the replay ends. */
   private played = new Set<string>();
   hasPlayed(id: string): boolean { return this.played.has(id); }
+  /** A siege replay tells the scene how far the fight is (the scene smokes and burns the castle under attack): seat of the castle, 0..1, whether the attacker wins, over. */
+  onSiege: ((seat: number, progress: number, attackerWins: boolean, done: boolean) => void) | null = null;
 
   /**
    * <paramref name="clock"/>: the server's game time right now (seconds) and the game speed.
@@ -201,6 +203,7 @@ export class BattlePlayer {
     const d = v.deaths;
     for (; r.death < d.length && d[r.death] <= tick; r.death += 2) this.fall(r.fighters[d[r.death + 1]], speed);
 
+    if (v.kind === 'siege') this.onSiege?.(v.sides[1].seat, Math.min(1, (now - v.startedAt) / Math.max(1, v.fightSeconds)), v.winner === 'attacker', false);
     if (now >= v.startedAt + v.fightSeconds) this.end(id, r);
   }
 
@@ -311,6 +314,7 @@ export class BattlePlayer {
     if (r.ended) return;
     r.ended = true;
     this.endedAt.set(id, performance.now());
+    if (r.view.kind === 'siege') this.onSiege?.(r.view.sides[1].seat, 1, r.view.winner === 'attacker', true);
     trace('battle-replay-end', id, `${r.view.kind}, ${r.fighters.filter((f) => f && !f.dead && f.sprite.active).length} left standing`);
     const left = r.fighters.filter((f): f is Fighter => !!f && !f.dead);
     this.scene.tweens.add({ targets: left.map((f) => f.sprite), alpha: 0, duration: 400, onComplete: () => left.forEach((f) => f.sprite.destroy()) });

@@ -183,6 +183,7 @@ export class WorldScene extends Phaser.Scene {
     this.movers.setEffects(this.fx);
     this.chimneys = new Chimneys(this);
     this.battles = new BattlePlayer(this, this.color, () => this.gameNow(), (seat) => this.courtyardOf(seat), this.fx);
+    this.battles.onSiege = (seat, progress, wins, done) => this.siegeFx(seat, progress, wins, done);
     if (import.meta.env.DEV) {
       setTraceClock(() => this.gameNow().now);
       this.debug = new DebugLayer(this, this.movers, this.battles,
@@ -324,6 +325,18 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * While a siege is replayed its castle smokes, and burns when the attacker is winning (a lost siege only smokes, and the smoke clears a few seconds
+   * after). A castle that falls goes on smouldering. Cosmetic: it only follows the replay the players in that battle already watch.
+   */
+  private siegeFx(seat: number, progress: number, wins: boolean, done: boolean): void {
+    const img = seat === this.mySeat ? this.castleSprite : this.otherCastles.get(seat)?.image;
+    if (!img) return;
+    const id = `siege:${seat}`;
+    if (done) { if (!wins) this.time.delayedCall(4000, () => this.fx.clearDamage(id)); return; }
+    this.fx.damage(id, img.x, img.y, 1 - progress * (wins ? 0.8 : 0.5), false);
+  }
+
   /** Another player's castle falls (everybody sees it: it is public): fireballs and a collapse; one already down when we first look is just a ruin. */
   private markFallen(seat: number, c: { image: Phaser.GameObjects.Image; fallen?: boolean }, fallen: boolean): void {
     const was = c.fallen;
@@ -331,8 +344,8 @@ export class WorldScene extends Phaser.Scene {
     c.image.setAlpha(fallen ? 0.45 : 1);
     if (fallen) this.walls.get(seat)?.ruin(this.fx);
     const rest = c.image.getData('rest') ?? CASTLE.scale;
-    if (fallen && was === false) this.fx.collapse(c.image, c.image.x, c.image.y, rest);
-    else if (fallen && was === undefined) this.fx.ruin(c.image, rest);
+    if (fallen && was === false) { this.fx.collapse(c.image, c.image.x, c.image.y, rest); this.time.delayedCall(1300, () => this.fx.damage(`siege:${seat}`, c.image.x, c.image.y, 0, true)); }
+    else if (fallen && was === undefined) { this.fx.ruin(c.image, rest); this.fx.damage(`siege:${seat}`, c.image.x, c.image.y, 0, true); }
   }
 
   /** The sign under another player's castle: their name, and the last scout report we have of it. */
@@ -596,8 +609,8 @@ export class WorldScene extends Phaser.Scene {
     });
     if (s.eliminated) this.walls.get(this.mySeat)?.ruin(this.fx);
     const rest = this.castleSprite.getData('rest') ?? CASTLE.scale;
-    if (s.eliminated && this.ownFallen === false) this.fx.collapse(this.castleSprite, CASTLE.x, CASTLE.y, rest);
-    else if (s.eliminated && this.ownFallen === null) this.fx.ruin(this.castleSprite, rest);
+    if (s.eliminated && this.ownFallen === false) { this.fx.collapse(this.castleSprite, CASTLE.x, CASTLE.y, rest); this.time.delayedCall(1300, () => this.fx.damage(`siege:${this.mySeat}`, CASTLE.x, CASTLE.y, 0, true)); }
+    else if (s.eliminated && this.ownFallen === null) { this.fx.ruin(this.castleSprite, rest); this.fx.damage(`siege:${this.mySeat}`, CASTLE.x, CASTLE.y, 0, true); }
     this.ownFallen = s.eliminated;
     this.castleSprite.setAlpha(s.eliminated ? 0.55 : 1);
   }

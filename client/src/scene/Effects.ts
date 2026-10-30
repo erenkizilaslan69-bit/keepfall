@@ -182,6 +182,12 @@ export class Effects {
     this.burning.set(id, list);
   }
 
+  /** The smoke and flames of a castle under attack go (the fight was lost by the attacker). */
+  clearDamage(id: string): void {
+    this.burning.get(id)?.forEach((s) => s.destroy());
+    this.burning.delete(id);
+  }
+
   /** The castle falls: fireballs along its walls, dust, a hard shake, and the stone sinks and goes dark. */
   collapse(image: Phaser.GameObjects.Image, x: number, y: number, restScale: number): void {
     const blasts: [number, number, number][] = [[-120, -100, 1.3], [110, -130, 1.5], [0, -190, 1.7], [-50, -60, 1.2], [70, -50, 1.4]];
