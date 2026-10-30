@@ -43,7 +43,7 @@ ws.addEventListener('message', (m) => {
 });
 const send = (method, params = {}) => new Promise((r) => { const i = ++id; pending.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
 const run = async (expression) => {
-  const r = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
+  const r = await Promise.race([send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }), new Promise((res) => setTimeout(() => res({ result: { exceptionDetails: { text: 'TIMEOUT 25 s' } } }), 25000))]);
   if (r.result?.exceptionDetails) return 'ERR ' + (r.result.exceptionDetails.exception?.description ?? r.result.exceptionDetails.text);
   return r.result?.result?.value;
 };
@@ -91,8 +91,8 @@ await run(`window.__qaMode = ${JSON.stringify(MODE)}; window.__qa = { done: {}, 
   if (!c) return { gone: true };
   const q = window.__qa, t = c.elapsedSeconds, out = { t: Math.round(t), phase: c.phase, elim: c.eliminated };
   if (c.eliminated || c.phase === 'ended') return out;
-  const once = (key, f) => { if (!q.done[key]) { q.done[key] = 1; return f(); } };
-  const every = (key, sec, f) => { if (t - (q.last[key] ?? -1e9) >= sec) { q.last[key] = t; return f(); } };
+  const once = (key, f) => { if (!q.done[key]) { q.done[key] = 1; q.stage = key; return f(); } };
+  const every = (key, sec, f) => { if (t - (q.last[key] ?? -1e9) >= sec) { q.last[key] = t; q.stage = key; return f(); } };
   const fail = (what, r) => { if (r && r.ok === false) { const k = what + ':' + r.error; q.fail[k] = (q.fail[k] ?? 0) + 1; if (q.fail[k] === 1) q.events.push('FAIL ' + what + ' → ' + r.error); } return r; };
   const idle = c.jobs.find((j) => j.job === 'idle')?.count ?? 0;
   const deck = c.deck ?? c.units.map((u) => u.id);
@@ -101,14 +101,14 @@ await run(`window.__qaMode = ${JSON.stringify(MODE)}; window.__qa = { done: {}, 
   const myKingdom = c.kingdom?.id;
   const die = window.__qaMode === 'die';
   // economy: spread the people, upgrade, make weapons
-  await once('jobs', async () => { for (const [j, k] of [['farmer', 3], ['lumberjack', 3], ['miner', 2], ['blacksmith', 2]]) fail('move ' + j, await n.moveWorkers('idle', j, k)); });
+  await once('jobs', async () => { for (const [j, k] of [['farmer', 4], ['lumberjack', 3], ['miner', 3], ['blacksmith', 2]]) fail('move ' + j, await n.moveWorkers('idle', j, k)); });
   await every('upg', 25, async () => { for (const b of ['farm', 'forge', 'lumberCamp', 'mine']) { const r = await n.upgradeBuilding(b); if (r.ok) { q.events.push('upgrade ' + b); break; } } });
   if (!die) {
     await every('weapon', 2, async () => {
       for (const id of deck) { const u = c.units.find((x) => x.id === id); if (u && c.queue.length < 4 && c.resources.iron >= u.iron && c.resources.wood >= u.wood) { fail('queue ' + id, await n.queueWeapon(id, 1)); break; } }
     });
     await every('arm', 3, async () => {
-      for (const u of c.units) if (u.weapons > 0 && t > 150) { const r = await n.armWorkers(u.id, Math.min(u.weapons, 3), from); if (r.ok) q.events.push('arm ' + u.id); else fail('arm', r); break; }
+      for (const u of c.units) if (u.weapons > 0 && t > 150) { if (idle < 2) break; const r = await n.armWorkers(u.id, Math.min(u.weapons, 3, idle), 'idle'); if (r.ok) q.events.push('arm ' + u.id); else fail('arm', r); break; }
     });
     // scouts, explore, chests, envoy, mercenaries
     await every('scout', 70, async () => { const seat = rivals[Math.floor(Math.random() * rivals.length)]; if (seat) fail('scout', await n.sendScout(seat, from)); });
@@ -164,7 +164,7 @@ const MAX_MS = 16 * 60_000;
 while (Date.now() - t0 < MAX_MS) {
   const raw = await run(`(async()=>JSON.stringify(await window.__qaStep()))()`);
   try { status = JSON.parse(raw); } catch { status = { error: raw }; }
-  if (status.error) problems.push('STEP ' + String(status.error).slice(0, 300));
+  if (status.error) { const st = await run(`window.__qa?.stage`); problems.push('STEP ' + String(status.error).slice(0, 300) + ' (stage ' + st + ')'); }
   const ended = await run(`!!document.querySelector('.screen.end')`);
   if (ended || status.phase === 'ended') { await sleep(1500); await shot('end'); break; }
   if (status.phase && status.phase !== lastPhase) { lastPhase = status.phase; await shot('phase-' + status.phase); }

@@ -206,6 +206,11 @@ function ramp(look: string, l: number): [number, number, number] {
   return mix(stops[i], stops[i + 1], t - i) as [number, number, number];
 }
 
+/** A stone colour (r, g, b) of the pack's teal stone in a kingdom's stone, by its brightness (for the paving that is painted in code). */
+export function stoneColor(look: string, c: number[]): [number, number, number] {
+  return ramp(look, Math.pow((0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255, 0.9));
+}
+
 /** A copy of a picture whose stone pixels take the kingdom's ramp by their brightness. `keepTeam`: warm pixels (a tower's wooden top) stay as they are. */
 function restone(src: CanvasImageSource & { width: number; height: number }, look: string, keepTeam: boolean): HTMLCanvasElement {
   const c = document.createElement('canvas');

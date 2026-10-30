@@ -63,6 +63,7 @@ export class WallRing {
   setLook(look: string | null): void {
     if (look === this.look) return;
     this.look = look;
+    this.paving.setLook(look);
     if (this.level > 0) { const level = this.level; this.level = 0; this.setLevel(level); if (this.fallen) { this.fallen = false; this.ruin(); } }
   }
 
