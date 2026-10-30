@@ -160,6 +160,7 @@ const windows = [
   `{kind:'building',type:'farm'}`, `{kind:'building',type:'forge'}`, `{kind:'building',type:'mine'}`, `{kind:'castle'}`,
   `{kind:'forest',id:'northEast'}`, `{kind:'building',type:'lumberCamp'}`,
 ];
+let adShots = 0, lastAd = 0;
 let windowNo = 0, lastShot = Date.now(), lastBattles = 0, lastPhase = '', status = {}, spectated = false, spectatorShots = 0;
 const MAX_MS = 16 * 60_000;
 while (Date.now() - t0 < MAX_MS) {
@@ -181,6 +182,17 @@ while (Date.now() - t0 < MAX_MS) {
     log.push('spectator buttons: ' + JSON.stringify(btns));
     log.push('own farm sprites: ' + (await run(`JSON.stringify([...window.keepfallScene.buildings.get('farm').sprites.map((x) => x.texture.key)].slice(0, 4))`)));
     log.push('own kingdom in scene: ' + (await run(`JSON.stringify({own: window.keepfallScene.ownKingdom, state: window.keepfallScene.state?.kingdom?.id ?? null, elim: window.keepfallScene.state?.eliminated})`)));
+  }
+  // AD=1: pictures for the shop page / trailer: whenever a battle replay plays, look at it close up (at most one picture per 7 s, up to 14)
+  if (process.env.AD && status.phase === 'war' && adShots < 14 && Date.now() - lastAd > 7000) {
+    const at = await run(`(()=>{const b=window.keepfallScene?.battles?.active?.find((x)=>!x.ended); return b ? JSON.stringify({x:b.at.x,y:b.at.y,kind:b.kind}) : null;})()`);
+    if (at) {
+      const p = JSON.parse(at);
+      await run(`(()=>{const s=window.keepfallScene; s.cameras.main.setZoom(1.25); s.lookAt({x:${p.x},y:${p.y}}); return 1;})()`);
+      await sleep(1800);
+      lastAd = Date.now(); adShots++;
+      await shot(`ad-battle-${p.kind}`);
+    }
   }
   if (spectated) {
     if (spectatorShots < 8 && Date.now() - lastShot > 6000) {

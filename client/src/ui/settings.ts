@@ -9,7 +9,7 @@ declare const __BUILD_DATE__: string;
 const VERSION = '0.9';
 
 const CREDITS: [string, string][] = [
-  ['Görseller', 'Tiny Swords (Free Pack) — Pixel Frog (pixelfrog-assets.itch.io/tiny-swords). Lisansı yeniden dağıtıma izin vermediği için oyunun deposunda yoktur. Sur taşı ve tabelalar aynı yapımcının CC0 paketinden; süvari atı, mancınık ve kamp ateşi bu oyun için koddan çizildi.'],
+  ['Görseller', 'Tiny Swords (Free Pack) — Pixel Frog (pixelfrog-assets.itch.io/tiny-swords). Lisansı yeniden dağıtıma izin vermediği için oyunun deposunda yoktur. Sur taşı ve tabelalar aynı yapımcının CC0 paketinden. Krallık kaleleri ve binaları, arayüz çerçeveleri, orman yerleri, harita süsleri, süvari atı ve mancınık yapay zekâ (Google Gemini) ile üretilip bu oyun için düzenlendi; kamp ateşi koddan çizildi.'],
   ['Sesler', 'Kenney — Interface Sounds ve Impact Sounds (CC0). Müzik: RandomMind — "The Old Tower Inn" ve "Medieval: Minstrel Dance" (CC0).'],
   ['Yazı tipleri', 'Pixelify Sans ve Atkinson Hyperlegible Next — SIL Open Font License 1.1.'],
   ['Yazılım', 'Phaser 3 (MIT), Microsoft SignalR ve ASP.NET Core (MIT).'],
