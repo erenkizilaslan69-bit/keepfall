@@ -16,6 +16,8 @@ import { SiteLayer } from './Sites';
 import { scoutSignHtml } from '../ui/scout-report';
 import { BattlePlayer } from './BattlePlayer';
 import { Effects } from './Effects';
+import { Chimneys } from './Chimneys';
+import { resolveOut, type Foot } from './Blocks';
 import { Fog } from './Fog';
 import { DebugLayer } from './DebugLayer';
 import { setTraceClock, trace } from '../debug-trace';
@@ -126,6 +128,7 @@ export class WorldScene extends Phaser.Scene {
   private ownFallen: boolean | null = null;
   private lastPhase: string | null = null;
   private fx!: Effects;
+  private chimneys!: Chimneys;
   private debug: DebugLayer | null = null;
 
   /** <paramref name="color"/>: the player's colour; units and buildings are drawn in it. */
@@ -175,6 +178,7 @@ export class WorldScene extends Phaser.Scene {
     this.movers.inReplay = (at) => this.battles?.active.some((b) => Math.hypot(b.at.x - at.x, b.at.y - at.y) < 2.5) ?? false;
     this.fog = new Fog(this, this.layout.size, WATER_FAR);
     this.fx = new Effects(this);
+    this.chimneys = new Chimneys(this);
     this.battles = new BattlePlayer(this, this.color, () => this.gameNow(), (seat) => this.courtyardOf(seat), this.fx);
     if (import.meta.env.DEV) {
       setTraceClock(() => this.gameNow().now);
@@ -540,6 +544,7 @@ export class WorldScene extends Phaser.Scene {
     // Each part on its own: a failure in one must not end the frame loop (the whole picture would freeze).
     guarded('scene-update', () => this.terrain.update(dt, this.cameras.main.worldView), 'terrain');
     guarded('scene-update', () => this.props?.cull(this.cameras.main.worldView), 'props');
+    guarded('scene-update', () => this.chimneys.update(), 'chimneys');
     guarded('scene-update', () => this.workers.update(dt), 'workers');
     guarded('scene-update', () => { for (const r of this.regions.values()) r.update(dt); }, 'regions');
     guarded('scene-update', () => this.movers.update(dt), 'movers');
@@ -780,12 +785,30 @@ export class WorldScene extends Phaser.Scene {
     const site = SITES[b.type];
     if (slot.level !== b.level) {
       for (const sprite of slot.sprites) sprite.destroy();
-      const plain = this.ownKingdom ? site.parts(b.level).filter((p) => !/^(house|tower|barracks|archery)/.test(p.key)) : site.parts(b.level);
-      slot.sprites = plain.map((p) => placePart(this, p));
-      if (this.ownKingdom) {
-        const baseY = site.center.y + site.area.h * 0.22;
-        for (const kp of kingdomBuildingParts(this, this.ownKingdom, b.type, b.level, this.color, site.center.x + (b.type === 'lumberCamp' ? -84 : 0), baseY)) slot.sprites.push(placeKingdomPart(this, kp));
+      this.chimneys.clear(b.type);
+      // The ground the buildings stand on: nobody walks across it, and what the layout put there (sheep, bushes) steps aside.
+      const feet: Foot[] = [];
+      const kparts = this.ownKingdom
+        ? kingdomBuildingParts(this, this.ownKingdom, b.type, b.level, this.color, site.center.x + (b.type === 'lumberCamp' ? -84 : 0), site.center.y + site.area.h * 0.22) : [];
+      const main = kparts[0];
+      if (main) {
+        const tex = this.textures.get(main.key).getSourceImage() as HTMLCanvasElement, w = tex.width * main.scale, h = tex.height * main.scale;
+        feet.push({ l: main.x - w * 0.4, r: main.x + w * 0.4, t: main.y - h * 0.24, b: main.y + 4 });
       }
+      const all = site.parts(b.level);
+      for (const p of all) {
+        if (!/^(house|tower|barracks|archery)/.test(p.key)) continue;
+        const w = this.textures.getFrame(p.key).realWidth * (p.scale ?? 1);
+        if (!main) feet.push({ l: p.x - w * 0.34, r: p.x + w * 0.34, t: p.y - 24, b: p.y + 3 });
+      }
+      const plain = (this.ownKingdom ? all.filter((p) => !/^(house|tower|barracks|archery)/.test(p.key)) : all)
+        .map((p) => (main ? { ...p, ...resolveOut(p, feet, 14) } : p));
+      slot.sprites = plain.map((p) => placePart(this, p));
+      for (const kp of kparts) {
+        slot.sprites.push(placeKingdomPart(this, kp));
+        if (kp.chimney) this.chimneys.set(b.type, kp.chimney.x, kp.chimney.y, this.ownKingdom!);
+      }
+      this.workers.setBlocks(b.type, feet);
       slot.level = b.level;
     }
 

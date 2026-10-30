@@ -50,7 +50,7 @@ export class Soldiers {
     this.fire = [];
   }
 
-  /** The camp fire: ash and stones, two logs, the animated flame and a glow that breathes. */
+  /** The camp fire: ash and stones, two logs, the animated flames, embers, a thin smoke and a faint glow. */
   private buildFire(): void {
     const x = CAMP.x + this.off.x, y = CAMP.y + this.off.y;
     const g = this.scene.add.graphics().setDepth(y - 1);
@@ -64,11 +64,26 @@ export class Soldiers {
     }
     g.lineStyle(7, 0x4b2e1a, 1).lineBetween(x - 20, y + 5, x + 16, y - 3).lineBetween(x + 20, y + 5, x - 14, y - 4);
     g.lineStyle(3, 0x7a4c2a, 1).lineBetween(x - 20, y + 4, x + 16, y - 4).lineBetween(x + 20, y + 4, x - 14, y - 5);
-    const glow = this.scene.add.ellipse(x, y - 4, 230, 120, 0xffa63a, 0.14).setDepth(y - 2);
-    this.scene.tweens.add({ targets: glow, alpha: 0.26, scaleX: 1.08, scaleY: 1.08, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
-    const flame = this.scene.add.sprite(x, y + 4, 'campfire').setOrigin(0.5, 0.97).setScale(1.5).setDepth(y + 1);
-    flame.play({ key: 'campfire', startFrame: Phaser.Math.Between(0, 5) });
-    this.fire = [g, glow, flame];
+    const glow = this.scene.add.ellipse(x, y - 4, 190, 100, 0xffa63a, 0.09).setDepth(y - 2);
+    this.scene.tweens.add({ targets: glow, alpha: 0.17, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    // Two flames out of step (a big one and a smaller one in front) that flicker in height, embers that drift up, and a thin smoke over them.
+    const tongues: [number, number, number, number, number][] = [[0, 4, 1.7, 1, 0], [7, 6, 1.05, 1.3, 3]];
+    const flames = tongues.map(([dx, dy, scale, speed, start], i) => {
+      const f = this.scene.add.sprite(x + dx, y + dy, 'campfire').setOrigin(0.5, 0.97).setScale(scale).setDepth(y + 1 + i * 0.01);
+      f.play({ key: 'campfire', startFrame: start });
+      f.anims.timeScale = speed;
+      this.scene.tweens.add({ targets: f, scaleY: scale * 1.14, scaleX: scale * 0.94, duration: 260 + i * 90, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+      return f;
+    });
+    const embers = this.scene.textures.exists('kf-spark') ? this.scene.add.particles(x, y - 14, 'kf-spark', {
+      lifespan: { min: 800, max: 1500 }, frequency: 220, speedY: { min: -52, max: -28 }, speedX: { min: -14, max: 14 },
+      scale: { start: 0.9, end: 0.1 }, alpha: { start: 1, end: 0 }, tint: [0xffe27a, 0xffa63a, 0xff7a2a], blendMode: 'ADD',
+    }).setDepth(y + 2) : null;
+    const smoke = this.scene.textures.exists('kf-puff') ? this.scene.add.particles(x, y - 46, 'kf-puff', {
+      lifespan: { min: 1800, max: 2600 }, frequency: 520, speedY: { min: -22, max: -12 }, speedX: { min: 4, max: 14 },
+      scale: { start: 0.5, end: 1.6 }, alpha: { start: 0.32, end: 0 }, tint: 0xb9b0a6,
+    }).setDepth(y + 3) : null;
+    this.fire = [g, glow, ...flames, ...(embers ? [embers] : []), ...(smoke ? [smoke] : [])];
   }
 
   sync(units: UnitView[]): void {

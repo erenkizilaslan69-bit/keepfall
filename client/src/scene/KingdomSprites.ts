@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { BuildingType, PlayerColor } from '../types';
+import { CHIMNEYS } from './Chimneys';
 
 // The kingdoms' own castles and buildings: pictures in client/public/art/kingdoms (cleaned from the generated art by tools/art-clean.mjs: one pixel per
 // fake pixel, a limited palette, transparent background), drawn one grid pixel at CASTLE_CELL / BUILD_CELL world pixels. Only the saturated blue of
@@ -171,7 +172,7 @@ export const ADDITIONS: { level: number; kind: ExtraKind; x: number; y: number }
   { level: 4, kind: 'lantern', x: -0.46, y: 0 },
 ];
 
-export interface KingdomPart { key: string; x: number; y: number; scale: number; depthY: number }
+export interface KingdomPart { key: string; x: number; y: number; scale: number; depthY: number; chimney?: { x: number; y: number } }
 
 /** The sprites of a building of a kingdom at a level: the picture grown a little, and what the level adds. The site's centre (x, y) is where its feet stand. */
 export function kingdomBuildingParts(scene: Phaser.Scene, look: string, type: BuildingType, level: number, color: PlayerColor, cx: number, baseY: number): KingdomPart[] {
@@ -181,6 +182,8 @@ export function kingdomBuildingParts(scene: Phaser.Scene, look: string, type: Bu
   const scale = BUILD_CELL * (LEVEL_SCALE[Math.min(level, 4) - 1] ?? 1);
   const w = tex.width * scale, h = tex.height * scale;
   const parts: KingdomPart[] = [{ key, x: cx, y: baseY, scale, depthY: baseY }];
+  const chimney = CHIMNEYS[`${look}:${type}`];
+  if (chimney) parts[0].chimney = { x: cx + (chimney[0] - 0.5) * w, y: baseY - h + chimney[1] * h };
   for (const a of ADDITIONS) {
     if (level < a.level) continue;
     parts.push({ key: extraTexture(scene, look, a.kind, color), x: cx + a.x * w, y: baseY - a.y * h, scale: BUILD_CELL, depthY: baseY + 4 });

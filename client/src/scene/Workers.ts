@@ -5,6 +5,7 @@ import type { WorldLabels } from '../ui/world-labels';
 import { UNIT_SCALE, playRandom, unitOriginY } from './assets';
 import { GATE, IDLE_AREA, JOB_LOOK, SITES, type Point } from './layout';
 import { NO_OFFSET } from './parts';
+import { pathAround, resolveOut, type Foot } from './Blocks';
 
 // Animated pawns. The server only sends how many people each job has; this keeps the same number
 // of pawns per job and invents the walking around it. Nothing here affects the economy.
@@ -37,6 +38,8 @@ interface Pawn {
 export class Workers {
   private pawns: Pawn[] = [];
   private placed = false;
+  /** The feet of the buildings, by site: nobody stands in them or walks across them. */
+  private readonly blocks = new Map<BuildingType, Foot[]>();
 
   /**
    * <paramref name="off"/>: where this castle's corner is (a spectator sees the other castles too);
@@ -47,6 +50,18 @@ export class Workers {
     /** Another colour has sheets with other keys (see colorKey). */
     private readonly k: (key: string) => string = (key) => key) {
     this.drawPen();
+  }
+
+  private allBlocks(): Foot[] { return [...this.blocks.values()].flat(); }
+
+  /** A building's feet changed (it was built, grew, or took another look): the people who stand in it move out, the paths go round it. */
+  setBlocks(type: BuildingType, rects: Foot[]): void {
+    this.blocks.set(type, rects);
+    for (const pawn of this.pawns) {
+      if (pawn.path.length > 0 || pawn.state === 'leaving') continue;
+      const q = resolveOut({ x: pawn.sprite.x - this.off.x, y: pawn.sprite.y - this.off.y }, this.allBlocks());
+      pawn.sprite.setPosition(q.x + this.off.x, q.y + this.off.y).setDepth(q.y + this.off.y);
+    }
   }
 
   debugSprites(): Phaser.GameObjects.Sprite[] { return this.pawns.map((p) => p.sprite); }
@@ -205,7 +220,8 @@ export class Workers {
 
   private go(pawn: Pawn, path: Point[], anim: string, arrive: () => void): void {
     if (pawn.state !== 'leaving') pawn.state = 'walking';
-    pawn.path = path.map((p) => ({ x: p.x + this.off.x, y: p.y + this.off.y }));
+    const from = { x: pawn.sprite.x - this.off.x, y: pawn.sprite.y - this.off.y };
+    pawn.path = pathAround(from, path, this.allBlocks()).map((p) => ({ x: p.x + this.off.x, y: p.y + this.off.y }));
     pawn.arrive = arrive;
     if (pawn.sprite.anims.currentAnim?.key !== this.k(anim)) pawn.sprite.play(this.k(anim));
   }
@@ -246,7 +262,7 @@ export class Workers {
       const spots = SITES[building].workSpots;
       const base = spots[slot % spots.length];
       // More people than spots (shouldn't happen with capacity ≤ 8): nudge them aside.
-      return slot < spots.length ? base : { x: base.x + 14, y: base.y + 10 };
+      return resolveOut(slot < spots.length ? base : { x: base.x + 14, y: base.y + 10 }, this.allBlocks());
     }
     // Idle people queue up in rows in front of the gate.
     const perRow = 5, gap = (IDLE_AREA.right - IDLE_AREA.left) / (perRow - 1);

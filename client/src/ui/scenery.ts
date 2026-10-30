@@ -44,10 +44,10 @@ class Scenery {
   private readonly g = this.canvas.getContext('2d')!;
   private cover = { k: 1, ox: 0, oy: 0 };
   private tick = 0;
+  private readonly flames = [0, 1, 2, 3, 4, 5].map((f) => flameCanvas(f, 6));
   private last = 0;
   private measuredAt = -1000;
   private panel = { l: 0, r: 0 };
-  private readonly flames = [0, 1, 2, 3, 4, 5].map((f) => flameCanvas(f, 6));
 
   constructor() {
     this.canvas.id = 'scenery';
@@ -130,8 +130,11 @@ class Scenery {
       g.beginPath(); g.ellipse(fx, fy, rx * 0.9, ry * 1.2, 0, 0, Math.PI * 2); g.fill();
       g.fillStyle = '#4b2e1a';
       g.fillRect(fx - 8 * s, fy - s, 16 * s, 3 * s);
-      const fr = this.flames[anim % this.flames.length];
-      g.drawImage(fr, fx - (fr.width * s * 0.7) / 2, fy - fr.height * s * 0.7 + 4 * s, fr.width * s * 0.7, fr.height * s * 0.7);
+      const flames = [this.flames[anim % 6], this.flames[(anim + 3) % 6]];
+      flames.forEach((fr, i) => {
+        const k = i ? 0.55 : 0.8;
+        g.drawImage(fr, fx + (i ? 6 * s : 0) - (fr.width * s * k) / 2, fy - fr.height * s * k + (i ? 6 : 4) * s, fr.width * s * k, fr.height * s * k);
+      });
       seats.filter((r) => r.y >= fy + 6 * s).forEach(draw);
     }
   }
