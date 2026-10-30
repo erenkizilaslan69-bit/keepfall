@@ -14,7 +14,8 @@ const FILES = ['castle', 'farm', 'lumberCamp', 'mine', 'forge'] as const;
  * drawn twice as large so the sprite is as big on the screen but its pixels are as chunky as the pack's.
  */
 export type Variant = 'full' | 'half';
-export const VARIANT: Variant = 'half';
+/** Full by default (finer, closer to what the generated art looks like); `?kv=half` draws the chunky variant for comparison. */
+export const VARIANT: Variant = new URLSearchParams(location.search).get('kv') === 'half' ? 'half' : 'full';
 const SIZE = VARIANT === 'half' ? 2 : 1;
 /** World pixels per grid pixel of the picture. */
 export const CASTLE_CELL = 2.2 * SIZE;
