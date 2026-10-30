@@ -1,4 +1,4 @@
-import { BACK_LINE, COLOR_NAMES, SHOOTERS, esc } from '../format';
+import { BACK_LINE, SHOOTERS, colorNote, esc } from '../format';
 import type { CastleView, Corner, Job, QuarterView, Row, SiteView } from '../types';
 import { SITE_NAME } from '../scene/Sites';
 import { dot } from './report-html';
@@ -67,7 +67,7 @@ export class ForestWin extends Win {
     const mine = quarter?.seat === this.ctx.seat;
     this.setTitle(`Orman · ${QUARTER_NAME[this.corner]}`);
     this.q2('[data-f="who"]').innerHTML = quarter?.seat
-      ? `${dot(quarter.color ?? undefined)}${mine ? 'Senin bölgen' : `${esc(quarter.name ?? '')} <small>${COLOR_NAMES[quarter.color ?? ''] ?? ''}</small>`}` : 'Boş köşe';
+      ? `${dot(quarter.color ?? undefined)}${mine ? 'Senin bölgen' : `${esc(quarter.name ?? '')}${colorNote(quarter.name, quarter.color)}`}` : 'Boş köşe';
     const mission = s.scouting.missions.find((m) => m.kind === 'explore' && m.quarter === this.corner);
     this.q2('[data-f="status"]').textContent = mission ? `Gözcü turda · ${Math.ceil(mission.remainingSeconds)} sn`
       : quarter?.explored ? 'Keşfedildi' : `Henüz keşfedilmedi · tur ${Math.ceil(quarter?.seconds ?? 0)} sn`;
@@ -259,4 +259,3 @@ export class SiteWin extends Win {
     return this.body.querySelector<T>(selector)!;
   }
 }
-

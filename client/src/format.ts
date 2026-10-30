@@ -25,3 +25,9 @@ export const SHOOTERS = ['okcu', 'mancinik'];
 export const BACK_LINE = ['okcu', 'mancinik', 'kesis'];
 
 export const COLOR_CSS: Record<string, string> = { blue: '#4a8fd9', red: '#d9534a', yellow: '#e2b93b', purple: '#9b6bd1', black: '#3a3a44' };
+
+/** The colour's name in small type beside a player's name, unless the name already says it (a bot called "Bot Mor" in purple). */
+export function colorNote(name: string | null | undefined, color: string | null | undefined): string {
+  const word = COLOR_NAMES[color ?? ''] ?? '';
+  return !word || (name ?? '').toLocaleLowerCase('tr').includes(word.toLocaleLowerCase('tr')) ? '' : ` <small>${word}</small>`;
+}

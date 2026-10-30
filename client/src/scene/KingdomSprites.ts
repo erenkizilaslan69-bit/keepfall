@@ -19,11 +19,12 @@ export type Variant = 'full' | 'half';
 export const VARIANT: Variant = new URLSearchParams(location.search).get('kv') === 'half' ? 'half' : 'full';
 const SIZE = VARIANT === 'half' ? 2 : 1;
 /** World pixels per grid pixel of the picture. */
-export const CASTLE_CELL = 2.2 * SIZE;
-export const BUILD_CELL = 1.9 * SIZE;
+// Whole numbers: with nearest-neighbour drawing a fractional scale makes some pixels wider than others and the picture looks blocky and uneven.
+export const CASTLE_CELL = 2 * SIZE;
+export const BUILD_CELL = 2 * SIZE;
 const DIR = VARIANT === 'half' ? 'kingdoms-half' : 'kingdoms';
-/** A building grows a little with each level. */
-export const LEVEL_SCALE = [1, 1.06, 1.12, 1.19];
+/** A building keeps its size at every level (a whole-number scale; what the level adds are the extras below). */
+export const LEVEL_SCALE = [1, 1, 1, 1];
 
 const srcKey = (look: string, name: string) => `kdsrc:${look}:${name}`;
 export const kingdomKey = (look: string, name: string, color: PlayerColor) => `kd:${look}:${name}:${color}`;

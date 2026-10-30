@@ -1,4 +1,4 @@
-import { BACK_LINE, COLOR_NAMES, SHOOTERS, botMark, clock, esc } from '../format';
+import { BACK_LINE, SHOOTERS, botMark, clock, colorNote, esc } from '../format';
 import { emblemHtml, rivalKingdom } from './emblem';
 import type { ArmyMode, CastleView, Job, PlayerView, RoomView, Row, ScoutReportView, ScoutTargetView } from '../types';
 import { ago, scoutButton, scoutReportHtml } from './scout-report';
@@ -84,7 +84,7 @@ export class EnemyWin extends Win {
     const t = this.target(s), p = this.player(room);
     const name = t?.name ?? p?.name ?? 'Rakip';
     const color = t?.color ?? p?.color ?? 'red';
-    this.setTitle(`${botMark(this.seat)}${esc(name)} <small>${COLOR_NAMES[color] ?? ''}</small>`);
+    this.setTitle(`${botMark(this.seat)}${esc(name)}${colorNote(name, color)}`);
     this.q('[data-f="name"]').textContent = name;
     const emblem = emblemHtml(rivalKingdom(this.seat, s.scouting.reports.find((r) => r.targetSeat === this.seat)), 'emblem-who');
     const emblemBox = this.q('[data-f="emblem"]');

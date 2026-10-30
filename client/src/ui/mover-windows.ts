@@ -1,4 +1,4 @@
-import { COLOR_NAMES, botMark, esc } from '../format';
+import { botMark, colorNote, esc } from '../format';
 import type { ArmyView, CastleView, Corner, ScoutMissionView, ScoutTargetView } from '../types';
 import { SITE_NAME } from '../scene/Sites';
 import { dot } from './report-html';
@@ -144,7 +144,7 @@ export class ScoutWin extends Win {
       note.textContent = 'Sandığı alır ve altını eve getirir; altın gözcü dönünce kasaya girer.';
     } else {
       const t: ScoutTargetView | undefined = s.scouting.targets.find((x) => x.seat === m.targetSeat);
-      this.q('[data-f="target"]').innerHTML = t ? `${dot(t.color)}${botMark(t.seat)}${esc(t.name)} <small>${COLOR_NAMES[t.color] ?? ''}</small>` : '?';
+      this.q('[data-f="target"]').innerHTML = t ? `${dot(t.color)}${botMark(t.seat)}${esc(t.name)}${colorNote(t.name, t.color)}` : '?';
       this.q('[data-f="state"]').textContent = m.arrived ? 'gözetledi, dönüyor' : 'hedefe gidiyor';
       note.textContent = 'Gözcü hedefin kapısına yürür, orada bakar ve raporla birlikte eve döner. Görevdeki gözcü çalışmaz ama yemek yer.';
     }

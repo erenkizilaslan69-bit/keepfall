@@ -5,8 +5,8 @@ import type { SiteKind } from '../types';
 // (the flames turn to ash) and its tent fallen over, an opened chest has no gold and its lid open.
 
 export const FOREST_FILES = ['village', 'camp', 'bigCamp', 'chest'] as const;
-/** How wide each place is drawn (world px). */
-export const FOREST_WIDTH: Record<SiteKind, number> = { village: 165, camp: 125, bigCamp: 235, chest: 80 };
+/** How wide each place is drawn (world px): a whole multiple of its picture's width, so every pixel is drawn the same size. */
+export const FOREST_WIDTH: Record<SiteKind, number> = { village: 166, camp: 156, bigCamp: 258, chest: 76 }; // whole-number scales (x2, x2, x3, x2) of the pictures
 
 const srcKey = (name: string) => `forest:${name}`;
 
