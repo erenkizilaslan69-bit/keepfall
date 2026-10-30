@@ -84,8 +84,9 @@ export class GameUi {
     root.appendChild(this.wait);
     this.finish = document.createElement('div');
     this.finish.className = 'bot-end hidden';
+    this.finish.style.pointerEvents = 'none'; // the strip around the box lets clicks through to the map; the box itself is `hit`
     this.finish.innerHTML = `
-      <div class="paper">
+      <div class="paper hit">
         <div class="ribbon ribbon-black">Tüm insanlar elendi</div>
         <div class="spec-body">
           <p>Maçta sadece botlar kaldı.</p>

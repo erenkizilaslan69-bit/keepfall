@@ -102,6 +102,7 @@ await run(`window.__qaMode = ${JSON.stringify(MODE)}; window.__qa = { done: {}, 
   const die = window.__qaMode === 'die';
   // economy: spread the people, upgrade, make weapons
   await once('jobs', async () => { for (const [j, k] of [['farmer', 4], ['lumberjack', 3], ['miner', 3], ['blacksmith', 2]]) fail('move ' + j, await n.moveWorkers('idle', j, k)); });
+  await every('farmers', 20, async () => { if (c.rates.foodIn < c.rates.foodOut && idle > 0) { const r = await n.moveWorkers('idle', 'farmer', Math.min(idle, 2)); if (r.ok) q.events.push('more farmers'); } });
   await every('upg', 25, async () => { for (const b of ['farm', 'forge', 'lumberCamp', 'mine']) { const r = await n.upgradeBuilding(b); if (r.ok) { q.events.push('upgrade ' + b); break; } } });
   if (!die) {
     await every('weapon', 2, async () => {
@@ -111,16 +112,16 @@ await run(`window.__qaMode = ${JSON.stringify(MODE)}; window.__qa = { done: {}, 
       for (const u of c.units) if (u.weapons > 0 && t > 150) { if (idle < 2) break; const r = await n.armWorkers(u.id, Math.min(u.weapons, 3, idle), 'idle'); if (r.ok) q.events.push('arm ' + u.id); else fail('arm', r); break; }
     });
     // scouts, explore, chests, envoy, mercenaries
-    await every('scout', 70, async () => { const seat = rivals[Math.floor(Math.random() * rivals.length)]; if (seat) fail('scout', await n.sendScout(seat, from)); });
-    await every('explore', 45, async () => { const qd = c.scouting.quarters.find((x) => x.seat === null && !x.explored && !x.busy); if (qd) fail('explore', await n.sendExplore(qd.corner, from)); });
-    await every('chest', 35, async () => { const site = (m?.sites ?? []).find((x) => x.kind === 'chest' && !x.gone && !x.busy); if (site) fail('chest', await n.sendChestScout(site.id, from)); });
-    await once('envoy', async () => { if (t > 200 && rivals[0]) { const r = await n.sendEnvoy(rivals[0], 5, 0, 0, 0, 'Merhaba, barış?', from); if (r.ok) q.events.push('envoy sent'); else { q.done.envoy = 0; q.last.envoyRetry = t; } } });
+    await every('scout', 70, async () => { const seat = rivals[Math.floor(Math.random() * rivals.length)]; if (seat && idle > 0) fail('scout', await n.sendScout(seat, 'idle')); });
+    await every('explore', 45, async () => { const qd = c.scouting.quarters.find((x) => x.seat === null && !x.explored && !x.busy); if (qd && idle > 0) fail('explore', await n.sendExplore(qd.corner, 'idle')); });
+    await every('chest', 35, async () => { const site = (m?.sites ?? []).find((x) => x.kind === 'chest' && !x.gone && !x.busy); if (site && idle > 0) fail('chest', await n.sendChestScout(site.id, 'idle')); });
+    await once('envoy', async () => { if (t > 200 && rivals[0] && idle > 0) { const r = await n.sendEnvoy(rivals[0], 5, 0, 0, 0, 'Merhaba, barış?', 'idle'); if (r.ok) q.events.push('envoy sent'); else { q.done.envoy = 0; q.last.envoyRetry = t; } } });
     await every('merc', 20, async () => { for (const id of deck) { const u = c.units.find((x) => x.id === id); if (u && u.price > 0 && c.resources.gold >= u.price) { const r = await n.hireMercenary(id, 1); if (r.ok) { q.events.push('hired ' + id); break; } } } });
     // forest places with the army at home: villages and camps
     await every('site', 40, async () => {
       const home = Object.fromEntries(c.units.filter((u) => u.soldiers > 0).map((u) => [u.id, u.soldiers])); const total = Object.values(home).reduce((a, b) => a + b, 0);
       const site = (m?.sites ?? []).find((x) => (x.kind === 'village' || x.kind === 'camp') && !x.gone && !x.busy);
-      if (site && total >= 6 && c.war.armies.length < 2) { const r = await n.sendArmyToSite(site.id, home, null, null); if (r.ok) q.events.push('army to ' + site.kind); else fail('army to site', r); }
+      if (site && total >= 5 && c.war.armies.length < 2) { const r = await n.sendArmyToSite(site.id, home, null, null); if (r.ok) q.events.push('army to ' + site.kind); else fail('army to site', r); }
     });
     // kingdom abilities
     if (myKingdom === 'golge') {
@@ -132,13 +133,13 @@ await run(`window.__qaMode = ${JSON.stringify(MODE)}; window.__qa = { done: {}, 
       await every('bribe', 20, async () => { const a = (m?.seen ?? []).find((x) => x.kind === 'army'); if (a) { const r = await n.bribeArmy(a.id, 3); if (r.ok) q.events.push('bribe'); else fail('bribe', r); } });
     }
     if (myKingdom === 'entrikaci') {
-      await every('as', 120, async () => { if (rivals.length > 1) { const r = await n.sendEnvoyAs(rivals[0], rivals[1], 3, 0, 0, 0, 'Bu mektup bir oyun.', from); if (r.ok) q.events.push('envoy as other'); else fail('envoy as', r); } });
+      await every('as', 120, async () => { if (rivals.length > 1) { const r = await n.sendEnvoyAs(rivals[0], rivals[1], 3, 0, 0, 0, 'Bu mektup bir oyun.', 'idle'); if (r.ok) q.events.push('envoy as other'); else fail('envoy as', r); } });
     }
     // the war: attack the rival with the weakest last report, recall, redirect, intercept
     if (c.phase === 'war') {
       const home = Object.fromEntries(c.units.filter((u) => u.soldiers > 0).map((u) => [u.id, u.soldiers])); const total = Object.values(home).reduce((a, b) => a + b, 0);
       await every('attack', 30, async () => {
-        if (total >= 14 && c.war.armies.length < 2) {
+        if (total >= 10 && c.war.armies.length < 2) {
           const seat = rivals[Math.floor(Math.random() * rivals.length)];
           const send = Object.fromEntries(Object.entries(home).map(([k, v]) => [k, Math.ceil(v * 0.5)]));
           const r = await n.sendArmy(seat, send, {}, null, Math.random() < 0.3 ? 'intercept' : 'attack'); if (r.ok) q.events.push('army sent to ' + seat); else fail('send army', r);
@@ -178,6 +179,7 @@ while (Date.now() - t0 < MAX_MS) {
     await sleep(2500); await shot('spectator-1');
     const btns = await run(`[...document.querySelectorAll('.cam-btns button, .report-toggle, .minimap')].map(b=>b.textContent.trim().slice(0,20)||b.className)`);
     log.push('spectator buttons: ' + JSON.stringify(btns));
+    log.push('own farm sprites: ' + (await run(`JSON.stringify([...window.keepfallScene.buildings.get('farm').sprites.map((x) => x.texture.key)].slice(0, 4))`)));
     log.push('own kingdom in scene: ' + (await run(`JSON.stringify({own: window.keepfallScene.ownKingdom, state: window.keepfallScene.state?.kingdom?.id ?? null, elim: window.keepfallScene.state?.eliminated})`)));
   }
   if (spectated) {
