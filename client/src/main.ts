@@ -41,6 +41,7 @@ const statusText: Record<ConnectionStatus, string> = {
   connected: 'bağlı',
   reconnecting: 'bağlantı koptu, yeniden deneniyor…',
   disconnected: 'bağlantı yok — sunucu çalışıyor mu?',
+  roomLost: 'oda kapandı',
 };
 
 type Screen = 'none' | 'home' | 'lobby' | 'game' | 'end';
@@ -111,6 +112,7 @@ const net = new GameConnection({
     status = statusText[s];
     ui?.setStatus(status, s === 'connected');
     if (s === 'disconnected' && screen !== 'home') showBanner('Sunucuyla bağlantı yok. Sayfayı yenileyince kaldığın yere dönersin.');
+    if (s === 'roomLost') showBanner('Oda kapanmış (sunucu yeniden başlamış olabilir). Ana menüye dönmek için buraya tıkla.', () => location.assign('/'));
   },
 });
 
@@ -284,7 +286,7 @@ function showEnd(r: RoomView): void {
   end.update(r);
 }
 
-function showBanner(text: string): void {
+function showBanner(text: string, onClick?: () => void): void {
   let el = document.getElementById('banner');
   if (!el) {
     el = document.createElement('div');
@@ -293,6 +295,9 @@ function showBanner(text: string): void {
     document.body.prepend(el);
   }
   el.textContent = text;
+  el.style.pointerEvents = onClick ? 'auto' : '';
+  el.style.cursor = onClick ? 'pointer' : '';
+  el.onclick = onClick ?? null;
 }
 
 // ---- start ---------------------------------------------------------------------------------

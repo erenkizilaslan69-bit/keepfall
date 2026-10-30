@@ -3,7 +3,7 @@ import { loadIdentity, saveIdentity } from './identity';
 import { trace } from './debug-trace';
 import type { ArmyMode, BattleStartedView, BotLevel, BuildingType, CastleView, CommandResult, Job, JoinView, MapLayoutView, MapStateView, RoomView, Row, SpectatorStateView, SpectatorWaitView, SummaryView } from './types';
 
-export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
+export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'roomLost';
 
 export interface ConnectionEvents {
   room: (room: RoomView) => void;
@@ -36,7 +36,8 @@ export class GameConnection {
   constructor(private readonly on: ConnectionEvents) {
     this.hub = new signalR.HubConnectionBuilder()
       .withUrl('/hub')
-      .withAutomaticReconnect()
+      // The library gives up after ~40 s; a match lasts longer than a bad minute of wifi, so keep trying every 5 s for ten minutes.
+      .withAutomaticReconnect({ nextRetryDelayInMilliseconds: (ctx) => ctx.elapsedMilliseconds >= 600_000 ? null : ([0, 2000][ctx.previousRetryCount] ?? 5000) })
       .configureLogging(signalR.LogLevel.Warning)
       .build();
     this.hub.on('RoomState', (room: RoomView) => this.on.room(room));
@@ -50,7 +51,12 @@ export class GameConnection {
     this.hub.on('Notification', (text: string) => this.on.notification(text));
     this.hub.onreconnecting(() => this.on.status('reconnecting'));
     // A reconnect is a new connection on the server: rejoin the same seat with our token.
-    this.hub.onreconnected(() => { if (this.roomCode) void this.joinRoom(this.roomCode, this.name); });
+    // If the room is gone (the server restarted) or the seat cannot be taken back, say so instead of leaving a frozen screen.
+    this.hub.onreconnected(async () => {
+      if (!this.roomCode) return;
+      const result = await this.joinRoom(this.roomCode, this.name).catch(() => null);
+      if (!result?.ok) this.on.status('roomLost');
+    });
     this.hub.onclose(() => this.on.status('disconnected'));
   }
 

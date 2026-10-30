@@ -430,3 +430,11 @@ html.in-menu .settings-fab.btn-round { display: inline-grid; }
 
 /* ---- full-screen colour washes at the big moments (ui/transitions.ts) ----------------------------------------------- */
 .kf-wash { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
+
+/* ---- the connection notice (main.ts showBanner): a red plank over everything, so a lost connection is never silent ---- */
+#banner {
+  position: fixed; left: 50%; top: calc(10px * var(--u, 1)); transform: translateX(-50%); z-index: 400; max-width: min(92vw, 640px);
+  padding: calc(10px * var(--u, 1)) calc(18px * var(--u, 1)); text-align: center; font-weight: 700; line-height: 1.35;
+  font-family: var(--font-text); color: var(--kf-cream); background: linear-gradient(var(--kf-red-hi), var(--kf-red)); border: calc(3px * var(--u, 1)) solid var(--kf-wood-edge);
+  border-radius: calc(6px * var(--u, 1)); box-shadow: 0 calc(var(--kf-depth)) 0 var(--kf-red-lo), 0 6px 18px rgba(0, 0, 0, .45);
+}
