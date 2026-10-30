@@ -3,6 +3,7 @@ import { trace } from '../debug-trace';
 import { sfx } from '../audio';
 import { reportError } from '../error-report';
 import type { Effects } from './Effects';
+import { reducedEffects } from '../prefs';
 import type { BattleStartedView, PlayerColor, Vec } from '../types';
 import { SHIELD_SCALE, UNIT_SCALE, colorKey, playRandom, unitOriginY } from './assets';
 import type { Point } from './layout';
@@ -45,6 +46,8 @@ interface Fighter {
   back: Point; // reserve spot
   inFront: boolean;
   dead: boolean;
+  /** Squashing from a blow right now. */
+  hurt?: boolean;
 }
 
 interface Replay {
@@ -247,6 +250,15 @@ export class BattlePlayer {
     if (b && !b.dead && b.sprite.active) {
       b.sprite.setTintFill(0xffffff);
       this.scene.time.delayedCall(70, () => { if (!b.dead && b.sprite.active) b.sprite.clearTint(); });
+      // the blow squashes the one it lands on for a moment (scale only: its position belongs to the walking tweens)
+      if (!b.hurt && !reducedEffects()) {
+        b.hurt = true;
+        const sx = b.sprite.scaleX, sy = b.sprite.scaleY;
+        this.scene.tweens.add({
+          targets: b.sprite, scaleX: sx * 1.14, scaleY: sy * 0.88, duration: 55, yoyo: true,
+          onComplete: () => { b.hurt = false; if (b.sprite.active) b.sprite.setScale(sx, sy); },
+        });
+      }
     }
   }
 

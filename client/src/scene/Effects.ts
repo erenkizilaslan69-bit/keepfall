@@ -60,6 +60,15 @@ export class Effects {
     if (!this.sparks || this.still || !this.seen(x, y) || !this.budget()) return;
     if (kind === 'arrow') { this.sparks.explode(2, x, y); return; }
     this.sparks.explode(kind === 'shield' ? 7 : 5, x, y);
+    this.flash(x, y, kind === 'shield' ? 0xcfe6ff : 0xfff2c0);
+  }
+
+  /** The instant a blow lands: a bright disc that swells and fades in a tenth of a second (steel on steel is warm, a shield bash cool). */
+  flash(x: number, y: number, tint = 0xfff2c0): void {
+    if (!this.enabled || this.still || this.alive >= MAX_SPRITES || !this.seen(x, y)) return;
+    this.alive++;
+    const s = this.scene.add.image(x, y, SPARK_KEY).setScale(3).setTint(tint).setAlpha(0.95).setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH_FX + 2);
+    this.scene.tweens.add({ targets: s, scale: 9, alpha: 0, duration: 110, ease: 'Quad.out', onComplete: () => { s.destroy(); this.alive--; } });
   }
 
   /** A short fading streak behind a flying arrow. */
