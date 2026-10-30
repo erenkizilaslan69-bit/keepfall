@@ -190,3 +190,54 @@ export function kingdomBuildingParts(scene: Phaser.Scene, look: string, type: Bu
   }
   return parts;
 }
+
+// ---- the stone of the walls and towers in each kingdom's own colour (a colour transformation of the pack's pictures) -------------------------------
+
+/** Dark → light stops of each kingdom's stone: dark violet-grey, sandstone, white marble, red-brown. */
+const STONE_RAMP: Record<string, [string, string, string, string]> = {
+  golge: ['#1c1728', '#3b3150', '#6a5f86', '#a99fc2'],
+  tuccar: ['#5a4020', '#a47c46', '#d9b878', '#f3e0b0'],
+  kahin: ['#7a84a4', '#b3bbd2', '#e2e7f2', '#ffffff'],
+  entrikaci: ['#2e1610', '#5e2f22', '#94523a', '#c98a68'],
+};
+
+function ramp(look: string, l: number): [number, number, number] {
+  const stops = STONE_RAMP[look].map(rgb), t = Math.min(1, Math.max(0, l)) * 3, i = Math.min(2, Math.floor(t));
+  return mix(stops[i], stops[i + 1], t - i) as [number, number, number];
+}
+
+/** A copy of a picture whose stone pixels take the kingdom's ramp by their brightness. `keepTeam`: pixels of a clear colour (a tower's roof) stay as they are. */
+function restone(src: CanvasImageSource & { width: number; height: number }, look: string, keepTeam: boolean): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = src.width; c.height = src.height;
+  const g = c.getContext('2d', { willReadFrequently: true })!;
+  g.drawImage(src, 0, 0);
+  const img = g.getImageData(0, 0, c.width, c.height), d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (!d[i + 3]) continue;
+    const max = Math.max(d[i], d[i + 1], d[i + 2]), min = Math.min(d[i], d[i + 1], d[i + 2]);
+    if (keepTeam && max > 0 && (max - min) / max > 0.34 && max > 70) continue;
+    const l = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
+    const out = ramp(look, Math.pow(l, 0.9));
+    d[i] = out[0]; d[i + 1] = out[1]; d[i + 2] = out[2];
+  }
+  g.putImageData(img, 0, 0);
+  return c;
+}
+
+/** The elevation sheet of the walls in a kingdom's stone (a texture with the same frames; its key is returned). */
+export function stoneSheet(scene: Phaser.Scene, look: string, sheet: string, frames: [string, number, number, number, number][]): string {
+  const key = `${sheet}:${look}`;
+  if (!scene.textures.exists(key)) {
+    const tex = scene.textures.addCanvas(key, restone(scene.textures.get(sheet).getSourceImage() as HTMLImageElement, look, false))!;
+    for (const [name, x, y, w, h] of frames) tex.add(name, 0, x, y, w, h);
+  }
+  return key;
+}
+
+/** A tower picture with its stone in the kingdom's colour (the team-coloured roof and flags stay). */
+export function stoneTower(scene: Phaser.Scene, look: string, towerKey: string): string {
+  const key = `${towerKey}:${look}`;
+  if (!scene.textures.exists(key)) scene.textures.addCanvas(key, restone(scene.textures.get(towerKey).getSourceImage() as HTMLImageElement, look, true));
+  return key;
+}

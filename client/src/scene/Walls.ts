@@ -3,6 +3,7 @@ import type { Corner, PlayerColor } from '../types';
 import { colorKey } from './assets';
 import { TILE, type Point } from './layout';
 import { GatePaving } from './Roads';
+import { stoneSheet, stoneTower } from './KingdomSprites';
 
 // The wall around a castle's region (16×12 tiles), on the region's edge so every building and worker is inside. It is only a picture of the
 // castle's wall level (the server decides the level): 1 a wooden fence, 2 a stone wall, 3 a thick stone wall with towers. The road leaves
@@ -28,10 +29,11 @@ const FENCE = { dark: 0x4a2f1b, mid: 0x8a5a34, light: 0xb07a48 };
 export const WALL_SHEET = 'wall-elev';
 export const WALL_TOP = 'wall-top', WALL_FACE = 'wall-face';
 
+const FRAMES: [string, number, number, number, number][] = [[WALL_TOP, 10, 264, 168, 48], [WALL_FACE, 6, 324, 176, 48]];
+
 export function cutWallFrames(scene: Phaser.Scene): void {
   const tex = scene.textures.get(WALL_SHEET);
-  if (!tex.has(WALL_TOP)) tex.add(WALL_TOP, 0, 10, 264, 168, 48);
-  if (!tex.has(WALL_FACE)) tex.add(WALL_FACE, 0, 6, 324, 176, 48);
+  for (const [name, x, y, w, h] of FRAMES) if (!tex.has(name)) tex.add(name, 0, x, y, w, h);
 }
 
 /** Sizes by level: scale of the stone pieces and the tower scale. */
@@ -39,6 +41,7 @@ const STONE = { 2: { scale: 0.42, tower: 0.5 }, 3: { scale: 0.55, tower: 0.62 } 
 
 export class WallRing {
   private level = 0;
+  private look: string | null = null;
   private fallen = false;
   private rt: Phaser.GameObjects.RenderTexture | null = null;
   private towers: Phaser.GameObjects.Image[] = [];
@@ -55,6 +58,15 @@ export class WallRing {
 
   /** The gate is on the east side for the western regions, on the west side for the eastern ones. */
   private get gateOnEast(): boolean { return this.corner === 'northWest' || this.corner === 'southWest'; }
+
+  /** The wall and its towers in a kingdom's stone (null: the pack's own teal stone); drawn again when it changes. */
+  setLook(look: string | null): void {
+    if (look === this.look) return;
+    this.look = look;
+    if (this.level > 0) { const level = this.level; this.level = 0; this.setLevel(level); if (this.fallen) { this.fallen = false; this.ruin(); } }
+  }
+
+  private get sheet(): string { return this.look ? stoneSheet(this.scene, this.look, WALL_SHEET, FRAMES) : WALL_SHEET; }
 
   setLevel(level: number): void {
     level = Math.max(1, Math.min(3, Math.floor(level)));
@@ -137,7 +149,7 @@ export class WallRing {
     const L = 4 + (east ? 0 : GATE_SIDE_INSET), R = REGION_W - 4 - (east ? GATE_SIDE_INSET : 0), T = 4, B = REGION_H - 4;
     const gate = [GATE_Y - GATE_HALF, GATE_Y + GATE_HALF];
     const piece = (key: string, x: number, y: number, w: number, h: number) => {
-      const img = this.scene.make.image({ key: WALL_SHEET, frame: key }, false).setOrigin(0).setDisplaySize(w, h);
+      const img = this.scene.make.image({ key: this.sheet, frame: key }, false).setOrigin(0).setDisplaySize(w, h);
       rt.draw(img, x, y);
       img.destroy();
     };
@@ -164,7 +176,8 @@ export class WallRing {
 
     // towers: the corners, and (level 3) either side of the gate; level 2 has two stone posts at the gate
     const gx = east ? R - side : L + side;
-    const key = colorKey(this.color, this.own, 'tower');
+    const plainKey = colorKey(this.color, this.own, 'tower');
+    const key = this.look && this.scene.textures.exists(plainKey) ? stoneTower(this.scene, this.look, plainKey) : plainKey;
     const put = (x: number, baseY: number, towerScale: number = tower) => {
       if (!this.scene.textures.exists(key)) return;
       const img = this.scene.add.image(this.origin.x + x, this.origin.y + baseY, key).setOrigin(0.5, 0.92).setScale(towerScale).setDepth(this.origin.y + baseY);

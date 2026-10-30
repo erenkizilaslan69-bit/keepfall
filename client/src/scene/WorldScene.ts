@@ -234,6 +234,7 @@ export class WorldScene extends Phaser.Scene {
       const key = isKingdomLook(look) ? kingdomTexture(this, look, 'castle', c.color) : null;
       const want = key ?? `castle-${c.color}`;
       const rest = key ? CASTLE_CELL : CASTLE.scale;
+      this.walls.get(seat)?.setLook(key ? look : null);
       if (c.image.texture.key !== want) c.image.setTexture(want);
       c.image.setScale(c.image.scaleX, c.image.scaleY).setData('rest', rest);
       if (!c.fallen) c.image.setScale(rest);
@@ -245,6 +246,7 @@ export class WorldScene extends Phaser.Scene {
     const look = isKingdomLook(id) ? id : null;
     if (look === this.ownKingdom && this.castleSprite.getData('rest') !== undefined) return;
     this.ownKingdom = look;
+    this.walls.get(this.mySeat)?.setLook(look);
     const key = look ? kingdomTexture(this, look, 'castle', this.color) : null;
     this.castleSprite.setTexture(key ?? 'castle');
     const rest = key ? CASTLE_CELL : CASTLE.scale;
@@ -688,6 +690,7 @@ export class WorldScene extends Phaser.Scene {
       if (r.seat === null || !r.color) continue;
       const ring = new WallRing(this, toWorld(r.origin), r.corner, r.color, this.color);
       ring.setLevel(3);
+      if (r.seat === this.mySeat) ring.setLook(this.ownKingdom);
       this.walls.set(r.seat, ring);
     }
   }
