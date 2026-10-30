@@ -180,6 +180,7 @@ export class WorldScene extends Phaser.Scene {
     this.movers.inReplay = (at) => this.battles?.active.some((b) => Math.hypot(b.at.x - at.x, b.at.y - at.y) < 2.5) ?? false;
     this.fog = new Fog(this, this.layout.size, WATER_FAR);
     this.fx = new Effects(this);
+    this.movers.setEffects(this.fx);
     this.chimneys = new Chimneys(this);
     this.battles = new BattlePlayer(this, this.color, () => this.gameNow(), (seat) => this.courtyardOf(seat), this.fx);
     if (import.meta.env.DEV) {

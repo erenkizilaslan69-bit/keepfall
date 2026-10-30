@@ -8,7 +8,7 @@ import { reducedEffects } from '../prefs';
 // Switched off with ?fx=0 (development, for frame-rate tests) and quieter for people who asked their system for less motion
 // (no camera shake).
 
-const SPARK_KEY = 'kf-spark', TRAIL_KEY = 'kf-trail';
+const SPARK_KEY = 'kf-spark', TRAIL_KEY = 'kf-trail', PUFF_KEY = 'kf-fxpuff';
 const DEPTH_FX = 20_000;
 const MAX_SPRITES = 28; // dust, explosions and flames alive at once
 const BURSTS_PER_SECOND = 40; // sparks and trail dots: a crowded battle asks for hundreds a second, this is plenty
@@ -16,6 +16,7 @@ const BURSTS_PER_SECOND = 40; // sparks and trail dots: a crowded battle asks fo
 export class Effects {
   private readonly sparks: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private readonly trails: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
+  private readonly puffs: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private readonly burning = new Map<string, Phaser.GameObjects.Sprite[]>();
   private alive = 0;
   private bucket = BURSTS_PER_SECOND;
@@ -34,6 +35,17 @@ export class Effects {
     this.trails = scene.add.particles(0, 0, TRAIL_KEY, {
       emitting: false, lifespan: 260, speed: 0, scale: { start: 1, end: 0.3 }, alpha: { start: 0.55, end: 0 },
     }).setDepth(DEPTH_FX - 1);
+    this.puffs = scene.add.particles(0, 0, PUFF_KEY, {
+      emitting: false, lifespan: { min: 600, max: 900 }, speedY: { min: -14, max: -4 }, speedX: { min: -8, max: 8 },
+      scale: { start: 0.5, end: 1.4 }, alpha: { start: 0.65, end: 0 }, rotate: { min: -30, max: 30 },
+    }).setDepth(DEPTH_FX - 2);
+  }
+
+  /** Dust kicked up behind a marching column (a lot more behind horses); sandy on the roads, kept thin. */
+  march(x: number, y: number, horses: boolean): void {
+    if (!this.puffs || this.still || !this.seen(x, y) || !this.budget()) return;
+    this.puffs.setParticleTint(horses ? 0xd8c394 : 0xcdbb94);
+    this.puffs.explode(horses ? 3 : 2, x + Phaser.Math.Between(-10, 10), y + Phaser.Math.Between(-3, 6));
   }
 
   /** Is the point on screen (a little beyond)? Nothing off screen is worth drawing. */
@@ -184,6 +196,7 @@ export class Effects {
     this.burning.clear();
     this.sparks?.destroy();
     this.trails?.destroy();
+    this.puffs?.destroy();
   }
 }
 
@@ -194,6 +207,12 @@ function makeTextures(scene: Phaser.Scene): void {
   spark.context.fillStyle = '#ffffff';
   spark.context.fillRect(0, 0, 4, 4);
   spark.refresh();
+  const puff = scene.textures.createCanvas(PUFF_KEY, 16, 16)!; // a round blotch of a few blocky pixels
+  puff.context.fillStyle = 'rgba(255,255,255,0.55)';
+  puff.context.fillRect(4, 2, 8, 12); puff.context.fillRect(2, 4, 12, 8);
+  puff.context.fillStyle = 'rgba(255,255,255,0.9)';
+  puff.context.fillRect(5, 4, 6, 8);
+  puff.refresh();
   const trail = scene.textures.createCanvas(TRAIL_KEY, 3, 3)!;
   trail.context.fillStyle = '#f4f0e4';
   trail.context.fillRect(0, 0, 3, 3);

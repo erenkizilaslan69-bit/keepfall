@@ -7,6 +7,7 @@ import { COLOR_CSS } from '../format';
 import { reportError } from '../error-report';
 import { toWorld } from './world';
 import { trace } from '../debug-trace';
+import type { Effects } from './Effects';
 
 // Armies and scouts walking on the map: our own (we know their road) and the others the server lets
 // us see (only where they are and which way they go). Every soldier is drawn in its own unit's
@@ -51,6 +52,8 @@ interface Track {
   /** In a battle: the battle replay draws its soldiers, so the marching column is hidden. */
   fighting: boolean;
   receivedAt: number;
+  /** When the column kicks up its next puff of dust (performance.now ms). */
+  dustAt?: number;
   // What is drawn:
   shown: Vec;
   heading: Vec;
@@ -63,6 +66,9 @@ interface Track {
 export class Movers {
   private tracks = new Map<string, Track>();
   private gameSpeed = 1;
+  private fx: Effects | null = null;
+  /** The effects the marching columns raise dust with. */
+  setEffects(fx: Effects): void { this.fx = fx; }
   /** Development: how far a column was from where the server put its army when the news came (tiles), for the debug layer to judge. */
   readonly corrections: { key: string; tiles: number; speed: number; ageMs: number; shown: Vec; position: Vec; velocity: Vec; before: Vec; beforeVelocity: Vec; onRoad: boolean; fighting: boolean }[] = [];
 
@@ -232,6 +238,12 @@ export class Movers {
       const hidden = t.fighting || (!t.scout && this.inReplay(t.shown));
       for (const s of t.sprites) s.setVisible(!hidden);
       this.place(t);
+      if (!hidden && !t.scout && !t.envoy && this.fx && now >= (t.dustAt ?? 0) && Math.hypot(t.velocity.x, t.velocity.y) > 0.2) {
+        const horses = t.units.some((u) => u.unitId === 'suvari');
+        t.dustAt = now + (horses ? 170 : 380) / Math.max(1, Math.min(this.gameSpeed, 3));
+        const at = toWorld(t.shown);
+        this.fx.march(at.x - t.heading.x * 34, at.y - t.heading.y * 34 + 8, horses);
+      }
     }
   }
 

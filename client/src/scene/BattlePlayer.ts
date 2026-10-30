@@ -246,6 +246,10 @@ export class BattlePlayer {
         onComplete: () => arrow.destroy(),
       });
     }
+    // at a gate the attackers' blows raise wall dust (the catapult's stones every time, the others now and then)
+    if (r.view.kind === 'siege' && a.side === 0 && (a.unit === 'mancinik' || Math.random() < 0.2)) {
+      this.fx.dust(r.gate.x + Phaser.Math.Between(-30, 30), r.gate.y + Phaser.Math.Between(-50, 20), a.unit === 'mancinik' ? 1.1 : 0.7, 0xb8a888);
+    }
     if (b && b.sprite.active) this.fx.hit(b.sprite.x, b.sprite.y - 22, a.ranged ? 'arrow' : look.attack ? 'melee' : 'shield');
     if (b && !b.dead && b.sprite.active) {
       b.sprite.setTintFill(0xffffff);
