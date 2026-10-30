@@ -1,4 +1,4 @@
-import { CASTLE_CELL, isKingdomLook, kingdomBuildingParts, kingdomTexture } from './KingdomSprites';
+import { CASTLE_CELL, isKingdomLook, kingdomTexture } from './KingdomSprites';
 import Phaser from 'phaser';
 import type { ArmyView, Rect, ScoutReportView, SpectatorCastleView, SpectatorStateView, BattleStartedView, BuildingType, BuildingView, CastleView, MapLayoutView, MapStateView, PlayerColor, RegionView, RoomView, Vec } from '../types';
 import { guarded, reportError } from '../error-report';
@@ -10,14 +10,15 @@ import { makeCampfire, newUnitArtJobs } from './NewUnits';
 import { createAnimations, playFrom, loadSpectatorAssets, preloadAssets } from './assets';
 import { CAMP, CASTLE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH } from './layout';
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
-import { buildingSign, placeKingdomPart, placePart, setShadeHook, sign } from './parts';
+import { NO_OFFSET, buildingSign, setShadeHook, sign } from './parts';
 import { RegionDisplay } from './RegionDisplay';
 import { SiteLayer } from './Sites';
 import { scoutSignHtml } from '../ui/scout-report';
 import { BattlePlayer } from './BattlePlayer';
 import { Effects } from './Effects';
 import { Chimneys } from './Chimneys';
-import { resolveOut, type Foot } from './Blocks';
+import { Guards } from './Guards';
+import { drawBuilding } from './BuildingArt';
 import { Fog } from './Fog';
 import { DebugLayer } from './DebugLayer';
 import { setTraceClock, trace } from '../debug-trace';
@@ -121,6 +122,8 @@ export class WorldScene extends Phaser.Scene {
   /** Our own kingdom (its castle and buildings are drawn in its own style), and the rivals' that we may show: their castle in live sight, or a scout report. */
   private props: MapProps | null = null;
   private ownKingdom: string | null = null;
+  /** A spectator is told every castle's kingdom. */
+  private readonly spectatorLooks = new Map<number, string | null>();
   private sightKingdoms = new Map<number, string>();
   /** The walls round the regions, by seat. */
   private walls = new Map<number, WallRing>();
@@ -129,6 +132,7 @@ export class WorldScene extends Phaser.Scene {
   private lastPhase: string | null = null;
   private fx!: Effects;
   private chimneys!: Chimneys;
+  private guards!: Guards;
   private debug: DebugLayer | null = null;
 
   /** <paramref name="color"/>: the player's colour; units and buildings are drawn in it. */
@@ -171,6 +175,7 @@ export class WorldScene extends Phaser.Scene {
     for (const type of Object.keys(SITES) as BuildingType[]) this.createSite(type);
     this.workers = new Workers(this, this.labels);
     this.soldiers = new Soldiers(this, this.labels);
+    this.guards = new Guards(this);
     this.movers = new Movers(this, this.color, this.labels);
     this.sites = new SiteLayer(this, this.labels, (id) => this.select({ kind: 'site', id }));
     this.movers.onSelect = (t) => this.select(t);
@@ -183,7 +188,7 @@ export class WorldScene extends Phaser.Scene {
     if (import.meta.env.DEV) {
       setTraceClock(() => this.gameNow().now);
       this.debug = new DebugLayer(this, this.movers, this.battles,
-        () => [...this.workers.debugSprites(), ...this.soldiers.debugSprites(), ...this.sites.debugSprites(), ...[...this.regions.values()].flatMap((r) => r.debugSprites())],
+        () => [...this.workers.debugSprites(), ...this.soldiers.debugSprites(), ...this.guards.debugSprites(), ...this.sites.debugSprites(), ...[...this.regions.values()].flatMap((r) => r.debugSprites())],
         () => this.clock.speed, () => this.gameNow().now);
       this.debug.setRoads(this.layout.roads.map((r) => r.points));
       this.debug.setForests(this.layout.features.map((f) => ({ center: f.center, radius: f.radius })));
@@ -230,7 +235,7 @@ export class WorldScene extends Phaser.Scene {
   /** A rival's castle is drawn in its kingdom's style while we know it (in live sight now, or from a scout report), else plain. */
   private refreshRivalCastles(): void {
     for (const [seat, c] of this.otherCastles) {
-      const look = this.sightKingdoms.get(seat) ?? this.reports.get(seat)?.kingdom ?? null;
+      const look = this.spectating ? this.spectatorLooks.get(seat) ?? null : this.sightKingdoms.get(seat) ?? this.reports.get(seat)?.kingdom ?? null;
       const key = isKingdomLook(look) ? kingdomTexture(this, look, 'castle', c.color) : null;
       const want = key ?? `castle-${c.color}`;
       const rest = key ? CASTLE_CELL : CASTLE.scale;
@@ -402,6 +407,8 @@ export class WorldScene extends Phaser.Scene {
     this.regions.get(c.seat)?.sync(c);
     const castle = this.otherCastles.get(c.seat);
     if (!castle) return;
+    this.spectatorLooks.set(c.seat, c.kingdom ?? null);
+    this.refreshRivalCastles();
     this.markFallen(c.seat, castle, c.eliminated);
     this.setEnemySign(c.seat, castle, c.eliminated);
   }
@@ -576,6 +583,7 @@ export class WorldScene extends Phaser.Scene {
     for (const b of s.buildings) this.updateBuilding(b, s);
     this.workers.sync(s.jobs);
     this.soldiers.sync(s.units);
+    this.guards.sync(s.guards ?? 0);
     this.movers.setGameSpeed(s.speed);
     this.setOwnKingdom(s.kingdom?.id ?? null);
     this.clock = { elapsed: s.elapsedSeconds, at: performance.now(), speed: s.speed };
@@ -789,29 +797,9 @@ export class WorldScene extends Phaser.Scene {
     if (slot.level !== b.level) {
       for (const sprite of slot.sprites) sprite.destroy();
       this.chimneys.clear(b.type);
-      // The ground the buildings stand on: nobody walks across it, and what the layout put there (sheep, bushes) steps aside.
-      const feet: Foot[] = [];
-      const kparts = this.ownKingdom
-        ? kingdomBuildingParts(this, this.ownKingdom, b.type, b.level, this.color, site.center.x + (b.type === 'lumberCamp' ? -84 : 0), site.center.y + site.area.h * 0.22) : [];
-      const main = kparts[0];
-      if (main) {
-        const tex = this.textures.get(main.key).getSourceImage() as HTMLCanvasElement, w = tex.width * main.scale, h = tex.height * main.scale;
-        feet.push({ l: main.x - w * 0.4, r: main.x + w * 0.4, t: main.y - h * 0.24, b: main.y + 4 });
-      }
-      const all = site.parts(b.level);
-      for (const p of all) {
-        if (!/^(house|tower|barracks|archery)/.test(p.key)) continue;
-        const w = this.textures.getFrame(p.key).realWidth * (p.scale ?? 1);
-        if (!main) feet.push({ l: p.x - w * 0.34, r: p.x + w * 0.34, t: p.y - 24, b: p.y + 3 });
-      }
-      const plain = (this.ownKingdom ? all.filter((p) => !/^(house|tower|barracks|archery)/.test(p.key)) : all)
-        .map((p) => (main ? { ...p, ...resolveOut(p, feet, 14) } : p));
-      slot.sprites = plain.map((p) => placePart(this, p));
-      for (const kp of kparts) {
-        slot.sprites.push(placeKingdomPart(this, kp));
-        if (kp.chimney) this.chimneys.set(b.type, kp.chimney.x, kp.chimney.y, this.ownKingdom!);
-      }
-      this.workers.setBlocks(b.type, feet);
+      const art = drawBuilding(this, b.type, b.level, this.ownKingdom, this.color, NO_OFFSET, (k) => k, this.chimneys, b.type);
+      slot.sprites = art.sprites;
+      this.workers.setBlocks(b.type, art.feet);
       slot.level = b.level;
     }
 

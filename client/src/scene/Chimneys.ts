@@ -47,6 +47,8 @@ export class Chimneys {
     this.emitters.set(id, e);
   }
 
+  clearAll(): void { for (const id of [...this.emitters.keys()]) this.clear(id); }
+
   clear(id: string): void {
     this.emitters.get(id)?.destroy();
     this.emitters.delete(id);
