@@ -83,6 +83,17 @@ export class Effects {
     this.scene.tweens.add({ targets: s, scale: 9, alpha: 0, duration: 110, ease: 'Quad.out', onComplete: () => { s.destroy(); this.alive--; } });
   }
 
+  /** An arrow lands: it stays stuck where it hit for a moment and fades with a small puff (a stone breaks into dust). */
+  stick(arrow: Phaser.GameObjects.Image, stone: boolean): void {
+    if (!this.enabled || this.still || !this.seen(arrow.x, arrow.y) || this.alive >= MAX_SPRITES) { arrow.destroy(); return; }
+    if (stone) { arrow.destroy(); this.dust(arrow.x, arrow.y + 14, 0.8, 0xb8a888); return; }
+    this.alive++;
+    arrow.setDepth(DEPTH_FX - 3);
+    this.scene.tweens.add({ targets: arrow, alpha: 0, delay: 500, duration: 400, onComplete: () => { arrow.destroy(); this.alive--; } });
+    this.puffs?.setParticleTint(0xcdbb94);
+    this.puffs?.explode(1, arrow.x, arrow.y + 6);
+  }
+
   /** A short fading streak behind a flying arrow. */
   trail(x: number, y: number): void {
     if (!this.trails || this.still || !this.seen(x, y) || !this.budget()) return;

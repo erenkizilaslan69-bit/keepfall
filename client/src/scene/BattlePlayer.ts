@@ -239,11 +239,20 @@ export class BattlePlayer {
     if (a.ranged && b) {
       const stone = a.unit === 'mancinik';
       const arrow = this.scene.add.image(a.sprite.x, a.sprite.y - (stone ? 60 : 30), stone ? 'stone-shot' : 'arrow').setScale(stone ? 1 : 0.6).setDepth(20_000);
-      if (!stone) arrow.setRotation(Math.atan2(b.sprite.y - 24 - arrow.y, b.sprite.x - arrow.x));
+      // The shot flies in an arc (a stone high and slow) and the arrow turns along it; it ends where its target stood.
+      const from = { x: arrow.x, y: arrow.y }, to = { x: b.sprite.x, y: b.sprite.y - 24 };
+      const lift = Math.min(70, 14 + Math.hypot(to.x - from.x, to.y - from.y) * (stone ? 0.45 : 0.18));
+      const pos = (u: number) => ({ x: from.x + (to.x - from.x) * u, y: from.y + (to.y - from.y) * u - Math.sin(Math.PI * u) * lift });
+      const flight = { u: 0 };
       this.scene.tweens.add({
-        targets: arrow, x: b.sprite.x, y: b.sprite.y - 24, duration: (stone ? 520 : 280) / speed,
-        onUpdate: () => this.fx.trail(arrow.x, arrow.y),
-        onComplete: () => arrow.destroy(),
+        targets: flight, u: 1, duration: (stone ? 520 : 280) / speed,
+        onUpdate: () => {
+          const p = pos(flight.u), q = pos(Math.min(1, flight.u + 0.03));
+          arrow.setPosition(p.x, p.y);
+          if (!stone) arrow.setRotation(Math.atan2(q.y - p.y, q.x - p.x));
+          this.fx.trail(p.x, p.y);
+        },
+        onComplete: () => { this.fx.stick(arrow, stone); },
       });
     }
     // at a gate the attackers' blows raise wall dust (the catapult's stones every time, the others now and then)
