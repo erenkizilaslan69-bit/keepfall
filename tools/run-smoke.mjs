@@ -10,10 +10,10 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const port = 5081;
 const text = readFileSync(join(root, 'config', 'balance.json'), 'utf8').replace(/^﻿/, '');
-if (!/"shortModeMinutes":\s*20\b/.test(text)) throw new Error('config/balance.json: shortModeMinutes is no longer 20, update tools/run-smoke.mjs');
+if (!/"shortModeMinutes":\s*18\b/.test(text)) throw new Error('config/balance.json: shortModeMinutes is no longer 18, update tools/run-smoke.mjs');
 const dir = mkdtempSync(join(tmpdir(), 'kf-smoke-'));
 const configPath = join(dir, 'balance.json');
-writeFileSync(configPath, text.replace(/("shortModeMinutes":\s*)20\b/, '$127').replace(/("shortModePrepMinutes":\s*)10\b/, '$112')
+writeFileSync(configPath, text.replace(/("shortModeMinutes":\s*)18\b/, '$127').replace(/("shortModePrepMinutes":\s*)8\b/, '$112')
   // the start stores are doubled too: weapons cost twice what they did when the test was written
   .replace(/("startingResources":\s*\{\s*"food":\s*30,\s*"wood":\s*)40(,\s*"iron":\s*)20/, '$180$240'), 'utf8'); // 12 minutes of preparation (the last minute has no scouting) + 15 of war
 

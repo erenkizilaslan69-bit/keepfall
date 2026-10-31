@@ -4,9 +4,9 @@
 {
   // Excel "Maç" sekmesi.
   "match": {
-    // Mod süresi ve bunun hazırlığa ayrılan kısmı (dk). Savaş = mod − hazırlık (20 dk → 10 + 10, 30 dk → 20 + 10).
-    "shortModeMinutes": 20,
-    "shortModePrepMinutes": 10,
+    // Mod süresi ve bunun hazırlığa ayrılan kısmı (dk). Savaş = mod − hazırlık (18 dk → 8 + 10, 30 dk → 20 + 10).
+    "shortModeMinutes": 18,
+    "shortModePrepMinutes": 8,
     "longModeMinutes": 30,
     "longModePrepMinutes": 20,
     // Sunucu bu aralıkla tick atar (sn); üretim ve tüketim her tick'te hesaplanır.

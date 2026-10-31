@@ -64,12 +64,12 @@ public class WarTests
     // ---- phases and famine -------------------------------------------------------------------
 
     [Fact]
-    public void Short_mode_is_ten_minutes_of_preparation_then_ten_of_war()
+    public void Short_mode_is_eight_minutes_of_preparation_then_ten_of_war()
     {
-        Assert.Equal(600, Rules.Match.ShortModePrepSeconds);
+        Assert.Equal(480, Rules.Match.ShortModePrepSeconds);
         Assert.Equal(600, Rules.Match.ShortModeWarSeconds);
         var game = new GameState(Rules, [A, B]);
-        Run(game, 600);
+        Run(game, 480);
         Assert.Equal(MatchPhase.War, game.Phase);
         Assert.Equal(600, game.RemainingSeconds);
         Run(game, 600);

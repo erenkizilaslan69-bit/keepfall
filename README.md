@@ -7,7 +7,7 @@ Tarayıcıda oynanır. Tüm oyun mantığı sunucudadır; istemci yalnızca komu
 ## Oyun
 
 **Maç**
-- 20 dk modu: 10 dk hazırlık + 10 dk savaş (kıtlık savaşın 4. dakikasında başlar). 30 dk modu: 20 dk hazırlık + 10 dk savaş (`config/balance.json`).
+- 18 dk modu: 8 dk hazırlık + 10 dk savaş (kıtlık savaşın 4. dakikasında başlar). 30 dk modu: 20 dk hazırlık + 10 dk savaş (`config/balance.json`).
 - Oda kurulur (`/oda/ABCD`), oda kodu arkadaşlara söylenir/gönderilir ("Odaya katıl" kutusuna yazılır), herkes "Hazırım" der, oda sahibi başlatır.
 
 **Hazırlık: ekonomi**
