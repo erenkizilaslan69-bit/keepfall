@@ -483,3 +483,7 @@ html.in-menu .lang-fab.btn-round { display: inline-grid; }
 /* Pixelify Sans in "bold" (700) closes the gap of C and c (a "Castle" read "Oastle", "demirci" read "demiroi"): bold text uses the regular weight's glyphs. */
 @font-face { font-family: 'Pixelify Sans'; font-style: normal; font-display: swap; font-weight: 700; src: url(../../node_modules/@fontsource/pixelify-sans/files/pixelify-sans-latin-400-normal.woff2) format('woff2'); }
 @font-face { font-family: 'Pixelify Sans'; font-style: normal; font-display: swap; font-weight: 700; src: url(../../node_modules/@fontsource/pixelify-sans/files/pixelify-sans-latin-ext-400-normal.woff2) format('woff2'); }
+
+/* an empty slot keeps "Add Bot: Easy Medium Hard" on one row (the name gives way and wraps instead) */
+.players li.empty .tags { flex-wrap: nowrap; white-space: nowrap; align-items: center; flex: none; }
+.players li.empty .pname { min-width: 0; flex: 1 1 0; line-height: 1.15; }
