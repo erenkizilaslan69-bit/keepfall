@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { SiteKind, SiteView } from '../types';
 import { esc } from '../format';
+import { t } from '../i18n';
 import type { WorldLabels } from '../ui/world-labels';
 import { UNIT_SCALE, playRandom, unitOriginY } from './assets';
 import { sign } from './parts';
@@ -20,7 +21,7 @@ const DEPTH_LIFT = 600;
 const CLEARING: Record<SiteKind, number> = { chest: 46, village: 96, camp: 84, bigCamp: 170 };
 const TRAIL_COLOR = 0xd8b779, TRAIL_EDGE = 0xa98b57;
 
-export const SITE_NAME: Record<SiteKind, string> = { chest: 'Sandık', village: 'Köy', camp: 'Haydut kampı', bigCamp: 'Büyük haydut kampı' };
+export const SITE_NAME: Record<SiteKind, string> = { chest: t('Sandık'), village: t('Köy'), camp: t('Haydut kampı'), bigCamp: t('Büyük haydut kampı') };
 const ICON: Record<SiteKind, string> = { chest: 'ico-chest', village: 'ico-meat', camp: 'ico-skull', bigCamp: 'ico-skull' };
 
 /** Bandit sprites by unit id (blue sheets' black twins). */
@@ -82,10 +83,10 @@ export class SiteLayer {
       }
       const p = toWorld(s.position);
       const age = Math.max(0, now - s.seenAt);
-      const note = s.gone ? '' : age >= 60 ? ` <small class="muted-ink">${Math.floor(age / 60)} dk önce</small>` : '';
-      const state = s.kind === 'chest' ? (s.gone ? ' · boş' : '')
-        : s.kind === 'village' ? (s.gone ? ' · yağmalandı' : '')
-        : s.gone ? ' · temizlendi' : ` · ≈${bandits}`;
+      const note = s.gone ? '' : age >= 60 ? ` <small class="muted-ink">${t('{0} dk önce', Math.floor(age / 60))}</small>` : '';
+      const state = s.kind === 'chest' ? (s.gone ? ` · ${t('boş')}` : '')
+        : s.kind === 'village' ? (s.gone ? ` · ${t('yağmalandı')}` : '')
+        : s.gone ? ` · ${t('temizlendi')}` : ` · ≈${bandits}`;
       this.labels.set(`site:${s.id}`, {
         x: p.x, y: p.y + 30, anchor: 'top', minZoom: 0.5,
         html: sign(`<i class="ico ${ICON[s.kind]}"></i><b>${esc(SITE_NAME[s.kind])}</b><span>${state}</span>${note}`, s.gone ? 'wl-gone' : s.kind.endsWith('amp') ? 'wl-fight' : ''),

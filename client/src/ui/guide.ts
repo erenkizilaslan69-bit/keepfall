@@ -1,4 +1,5 @@
 import { esc } from '../format';
+import { isEnglish, numLocale, t, tr } from '../i18n';
 import { emblemHtml } from './emblem';
 
 // "Nasıl oynanır": a short decree (a parchment over the screen) opened with the "?" button, in the menus and in the game. Every number in it
@@ -65,88 +66,93 @@ export function showFirstTimeGuide(): void {
 }
 
 /** Three steps to read in three seconds, above the detailed decree. */
-const QUICK_START = `
-  <div class="guide-quick" aria-label="Hızlı başlangıç">
-    <div class="guide-quick-step"><b class="gq-ico" aria-hidden="true">⛏️</b><span><b>1. Ekonomi &amp; Üretim</b>İşçileri tarla, oduncu, maden ve demirhaneye dağıt; kaynaklarını topla, binalarını yükselt.</span></div>
-    <div class="guide-quick-step"><b class="gq-ico" aria-hidden="true">⚔️</b><span><b>2. Ordu Kur</b>Demirhanede silah üret, işçileri askere çevir ve ordunu taktiğine göre hazırla.</span></div>
-    <div class="guide-quick-step"><b class="gq-ico" aria-hidden="true">🏰</b><span><b>3. Keşfet &amp; Fethet</b>Gözcüyle savaş sisini aç, düşman kalelerini bul; kapıda kazanırsan kale düşer!</span></div>
+const quickStart = (): string => `
+  <div class="guide-quick" aria-label="${t('Hızlı başlangıç')}">
+    <div class="guide-quick-step"><b class="gq-ico" aria-hidden="true">⛏️</b><span><b>${t('1. Ekonomi &amp; Üretim')}</b>${t('İşçileri tarla, oduncu, maden ve demirhaneye dağıt; kaynaklarını topla, binalarını yükselt.')}</span></div>
+    <div class="guide-quick-step"><b class="gq-ico" aria-hidden="true">⚔️</b><span><b>${t('2. Ordu Kur')}</b>${t('Demirhanede silah üret, işçileri askere çevir ve ordunu taktiğine göre hazırla.')}</span></div>
+    <div class="guide-quick-step"><b class="gq-ico" aria-hidden="true">🏰</b><span><b>${t('3. Keşfet &amp; Fethet')}</b>${t('Gözcüyle savaş sisini aç, düşman kalelerini bul; kapıda kazanırsan kale düşer!')}</span></div>
   </div>`;
 
-const minutes = (s: number) => `${Math.round(s / 60)} dk`;
-const num = (n: number) => (Math.abs(n - Math.round(n)) < 0.05 ? String(Math.round(n)) : n.toFixed(1).replace('.', ','));
+const minutes = (s: number) => t('{0} dk', Math.round(s / 60));
+const num = (n: number) => numLocale(n);
 const range = (r: Range) => (r.min === r.max ? num(r.min) : `${num(r.min)}–${num(r.max)}`);
 const has = (r: Range) => r.max > 0;
-const percent = (x: number) => `%${Math.round(x * 100)}`;
-const counts = (list: Count[]) => list.map((c) => `${c.count} ${c.name}`).join(', ');
+const percent = (x: number) => (isEnglish ? `${Math.round(x * 100)}%` : `%${Math.round(x * 100)}`);
+const counts = (list: Count[]) => list.map((c) => `${c.count} ${tr(c.name)}`).join(', ');
 
 /** What the decree says: short lists under small headings. */
 export function guideHtml(g: Guide): string {
   const [l1, l2, l3, l4] = g.levels;
   const shortTotal = g.shortPrepSeconds + g.shortWarSeconds, longTotal = g.longPrepSeconds + g.longWarSeconds;
-  const sections: [string, string[]][] = [
-    ['Amaç', [
-      '2–4 kişi oynar, herkesin tek bir kalesi vardır. <b>Son ayakta kalan kale kazanır</b>; süre dolarsa en yüksek nüfus kazanır.',
-      `<b>Hazırlık</b> (${minutes(g.shortPrepSeconds)}): ekonomi, silah, orman. <b>Savaş</b> (${minutes(g.shortWarSeconds)}): ordular yola çıkar. ${minutes(shortTotal)} ve ${minutes(longTotal)} modu var.`,
-      `Kale tek seferde düşer: bir ordu kapıdaki savaşı kazanırsa (tek askeri kalsa bile) o kale elenir ve oyuncu izleyici olur. Kapıdaki okçular surun arkasından %${num(g.archerDefenseBonusPercent)} fazla hasar verir.`,
+  const upgrades = g.levels.slice(1).map((l) => `${num(l.upgradeSeconds)}`).join(', ');
+  const sections: [string, string[], boolean?][] = [
+    [t('Amaç'), [
+      t('2–4 kişi oynar, herkesin tek bir kalesi vardır. <b>Son ayakta kalan kale kazanır</b>; süre dolarsa en yüksek nüfus kazanır.'),
+      t('<b>Hazırlık</b> ({0}): ekonomi, silah, orman. <b>Savaş</b> ({1}): ordular yola çıkar. {2} ve {3} modu var.', minutes(g.shortPrepSeconds), minutes(g.shortWarSeconds), minutes(shortTotal), minutes(longTotal)),
+      t('Kale tek seferde düşer: bir ordu kapıdaki savaşı kazanırsa (tek askeri kalsa bile) o kale elenir ve oyuncu izleyici olur. Kapıdaki okçular surun arkasından %{0} fazla hasar verir.', num(g.archerDefenseBonusPercent)),
     ]],
-    ['Ekonomi: işçi mi asker mi?', [
-      `Her işçi çiftçi, oduncu, madenci ya da demirci olur. Boşta duran üretmez ama yemek yer. Kişi başı dakikada: yemek ${num(g.foodPerMinute)}, odun ${num(g.woodPerMinute)}, demir ${num(g.ironPerMinute)}.`,
-      `Herkes yemek yer: işçi ${num(g.workerFoodPerMinute)}, asker ${num(g.soldierFoodPerMinute)} dakikada. <b>Her asker üretimden bir işçi eksiltir</b>: ordu büyüdükçe yemek ve silah azalır.`,
-      `Yeni kişi yemekle doğar (ilk kişi ${num(g.newPersonBaseCost)} yemek, sonra her kişi ${percent(g.newPersonCostGrowth)} pahalı). Savaş başlayınca ${minutes(g.famineStartSeconds)} sonra kıtlık başlar ve maç sonuna kadar sürer: yemek üretimi ×${num(g.famineFoodMultiplier)}.`,
+    [t('Ekonomi: işçi mi asker mi?'), [
+      t('Her işçi çiftçi, oduncu, madenci ya da demirci olur. Boşta duran üretmez ama yemek yer. Kişi başı dakikada: yemek {0}, odun {1}, demir {2}.', num(g.foodPerMinute), num(g.woodPerMinute), num(g.ironPerMinute)),
+      t('Herkes yemek yer: işçi {0}, asker {1} dakikada. <b>Her asker üretimden bir işçi eksiltir</b>: ordu büyüdükçe yemek ve silah azalır.', num(g.workerFoodPerMinute), num(g.soldierFoodPerMinute)),
+      t('Yeni kişi yemekle doğar (ilk kişi {0} yemek, sonra her kişi {1} pahalı). Savaş başlayınca {2} sonra kıtlık başlar ve maç sonuna kadar sürer: yemek üretimi ×{3}.', num(g.newPersonBaseCost), percent(g.newPersonCostGrowth), minutes(g.famineStartSeconds), num(g.famineFoodMultiplier)),
     ]],
-    ['Binalar ve silah', [
-      `Çiftlik, kereste, maden ve demirci: her birinde en çok ${l1.capacity} kişi çalışır. Yükseltince ${l2 ? `${l2.capacity}` : ''}${l3 ? `, ${l3.capacity}` : ''}${l4 ? ` ve ${l4.capacity}` : ''} kişi, üretim ${l2 ? `×${num(l2.multiplier)}` : ''}${l3 ? `, ×${num(l3.multiplier)}` : ''}${l4 ? ` ve ×${num(l4.multiplier)}` : ''}.`,
-      l2 ? `Yükseltme bedeli: ${num(l2.upgradeWood)} odun + ${num(l2.upgradeIron)} demir${l3 ? ` (sonra ${num(l3.upgradeWood)} + ${num(l3.upgradeIron)}${l4 ? `, en üst seviye ${num(l4.upgradeWood)} + ${num(l4.upgradeIron)}` : ''})` : ''}; ${g.levels.slice(1).map((l) => `${num(l.upgradeSeconds)}`).join(', ')} sn sürer.` : '',
-      'Demirci demir ve odundan <b>silah</b> yapar; silahı askere çevirirsin, asker işçiye de geri dönebilir.',
+    [t('Binalar ve silah'), [
+      t('Çiftlik, kereste, maden ve demirci: her birinde en çok {0} kişi çalışır. Yükseltince {1} kişi, üretim {2}.', l1.capacity,
+        `${l2 ? `${l2.capacity}` : ''}${l3 ? `, ${l3.capacity}` : ''}${l4 ? ` ${t('ve')} ${l4.capacity}` : ''}`,
+        `${l2 ? `×${num(l2.multiplier)}` : ''}${l3 ? `, ×${num(l3.multiplier)}` : ''}${l4 ? ` ${t('ve')} ×${num(l4.multiplier)}` : ''}`),
+      l2 ? t('Yükseltme bedeli: {0} odun + {1} demir{2}; {3} sn sürer.', num(l2.upgradeWood), num(l2.upgradeIron),
+        l3 ? ` (${t('sonra')} ${num(l3.upgradeWood)} + ${num(l3.upgradeIron)}${l4 ? `, ${t('en üst seviye')} ${num(l4.upgradeWood)} + ${num(l4.upgradeIron)}` : ''})` : '', upgrades) : '',
+      t('Demirci demir ve odundan <b>silah</b> yapar; silahı askere çevirirsin, asker işçiye de geri dönebilir.'),
     ]],
-    ['Deste, keşiş, mancınık, süvari', [
-      g.deckEnabled ? `Maç başında ${g.units.length} birlikten <b>${g.deckSize}</b> tanesini seçersin (lobide); yalnız onları üretir, kuşanır ve kiralarsın. Rakibin destesini yalnız gözcü raporunda görürsün.` : '',
-      ...g.units.filter((u) => u.heal).map((u) => `<b>${esc(u.name)}</b>: arka sırada durur, saldırmaz; her ${num(u.healInterval ?? 0)} sn'de ordusundaki en yaralı dostuna ${num(u.heal ?? 0)} can verir. Okçuların öncelikli hedefi olarak seçilebilir.`),
-      ...g.units.filter((u) => u.backFirst).map((u) => `<b>${esc(u.name)}</b>: savaşın başından itibaren düşmanın <b>arka sırasına</b> vurur, hedefin yanındaki ${u.splashTargets ?? 0} kişiye de yarım hasar; ${u.people ?? 2} kişi harcar. Yakın dövüşte çok zayıftır.`),
-      ...g.units.filter((u) => u.flank).map((u) => `<b>${esc(u.name)}</b>: arka sırada okçu, mancınık ya da keşiş yaşadıkça ön sırayı aşıp onlara dalar; mızrakçıdan korkar. Haritada ×${num(u.speedFactor ?? 1)} hızlıdır. <b>Yalnız süvariden oluşan ordu</b> kapıda kazanırsa kale düşmez, rakibin tarlaları yanar (yemek üretimi ${num(g.raidBurnSeconds ?? 60)} sn yarıya iner).`),
+    [t('Deste, keşiş, mancınık, süvari'), [
+      g.deckEnabled ? t('Maç başında {0} birlikten <b>{1}</b> tanesini seçersin (lobide); yalnız onları üretir, kuşanır ve kiralarsın. Rakibin destesini yalnız gözcü raporunda görürsün.', g.units.length, g.deckSize) : '',
+      ...g.units.filter((u) => u.heal).map((u) => t("<b>{0}</b>: arka sırada durur, saldırmaz; her {1} sn'de ordusundaki en yaralı dostuna {2} can verir. Okçuların öncelikli hedefi olarak seçilebilir.", esc(tr(u.name)), num(u.healInterval ?? 0), num(u.heal ?? 0))),
+      ...g.units.filter((u) => u.backFirst).map((u) => t('<b>{0}</b>: savaşın başından itibaren düşmanın <b>arka sırasına</b> vurur, hedefin yanındaki {1} kişiye de yarım hasar; {2} kişi harcar. Yakın dövüşte çok zayıftır.', esc(tr(u.name)), u.splashTargets ?? 0, u.people ?? 2)),
+      ...g.units.filter((u) => u.flank).map((u) => t('<b>{0}</b>: arka sırada okçu, mancınık ya da keşiş yaşadıkça ön sırayı aşıp onlara dalar; mızrakçıdan korkar. Haritada ×{1} hızlıdır. <b>Yalnız süvariden oluşan ordu</b> kapıda kazanırsa kale düşmez, rakibin tarlaları yanar (yemek üretimi {2} sn yarıya iner).', esc(tr(u.name)), num(u.speedFactor ?? 1), num(g.raidBurnSeconds ?? 60))),
     ]],
-    ['Krallıklar', g.kingdoms?.length ? [
-      'Maç başında her oyuncuya <b>rastgele bir krallık</b> verilir (aynı maçta ikisi aynı olmaz); seçmezsin. Ne olduğunu başta bir fermanla öğrenirsin, düğmeleri sol üstteki krallık panelinde bulursun. Yetenekler bir kuralı değiştirir, sayı bonusu vermez.',
-      'Rakibin kalesinin krallık süsleri (bayrak, sancaklar, minik eşyalar) <b>yalnız kalesi canlı görüşündeyken</b> ya da gözcü raporunda görünür; sisin altında kale sade çizilir.',
-      ...g.kingdoms.map((k) => `${emblemHtml(k.id, 'emblem-guide')}<b>${esc(k.name)}</b> — ${esc(k.decree)} ${k.abilities.map((a) => `<i>${esc(a.name)}</i>: ${esc(a.text)}`).join(' ')}`),
+    [t('Krallıklar'), g.kingdoms?.length ? [
+      t('Maç başında her oyuncuya <b>rastgele bir krallık</b> verilir (aynı maçta ikisi aynı olmaz); seçmezsin. Ne olduğunu başta bir fermanla öğrenirsin, düğmeleri sol üstteki krallık panelinde bulursun. Yetenekler bir kuralı değiştirir, sayı bonusu vermez.'),
+      t('Rakibin kalesinin krallık süsleri (bayrak, sancaklar, minik eşyalar) <b>yalnız kalesi canlı görüşündeyken</b> ya da gözcü raporunda görünür; sisin altında kale sade çizilir.'),
+      ...g.kingdoms.map((k) => `${emblemHtml(k.id, 'emblem-guide')}<b>${esc(tr(k.name))}</b> — ${esc(tr(k.decree))} ${k.abilities.map((a) => `<i>${esc(tr(a.name))}</i>: ${esc(tr(a.text))}`).join(' ')}`),
     ] : []],
-    ['Gözcü', [
-      `Aynı anda en çok ${g.maxScouts} gözcü. Bir rakibe gönder: dönünce <b>rapor</b> gelir (asker sayıları ±${num(g.scoutErrorPercent)}% şaşabilir). Rakip gözetlendiğini öğrenir.`,
-      `Gözcü ormanın bir çeyreğini de gezer: bulduğu yerler haritada kalır. Hızı ${num(g.scoutSpeed)} karo/sn; ordu ${num(g.armySpeed)}.`,
+    [t('Gözcü'), [
+      t('Aynı anda en çok {0} gözcü. Bir rakibe gönder: dönünce <b>rapor</b> gelir (asker sayıları ±{1}% şaşabilir). Rakip gözetlendiğini öğrenir.', g.maxScouts, num(g.scoutErrorPercent)),
+      t('Gözcü ormanın bir çeyreğini de gezer: bulduğu yerler haritada kalır. Hızı {0} karo/sn; ordu {1}.', num(g.scoutSpeed), num(g.armySpeed)),
     ]],
-    ['Orman: sandık, köy, kamp', [
-      `Her köşenin çeyreğinde ${g.chestsPerCorner} sandık, ${g.villagesPerCorner} köy, ${g.campsPerCorner} haydut kampı; ortada büyük kamp. Yerler gözcü yakınından geçince bulunur.`,
-      `<b>Sandık</b> (gözcü alır): ${range(g.chest.gold)} altın${has(g.chest.iron) ? `, ${range(g.chest.iron)} demir` : ''}.`,
-      `<b>Köy</b> (en az ${g.village.minSoldiers} asker, savaşsız): ${range(g.village.gold)} altın${has(g.village.food) ? `, ${range(g.village.food)} yemek` : ''}, ${range(g.village.people)} kişi.`,
-      `<b>Haydut kampı</b> (savaş: ${counts(g.camp.bandits)}): ${range(g.camp.gold)} altın${has(g.camp.wood) ? `, ${range(g.camp.wood)} odun` : ''}${g.camp.weapons.length ? `, silah (${counts(g.camp.weapons)})` : ''}. <b>Büyük kamp</b> daha güçlü (${counts(g.bigCamp.bandits)}), ödülü ${range(g.bigCamp.gold)} altın.`,
-      'Yerler bir kez boşaltılır. Ganimet, ordu ya da gözcü <b>eve dönünce</b> gelir.',
+    [t('Orman: sandık, köy, kamp'), [
+      t('Her köşenin çeyreğinde {0} sandık, {1} köy, {2} haydut kampı; ortada büyük kamp. Yerler gözcü yakınından geçince bulunur.', g.chestsPerCorner, g.villagesPerCorner, g.campsPerCorner),
+      t('<b>Sandık</b> (gözcü alır): {0} altın{1}.', range(g.chest.gold), has(g.chest.iron) ? `, ${range(g.chest.iron)} ${t('demir')}` : ''),
+      t('<b>Köy</b> (en az {0} asker, savaşsız): {1} altın{2}, {3} kişi.', g.village.minSoldiers, range(g.village.gold), has(g.village.food) ? `, ${range(g.village.food)} ${t('yemek')}` : '', range(g.village.people)),
+      t('<b>Haydut kampı</b> (savaş: {0}): {1} altın{2}{3}. <b>Büyük kamp</b> daha güçlü ({4}), ödülü {5} altın.', counts(g.camp.bandits), range(g.camp.gold),
+        has(g.camp.wood) ? `, ${range(g.camp.wood)} ${t('odun')}` : '', g.camp.weapons.length ? `, ${t('silah')} (${counts(g.camp.weapons)})` : '', counts(g.bigCamp.bandits), range(g.bigCamp.gold)),
+      t('Yerler bir kez boşaltılır. Ganimet, ordu ya da gözcü <b>eve dönünce</b> gelir.'),
     ]],
-    ['Paralı asker', [
-      `Altınla anında asker: ${g.units.filter((u) => u.price !== null).map((u) => `${esc(u.name)} ${num(u.price!)}`).join(', ')} altın.`,
-      'İşçiden düşmez, nüfusa sayılır ve yemek yer; işçiye dönüştürülemez.',
+    [t('Paralı asker'), [
+      t('Altınla anında asker: {0} altın.', g.units.filter((u) => u.price !== null).map((u) => `${esc(tr(u.name))} ${num(u.price!)}`).join(', ')),
+      t('İşçiden düşmez, nüfusa sayılır ve yemek yer; işçiye dönüştürülemez.'),
     ]],
-    ['Saldırı ve önünü kes', [
-      'Savaş fazında rakip kalenin penceresinden birlik sayılarını (<b>Tümü / Yarısı</b> tek tıkla doldurur), sırayı ve okçu hedefini seç.',
-      `Ordular yollardan yürür. Yolda karşılaşan düşman ordular savaşır. Kapıya varınca savunanlarla savaşılır; kazanırsan kale düşer: depodaki yemek, odun, demir ve altının ${percent(g.fallLootShare)}'i ile işçilerin ${percent(g.fallWorkerShare)}'ü ordunla eve gelir; ayrıca savunan ordunun ${percent(g.prisonerShare)}'i <b>esir</b> olur, senin askerin olarak eve döner.`,
-      '<b>Önünü kes</b>: ordu yolda karşılaştığı ilk orduyla savaşıp eve döner; rakip bunu bilemez.',
-      '<b>Yeni emir</b>: yürüyen ordunu haritada tıkla; başka bir kaleye ya da ormandaki bir yere yönlendir ya da geri çağır. Rakipler yalnız yönünü görür, hedefini değil.',
+    [t('Saldırı ve önünü kes'), [
+      t('Savaş fazında rakip kalenin penceresinden birlik sayılarını (<b>Tümü / Yarısı</b> tek tıkla doldurur), sırayı ve okçu hedefini seç.'),
+      t("Ordular yollardan yürür. Yolda karşılaşan düşman ordular savaşır. Kapıya varınca savunanlarla savaşılır; kazanırsan kale düşer: depodaki yemek, odun, demir ve altının {0}'i ile işçilerin {1}'ü ordunla eve gelir; ayrıca savunan ordunun {2}'i <b>esir</b> olur, senin askerin olarak eve döner.", percent(g.fallLootShare), percent(g.fallWorkerShare), percent(g.prisonerShare)),
+      t('<b>Önünü kes</b>: ordu yolda karşılaştığı ilk orduyla savaşıp eve döner; rakip bunu bilemez.'),
+      t('<b>Yeni emir</b>: yürüyen ordunu haritada tıkla; başka bir kaleye ya da ormandaki bir yere yönlendir ya da geri çağır. Rakipler yalnız yönünü görür, hedefini değil.'),
     ]],
-    ['Birlikler: kim kimi yener', []],
-    ['Kale düşünce', [
-      `Kalen düşerse elenirsin; haritayı izleyici olarak izlersin.`,
-      `Kaleyi düşüren ordu, depodaki yemek, odun, demir ve altının <b>${percent(g.fallLootShare)}</b>'ini ve hayatta kalan işçilerin <b>${percent(g.fallWorkerShare)}</b>'ünü (boşta) eve getirir.`,
+    [t('Birlikler: kim kimi yener'), [], true],
+    [t('Kale düşünce'), [
+      t('Kalen düşerse elenirsin; haritayı izleyici olarak izlersin.'),
+      t("Kaleyi düşüren ordu, depodaki yemek, odun, demir ve altının <b>{0}</b>'ini ve hayatta kalan işçilerin <b>{1}</b>'ünü (boşta) eve getirir.", percent(g.fallLootShare), percent(g.fallWorkerShare)),
     ]],
   ];
   const table = `
     <table class="guide-units">
-      <tr><th>Birlik</th><th>Can</th><th>Hasar/sn</th><th>Bedel</th><th>Daha iyi vurur</th><th>Daha zayıf vurur</th></tr>
+      <tr><th>${t('Birlik')}</th><th>${t('Can')}</th><th>${t('Hasar/sn')}</th><th>${t('Bedel')}</th><th>${t('Daha iyi vurur')}</th><th>${t('Daha zayıf vurur')}</th></tr>
       ${g.units.map((u) => `<tr>
-        <td><b>${esc(u.name)}</b><small>${u.ranged ? 'uzaktan' : 'yakın'}</small></td><td>${num(u.hp)}</td><td>${num(u.dps)}</td>
-        <td>${num(u.iron)} demir, ${num(u.wood)} odun</td><td>${u.strong.map(esc).join(', ') || '—'}</td><td>${u.weak.map(esc).join(', ') || '—'}</td></tr>`).join('')}
+        <td><b>${esc(tr(u.name))}</b><small>${u.ranged ? t('uzaktan') : t('yakın')}</small></td><td>${num(u.hp)}</td><td>${num(u.dps)}</td>
+        <td>${t('{0} demir, {1} odun', num(u.iron), num(u.wood))}</td><td>${u.strong.map((n) => esc(tr(n))).join(', ') || '—'}</td><td>${u.weak.map((n) => esc(tr(n))).join(', ') || '—'}</td></tr>`).join('')}
     </table>
-    <p class="guide-note">Ön sıra önce vurulur; arka sıradakiler öndekiler düşene kadar hasar almaz (yakın dövüşçüler orada yedektir).</p>`;
-  return sections.map(([title, lines]) => `
-    <section><h3>${title}</h3>${title.startsWith('Birlikler') ? table : `<ul>${lines.filter(Boolean).map((l) => `<li>${l}</li>`).join('')}</ul>`}</section>`).join('');
+    <p class="guide-note">${t('Ön sıra önce vurulur; arka sıradakiler öndekiler düşene kadar hasar almaz (yakın dövüşçüler orada yedektir).')}</p>`;
+  return sections.map(([title, lines, units]) => `
+    <section><h3>${title}</h3>${units ? table : `<ul>${lines.filter(Boolean).map((l) => `<li>${l}</li>`).join('')}</ul>`}</section>`).join('');
 }
 
 export function loadGuide(): Promise<Guide> {
@@ -179,12 +185,12 @@ export function toggleGuide(auto = false): void {
   const overlay = document.createElement('div');
   overlay.className = 'guide-overlay';
   overlay.innerHTML = `
-    <div class="guide paper" role="dialog" aria-label="Nasıl oynanır">
-      <div class="ribbon ribbon-blue guide-title">Nasıl oynanır</div>
-      <button class="btn-round btn-red guide-close" data-act="close" title="Kapat (Esc)" aria-label="Kapat"><i class="ico ico-close"></i></button>
-      ${QUICK_START}
-      <div class="guide-body"><p class="guide-note">Yükleniyor…</p></div>
-      <div class="guide-foot"><button class="btn kf-btn--green" data-act="close">${document.documentElement.classList.contains('in-game') ? 'Anladım, Savaşa Başla!' : 'Anladım!'}</button></div>
+    <div class="guide paper" role="dialog" aria-label="${t('Nasıl oynanır')}">
+      <div class="ribbon ribbon-blue guide-title">${t('Nasıl oynanır')}</div>
+      <button class="btn-round btn-red guide-close" data-act="close" title="${t('Kapat (Esc)')}" aria-label="${t('Kapat')}"><i class="ico ico-close"></i></button>
+      ${quickStart()}
+      <div class="guide-body"><p class="guide-note">${t('Yükleniyor…')}</p></div>
+      <div class="guide-foot"><button class="btn kf-btn--green" data-act="close">${document.documentElement.classList.contains('in-game') ? t('Anladım, Savaşa Başla!') : t('Anladım!')}</button></div>
     </div>`;
   overlay.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;
@@ -195,15 +201,15 @@ export function toggleGuide(auto = false): void {
   window.addEventListener('keydown', onKey, true);
   const body = overlay.querySelector<HTMLElement>('.guide-body')!;
   load().then((g) => { if (open === overlay) body.innerHTML = guideHtml(g); })
-    .catch(() => { if (open === overlay) body.innerHTML = '<p class="guide-note">Rehber şu an yüklenemedi. Biraz sonra tekrar dene.</p>'; });
+    .catch(() => { if (open === overlay) body.innerHTML = `<p class="guide-note">${t('Rehber şu an yüklenemedi. Biraz sonra tekrar dene.')}</p>`; });
 }
 
 /** The "?" button for the menus (in the game it sits in the top bar). */
 export function mountGuideButton(): void {
   const b = document.createElement('button');
   b.className = 'btn-round guide-fab';
-  b.title = 'Nasıl oynanır?';
-  b.setAttribute('aria-label', 'Nasıl oynanır?');
+  b.title = t('Nasıl oynanır?');
+  b.setAttribute('aria-label', t('Nasıl oynanır?'));
   b.innerHTML = '<b>?</b>';
   b.addEventListener('click', () => toggleGuide());
   document.body.appendChild(b);

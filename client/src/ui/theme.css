@@ -471,4 +471,15 @@ html.in-menu .settings-fab.btn-round { display: inline-grid; }
 @media (max-height: 700px) { .players li.lobby-tip { display: none; } } /* a small window has no room for it */
 
 /* the room code in the lobby: big, centred letters you can read out to a friend */
-.share input.share-code { text-align: center; font: 700 1.5em var(--font-pixel); letter-spacing: .3em; text-transform: uppercase; }
+.share { flex-wrap: wrap; }
+.share input.share-code { flex: 1 1 100%; text-align: center; font: 700 1.25em var(--font-pixel); letter-spacing: .12em; }
+.share .btn { flex: 1 1 0; white-space: normal; }
+
+/* the TR / EN switch: a round button next to the gear and the "?" */
+.lang-fab.btn-round { position: fixed; top: 12px; right: calc(12px + 104px * var(--u, 1)); z-index: 60; display: none; font: 700 calc(15px * var(--u, 1)) var(--font-pixel); }
+html.in-menu .lang-fab.btn-round { display: inline-grid; }
+.tb-icons .btn-round[data-lang] b { font-size: calc(13px * var(--u, 1)); }
+
+/* Pixelify Sans in "bold" (700) closes the gap of C and c (a "Castle" read "Oastle", "demirci" read "demiroi"): bold text uses the regular weight's glyphs. */
+@font-face { font-family: 'Pixelify Sans'; font-style: normal; font-display: swap; font-weight: 700; src: url(../../node_modules/@fontsource/pixelify-sans/files/pixelify-sans-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Pixelify Sans'; font-style: normal; font-display: swap; font-weight: 700; src: url(../../node_modules/@fontsource/pixelify-sans/files/pixelify-sans-latin-ext-400-normal.woff2) format('woff2'); }

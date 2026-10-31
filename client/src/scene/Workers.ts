@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { reportError } from '../error-report';
+import { t } from '../i18n';
 import type { BuildingType, Job, JobView } from '../types';
 import type { WorldLabels } from '../ui/world-labels';
 import { UNIT_SCALE, playRandom, unitOriginY } from './assets';
@@ -111,7 +112,7 @@ export class Workers {
 
     const idle = this.warnIdle ? target.get('idle') ?? 0 : 0;
     if (idle > 0)
-      this.labels.set('idle', { x: (IDLE_AREA.left + IDLE_AREA.right) / 2, y: IDLE_AREA.top - 44, anchor: 'bottom', minZoom: 0.5, cls: 'wl-warn', html: `<div class="wl-sign"><b>${idle} kişi boşta!</b></div>` });
+      this.labels.set('idle', { x: (IDLE_AREA.left + IDLE_AREA.right) / 2, y: IDLE_AREA.top - 44, anchor: 'bottom', minZoom: 0.5, cls: 'wl-warn', html: `<div class="wl-sign"><b>${t('{0} kişi boşta!', idle)}</b></div>` });
     else this.labels.remove('idle');
   }
 

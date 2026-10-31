@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { COLOR_CSS } from './format';
 import type { MapLayoutView, PlayerColor, Rect, TrailView, Vec, VisionView } from './types';
 
@@ -25,7 +26,7 @@ export class Minimap {
     this.canvas = document.createElement('canvas');
     this.canvas.className = 'minimap';
     this.canvas.width = this.canvas.height = SIZE;
-    this.canvas.title = 'Mini harita: tıkladığın yere bakar';
+    this.canvas.title = t('Mini harita: tıkladığın yere bakar');
     this.frame = document.createElement('div');
     this.frame.className = 'kf-minimap';
     this.frame.appendChild(this.canvas);

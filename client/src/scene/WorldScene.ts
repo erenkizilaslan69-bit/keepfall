@@ -6,6 +6,7 @@ import type { Minimap } from '../minimap';
 import type { Anchor, Target } from '../ui/windows';
 import type { WorldLabels } from '../ui/world-labels';
 import { COLOR_CSS, esc } from '../format';
+import { t, tr } from '../i18n';
 import { makeCampfire, newUnitArtJobs } from './NewUnits';
 import { createAnimations, playFrom, loadSpectatorAssets, preloadAssets } from './assets';
 import { CAMP, CASTLE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH } from './layout';
@@ -154,7 +155,7 @@ export class WorldScene extends Phaser.Scene {
   create(): void {
     if (this.loadFailed) {
       this.add.text(WORLD_WIDTH / 2, WORLD_HEIGHT / 2,
-        'Görseller bulunamadı.\nTiny Swords Free Pack\'i client/public/assets/tiny-swords/ içine aç (README).',
+        t('Görseller bulunamadı.') + '\n' + t("Tiny Swords Free Pack'i client/public/assets/tiny-swords/ içine aç (README)."),
         { ...LABEL_STYLE, fontSize: '22px' }).setOrigin(0.5);
       return;
     }
@@ -276,7 +277,7 @@ export class WorldScene extends Phaser.Scene {
       const p = toWorld(b.at);
       const dust = this.add.sprite(p.x, p.y, 'dust').setScale(3).setDepth(p.y).setAlpha(0.9);
       dust.play('dust');
-      this.labels.set(`battle:${b.id}`, { x: p.x, y: p.y - 46, html: sign('<i class="ico ico-sword"></i><b>Savaş</b>', 'wl-fight') });
+      this.labels.set(`battle:${b.id}`, { x: p.x, y: p.y - 46, html: sign(`<i class="ico ico-sword"></i><b>${t('Savaş')}</b>`, 'wl-fight') });
       this.markers.set(b.id, [dust]);
     }
   }
@@ -355,7 +356,7 @@ export class WorldScene extends Phaser.Scene {
   private setEnemySign(seat: number, c: { name: string; color: PlayerColor }, fallen: boolean): void {
     const region = this.layout.regions.find((r) => r.seat === seat)!;
     const base = toWorld(region.origin);
-    const name = sign(`<i class="dot" style="background:${COLOR_CSS[c.color] ?? '#888'}"></i><b>${esc(c.name)}</b>${fallen ? ' <small>(düştü)</small>' : ''}`);
+    const name = sign(`<i class="dot" style="background:${COLOR_CSS[c.color] ?? '#888'}"></i><b>${esc(tr(c.name))}</b>${fallen ? ` <small>${t('(düştü)')}</small>` : ''}`);
     // The last scout report stays under the castle: what we know of it, and how old that is. (A spectator sees all, so no report.)
     const report = this.spectating ? undefined : this.reports.get(seat);
     this.labels.set(`castle:${seat}`, {
@@ -608,7 +609,7 @@ export class WorldScene extends Phaser.Scene {
   private updateWall(s: CastleView): void {
     this.labels.set('castle:own', {
       x: CASTLE.x, y: WALL_SIGN_Y, anchor: 'top',
-      html: `<div class="wl-stack">${sign(`<i class="ico ico-shield"></i><b>Kale</b>${s.eliminated ? ' <small>(düştü)</small>' : ''}`)}</div>`,
+      html: `<div class="wl-stack">${sign(`<i class="ico ico-shield"></i><b>${t('Kale')}</b>${s.eliminated ? ` <small>${t('(düştü)')}</small>` : ''}`)}</div>`,
     });
     if (s.eliminated) this.walls.get(this.mySeat)?.ruin(this.fx);
     const rest = this.castleSprite.getData('rest') ?? CASTLE.scale;

@@ -1,4 +1,5 @@
 import { esc } from '../format';
+import { t, tr } from '../i18n';
 import type { IncomingView } from '../types';
 import { ABLATIVE } from './report-html';
 
@@ -31,7 +32,7 @@ export class Notifications {
     note.classList.add('fading');
     if (onClick) {
       note.classList.add('clickable', 'strong');
-      note.title = 'Tıkla: raporu aç';
+      note.title = t('Tıkla: raporu aç');
       note.addEventListener('click', () => { onClick(); note.remove(); });
     }
     this.el.appendChild(note);
@@ -73,7 +74,7 @@ export class Notifications {
     const elapsed = ((performance.now() - this.incomingAt) / 1000) * this.speed;
     this.incoming.forEach((w, i) => {
       const left = Math.max(0, Math.ceil(w.arrivesInSeconds - elapsed));
-      this.setSticky(`incoming:${i}`, true, `⚠ ${ABLATIVE[w.fromColor] ?? 'Bir rakipten'} bir ordu yaklaşıyor! ${left} sn`);
+      this.setSticky(`incoming:${i}`, true, t('⚠ {0} bir ordu yaklaşıyor! {1} sn', tr(ABLATIVE[w.fromColor] ?? 'Bir rakipten'), left));
     });
     for (const key of [...this.sticky.keys()])
       if (key.startsWith('incoming:') && Number(key.slice(9)) >= this.incoming.length) this.setSticky(key, false);
@@ -82,7 +83,7 @@ export class Notifications {
   private ribbon(text: string, color: string): HTMLElement {
     const note = document.createElement('div');
     note.className = `ribbon ribbon-sm ribbon-${color} note hit`;
-    note.innerHTML = `<span>${esc(text)}</span>`;
+    note.innerHTML = `<span>${esc(tr(text))}</span>`;
     return note;
   }
 }

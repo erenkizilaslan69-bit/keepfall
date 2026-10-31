@@ -61,7 +61,7 @@ try {
   await sleep(1500);
   const a = await tab(URL);
   await sleep(3500);
-  await a.run('localStorage.clear(); localStorage.setItem('keepfall_tutorial_seen', 'true'); 1');
+  await a.run('localStorage.clear(); localStorage.setItem('keepfall_tutorial_seen', 'true'); localStorage.setItem('keepfall_lang', 'tr'); 1');
   await a.send('Page.navigate', { url: URL });
   await sleep(3500);
   const room = await a.run(`(async () => { const n = window.keepfallNet; const j = await n.createRoom('Eren'); await n.addBot(1); await n.addBot(1); await n.setReady(true); const s = await n.startMatch(); return { code: j.code, started: s.ok, error: s.error }; })()`);

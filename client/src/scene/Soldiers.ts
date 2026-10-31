@@ -3,6 +3,7 @@ import type { UnitView } from '../types';
 import { SHIELD_SCALE, UNIT_SCALE, playRandom, unitOriginY } from './assets';
 import type { WorldLabels } from '../ui/world-labels';
 import { esc } from '../format';
+import { t, tr } from '../i18n';
 import { CAMP, type Point } from './layout';
 import { NO_OFFSET } from './parts';
 
@@ -99,9 +100,9 @@ export class Soldiers {
       });
     });
     // One sign for the whole camp (a sign for each group ran into the others): the counts of every type, and the people being armed.
-    const rows = ids.map((id) => units.find((u) => u.id === id)!).filter((u) => u.soldiers > 0).map((u) => `<span><b>${esc(u.name)}</b> ${u.soldiers}</span>`);
+    const rows = ids.map((id) => units.find((u) => u.id === id)!).filter((u) => u.soldiers > 0).map((u) => `<span><b>${esc(tr(u.name))}</b> ${u.soldiers}</span>`);
     const arming = units.reduce((n, u) => n + u.arming, 0);
-    if (arming > 0) rows.push(`<span><i class="ico ico-sword"></i> Kuşanıyor <b>${arming}</b></span>`);
+    if (arming > 0) rows.push(`<span><i class="ico ico-sword"></i> ${t('Kuşanıyor')} <b>${arming}</b></span>`);
     for (const id of this.blocks.keys()) this.labels.remove(`soldiers:${this.key}${id}`);
     this.labels.remove(`arming:${this.key}`);
     if (rows.length > 0)

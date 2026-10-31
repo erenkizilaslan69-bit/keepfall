@@ -1,5 +1,6 @@
 import { gearSvg, toggleSettings } from './settings';
 import { guideClicked, markGuideClicked, toggleGuide } from './guide';
+import { lang, t, toggleLang, tr } from '../i18n';
 import { botMark, clock, esc, fmt, rate } from '../format';
 import type { CastleView, PlayerView, RoomView } from '../types';
 
@@ -32,12 +33,12 @@ export class TopBar {
           <span class="res" data-r="food" title=""><i class="ico ico-meat"></i><b></b><small></small></span>
           <span class="res" data-r="wood" title=""><i class="ico ico-wood"></i><b></b><small></small></span>
           <span class="res" data-r="iron" title=""><i class="ico ico-iron"></i><b></b><small></small></span>
-          <span class="res" data-r="gold" title="Altın: ormandan gelir; kale penceresinde asker kiralanır"><i class="ico ico-coin"></i><b></b><small></small></span>
+          <span class="res" data-r="gold" title="${t('Altın: ormandan gelir; kale penceresinde asker kiralanır')}"><i class="ico ico-coin"></i><b></b><small></small></span>
         </div>
-        <div class="strip hit tb-pop" title="Nüfus ve asker sayısı">
-          <span class="pop"><i class="ico ico-people"></i><span class="lbl">Nüfus</span><b data-f="pop"></b></span>
+        <div class="strip hit tb-pop" title="${t('Nüfus ve asker sayısı')}">
+          <span class="pop"><i class="ico ico-people"></i><span class="lbl">${t('Nüfus')}</span><b data-f="pop"></b></span>
           <span class="pop"><i class="ico ico-sword"></i><b data-f="soldiers"></b></span>
-          <span class="idle-warn ribbon ribbon-sm ribbon-red hidden" data-f="idle" title="Boştaki işçiler yemek yer ama üretmez"></span>
+          <span class="idle-warn ribbon ribbon-sm ribbon-red hidden" data-f="idle" title="${t('Boştaki işçiler yemek yer ama üretmez')}"></span>
         </div>
       </div>
       <div class="tb-c">
@@ -46,8 +47,9 @@ export class TopBar {
       <div class="tb-k">
         <div class="ribbon tb-clock hit ribbon-blue" data-f="clock"><b></b><small></small></div>
         <div class="strip hit tb-icons">
-          <button class="btn-round" data-settings title="Ayarlar" aria-label="Ayarlar">${gearSvg()}</button>
-          <button class="btn-round" data-guide title="Nasıl oynanır?" aria-label="Nasıl oynanır?"><b>?</b></button>
+          <button class="btn-round" data-settings title="${t('Ayarlar')}" aria-label="${t('Ayarlar')}">${gearSvg()}</button>
+          <button class="btn-round" data-lang title="${lang === 'tr' ? 'English' : 'Türkçe'}" aria-label="${lang === 'tr' ? 'English' : 'Türkçe'}"><b>${lang === 'tr' ? 'EN' : 'TR'}</b></button>
+          <button class="btn-round" data-guide title="${t('Nasıl oynanır?')}" aria-label="${t('Nasıl oynanır?')}"><b>?</b></button>
         </div>
         <div class="strip hit tb-speed hidden" data-f="speed"></div>
       </div>`;
@@ -62,6 +64,7 @@ export class TopBar {
     }
     guideBtn.addEventListener('click', () => toggleGuide());
     this.q('[data-settings]').addEventListener('click', toggleSettings);
+    this.q('[data-lang]').addEventListener('click', toggleLang);
     this.el.addEventListener('click', (e) => {
       const t = e.target as HTMLElement;
       const speed = t.closest<HTMLElement>('[data-speed]');
@@ -99,23 +102,23 @@ export class TopBar {
     set('wood', fmt(s.resources.wood), `${rate(s.rates.wood)}`, 'up');
     set('iron', fmt(s.resources.iron), `${rate(s.rates.iron)}`, 'up');
     set('gold', fmt(s.resources.gold), '', 'up');
-    this.q('[data-r="food"]').title = `Yemek: +${s.rates.foodIn.toFixed(1)} üretim, −${s.rates.foodOut.toFixed(1)} tüketim (dakikada)`
-      + (s.starving ? '\nAçlık: üretim yarıya indi!' : '');
+    this.q('[data-r="food"]').title = t('Yemek: +{0} üretim, −{1} tüketim (dakikada)', s.rates.foodIn.toFixed(1), s.rates.foodOut.toFixed(1))
+      + (s.starving ? `\n${t('Açlık: üretim yarıya indi!')}` : '');
     this.q('[data-r="food"]').classList.toggle('starving', s.starving);
-    this.q('[data-r="wood"]').title = `Odun: ${rate(s.rates.wood)} /dk`;
-    this.q('[data-r="iron"]').title = `Demir: ${rate(s.rates.iron)} /dk`;
+    this.q('[data-r="wood"]').title = t('Odun: {0} /dk', rate(s.rates.wood));
+    this.q('[data-r="iron"]').title = t('Demir: {0} /dk', rate(s.rates.iron));
 
     this.q('[data-f="pop"]').textContent = String(s.population);
     this.q('[data-f="soldiers"]').textContent = String(s.soldiers);
     const idle = s.jobs.find((j) => j.job === 'idle')?.count ?? 0;
     const warn = this.q('[data-f="idle"]');
     warn.classList.toggle('hidden', idle === 0 || s.eliminated);
-    warn.textContent = `${idle} boşta!`;
+    warn.textContent = t('{0} boşta!', idle);
 
     const clockEl = this.q('[data-f="clock"]');
     clockEl.querySelector('b')!.textContent = clock(s.remainingSeconds);
-    clockEl.querySelector('small')!.textContent = s.eliminated ? 'izleyici'
-      : s.phase === 'war' ? (s.war.famine ? 'savaş · kıtlık' : 'savaş') : 'hazırlık';
+    clockEl.querySelector('small')!.textContent = s.eliminated ? t('izleyici')
+      : s.phase === 'war' ? (s.war.famine ? t('savaş · kıtlık') : t('savaş')) : t('hazırlık');
     clockEl.classList.toggle('ribbon-blue', s.phase === 'preparation' && !s.eliminated);
     clockEl.classList.toggle('ribbon-red', s.phase === 'war' && !s.eliminated);
     clockEl.classList.toggle('ribbon-black', s.eliminated);
@@ -123,7 +126,7 @@ export class TopBar {
     const speed = this.q('[data-f="speed"]');
     speed.classList.toggle('hidden', !s.speedControl);
     if (s.speedControl && !speed.firstChild)
-      speed.innerHTML = [1, 5, 20].map((x) => `<button class="btn-round" data-speed="${x}" title="Oyun hızı ×${x}">×${x}</button>`).join('');
+      speed.innerHTML = [1, 5, 20].map((x) => `<button class="btn-round" data-speed="${x}" title="${t('Oyun hızı ×{0}', x)}">×${x}</button>`).join('');
     speed.querySelectorAll<HTMLElement>('[data-speed]').forEach((b) => b.classList.toggle('active', Number(b.dataset.speed) === s.speed));
   }
 
@@ -145,7 +148,7 @@ export class TopBar {
 function chip(p: PlayerView, me: boolean): string {
   const state = p.eliminated ? 'out' : p.connected ? '' : 'away';
   const avatar = `${AVATAR_ROOT}Avatars_${String(((p.seat - 1) % 25) + 1).padStart(2, '0')}.png`;
-  const title = `${p.name}${p.isBot ? ' (bot)' : ''}${me ? ' (sen)' : ''}${p.eliminated ? ' — elendi' : p.connected ? '' : ' — bağlantı yok'}`;
+  const title = `${tr(p.name)}${p.isBot ? ` ${t('(bot)')}` : ''}${me ? ` ${t('(sen)')}` : ''}${p.eliminated ? ` — ${t('elendi')}` : p.connected ? '' : ` — ${t('bağlantı yok')}`}`;
   return `<span class="chip ${state} ${me ? 'me' : ''}" data-seat="${p.seat}" data-color="${p.color}" title="${esc(title)}">
-    <i class="avatar" style="background-image:url('${avatar}')"></i><span class="chip-name">${botMark(p.seat)}${esc(p.name)}</span></span>`;
+    <i class="avatar" style="background-image:url('${avatar}')"></i><span class="chip-name">${botMark(p.seat)}${esc(tr(p.name))}</span></span>`;
 }

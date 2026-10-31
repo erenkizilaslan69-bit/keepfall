@@ -36,7 +36,7 @@ await send('Page.enable');
 await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
 await send('Page.navigate', { url: URL });
 await sleep(3500);
-await run('localStorage.clear(); localStorage.setItem('keepfall_tutorial_seen', 'true'); 1');
+await run('localStorage.clear(); localStorage.setItem('keepfall_tutorial_seen', 'true'); localStorage.setItem('keepfall_lang', 'tr'); 1');
 await send('Page.navigate', { url: URL });
 await sleep(3500);
 

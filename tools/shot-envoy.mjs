@@ -41,7 +41,7 @@ await send('Page.enable');
 await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
 await send('Page.navigate', { url: URL });
 await sleep(3500);
-await run('localStorage.clear(); localStorage.setItem('keepfall_tutorial_seen', 'true'); sessionStorage.clear(); 1');
+await run('localStorage.clear(); localStorage.setItem('keepfall_tutorial_seen', 'true'); localStorage.setItem('keepfall_lang', 'tr'); sessionStorage.clear(); 1');
 await send('Page.navigate', { url: URL });
 await sleep(3500);
 await run(`(async () => { const n = window.keepfallNet; await n.createRoom('Eren'); for (const l of ['easy', 'medium']) await n.addBot(l); await n.setReady(true); await n.startMatch(); return 1; })()`);

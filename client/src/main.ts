@@ -11,8 +11,6 @@ import './ui/theme.css';
 import './ui/kf-art.css';
 import '@fontsource/pixelify-sans/latin-400.css';
 import '@fontsource/pixelify-sans/latin-ext-400.css';
-import '@fontsource/pixelify-sans/latin-700.css';
-import '@fontsource/pixelify-sans/latin-ext-700.css';
 import '@fontsource/atkinson-hyperlegible-next/latin-400.css';
 import '@fontsource/atkinson-hyperlegible-next/latin-ext-400.css';
 import '@fontsource/atkinson-hyperlegible-next/latin-700.css';
@@ -20,6 +18,7 @@ import '@fontsource/atkinson-hyperlegible-next/latin-ext-700.css';
 import { Minimap } from './minimap';
 import { EndScreen, HomeScreen, LobbyScreen } from './screens';
 import { setBotSeats } from './format';
+import { t } from './i18n';
 import { music, sfx } from './audio';
 import { mountGuideButton, showFirstTimeGuide } from './ui/guide';
 import { CloudCurtain } from './ui/clouds';
@@ -27,7 +26,7 @@ import { fadeFrom } from './ui/transitions';
 import { warmUp } from './preload';
 import { mountScenery } from './ui/scenery';
 import { loadHorse } from './scene/HorseArt';
-import { mountSettingsButton, setLeaveAction } from './ui/settings';
+import { mountLangButton, mountSettingsButton, setLeaveAction } from './ui/settings';
 import { guarded, installErrorReporting } from './error-report';
 import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 
@@ -37,11 +36,11 @@ import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomVi
 const app = document.getElementById('app')!;
 
 const statusText: Record<ConnectionStatus, string> = {
-  connecting: 'bağlanıyor…',
-  connected: 'bağlı',
-  reconnecting: 'bağlantı koptu, yeniden deneniyor…',
-  disconnected: 'bağlantı yok — sunucu çalışıyor mu?',
-  roomLost: 'oda kapandı',
+  connecting: t('bağlanıyor…'),
+  connected: t('bağlı'),
+  reconnecting: t('bağlantı koptu, yeniden deneniyor…'),
+  disconnected: t('bağlantı yok — sunucu çalışıyor mu?'),
+  roomLost: t('oda kapandı'),
 };
 
 type Screen = 'none' | 'home' | 'lobby' | 'game' | 'end';
@@ -56,6 +55,7 @@ let status = '';
 
 mountGuideButton(); // the "?" for the menus (in the game it is in the top bar)
 mountSettingsButton(); // the gear next to it
+mountLangButton(); // and the TR / EN switch
 
 // Sound: browsers start it only after a gesture; every button press gets a small click.
 window.addEventListener('pointerdown', () => sfx.unlock(), { capture: true });
@@ -111,8 +111,8 @@ const net = new GameConnection({
   status: (s) => {
     status = statusText[s];
     ui?.setStatus(status, s === 'connected');
-    if (s === 'disconnected' && screen !== 'home') showBanner('Sunucuyla bağlantı yok. Sayfayı yenileyince kaldığın yere dönersin.');
-    if (s === 'roomLost') showBanner('Oda kapanmış (sunucu yeniden başlamış olabilir). Ana menüye dönmek için buraya tıkla.', () => location.assign('/'));
+    if (s === 'disconnected' && screen !== 'home') showBanner(t('Sunucuyla bağlantı yok. Sayfayı yenileyince kaldığın yere dönersin.'));
+    if (s === 'roomLost') showBanner(t('Oda kapanmış (sunucu yeniden başlamış olabilir). Ana menüye dönmek için buraya tıkla.'), () => location.assign('/'));
   },
 });
 
@@ -191,7 +191,7 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
     },
     join: async (name, code) => {
       const c = code.trim().toUpperCase();
-      if (!/^[A-Z]{4}$/.test(c)) return 'Oda kodu 4 harf olmalı.';
+      if (!/^[A-Z]{4}$/.test(c)) return t('Oda kodu 4 harf olmalı.');
       saveName(name);
       const r = await net.joinRoom(c, name);
       if (!r.ok) return r.error;
@@ -314,7 +314,7 @@ async function main(): Promise<void> {
     await net.start();
   } catch (e) {
     console.error(e);
-    app.innerHTML = '<div class="screen"><p class="banner danger">Sunucuya bağlanılamadı. <code>dotnet run --project src/Keepfall.Server</code> çalışıyor mu?</p></div>';
+    app.innerHTML = `<div class="screen"><p class="banner danger">${t('Sunucuya bağlanılamadı.')} <code>dotnet run --project src/Keepfall.Server</code> ${t('çalışıyor mu?')}</p></div>`;
     return;
   }
   const code = /^\/oda\/([A-Za-z]{4})\/?$/.exec(location.pathname)?.[1]?.toUpperCase();
@@ -322,7 +322,7 @@ async function main(): Promise<void> {
   const r = await net.joinRoom(code, loadName());
   if (!r.ok) {
     history.replaceState(null, '', `/${location.search}`);
-    showHome({ code, error: r.error ?? 'Odaya katılınamadı.' });
+    showHome({ code, error: r.error ?? t('Odaya katılınamadı.') });
   }
 }
 

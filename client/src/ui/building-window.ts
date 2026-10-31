@@ -1,4 +1,5 @@
 import { esc } from '../format';
+import { t, tr } from '../i18n';
 import type { BuildingType, BuildingView, CastleView, Job, Resource } from '../types';
 import { Win, type WinContext, type WinData } from './windows';
 
@@ -7,9 +8,9 @@ import { Win, type WinContext, type WinData } from './windows';
 // never lost to a rebuild (the queue is only redrawn when its lines change).
 
 const PRODUCT: Record<Resource, { name: string; icon: string }> = {
-  food: { name: 'yemek', icon: 'ico-meat' },
-  wood: { name: 'odun', icon: 'ico-wood' },
-  iron: { name: 'demir', icon: 'ico-iron' },
+  food: { name: t('yemek'), icon: 'ico-meat' },
+  wood: { name: t('odun'), icon: 'ico-wood' },
+  iron: { name: t('demir'), icon: 'ico-iron' },
 };
 
 export const cost = (icon: string, n: number) => `<span class="cost"><i class="ico ${icon}"></i>${n}</span>`;
@@ -24,18 +25,18 @@ export class BuildingWin extends Win {
     this.body.innerHTML = `
       <div class="kf-prod">
         <span class="kf-prod-ico" data-f="icon"></span>
-        <div class="kf-prod-txt"><small>Üretim</small><b data-f="output"></b><small data-f="capacity"></small></div>
+        <div class="kf-prod-txt"><small>${t('Üretim')}</small><b data-f="output"></b><small data-f="capacity"></small></div>
       </div>
       <div class="kf-crew">
-        <button class="kf-btn kf-btn--danger kf-btn--sq" data-act="out" title="Bir işçiyi boşa al" aria-label="Bir işçiyi boşa al">−</button>
-        <div class="kf-crew-mid"><small>Çalışan</small><b data-f="workers"></b><div class="kf-slots" data-f="slots"></div></div>
-        <button class="kf-btn kf-btn--green kf-btn--sq" data-act="in" title="Boştan bir işçi ata" aria-label="Boştan bir işçi ata">+</button>
+        <button class="kf-btn kf-btn--danger kf-btn--sq" data-act="out" title="${t('Bir işçiyi boşa al')}" aria-label="${t('Bir işçiyi boşa al')}">−</button>
+        <div class="kf-crew-mid"><small>${t('Çalışan')}</small><b data-f="workers"></b><div class="kf-slots" data-f="slots"></div></div>
+        <button class="kf-btn kf-btn--green kf-btn--sq" data-act="in" title="${t('Boştan bir işçi ata')}" aria-label="${t('Boştan bir işçi ata')}">+</button>
       </div>
       <div class="row sub center"><span data-f="idle"></span></div>
       <div class="upgrade-box"><button class="kf-btn kf-btn--big kf-btn--wide" data-act="upgrade"></button>
         <div class="gbar hidden" data-f="progress"><div class="fill"></div></div></div>
       ${b.product === null ? `
-      <h4>Silah üretimi <small data-f="speed"></small></h4>
+      <h4>${t('Silah üretimi')} <small data-f="speed"></small></h4>
       <div data-f="units"></div>
       <div data-f="queue" class="queue"></div>` : ''}`;
     this.body.addEventListener('click', (e) => void this.click(e));
@@ -48,14 +49,14 @@ export class BuildingWin extends Win {
 
   update({ castle: s }: WinData): void {
     const b = this.building(s);
-    this.setTitle(`${esc(b.name)} · Sv ${b.level}`);
+    this.setTitle(`${esc(tr(b.name))} · ${t('Sv {0}', b.level)}`);
     const workers = s.jobs.find((j) => j.job === b.worker)?.count ?? 0;
     const idle = s.jobs.find((j) => j.job === 'idle')?.count ?? 0;
     this.q('[data-f="workers"]').textContent = `${workers} / ${b.capacity}`;
     const slots = Array.from({ length: b.capacity }, (_, i) => `<i class="kf-pip${i < workers ? ' on' : ''}"></i>`).join('');
     const slotBox = this.q('[data-f="slots"]');
     if (slotBox.dataset.html !== slots) { slotBox.innerHTML = slots; slotBox.dataset.html = slots; }
-    this.q('[data-f="idle"]').textContent = idle > 0 ? `Boştaki işçi: ${idle}` : 'Boşta işçi yok';
+    this.q('[data-f="idle"]').textContent = idle > 0 ? t('Boştaki işçi: {0}', idle) : t('Boşta işçi yok');
     this.q('[data-f="idle"]').classList.toggle('warn', idle > 0 && b.product !== null);
     this.q<HTMLButtonElement>('[data-act="in"]').disabled = idle === 0 || workers >= b.capacity || s.eliminated;
     this.q<HTMLButtonElement>('[data-act="out"]').disabled = workers === 0 || s.eliminated;
@@ -64,19 +65,19 @@ export class BuildingWin extends Win {
     if (b.product) {
       const p = PRODUCT[b.product];
       const perMinute = b.product === 'food' ? s.rates.foodIn : b.product === 'wood' ? s.rates.wood : s.rates.iron;
-      out.textContent = `+${perMinute.toFixed(1)} ${p.name}/dk`;
+      out.textContent = t('+{0} {1}/dk', perMinute.toFixed(1), p.name);
       this.q('[data-f="icon"]').innerHTML = `<i class="ico ${p.icon}"></i>`;
     } else {
-      out.textContent = s.rates.forgeSpeed > 0 ? `hız ×${s.rates.forgeSpeed.toFixed(2)}` : 'demirci yok, sıra duruyor';
+      out.textContent = s.rates.forgeSpeed > 0 ? t('hız ×{0}', s.rates.forgeSpeed.toFixed(2)) : t('demirci yok, sıra duruyor');
       this.q('[data-f="icon"]').innerHTML = '<i class="ico ico-hammer"></i>';
     }
-    this.q('[data-f="capacity"]').textContent = `Kapasite ${b.capacity} · çarpan ×${b.multiplier}`;
+    this.q('[data-f="capacity"]').textContent = t('Kapasite {0} · çarpan ×{1}', b.capacity, b.multiplier);
 
     const upgrade = this.q<HTMLButtonElement>('[data-act="upgrade"]');
     const bar = this.q('[data-f="progress"]');
     if (b.upgradeRemaining !== null) {
       upgrade.disabled = true;
-      upgrade.innerHTML = `Yükseliyor… ${Math.ceil(b.upgradeRemaining)} sn`;
+      upgrade.innerHTML = t('Yükseliyor… {0} sn', Math.ceil(b.upgradeRemaining));
       bar.classList.remove('hidden');
       bar.querySelector<HTMLElement>('.fill')!.style.width = `${100 * (1 - b.upgradeRemaining / b.upgradeTotal)}%`;
     } else {
@@ -84,13 +85,13 @@ export class BuildingWin extends Win {
       const n = b.nextUpgrade;
       if (!n) {
         upgrade.disabled = true;
-        upgrade.innerHTML = 'En üst seviye';
+        upgrade.innerHTML = t('En üst seviye');
       } else {
         const woodShort = s.resources.wood + 1e-6 < n.wood, ironShort = s.resources.iron + 1e-6 < n.iron;
         upgrade.disabled = woodShort || ironShort || s.eliminated;
-        upgrade.title = woodShort || ironShort ? `Yetmiyor: ${[woodShort && 'odun', ironShort && 'demir'].filter(Boolean).join(' ve ')}` : '';
-        upgrade.innerHTML = `<span class="up-line"><i class="ico ico-hammer"></i><b>Yükselt</b> ${esc(gainText(b))}</span>
-          <span class="up-cost">${cost('ico-wood', n.wood)} ${cost('ico-iron', n.iron)} <small>${n.seconds} sn</small></span>`;
+        upgrade.title = woodShort || ironShort ? t('Yetmiyor: {0}', [woodShort && t('odun'), ironShort && t('demir')].filter(Boolean).join(t(' ve '))) : '';
+        upgrade.innerHTML = `<span class="up-line"><i class="ico ico-hammer"></i><b>${t('Yükselt')}</b> ${esc(gainText(b))}</span>
+          <span class="up-cost">${cost('ico-wood', n.wood)} ${cost('ico-iron', n.iron)} <small>${t('{0} sn', n.seconds)}</small></span>`;
       }
     }
     if (b.product === null) this.updateForge(s);
@@ -101,15 +102,15 @@ export class BuildingWin extends Win {
       this.unitsBuilt = true;
       this.q('[data-f="units"]').innerHTML = s.units.map((u) => `
         <div class="unit-row" data-unit="${u.id}">
-          <div class="unit-head"><b>${esc(u.name)}</b> <span data-f="stock"></span></div>
-          <div class="unit-cost">${cost('ico-wood', u.wood)} ${cost('ico-iron', u.iron)} <small>${u.buildSeconds} sn</small></div>
+          <div class="unit-head"><b>${esc(tr(u.name))}</b> <span data-f="stock"></span></div>
+          <div class="unit-cost">${cost('ico-wood', u.wood)} ${cost('ico-iron', u.iron)} <small>${t('{0} sn', u.buildSeconds)}</small></div>
           <span class="stepper"><button class="btn" data-act="queue" data-n="1">+1</button><button class="btn" data-act="queue" data-n="5">+5</button></span>
         </div>`).join('');
     }
-    this.q('[data-f="speed"]').textContent = s.rates.forgeSpeed > 0 ? `hız ×${s.rates.forgeSpeed.toFixed(2)}` : '(demirci yok)';
+    this.q('[data-f="speed"]').textContent = s.rates.forgeSpeed > 0 ? t('hız ×{0}', s.rates.forgeSpeed.toFixed(2)) : t('(demirci yok)');
     for (const u of s.units) {
       const row = this.q(`[data-unit="${u.id}"]`);
-      row.querySelector('[data-f="stock"]')!.textContent = `depoda ${u.weapons} · asker ${u.soldiers}`;
+      row.querySelector('[data-f="stock"]')!.textContent = t('depoda {0} · asker {1}', u.weapons, u.soldiers);
       for (const btn of row.querySelectorAll<HTMLButtonElement>('[data-act="queue"]')) {
         const n = Number(btn.dataset.n);
         btn.disabled = s.resources.wood + 1e-6 < u.wood * n || s.resources.iron + 1e-6 < u.iron * n || s.eliminated;
@@ -120,10 +121,10 @@ export class BuildingWin extends Win {
     const queue = this.q('[data-f="queue"]');
     if (key !== this.queueKey) {
       this.queueKey = key;
-      queue.innerHTML = s.queue.length === 0 ? '<p class="muted-ink">Üretim sırası boş.</p>' : s.queue.map((o, i) => `
-        <div class="order"><span>${o.remaining} × ${esc(o.name)}</span>
+      queue.innerHTML = s.queue.length === 0 ? `<p class="muted-ink">${t('Üretim sırası boş.')}</p>` : s.queue.map((o, i) => `
+        <div class="order"><span>${o.remaining} × ${esc(tr(o.name))}</span>
           <div class="gbar"><div class="fill"></div></div>
-          <button class="btn-round btn-red" data-act="cancel" data-n="${i}" title="Kalanları iptal et, kaynakları geri al">×</button></div>`).join('');
+          <button class="btn-round btn-red" data-act="cancel" data-n="${i}" title="${t('Kalanları iptal et, kaynakları geri al')}">×</button></div>`).join('');
     }
     queue.querySelectorAll<HTMLElement>('.order .fill').forEach((fill, i) => {
       if (s.queue[i]) fill.style.width = `${(100 * s.queue[i].progress) / s.queue[i].buildSeconds}%`;
@@ -141,7 +142,7 @@ export class BuildingWin extends Win {
       : btn.dataset.act === 'upgrade' ? b.upgradeBuilding(this.type)
       : btn.dataset.act === 'queue' ? b.queueWeapon(btn.closest<HTMLElement>('[data-unit]')!.dataset.unit!, n)
       : b.cancelWeapon(n));
-    if (!result.ok) this.ctx.say(result.error ?? 'Olmadı.');
+    if (!result.ok) this.ctx.say(tr(result.error ?? t('Olmadı.')));
   }
 
   private workerJob(): Job {
@@ -156,8 +157,8 @@ export class BuildingWin extends Win {
 /** "+16 yemek/dk" with today's workers; the forge shows its speed gain instead. */
 function gainText(b: BuildingView): string {
   const gain = b.upgradeGain ?? 0;
-  if (b.product === null) return `+%${Math.round((b.nextUpgrade!.multiplier / b.multiplier - 1) * 100)} silah hızı`;
+  if (b.product === null) return t('+%{0} silah hızı', Math.round((b.nextUpgrade!.multiplier / b.multiplier - 1) * 100));
   const p = PRODUCT[b.product].name;
-  return gain <= 0 ? `+0 ${p}/dk (işçi yok)` : `+${Number(gain.toFixed(1))} ${p}/dk`;
+  return gain <= 0 ? t('+0 {0}/dk (işçi yok)', p) : t('+{0} {1}/dk', Number(gain.toFixed(1)), p);
 }
 

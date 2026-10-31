@@ -1,4 +1,5 @@
 import { COLOR_CSS, botMark, esc } from '../format';
+import { t as tt, tr } from '../i18n';
 import type { BattleReportView, LetterView, ScoutReportView } from '../types';
 import { dot, reportHtml, resultWord } from './report-html';
 import { scoutReportHtml } from './scout-report';
@@ -32,7 +33,7 @@ export class ReportTags {
     this.tags.className = 'report-tags';
     this.toggle = document.createElement('button');
     this.toggle.className = 'report-toggle hit hidden';
-    this.toggle.title = 'Savaş raporlarının hepsini göster / gizle';
+    this.toggle.title = tt('Savaş raporlarının hepsini göster / gizle');
     this.toggle.addEventListener('click', () => { this.pinned = !this.pinned; this.render(); });
     window.setInterval(() => this.render(), 400);
     this.modal = document.createElement('div');
@@ -74,7 +75,7 @@ export class ReportTags {
     this.toggle.classList.toggle('hidden', this.items.length === 0);
     this.toggle.classList.toggle('on', this.pinned);
     const count = Math.min(this.items.length, ALL_TAGS);
-    const toggleText = `<i class="ico ico-sword"></i><span>Raporlar</span><b>${count}</b>`;
+    const toggleText = `<i class="ico ico-sword"></i><span>${tt('Raporlar')}</span><b>${count}</b>`;
     if (this.toggle.innerHTML !== toggleText) this.toggle.innerHTML = toggleText;
     const sig = list.map((i) => `${i.key}${!this.pinned && (this.until.get(i.key) ?? 0) - now < FADE_MS ? 'o' : ''}${this.until.get(i.key) && (this.until.get(i.key)! - now) > TAG_MS - 1500 ? 'f' : ''}`).join(',') + (this.pinned ? 'P' : '');
     if (sig === this.sig) return;
@@ -84,9 +85,9 @@ export class ReportTags {
       const f = !this.pinned && left > TAG_MS - 1500 ? 'fresh' : '';
       const out = !this.pinned && left < FADE_MS ? 'leaving' : '';
       const b = i.battle;
-      return `<button class="report-tag paper hit ${b.winner === 'draw' ? 'draw' : b.youWon ? 'won' : 'lost'} ${f} ${out}" data-report="${i.key}" title="Savaş raporunu aç">
+      return `<button class="report-tag paper hit ${b.winner === 'draw' ? 'draw' : b.youWon ? 'won' : 'lost'} ${f} ${out}" data-report="${i.key}" title="${tt('Savaş raporunu aç')}">
         <i class="ico ico-sword"></i>
-        <span>${dot(b.opponentColor)}${botMark(b.opponentSeat)}${esc(b.opponentName)} · <b>${resultWord(b)}</b></span>
+        <span>${dot(b.opponentColor)}${botMark(b.opponentSeat)}${esc(tr(b.opponentName))} · <b>${resultWord(b)}</b></span>
       </button>`;
     }).join('');
   }
@@ -106,19 +107,19 @@ export class ReportTags {
     const close = document.createElement('button');
     close.className = 'btn-round btn-red win-close';
     close.dataset.close = '';
-    close.title = 'Kapat (Esc)';
+    close.title = tt('Kapat (Esc)');
     close.innerHTML = '<i class="ico ico-close"></i>';
     const title = document.createElement('div');
     title.className = 'rep-title ribbon ribbon-yellow';
-    title.textContent = 'Ulak geldi';
+    title.textContent = tt('Ulak geldi');
     const from = document.createElement('p');
     from.className = 'letter-from';
     const dotEl = document.createElement('i');
     dotEl.className = 'dot';
     dotEl.style.background = COLOR_CSS[l.fromColor] ?? '#888';
     const who = document.createElement('b');
-    who.textContent = l.fromName;
-    from.append('Kimden: ', dotEl, ' ', who);
+    who.textContent = tr(l.fromName);
+    from.append(`${tt('Kimden:')} `, dotEl, ' ', who);
     const goods = document.createElement('div');
     goods.className = 'letter-goods';
     const parts: [string, number][] = [['ico-meat', l.food], ['ico-wood', l.wood], ['ico-iron', l.iron], ['ico-coin', l.gold]];
@@ -132,7 +133,7 @@ export class ReportTags {
       span.append(num);
       goods.append(span);
     }
-    if (!goods.children.length) goods.textContent = 'Yük yok, yalnız mesaj.';
+    if (!goods.children.length) goods.textContent = tt('Yük yok, yalnız mesaj.');
     win.append(close, title, from, goods);
     if (l.message) {
       const quote = document.createElement('blockquote');
@@ -145,7 +146,7 @@ export class ReportTags {
     const ok = document.createElement('button');
     ok.className = 'btn';
     ok.dataset.close = '';
-    ok.textContent = 'Tamam';
+    ok.textContent = tt('Tamam');
     foot.append(ok);
     win.append(foot);
     this.modal.replaceChildren(win);
@@ -155,9 +156,9 @@ export class ReportTags {
   private open(content: string): void {
     this.modal.innerHTML = `
       <div class="win paper-dark report-win">
-        <button class="btn-round btn-red win-close" data-close title="Kapat (Esc)"><i class="ico ico-close"></i></button>
+        <button class="btn-round btn-red win-close" data-close title="${tt('Kapat (Esc)')}"><i class="ico ico-close"></i></button>
         ${content}
-        <div class="win-foot"><button class="btn" data-close>Tamam</button></div>
+        <div class="win-foot"><button class="btn" data-close>${tt('Tamam')}</button></div>
       </div>`;
     this.modal.classList.remove('hidden');
   }

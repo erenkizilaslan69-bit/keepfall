@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { BuildingView } from '../types';
 import { esc } from '../format';
+import { t, tr } from '../i18n';
 import { playRandom } from './assets';
 import type { Part, Point } from './layout';
 
@@ -44,8 +45,8 @@ export const sign = (inner: string, cls = '') => `<div class="wl-sign ${cls}">${
 /** The sign over a building: level badge, name, workers, and the upgrade's progress while it is being built. */
 export function buildingSign(b: BuildingView, workers: number): string {
   const progress = b.upgradeRemaining !== null
-    ? `<div class="wl-prog" title="Yükseltiliyor"><i style="width:${100 * (1 - b.upgradeRemaining / b.upgradeTotal)}%"></i></div>` : '';
+    ? `<div class="wl-prog" title="${t('Yükseltiliyor')}"><i style="width:${100 * (1 - b.upgradeRemaining / b.upgradeTotal)}%"></i></div>` : '';
   const state = b.capacity > 0 && workers >= b.capacity ? ' full' : workers === 0 ? ' empty' : '';
-  return sign(`<span class="wl-lv" title="Seviye ${b.level}">${b.level}</span><b>${esc(b.name)}</b>
-    <span class="wl-workers${state}" title="İşçi"><i class="ico ico-hammer"></i><b>${workers}/${b.capacity}</b></span>${progress}`, 'post');
+  return sign(`<span class="wl-lv" title="${t('Seviye {0}', b.level)}">${b.level}</span><b>${esc(tr(b.name))}</b>
+    <span class="wl-workers${state}" title="${t('İşçi')}"><i class="ico ico-hammer"></i><b>${workers}/${b.capacity}</b></span>${progress}`, 'post');
 }

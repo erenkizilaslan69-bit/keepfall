@@ -14,6 +14,7 @@ import { WindowManager, sameTarget, type Target, type Win, type WinContext } fro
 import { Notifications, type NoteKind } from './notifications';
 import { ReportTags } from './reports';
 import { GENITIVE, scoutKey, scoutReportHtml } from './scout-report';
+import { t, tr } from '../i18n';
 import { TopBar } from './topbar';
 import { WorldLabels } from './world-labels';
 import { KingdomUi } from './kingdom';
@@ -74,11 +75,11 @@ export class GameUi {
     this.wait.className = 'spec-wait hit hidden';
     this.wait.innerHTML = `
       <div class="paper">
-        <div class="ribbon ribbon-red">Kalen düştü</div>
+        <div class="ribbon ribbon-red">${t('Kalen düştü')}</div>
         <div class="spec-body">
-          <p>İzleme <b class="spec-n"></b> sn sonra başlıyor</p>
+          <p>${t('İzleme {0} sn sonra başlıyor', '<b class="spec-n"></b>')}</p>
           <div class="gbar"><div class="fill"></div></div>
-          <p class="muted-ink small">Artık izleyicisin: tüm haritayı sissiz, kalelerin içiyle birlikte izlersin.</p>
+          <p class="muted-ink small">${t('Artık izleyicisin: tüm haritayı sissiz, kalelerin içiyle birlikte izlersin.')}</p>
         </div>
       </div>`;
     root.appendChild(this.wait);
@@ -87,13 +88,13 @@ export class GameUi {
     this.finish.style.pointerEvents = 'none'; // the strip around the box lets clicks through to the map; the box itself is `hit`
     this.finish.innerHTML = `
       <div class="paper hit">
-        <div class="ribbon ribbon-black">Tüm insanlar elendi</div>
+        <div class="ribbon ribbon-black">${t('Tüm insanlar elendi')}</div>
         <div class="spec-body">
-          <p>Maçta sadece botlar kaldı.</p>
-          <p class="muted-ink small">İzlemeye devam edebilir ya da kalan süreyi hızlıca oynatıp maç sonu ekranına geçebilirsin.</p>
+          <p>${t('Maçta sadece botlar kaldı.')}</p>
+          <p class="muted-ink small">${t('İzlemeye devam edebilir ya da kalan süreyi hızlıca oynatıp maç sonu ekranına geçebilirsin.')}</p>
           <div class="bot-end-btns">
-            <button class="btn" data-a="watch">İzlemeye devam</button>
-            <button class="btn btn-red" data-a="finish">Maçı bitir</button>
+            <button class="btn" data-a="watch">${t('İzlemeye devam')}</button>
+            <button class="btn btn-red" data-a="finish">${t('Maçı bitir')}</button>
           </div>
         </div>
       </div>`;
@@ -102,7 +103,7 @@ export class GameUi {
       if (a === 'watch') { this.finishDismissed = true; this.updateFinish(); }
       else if (a === 'finish') {
         const r = await net.finishMatch();
-        if (!r.ok) this.error(r.error ?? 'Maç bitirilemedi.');
+        if (!r.ok) this.error(r.error ?? t('Maç bitirilemedi.'));
       }
     });
     root.appendChild(this.finish);
@@ -111,7 +112,7 @@ export class GameUi {
     this.top.className = 'ui-top';
     root.appendChild(this.top);
     this.bar = new TopBar(this.top, {
-      speed: (n) => void net.setSpeed(n).then((r) => { if (!r.ok) this.error(r.error ?? 'Hız değişmedi.'); }),
+      speed: (n) => void net.setSpeed(n).then((r) => { if (!r.ok) this.error(r.error ?? t('Hız değişmedi.')); }),
       player: (seat) => {
         const target: Target = seat === seat0 ? { kind: 'castle' } : { kind: 'enemy', seat };
         this.scene?.focus(target);
@@ -134,9 +135,9 @@ export class GameUi {
     this.cam = document.createElement('div');
     this.cam.className = 'cam-btns';
     this.cam.innerHTML = `
-      <button class="btn hit" data-cam="home" title="Kamerayı kalene getirir (boşluk tuşu)"><i class="ico ico-shield"></i> Kaleme dön</button>
+      <button class="btn hit" data-cam="home" title="${t('Kamerayı kalene getirir (boşluk tuşu)')}"><i class="ico ico-shield"></i> ${t('Kaleme dön')}</button>
       <span data-f="rivals"></span>
-      <button class="btn hit" data-cam="forest" title="Kamerayı ormanın ortasına getirir">Orman</button>`;
+      <button class="btn hit" data-cam="forest" title="${t('Kamerayı ormanın ortasına getirir')}">${t('Orman')}</button>`;
     this.cam.addEventListener('click', (e) => {
       const b = (e.target as HTMLElement).closest<HTMLElement>('[data-cam]');
       if (!b) return;
@@ -216,7 +217,7 @@ export class GameUi {
     if (this.scoutsSeen) {
       if (reports.some((x) => !this.scoutsSeen!.has(scoutKey(x)))) sfx.play('scoutBack');
       for (const r of reports.filter((x) => !this.scoutsSeen!.has(scoutKey(x))))
-        this.notes.push(`Gözcün döndü: ${GENITIVE[r.targetColor] ?? 'rakibin'} raporu`, 'battle', 15000, () => this.reports.showScout(r));
+        this.notes.push(t('Gözcün döndü: {0} raporu', tr(GENITIVE[r.targetColor] ?? 'rakibin')), 'battle', 15000, () => this.reports.showScout(r));
     }
     this.scoutsSeen = new Set(reports.map(scoutKey));
 
@@ -230,19 +231,19 @@ export class GameUi {
 
     // Gold that came home, and a quarter of the forest that has been toured.
     const gold = s.resources.gold;
-    if (this.lastGold !== null && gold > this.lastGold + 1e-6) this.notes.push(`+${Math.round(gold - this.lastGold)} altın kasaya girdi`, 'info', 5000);
+    if (this.lastGold !== null && gold > this.lastGold + 1e-6) this.notes.push(t('+{0} altın kasaya girdi', Math.round(gold - this.lastGold)), 'info', 5000);
     this.lastGold = gold;
     const explored = new Set(s.scouting.quarters.filter((q) => q.explored).map((q) => q.corner));
     if (this.exploredSeen) {
       for (const corner of explored)
-        if (!this.exploredSeen.has(corner)) this.notes.push('Keşif bitti: ormanın bu bölgesindeki yerler haritada', 'info', 6000);
+        if (!this.exploredSeen.has(corner)) this.notes.push(t('Keşif bitti: ormanın bu bölgesindeki yerler haritada'), 'info', 6000);
     }
     this.exploredSeen = explored;
     this.notes.setIncoming(s.eliminated ? [] : s.war.incoming, s.speed);
-    this.notes.setSticky('hunger', s.starving && !s.eliminated, 'Açlık! Yemek bitti, tüm üretim yarıya indi.');
-    this.notes.setSticky('out', s.eliminated, 'Kalen düştü — elendin. Artık sadece izleyicisin.', 'info');
-    if (this.phase === 'preparation' && s.phase === 'war') { sfx.play('battleStart'); this.notes.push('Savaş başladı! Orduların yola çıkabilir.', 'battle', 6000); }
-    if (!this.eliminated && s.eliminated) { sfx.play('castleFall'); this.notes.push('Kalen düştü!', 'danger', 6000); }
+    this.notes.setSticky('hunger', s.starving && !s.eliminated, t('Açlık! Yemek bitti, tüm üretim yarıya indi.'));
+    this.notes.setSticky('out', s.eliminated, t('Kalen düştü — elendin. Artık sadece izleyicisin.'), 'info');
+    if (this.phase === 'preparation' && s.phase === 'war') { sfx.play('battleStart'); this.notes.push(t('Savaş başladı! Orduların yola çıkabilir.'), 'battle', 6000); }
+    if (!this.eliminated && s.eliminated) { sfx.play('castleFall'); this.notes.push(t('Kalen düştü!'), 'danger', 6000); }
     this.phase = s.phase;
     this.eliminated = s.eliminated;
   }
@@ -266,10 +267,10 @@ export class GameUi {
     if (seat === null || !s) return;
     const report = s.scouting.reports.find((r) => r.targetSeat === seat);
     const player = this.room?.players.find((p) => p.seat === seat);
-    const html = `<button class="btn-round btn-red win-close" data-act="close" title="Kapat (Esc)"><i class="ico ico-close"></i></button>
+    const html = `<button class="btn-round btn-red win-close" data-act="close" title="${t('Kapat (Esc)')}"><i class="ico ico-close"></i></button>
       ${report ? scoutReportHtml(report, s.elapsedSeconds)
-        : `<div class="rep-title ribbon ribbon-yellow">${esc(player?.name ?? '?')}</div><p class="rep-note">Henüz gözcü raporu yok. Gözcüyü rakip kalenin penceresinden gönderirsin.</p>`}
-      <div class="scroll-foot"><button class="btn" data-act="open">Kale penceresi</button></div>`;
+        : `<div class="rep-title ribbon ribbon-yellow">${esc(tr(player?.name ?? '?'))}</div><p class="rep-note">${t('Henüz gözcü raporu yok. Gözcüyü rakip kalenin penceresinden gönderirsin.')}</p>`}
+      <div class="scroll-foot"><button class="btn" data-act="open">${t('Kale penceresi')}</button></div>`;
     if (this.scroll.dataset.html !== html) {
       this.scroll.dataset.html = html;
       this.scroll.innerHTML = html;
@@ -314,7 +315,7 @@ export class GameUi {
     }
     // A few seconds is just the tick (or the dev speed); only a real delay (match.spectatorDelaySeconds) is worth saying.
     const lag = Math.round(lagSeconds);
-    this.notes.setSticky('spectating', true, lag >= 10 ? `İzleyici: tüm harita, oyundan ${lag} sn geride` : 'İzleyici: tüm harita, canlı', 'info');
+    this.notes.setSticky('spectating', true, lag >= 10 ? t('İzleyici: tüm harita, oyundan {0} sn geride', lag) : t('İzleyici: tüm harita, canlı'), 'info');
   }
 
   /** The places of the forest we have found, from the latest map state (the windows about them read this). */
@@ -338,7 +339,7 @@ export class GameUi {
     if (key !== this.camKey) {
       this.camKey = key;
       this.cam.querySelector('[data-f="rivals"]')!.innerHTML = rivals.map((p) =>
-        `<button class="btn hit cam-rival" data-cam="rival" data-seat="${p.seat}" data-color="${p.color}" title="Kamerayı ${esc(p.name)} kalesine götürür"><i class="dot"></i>${botMark(p.seat)}${esc(p.name)}</button>`).join('');
+        `<button class="btn hit cam-rival" data-cam="rival" data-seat="${p.seat}" data-color="${p.color}" title="${esc(t('Kamerayı {0} kalesine götürür', tr(p.name)))}"><i class="dot"></i>${botMark(p.seat)}${esc(tr(p.name))}</button>`).join('');
     }
     this.updateFinish();
   }
@@ -358,13 +359,13 @@ export class GameUi {
     if (text.includes('yaklaşıyor')) { sfx.play('warning'); return; }
     if (/elendi/.test(text)) sfx.play('castleFall');
     const kind: NoteKind = /düştü|elendi/.test(text) ? 'danger' : /saldır|çarpış|yendin|yenildin|püskürt|savaş/i.test(text) ? 'battle' : 'info';
-    this.notes.push(text, kind, 6000);
+    this.notes.push(tr(text), kind, 6000);
   }
 
   /** A command that did not work, or something else the player must know. */
   error(text: string): void {
     sfx.play('uiError');
-    this.notes.push(text, 'danger', 3500);
+    this.notes.push(tr(text), 'danger', 3500);
   }
 
   setStatus(text: string, ok: boolean): void {

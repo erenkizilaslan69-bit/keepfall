@@ -1,5 +1,6 @@
 import { sfx } from './audio';
 import { botMark, clock, COLOR_CSS, esc, fmt } from './format';
+import { inIframe, t, tr } from './i18n';
 import { emblemHtml } from './ui/emblem';
 import type { GameConnection } from './net';
 import type { BotLevel, RoomView, SummaryView } from './types';
@@ -13,6 +14,21 @@ import type { PlayerColor } from './types';
 // Each builds its structure once and updates in place, so typing in an input is never interrupted.
 // Each screen renders into its own element (and listens there), so when the app clears the page
 // the screen and its listeners go away together.
+
+/** Puts a text on the clipboard; inside an iframe the clipboard API may be refused, so the old select-and-copy way is the fallback. */
+async function copyText(text: string, fallbackInput: HTMLInputElement): Promise<boolean> {
+  try { await navigator.clipboard.writeText(text); return true; } catch { /* refused: try the old way */ }
+  const area = document.createElement('textarea');
+  area.value = text;
+  area.style.cssText = 'position:fixed;left:-1000px;top:0';
+  document.body.appendChild(area);
+  area.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch { /* no luck */ }
+  area.remove();
+  if (!ok) fallbackInput.select();
+  return ok;
+}
 
 function mount(parent: HTMLElement, html: string): HTMLElement {
   const el = document.createElement('div');
@@ -42,13 +58,13 @@ export class HomeScreen {
     const root = mount(parent, `
       <div class="screen menu paper home">
         ${logoHtml()}
-        <p class="muted center kf-logo-sub">2–4 kişilik kale savunma ve fetih oyunu</p>
-        <label class="field">Adın <input id="name" maxlength="16" autocomplete="nickname" value="${esc(defaults.name)}" placeholder="Oyuncu"></label>
-        <button id="create" class="btn wide">Oda kur</button>
-        <div class="or">ya da</div>
+        <p class="muted center kf-logo-sub">${t('2–4 kişilik kale savunma ve fetih oyunu')}</p>
+        <label class="field">${t('Adın')} <input id="name" maxlength="16" autocomplete="nickname" value="${esc(defaults.name)}" placeholder="${t('Oyuncu')}"></label>
+        <button id="create" class="btn wide">${t('Oda kur')}</button>
+        <div class="or">${t('ya da')}</div>
         <div class="join-row">
-          <label class="field">Oda kodu <input id="code" maxlength="4" value="${esc(defaults.code)}" placeholder="ABCD" autocapitalize="characters"></label>
-          <button id="join" class="btn btn-red">Odaya katıl</button>
+          <label class="field">${t('Oda kodu')} <input id="code" maxlength="4" value="${esc(defaults.code)}" placeholder="ABCD" autocapitalize="characters"></label>
+          <button id="join" class="btn btn-red">${t('Odaya katıl')}</button>
         </div>
         <p class="error" id="error">${esc(defaults.error ?? '')}</p>
       </div>`);
@@ -58,7 +74,7 @@ export class HomeScreen {
     const buttons = root.querySelectorAll<HTMLButtonElement>('button');
     const run = async (action: () => Promise<string | null>) => {
       buttons.forEach((b) => (b.disabled = true));
-      error.textContent = (await action()) ?? '';
+      error.textContent = tr((await action()) ?? '');
       buttons.forEach((b) => (b.disabled = false));
     };
     root.querySelector('#create')!.addEventListener('click', () => run(() => actions.create(name.value)));
@@ -80,26 +96,27 @@ export class LobbyScreen {
         <div class="lob-grid">
           <div class="lob-left">
             ${logoHtml()}
-            <div class="title-ribbon ribbon ribbon-blue">Oda <span class="code">${esc(room.code)}</span></div>
+            <div class="title-ribbon ribbon ribbon-blue">${t('Oda')} <span class="code">${esc(room.code)}</span></div>
             <div class="share">
-              <input class="share-code" readonly value="${esc(room.code)}" aria-label="Oda kodu">
-              <button class="btn" data-a="copy">Oda kodunu kopyala</button>
+              <input class="share-code" readonly value="${esc(`${t('Oda kodu')}: ${room.code}`)}" aria-label="${t('Oda kodu')}">
+              <button class="btn" data-a="copy">${t('Oda kodunu kopyala')}</button>
+              ${inIframe() ? '' : `<button class="btn" data-a="copylink">${t('Bağlantıyı kopyala')}</button>`}
             </div>
             <ul class="players" id="players"></ul>
           </div>
           <div class="lob-right">
             <div class="deck" id="deck" hidden>
-              <h3>Destem <span class="deck-medal" id="deck-count" title="Seçilen birlik"></span></h3>
-              <p class="muted small">Maçta yalnız seçtiğin 4 birliği üretebilirsin. Kartı çevirmek için tıkla; seçmek için <b>Seç</b>'e bas ya da çift tıkla. Rakip destene yalnız gözcü raporu bakar; seçmezsen rastgele verilir.</p>
+              <h3>${t('Destem')} <span class="deck-medal" id="deck-count" title="${t('Seçilen birlik')}"></span></h3>
+              <p class="muted small">${t("Maçta yalnız seçtiğin 4 birliği üretebilirsin. Kartı çevirmek için tıkla; seçmek için <b>Seç</b>'e bas ya da çift tıkla. Rakip destene yalnız gözcü raporu bakar; seçmezsen rastgele verilir.")}</p>
               <div class="deck-cards" id="deck-cards"></div>
             </div>
           </div>
           <div class="lob-bottom">
-            <label class="field">Adın <input id="myname" maxlength="16"></label>
+            <label class="field">${t('Adın')} <input id="myname" maxlength="16"></label>
             <button class="btn" data-a="ready" id="ready"></button>
-            <button class="btn" data-a="leave" id="leave">Odadan çık</button>
+            <button class="btn" data-a="leave" id="leave">${t('Odadan çık')}</button>
             <div class="start">
-              <button data-a="start" id="start" class="btn btn-red wide">Maçı başlat</button>
+              <button data-a="start" id="start" class="btn btn-red wide">${t('Maçı başlat')}</button>
             </div>
             <p class="muted small center" id="start-hint"></p>
           </div>
@@ -114,10 +131,14 @@ export class LobbyScreen {
     });
     root.addEventListener('click', async (e) => {
       const a = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-a]')?.dataset.a;
-      if (a === 'copy') {
-        const input = this.q<HTMLInputElement>('.share input');
-        try { await navigator.clipboard.writeText(input.value); this.q('[data-a="copy"]').textContent = 'Kopyalandı'; }
-        catch { input.select(); }
+      if (a === 'copy' || a === 'copylink') {
+        // The room code (all that matters inside an iframe such as itch.io) or the address of the room; the button says "Copied!" for two seconds.
+        const button = this.q<HTMLButtonElement>(`[data-a="${a}"]`);
+        const text = a === 'copy' ? this.room!.code : `${location.origin}/oda/${this.room!.code}`;
+        const done = await copyText(text, this.q<HTMLInputElement>('.share input'));
+        const label = button.textContent;
+        button.textContent = done ? t('Kopyalandı!') : t('Kopyalanamadı');
+        setTimeout(() => { button.textContent = label; }, 2000);
       } else if (a === 'ready') {
         this.show(await this.net.setReady(!this.me(this.room!)?.ready));
       } else if (a === 'deckpick') {
@@ -185,11 +206,11 @@ export class LobbyScreen {
 
   /** What a unit does, in words, for the back of its card. */
   private static role(u: GuideUnit): string {
-    if (u.heal) return `Saldırmaz; her ${u.healInterval} sn'de en yaralı dostuna ${u.heal} can verir. Arka sırada durur.`;
-    if (u.backFirst) return 'Düşmanın arka sırasını döver, iki hedefe sıçrar. Kuşanırken ' + (u.people ?? 2) + ' kişi harcar.';
-    if (u.flank) return `Arkadaki okçu, mancınık ve keşişe dalar. ×${u.speedFactor ?? 2} hızlı; tek başına tarla yakar.`;
-    if (u.back) return 'Arka sıradan ateş eder; öndekiler onu korur.';
-    return 'Ön sırada dövüşür ve arkadakileri korur.';
+    if (u.heal) return t("Saldırmaz; her {0} sn'de en yaralı dostuna {1} can verir. Arka sırada durur.", u.healInterval ?? 0, u.heal);
+    if (u.backFirst) return t('Düşmanın arka sırasını döver, iki hedefe sıçrar. Kuşanırken {0} kişi harcar.', u.people ?? 2);
+    if (u.flank) return t('Arkadaki okçu, mancınık ve keşişe dalar. ×{0} hızlı; tek başına tarla yakar.', u.speedFactor ?? 2);
+    if (u.back) return t('Arka sıradan ateş eder; öndekiler onu korur.');
+    return t('Ön sırada dövüşür ve arkadakileri korur.');
   }
 
   private renderDeck(): void {
@@ -203,20 +224,20 @@ export class LobbyScreen {
             <div class="ucard-face front">
               <span class="ucard-check" aria-hidden="true">✓</span>
               <div class="ucard-art"><canvas width="128" height="112"></canvas></div>
-              <b class="ucard-name">${esc(u.name)}</b>
-              <span class="ucard-tag">${u.heal ? 'destek' : u.flank ? 'baskıncı' : u.backFirst ? 'kuşatma' : u.back ? 'menzilli' : 'yakın dövüş'}</span>
-              <span class="ucard-btns"><button class="btn small" data-a="flip" title="Kartı çevir">Çevir</button><button class="btn small ucard-pick" data-a="deckpick" aria-pressed="false">Seç</button></span>
+              <b class="ucard-name">${esc(tr(u.name))}</b>
+              <span class="ucard-tag">${u.heal ? t('destek') : u.flank ? t('baskıncı') : u.backFirst ? t('kuşatma') : u.back ? t('menzilli') : t('yakın dövüş')}</span>
+              <span class="ucard-btns"><button class="btn small" data-a="flip" title="${t('Kartı çevir')}">${t('Çevir')}</button><button class="btn small ucard-pick" data-a="deckpick" aria-pressed="false">${t('Seç')}</button></span>
             </div>
             <div class="ucard-face back">
-              <b class="ucard-name">${esc(u.name)}</b>
+              <b class="ucard-name">${esc(tr(u.name))}</b>
               <dl>
-                <dt>Can</dt><dd>${u.hp}</dd>
-                <dt>${u.heal ? 'İyileştirme' : 'Hasar'}</dt><dd>${u.heal ? `${u.heal} / ${u.healInterval} sn` : `${Math.round(u.dps * 10) / 10} / sn`}</dd>
+                <dt>${t('Can')}</dt><dd>${u.hp}</dd>
+                <dt>${u.heal ? t('İyileştirme') : t('Hasar')}</dt><dd>${u.heal ? t('{0} / {1} sn', u.heal, u.healInterval ?? 0) : t('{0} / sn', Math.round(u.dps * 10) / 10)}</dd>
               </dl>
               <p class="ucard-role">${esc(LobbyScreen.role(u))}</p>
-              <p class="ucard-vs"><span class="good">Yener</span> ${esc(u.strong.join(', ') || '—')}</p>
-              <p class="ucard-vs"><span class="bad">Korkar</span> ${esc(u.weak.join(', ') || '—')}</p>
-              <span class="ucard-btns"><button class="btn small" data-a="flip" title="Kartı çevir">Geri</button><button class="btn small ucard-pick" data-a="deckpick" aria-pressed="false">Seç</button></span>
+              <p class="ucard-vs"><span class="good">${t('Yener')}</span> ${esc(u.strong.map(tr).join(', ') || '—')}</p>
+              <p class="ucard-vs"><span class="bad">${t('Korkar')}</span> ${esc(u.weak.map(tr).join(', ') || '—')}</p>
+              <span class="ucard-btns"><button class="btn small" data-a="flip" title="${t('Kartı çevir')}">${t('Geri')}</button><button class="btn small ucard-pick" data-a="deckpick" aria-pressed="false">${t('Seç')}</button></span>
             </div>
           </div>
         </div>`).join('');
@@ -228,7 +249,7 @@ export class LobbyScreen {
       const on = this.deck.includes(card.dataset.unit!);
       card.classList.toggle('on', on);
       card.classList.toggle('dim', full && !on);
-      card.querySelectorAll<HTMLButtonElement>('.ucard-pick').forEach((b) => { b.textContent = on ? 'Seçili' : 'Seç'; b.setAttribute('aria-pressed', String(on)); b.disabled = full && !on; });
+      card.querySelectorAll<HTMLButtonElement>('.ucard-pick').forEach((b) => { b.textContent = on ? t('Seçili') : t('Seç'); b.setAttribute('aria-pressed', String(on)); b.disabled = full && !on; });
     });
   }
 
@@ -239,25 +260,25 @@ export class LobbyScreen {
     this.q('#players').innerHTML = seats.map((p, i) => p ? `
       <li class="${p.connected ? '' : 'offline'}" data-color="${p.color}">
         <i class="avatar" style="background-image:url('${avatar(p.seat)}')"></i>
-        <span class="pname">${botMark(p.seat)}${esc(p.name)}${p.seat === this.mySeat ? ' <span class="muted">(sen)</span>' : ''}</span>
+        <span class="pname">${botMark(p.seat)}${esc(tr(p.name))}${p.seat === this.mySeat ? ` <span class="muted">${t('(sen)')}</span>` : ''}</span>
         <span class="tags">
-          ${p.isBot ? `<span class="tag">bot · ${p.botLevel === 'easy' ? 'kolay' : p.botLevel === 'hard' ? 'zor' : 'orta'}</span>` : ''}
-          ${p.isBot && me?.isHost ? `<button class="btn small" data-a="rmbot" data-seat="${p.seat}">Bot çıkar</button>` : ''}
-          ${p.isHost ? '<span class="tag">oda sahibi</span>' : ''}
-          ${p.isBot ? '' : !p.connected ? '<span class="tag warn">bağlantı yok</span>' : p.ready ? '<span class="tag ok">hazır</span>' : '<span class="tag">bekliyor</span>'}
+          ${p.isBot ? `<span class="tag">${t('bot · {0}', p.botLevel === 'easy' ? t('kolay') : p.botLevel === 'hard' ? t('zor') : t('orta'))}</span>` : ''}
+          ${p.isBot && me?.isHost ? `<button class="btn small" data-a="rmbot" data-seat="${p.seat}">${t('Bot çıkar')}</button>` : ''}
+          ${p.isHost ? `<span class="tag">${t('oda sahibi')}</span>` : ''}
+          ${p.isBot ? '' : !p.connected ? `<span class="tag warn">${t('bağlantı yok')}</span>` : p.ready ? `<span class="tag ok">${t('hazır')}</span>` : `<span class="tag">${t('bekliyor')}</span>`}
         </span>
-      </li>` : `<li class="empty"><i class="avatar"></i><span class="pname muted">Boş yer ${i + 1}</span>
-        ${me?.isHost ? `<span class="tags">Bot ekle:
-          <button class="btn small" data-a="addbot" data-level="easy">Kolay</button>
-          <button class="btn small" data-a="addbot" data-level="medium">Orta</button>
-          <button class="btn small" data-a="addbot" data-level="hard">Zor</button></span>` : ''}</li>`).join('')
+      </li>` : `<li class="empty"><i class="avatar"></i><span class="pname muted">${t('Boş yer {0}', i + 1)}</span>
+        ${me?.isHost ? `<span class="tags">${t('Bot ekle:')}
+          <button class="btn small" data-a="addbot" data-level="easy">${t('Kolay')}</button>
+          <button class="btn small" data-a="addbot" data-level="medium">${t('Orta')}</button>
+          <button class="btn small" data-a="addbot" data-level="hard">${t('Zor')}</button></span>` : ''}</li>`).join('')
       // A host alone in the room (nobody else, no bot yet) learns how to test on their own.
-      + (me?.isHost && room.players.length === 1 ? `<li class="lobby-tip" role="note">💡 Tek başına mı test ediyorsun? Boş yerlerin yanındaki <b>Kolay / Orta / Zor</b> düğmeleriyle bot (yapay zekâ) ekleyebilirsin!</li>` : '');
+      + (me?.isHost && room.players.length === 1 ? `<li class="lobby-tip" role="note">💡 ${t('Tek başına mı test ediyorsun? Boş yerlerin yanındaki <b>Kolay / Orta / Zor</b> düğmeleriyle bot (yapay zekâ) ekleyebilirsin!')}</li>` : '');
 
     const nameInput = this.q<HTMLInputElement>('#myname');
     if (me && document.activeElement !== nameInput) nameInput.value = me.name;
     const ready = this.q<HTMLButtonElement>('#ready');
-    ready.textContent = me?.ready ? 'Hazırım ✓' : 'Hazırım';
+    ready.textContent = me?.ready ? t('Hazırım ✓') : t('Hazırım');
     ready.classList.toggle('btn-red', !!me?.ready);
 
     const isHost = !!me?.isHost;
@@ -266,10 +287,10 @@ export class LobbyScreen {
     start.disabled = !room.canStart;
     const notReady = room.players.filter((p) => !p.isBot && (!p.ready || !p.connected)).length;
     this.q('#start-hint').textContent = !isHost
-      ? 'Herkes hazır olunca oda sahibi maçı başlatır.'
+      ? t('Herkes hazır olunca oda sahibi maçı başlatır.')
       : room.players.length < room.minPlayers
-        ? `En az ${room.minPlayers} oyuncu gerekiyor. Oda kodunu paylaş.`
-        : notReady > 0 ? `${notReady} oyuncu henüz hazır değil.` : 'Herkes hazır.';
+        ? t('En az {0} oyuncu gerekiyor. Oda kodunu paylaş.', room.minPlayers)
+        : notReady > 0 ? t('{0} oyuncu henüz hazır değil.', notReady) : t('Herkes hazır.');
   }
 
   private me(room: RoomView) { return room.players.find((p) => p.seat === this.mySeat); }
@@ -277,7 +298,7 @@ export class LobbyScreen {
   private show(result: { ok: boolean; error: string | null }) {
     // The screen may already be gone (e.g. the match started while the call was in flight).
     const error = this.root.querySelector('#error');
-    if (error) error.textContent = result.ok ? '' : result.error ?? 'Olmadı.';
+    if (error) error.textContent = result.ok ? '' : tr(result.error ?? t('Olmadı.'));
   }
 
   private q<T extends HTMLElement = HTMLElement>(selector: string): T {
@@ -296,14 +317,14 @@ export class EndScreen {
   constructor(parent: HTMLElement, private readonly net: GameConnection, private readonly mySeat: number) {
     const root = this.root = mount(parent, `
       <div class="screen menu paper end">
-        <div class="title-ribbon ribbon ribbon-blue" id="end-title">Maç bitti</div>
+        <div class="title-ribbon ribbon ribbon-blue" id="end-title">${t('Maç bitti')}</div>
         <div class="end-art" id="end-art"></div>
         <p class="muted center" id="end-reason"></p>
         <div id="ranking"></div>
-        <div id="summary"><p class="muted">Özet hazırlanıyor…</p></div>
+        <div id="summary"><p class="muted">${t('Özet hazırlanıyor…')}</p></div>
         <div id="others"></div>
         <div class="start">
-          <button data-a="lobby" id="lobby" class="btn wide hidden">Lobiye dön</button>
+          <button data-a="lobby" id="lobby" class="btn wide hidden">${t('Lobiye dön')}</button>
           <p class="muted small center" id="lobby-hint"></p>
         </div>
         <p class="error" id="error"></p>
@@ -312,7 +333,7 @@ export class EndScreen {
       if ((e.target as HTMLElement).closest('button[data-a="lobby"]')) {
         const r = await this.net.backToLobby();
         const error = this.root.querySelector('#error');
-        if (error) error.textContent = r.ok ? '' : r.error ?? '';
+        if (error) error.textContent = r.ok ? '' : tr(r.error ?? '');
       }
     });
   }
@@ -330,7 +351,7 @@ export class EndScreen {
       base.getContext('2d')!.drawImage(img, 0, 0);
       const out = new Image();
       out.src = recolor(base, color).toDataURL('image/png');
-      out.alt = won ? 'Zafer' : 'Yenilgi';
+      out.alt = won ? t('Zafer') : t('Yenilgi');
       out.className = won ? 'end-victory' : 'end-defeat';
       out.style.width = `calc(${base.width * 4}px * var(--u, 1))`;
       box.replaceChildren(out);
@@ -340,7 +361,7 @@ export class EndScreen {
   setSummary(summary: SummaryView): void {
     if (this.summary) return;
     this.summary = summary;
-    this.root.querySelector('#summary')!.innerHTML = `<h2>Senin özetin</h2>${summaryHtml(summary)}`;
+    this.root.querySelector('#summary')!.innerHTML = `<h2>${t('Senin özetin')}</h2>${summaryHtml(summary)}`;
   }
 
   update(room: RoomView): void {
@@ -352,55 +373,55 @@ export class EndScreen {
       // victory: the winner's colour (the ranking carries it); defeat: our own
       const winnerColor = r.ranking.find((x) => r.winners.includes(x.seat))?.color;
       void this.showEndArt(won, (won ? winnerColor : undefined) ?? room.players.find((p) => p.seat === this.mySeat)?.color ?? r.ranking.find((x) => x.seat === this.mySeat)?.color ?? 'blue');
-      const names = r.ranking.filter((x) => r.winners.includes(x.seat)).map((x) => `${dot(x.color)}${esc(x.name)}`).join(', ');
+      const names = r.ranking.filter((x) => r.winners.includes(x.seat)).map((x) => `${dot(x.color)}${esc(tr(x.name))}`).join(', ');
       const title = this.root.querySelector<HTMLElement>('#end-title')!;
       title.innerHTML = won
-        ? (r.winners.length > 1 ? 'Berabere — zaferi paylaştın!' : 'Kazandın!')
-        : `Kazanan: ${names || '—'}`;
+        ? (r.winners.length > 1 ? t('Berabere — zaferi paylaştın!') : t('Kazandın!'))
+        : t('Kazanan: {0}', names || '—');
       title.classList.remove('ribbon-blue');
       title.classList.add(won ? (r.winners.length > 1 ? 'ribbon-yellow' : 'ribbon-blue') : 'ribbon-red');
       this.root.querySelector('#end-reason')!.textContent = r.byElimination
-        ? 'Son ayakta kalan kale kazandı.'
-        : 'Süre bitti: en yüksek nüfus kazandı.';
+        ? t('Son ayakta kalan kale kazandı.')
+        : t('Süre bitti: en yüksek nüfus kazandı.');
       this.root.querySelector('#ranking')!.innerHTML = `
         <ol class="ranking">${r.ranking.map((x) => `
           <li class="${r.winners.includes(x.seat) ? 'winner' : ''}" data-color="${x.color}">
             <span class="place">${x.place}.</span><i class="avatar" style="background-image:url('${avatar(x.seat)}')"></i>
-            ${emblemHtml(x.kingdom, 'emblem-rank')}<span class="pname">${r.winners.includes(x.seat) ? '<i class="ico ico-crown" title="Kazanan"></i>' : ''}${botMark(x.seat)}${esc(x.name)}${x.seat === this.mySeat ? ' <span class="muted">(sen)</span>' : ''}</span>
-            <span class="muted small">${x.eliminated ? 'elendi' : `nüfus ${x.population}`}</span>
+            ${emblemHtml(x.kingdom, 'emblem-rank')}<span class="pname">${r.winners.includes(x.seat) ? `<i class="ico ico-crown" title="${t('Kazanan')}"></i>` : ''}${botMark(x.seat)}${esc(tr(x.name))}${x.seat === this.mySeat ? ` <span class="muted">${t('(sen)')}</span>` : ''}</span>
+            <span class="muted small">${x.eliminated ? t('elendi') : t('nüfus {0}', x.population)}</span>
           </li>`).join('')}</ol>`;
       const mine = r.summaries.find((x) => x.seat === this.mySeat);
       if (mine) this.setSummary(mine.summary);
       this.root.querySelector('#others')!.innerHTML = r.summaries.filter((x) => x.seat !== this.mySeat).map((x) => `
-        <details class="other-summary"><summary>${dot(x.color)}${esc(x.name)} · özet</summary>${summaryHtml(x.summary)}</details>`).join('');
+        <details class="other-summary"><summary>${dot(x.color)}${esc(tr(x.name))} · ${t('özet')}</summary>${summaryHtml(x.summary)}</details>`).join('');
     }
     const isHost = !!room.players.find((p) => p.seat === this.mySeat)?.isHost;
     this.root.querySelector('#lobby')!.classList.toggle('hidden', !isHost);
     this.root.querySelector('#lobby-hint')!.textContent = isHost
-      ? 'Aynı oyuncularla yeni bir hazırlık için lobiye dön.'
-      : 'Oda sahibi lobiye dönünce yeni maç kurulabilir.';
+      ? t('Aynı oyuncularla yeni bir hazırlık için lobiye dön.')
+      : t('Oda sahibi lobiye dönünce yeni maç kurulabilir.');
   }
 }
 
 function summaryHtml(s: SummaryView): string {
   const minutes = s.durationSeconds / 60;
-  const workers = s.workers.map((w) => `${esc(w.name)} ${w.count}`).join(' · ');
+  const workers = s.workers.map((w) => `${esc(tr(w.name))} ${w.count}`).join(' · ');
   const army = s.units.filter((u) => u.soldiers + u.weapons > 0)
-    .map((u) => `${esc(u.name)}: ${u.soldiers} asker, ${u.weapons} silah depoda`).join('<br>') || 'Asker yok.';
-  const buildings = s.buildings.map((b) => `${esc(b.name)} Sv ${b.level}`).join(' · ');
+    .map((u) => t('{0}: {1} asker, {2} silah depoda', esc(tr(u.name)), u.soldiers, u.weapons)).join('<br>') || t('Asker yok.');
+  const buildings = s.buildings.map((b) => t('{0} Sv {1}', esc(tr(b.name)), b.level)).join(' · ');
   return `
     <div class="grid">
-      <div>Nüfus</div><div><b>${s.startPopulation} → ${s.finalPopulation}</b> (en yüksek ${s.peakPopulation}, ${s.peopleBorn} doğum)</div>
-      <div>Üretilen</div><div>${fmt(s.produced.food)} yemek · ${fmt(s.produced.wood)} odun · ${fmt(s.produced.iron)} demir</div>
-      <div>Elde kalan</div><div>${fmt(s.final.food)} yemek · ${fmt(s.final.wood)} odun · ${fmt(s.final.iron)} demir</div>
-      <div>Silah</div><div>${s.weaponsMade} üretildi</div>
-      <div>Ordu</div><div>${army}</div>
-      <div>Meslekler</div><div>${workers}</div>
-      <div>Binalar</div><div>${buildings}</div>
-      <div>Açlık</div><div>${Math.round(s.starvingSeconds)} sn</div>
-      <div>Boşta</div><div>${(s.idleWorkerSeconds / 60).toFixed(1)} işçi-dakika (ortalama ${(s.idleWorkerSeconds / 60 / Math.max(minutes, 1e-9)).toFixed(1)} kişi boşta)</div>
-      <div>Savaş</div><div>${s.war.attacksLaunched} saldırı · ${s.war.enemiesKilled} düşman öldürüldü · ${s.war.soldiersLost} asker kaybı</div>
-      <div>Kale</div><div>${s.war.eliminated ? 'kale düştü' : 'kale ayakta'}</div>
+      <div>${t('Nüfus')}</div><div><b>${s.startPopulation} → ${s.finalPopulation}</b> ${t('(en yüksek {0}, {1} doğum)', s.peakPopulation, s.peopleBorn)}</div>
+      <div>${t('Üretilen')}</div><div>${t('{0} yemek · {1} odun · {2} demir', fmt(s.produced.food), fmt(s.produced.wood), fmt(s.produced.iron))}</div>
+      <div>${t('Elde kalan')}</div><div>${t('{0} yemek · {1} odun · {2} demir', fmt(s.final.food), fmt(s.final.wood), fmt(s.final.iron))}</div>
+      <div>${t('Silah')}</div><div>${t('{0} üretildi', s.weaponsMade)}</div>
+      <div>${t('Ordu')}</div><div>${army}</div>
+      <div>${t('Meslekler')}</div><div>${workers}</div>
+      <div>${t('Binalar')}</div><div>${buildings}</div>
+      <div>${t('Açlık')}</div><div>${t('{0} sn', Math.round(s.starvingSeconds))}</div>
+      <div>${t('Boşta')}</div><div>${t('{0} işçi-dakika (ortalama {1} kişi boşta)', (s.idleWorkerSeconds / 60).toFixed(1), (s.idleWorkerSeconds / 60 / Math.max(minutes, 1e-9)).toFixed(1))}</div>
+      <div>${t('Savaş')}</div><div>${t('{0} saldırı · {1} düşman öldürüldü · {2} asker kaybı', s.war.attacksLaunched, s.war.enemiesKilled, s.war.soldiersLost)}</div>
+      <div>${t('Kale')}</div><div>${s.war.eliminated ? t('kale düştü') : t('kale ayakta')}</div>
     </div>
     ${chart(s)}`;
 }
@@ -418,12 +439,12 @@ function chart(s: SummaryView): string {
   const line = (f: (p: (typeof pts)[number]) => number, max: number) =>
     pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.seconds).toFixed(1)},${y(f(p), max).toFixed(1)}`).join(' ');
   return `
-    <svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Nüfus ve yemek grafiği">
+    <svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${t('Nüfus ve yemek grafiği')}">
       <line x1="${pad}" y1="${h - pad}" x2="${w - pad}" y2="${h - pad}" class="axis"/>
       <path d="${line((p) => p.population, maxPop)}" class="pop"/>
       <path d="${line((p) => p.food, maxFood)}" class="food"/>
-      <text x="${pad}" y="14" class="pop-label">nüfus (en çok ${maxPop})</text>
-      <text x="${w - pad}" y="14" text-anchor="end" class="food-label">yemek (en çok ${fmt(maxFood)})</text>
+      <text x="${pad}" y="14" class="pop-label">${t('nüfus (en çok {0})', maxPop)}</text>
+      <text x="${w - pad}" y="14" text-anchor="end" class="food-label">${t('yemek (en çok {0})', fmt(maxFood))}</text>
       <text x="${w - pad}" y="${h - 6}" text-anchor="end" class="axis-label">${clock(maxT)}</text>
     </svg>`;
 }
