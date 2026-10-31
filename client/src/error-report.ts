@@ -1,3 +1,4 @@
+import { serverUrl } from './env';
 // Script errors and unhandled promise rejections are sent to the server (POST /api/client-log), which writes them to its log,
 // so a freeze or a blank window can be read afterwards instead of described. A few per page, the same one only once.
 
@@ -29,7 +30,7 @@ export function reportError(kind: string, error: unknown, extra: { source?: stri
     kind, message, stack: e?.stack, ...extra, url: location.href, userAgent: navigator.userAgent, ...ctx,
   });
   try {
-    void fetch('/api/client-log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
+    void fetch(serverUrl('/api/client-log'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
   } catch { /* offline: nothing to do */ }
 }
 

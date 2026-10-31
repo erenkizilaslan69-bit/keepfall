@@ -29,6 +29,7 @@ import { loadHorse } from './scene/HorseArt';
 import { mountLangButton, mountSettingsButton, setLeaveAction } from './ui/settings';
 import { guarded, installErrorReporting } from './error-report';
 import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
+import { setRoute } from './env';
 
 // Routes: "/" is the home screen, "/oda/ABCD" is a room. Inside a room the screen follows the
 // room's phase: lobby → game (preparation and war) → end screen.
@@ -171,7 +172,7 @@ function clear(): void {
 async function leaveToMenu(): Promise<void> {
   await net.leaveRoom();
   lastCastle = null; lastLayout = null; lastMap = null; lastSpectator = null; pendingBattles = []; summary = null;
-  history.pushState(null, '', `/${location.search}`);
+  setRoute(`/${location.search}`);
   showHome();
 }
 
@@ -186,7 +187,7 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
       saveName(name);
       const r = await net.createRoom(name);
       if (!r.ok) return r.error;
-      history.pushState(null, '', `/oda/${r.code}${location.search}`);
+      setRoute(`/oda/${r.code}${location.search}`);
       return null;
     },
     join: async (name, code) => {
@@ -195,7 +196,7 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
       saveName(name);
       const r = await net.joinRoom(c, name);
       if (!r.ok) return r.error;
-      history.pushState(null, '', `/oda/${r.code}${location.search}`);
+      setRoute(`/oda/${r.code}${location.search}`);
       return null;
     },
   });
@@ -321,7 +322,7 @@ async function main(): Promise<void> {
   if (!code) { showHome(); return; }
   const r = await net.joinRoom(code, loadName());
   if (!r.ok) {
-    history.replaceState(null, '', `/${location.search}`);
+    setRoute(`/${location.search}`, 'replace');
     showHome({ code, error: r.error ?? t('Odaya katılınamadı.') });
   }
 }

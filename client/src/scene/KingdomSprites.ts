@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { BuildingType, PlayerColor } from '../types';
 import { CHIMNEYS } from './Chimneys';
+import { asset } from '../env';
 
 // The kingdoms' own castles and buildings: pictures in client/public/art/kingdoms (cleaned from the generated art by tools/art-clean.mjs: one pixel per
 // fake pixel, a limited palette, transparent background), drawn one grid pixel at CASTLE_CELL / BUILD_CELL world pixels. Only the saturated blue of
@@ -31,7 +32,7 @@ export const kingdomKey = (look: string, name: string, color: PlayerColor) => `k
 export const isKingdomLook = (look: string | null | undefined): look is string => !!look && (KINGDOM_LOOKS as readonly string[]).includes(look);
 
 export function preloadKingdomArt(scene: Phaser.Scene): void {
-  for (const look of KINGDOM_LOOKS) for (const f of FILES) scene.load.image(srcKey(look, f), `/art/${DIR}/${look}-${f}.png`);
+  for (const look of KINGDOM_LOOKS) for (const f of FILES) scene.load.image(srcKey(look, f), asset(`/art/${DIR}/${look}-${f}.png`));
 }
 
 const TEAM: Record<PlayerColor, [string, string, string]> = {

@@ -8,6 +8,7 @@ import { loadGuide, type GuideUnit } from './ui/guide';
 import { mountPortrait } from './ui/portraits';
 import { recolor } from './scene/KingdomSprites';
 import type { PlayerColor } from './types';
+import { asset } from './env';
 
 // Plain-HTML screens around the game: home, lobby and the end screen, in the same parchment-and-ribbon
 // look as the in-game UI (ui/ui.css).
@@ -39,7 +40,7 @@ function mount(parent: HTMLElement, html: string): HTMLElement {
 
 const dot = (color: string) => `<span class="dot" style="background:${COLOR_CSS[color] ?? '#888'}"></span>`;
 
-const ART = '/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/';
+const ART = asset('/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/');
 const avatar = (seat: number) =>
   `${ART}UI%20Elements/UI%20Elements/Human%20Avatars/Avatars_${String(((seat - 1) % 25) + 1).padStart(2, '0')}.png`;
 
@@ -47,7 +48,7 @@ const avatar = (seat: number) =>
 
 /** The Keepfall logo (the generated picture, public/art/ui/logo-half.png). */
 export const logoHtml = (): string => `
-  <div class="kf-logo" role="img" aria-label="Keepfall"><img class="kf-logo-img" src="/art/ui/logo-half.png" alt="" draggable="false"></div>`;
+  <div class="kf-logo" role="img" aria-label="Keepfall"><img class="kf-logo-img" src="${asset('/art/ui/logo-half.png')}" alt="" draggable="false"></div>`;
 
 export class HomeScreen {
   constructor(
@@ -344,7 +345,7 @@ export class EndScreen {
     if (!box) return;
     try {
       const img = new Image();
-      img.src = `/art/ui/${won ? 'victory' : 'defeat'}-half.png`;
+      img.src = asset(`/art/ui/${won ? 'victory' : 'defeat'}-half.png`);
       await img.decode();
       const base = document.createElement('canvas');
       base.width = img.naturalWidth; base.height = img.naturalHeight;

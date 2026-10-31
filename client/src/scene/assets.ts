@@ -4,11 +4,12 @@ import { makeNewUnitArt } from './NewUnits';
 import { preloadKingdomArt } from './KingdomSprites';
 import { preloadForestArt } from './ForestSprites';
 import { preloadPropsArt } from './MapProps';
+import { asset } from '../env';
 
 // Tiny Swords (Free Pack) by Pixel Frog — not in the repo, see README. Units and buildings are
 // loaded in the player's own colour; terrain and props are shared.
 
-const ROOT = '/assets/tiny-swords/Tiny Swords (Free Pack)/';
+const ROOT = asset('/assets/tiny-swords/Tiny Swords (Free Pack)/');
 const url = (path: string) => encodeURI(ROOT + path);
 
 /** Folder name of each player colour in the pack (Black stays spare). */
@@ -144,7 +145,7 @@ export function assetUrls(color: PlayerColor, others: PlayerColor[] = []): strin
   const list = [...sheets(color), ...moverSheets(others)].map((s) => url(s.path));
   list.push(...Object.values({ ...buildingImages(color), ...IMAGES }).map(url));
   for (const name of COLORED_IMAGES) list.push(url(buildingImages('black')[name]));
-  list.push('/cc0/Tilemap_Elevation.png', '/cc0/Signpost.png');
+  list.push(asset('/cc0/Tilemap_Elevation.png'), asset('/cc0/Signpost.png'));
   for (const c of others) if (c !== 'black') list.push(url(buildingImages(c).tower));
   for (const folder of Object.values(COLOR_FOLDER)) list.push(url(`Buildings/${folder} Buildings/Castle.png`));
   return [...new Set(list)];
@@ -158,8 +159,8 @@ export function preloadAssets(scene: Phaser.Scene, color: PlayerColor, others: P
   // The bandits' camps and the villages of the forest are black buildings.
   for (const name of COLORED_IMAGES) scene.load.image(`black-${name}`, url(buildingImages('black')[name]));
   // The wall of every region: the stone sheet is CC0 (public/cc0, in the repo), and the towers come in everybody's colour.
-  scene.load.image('wall-elev', '/cc0/Tilemap_Elevation.png');
-  scene.load.image('signpost', '/cc0/Signpost.png');
+  scene.load.image('wall-elev', asset('/cc0/Tilemap_Elevation.png'));
+  scene.load.image('signpost', asset('/cc0/Signpost.png'));
   for (const c of others) if (c !== 'black') scene.load.image(`${c}-tower`, url(buildingImages(c).tower));
   // Everyone's castle, for the other corners of the map.
   for (const [c, folder] of Object.entries(COLOR_FOLDER)) scene.load.image(`castle-${c}`, url(`Buildings/${folder} Buildings/Castle.png`));

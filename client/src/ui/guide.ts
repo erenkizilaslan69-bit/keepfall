@@ -1,6 +1,7 @@
 import { esc } from '../format';
 import { isEnglish, numLocale, t, tr } from '../i18n';
 import { emblemHtml } from './emblem';
+import { serverUrl } from '../env';
 
 // "Nasıl oynanır": a short decree (a parchment over the screen) opened with the "?" button, in the menus and in the game. Every number in it
 // comes from the server (/api/guide, which reads config/balance.json), so it follows the settings when they change.
@@ -160,7 +161,7 @@ export function loadGuide(): Promise<Guide> {
 }
 
 function load(): Promise<Guide> {
-  cached ??= fetch('/api/guide').then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<Guide>; })
+  cached ??= fetch(serverUrl('/api/guide')).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<Guide>; })
     .catch((e) => { cached = null; throw e; });
   return cached;
 }

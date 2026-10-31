@@ -1,3 +1,4 @@
+import { asset } from '../env';
 // The catapult, from one picture (art/inbox/mancinik-final.png, made with Retro Diffusion; copied to public/art/mancinik.png): the pixel grid is
 // found, the black tyres become wooden wheels with an iron rim, the blue cloth and hubs take the player's colour, a thick dark outline is
 // added (like the cavalry's) and the throwing arm (the bucket and the beam left of the pivot) is cut out so it can swing for the throw.
@@ -67,7 +68,7 @@ export function setCatapultSource(img: CanvasImageSource & { width: number; heig
 if (typeof Image !== 'undefined') {
   const img = new Image();
   img.onload = () => setCatapultSource(img);
-  img.src = '/art/mancinik.png';
+  img.src = asset('/art/mancinik.png');
 }
 
 const lum = (r: number, g: number, b: number) => 0.299 * r + 0.587 * g + 0.114 * b;

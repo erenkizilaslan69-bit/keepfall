@@ -42,7 +42,7 @@ public sealed class ClientErrorLog(ILogger<ClientErrorLog> logger, IHostEnvironm
                 File.AppendAllText(_path, sb.ToString());
             }
         }
-        catch (IOException ex) { logger.LogError(ex, "İstemci hata günlüğü yazılamadı"); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { logger.LogError(ex, "İstemci hata günlüğü yazılamadı"); }
         return true;
     }
 

@@ -2,6 +2,7 @@ import * as signalR from '@microsoft/signalr';
 import { loadIdentity, saveIdentity } from './identity';
 import { trace } from './debug-trace';
 import type { ArmyMode, BattleStartedView, BotLevel, BuildingType, CastleView, CommandResult, Job, JoinView, MapLayoutView, MapStateView, RoomView, Row, SpectatorStateView, SpectatorWaitView, SummaryView } from './types';
+import { serverUrl } from './env';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'roomLost';
 
@@ -35,7 +36,7 @@ export class GameConnection {
 
   constructor(private readonly on: ConnectionEvents) {
     this.hub = new signalR.HubConnectionBuilder()
-      .withUrl('/hub')
+      .withUrl(serverUrl('/hub'), { withCredentials: false }) // no cookies: the hub answers any origin (itch.io page → hosted server)
       // The library gives up after ~40 s; a match lasts longer than a bad minute of wifi, so keep trying every 5 s for ten minutes.
       .withAutomaticReconnect({ nextRetryDelayInMilliseconds: (ctx) => ctx.elapsedMilliseconds >= 600_000 ? null : ([0, 2000][ctx.previousRetryCount] ?? 5000) })
       .configureLogging(signalR.LogLevel.Warning)

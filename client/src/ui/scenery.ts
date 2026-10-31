@@ -1,6 +1,7 @@
 import { assetUrl } from '../scene/assets';
 import { flameCanvas } from '../scene/PixelArt';
 import type { PlayerColor } from '../types';
+import { asset } from '../env';
 
 // The living picture behind the home, lobby and end screens: the generated lobby picture (public/art/ui/lobby-bg.jpg, scaled to cover the window with
 // nearest-neighbour, it carries the four castles, the forest, the meadow and the river) with a few small animated groups in the free strips left and
@@ -52,7 +53,7 @@ class Scenery {
   constructor() {
     this.canvas.id = 'scenery';
     this.canvas.setAttribute('aria-hidden', 'true');
-    this.canvas.style.background = "#3d6b3a url('/art/ui/lobby-bg.jpg') center / cover no-repeat";
+    this.canvas.style.background = `#3d6b3a url('${asset('/art/ui/lobby-bg.jpg')}') center / cover no-repeat`;
     window.addEventListener('resize', () => this.resize());
     this.resize();
     requestAnimationFrame((t) => this.loop(t));

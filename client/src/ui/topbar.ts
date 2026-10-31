@@ -3,11 +3,12 @@ import { guideClicked, markGuideClicked, toggleGuide } from './guide';
 import { lang, t, toggleLang, tr } from '../i18n';
 import { botMark, clock, esc, fmt, rate } from '../format';
 import type { CastleView, PlayerView, RoomView } from '../types';
+import { asset } from '../env';
 
 // The strip along the top that is always there: resources with their rates, population, the clock and
 // phase, the castle's health and who is playing. Built once and updated in place.
 
-const AVATAR_ROOT = '/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/UI%20Elements/UI%20Elements/Human%20Avatars/';
+const AVATAR_ROOT = asset('/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/UI%20Elements/UI%20Elements/Human%20Avatars/');
 
 export interface TopBarEvents {
   /** The host's speed buttons (development only). */

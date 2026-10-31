@@ -1,0 +1,9 @@
+# Render Blueprint: New + → Blueprint → this repository. The free plan sleeps after ~15 minutes without a request (see docs/yayin-itch-render.md for the /ping pinger).
+services:
+  - type: web
+    name: keepfall-server
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true

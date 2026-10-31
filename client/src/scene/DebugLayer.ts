@@ -4,6 +4,7 @@ import type { Vec } from '../types';
 import type { BattlePlayer } from './BattlePlayer';
 import type { Movers } from './Movers';
 import { toWorld } from './world';
+import { serverUrl } from '../env';
 
 // The debug layer (development only; F9 shows the panel): what is on the map, army by army, checked against what the server says, and a log of
 // every fault with the trail of events that led to it (POST /api/client-log, kind "debug-layer", plus a red warning on screen).
@@ -182,7 +183,7 @@ export class DebugLayer {
     if (this.posted < 300) {
       this.posted++;
       const body = JSON.stringify({ kind: 'debug-layer', message: `${kind} ${id}: ${message}`, stack: JSON.stringify({ game: v.game, speed: this.speed(), trace: v.trace }), url: location.href, userAgent: navigator.userAgent });
-      void fetch('/api/client-log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
+      void fetch(serverUrl('/api/client-log'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
     }
   }
 

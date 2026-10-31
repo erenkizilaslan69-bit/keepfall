@@ -39,3 +39,7 @@ logs/
 publish/
 
 art/shots/
+
+# itch.io / CrazyGames build and zip (contain the Tiny Swords files: never commit)
+client/dist-itch/
+keepfall-itchio.zip

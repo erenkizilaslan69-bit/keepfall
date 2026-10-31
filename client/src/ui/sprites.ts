@@ -1,8 +1,9 @@
+import { asset } from '../env';
 // The icons of the Tiny Swords pack (meat, wood, coin, hammer, sword, shield, close…) handed to CSS as custom properties (--ico-…).
 // Panels, buttons, ribbons and signs are drawn by theme.css and need no art. If the pack is missing (it is not in the repository, see the
 // README) the icons are simply empty.
 
-const ROOT = '/assets/tiny-swords/Tiny Swords (Free Pack)/UI Elements/UI Elements/';
+const ROOT = asset('/assets/tiny-swords/Tiny Swords (Free Pack)/UI Elements/UI Elements/');
 const url = (path: string) => encodeURI(ROOT + path);
 
 /** Resolves once the icons are applied (or immediately if they cannot be loaded). */

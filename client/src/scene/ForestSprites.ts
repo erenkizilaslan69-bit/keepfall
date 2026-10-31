@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { SiteKind } from '../types';
+import { asset } from '../env';
 
 // The places of the forest as generated pictures (public/art/forest, cleaned by tools/art-ui.mjs, one pixel per cell: these are small things in a dense forest, so the fine variant). The "empty" looks are made from the same pictures in code: a plundered village is faded and sooty, a cleared camp has its fire put out
 // (the flames turn to ash) and its tent fallen over, an opened chest has no gold and its lid open.
@@ -11,7 +12,7 @@ export const FOREST_WIDTH: Record<SiteKind, number> = { village: 166, camp: 156,
 const srcKey = (name: string) => `forest:${name}`;
 
 export function preloadForestArt(scene: Phaser.Scene): void {
-  for (const f of FOREST_FILES) scene.load.image(srcKey(f), `/art/forest/${f}.png`);
+  for (const f of FOREST_FILES) scene.load.image(srcKey(f), asset(`/art/forest/${f}.png`));
 }
 
 function hsv(r: number, g: number, b: number): [number, number, number] {

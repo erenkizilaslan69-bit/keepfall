@@ -1,5 +1,6 @@
 import { recolor } from './KingdomSprites';
 import type { PlayerColor } from '../types';
+import { asset } from '../env';
 
 // The cavalry's horse, from the generated sheet (public/art/horse/horse.png, cleaned by tools/art-ui.mjs horse: five frames of equal size, the saddle
 // cloth at the same point of every frame): frame 0 stands, frames 1-4 gallop. The blue saddle cloth takes the player's colour (the gold trim, the saddle
@@ -27,7 +28,7 @@ let sheet: HTMLImageElement | null = null;
 export function loadHorse(): Promise<void> {
   if (sheet) return sheet.decode().catch(() => undefined);
   sheet = new Image();
-  sheet.src = '/art/horse/horse.png';
+  sheet.src = asset('/art/horse/horse.png');
   return sheet.decode().catch(() => undefined);
 }
 export const horseReady = (): boolean => !!sheet && sheet.complete && sheet.naturalWidth > 0;

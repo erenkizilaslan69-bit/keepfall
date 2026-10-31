@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+client/
+art/
+docs/
+tests/
+tools/
+publish/
+logs/
+.git/
+*.md

@@ -1,3 +1,4 @@
+import { asset } from './env';
 // Sound: real recordings (CC0, public/audio: Kenney's interface, impact and RPG packs, RandomMind's music; see the README) played through
 // the Web Audio API, with the sounds made on the spot (a few oscillators and a burst of filtered noise) as the fallback for any sound without a
 // recording (arrows, the win and lose jingles) or whose file did not load. Ogg Vorbis where the browser plays it, MP3 otherwise (Safari).
@@ -132,7 +133,7 @@ class Sfx {
     const names = [...new Set(Object.values(SAMPLES).flatMap((b) => b?.files ?? []))];
     await Promise.all(names.map(async (name) => {
       try {
-        const res = await fetch(`/audio/sfx/${name}.${EXT}`);
+        const res = await fetch(asset(`/audio/sfx/${name}.${EXT}`));
         if (!res.ok) return;
         this.buffers.set(name, await ctx.decodeAudioData(await res.arrayBuffer()));
       } catch { /* this one stays made-up */ }
@@ -375,7 +376,7 @@ class Music {
     if (!ctx || this.loading.has(track)) return;
     this.loading.add(track);
     try {
-      const res = await fetch(`/audio/music/${track}.mp3`);
+      const res = await fetch(asset(`/audio/music/${track}.mp3`));
       if (!res.ok) return;
       this.buffers.set(track, await ctx.decodeAudioData(await res.arrayBuffer()));
       this.apply();

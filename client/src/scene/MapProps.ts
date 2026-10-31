@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { MapLayoutView, Vec } from '../types';
 import { distanceToSegment, seeded, toWorld } from './world';
 import { DEPTH } from './Terrain';
+import { asset } from '../env';
 
 // The still ornaments of the map from the generated sheet (public/art/props, cleaned by tools/art-ui.mjs): oaks, pines, dark pines, berry bushes, small
 // rocks, mossy boulders, flower clumps and stumps, each with a soft translucent shadow instead of the sheet's purple one. They are scattered from the
@@ -22,7 +23,7 @@ const ATLAS = 'kf-props';
 const CHUNK = 640;
 
 export function preloadPropsArt(scene: Phaser.Scene): void {
-  for (const n of ALL_NAMES) scene.load.image(srcKey(n), `/art/props/${n}.png`);
+  for (const n of ALL_NAMES) scene.load.image(srcKey(n), asset(`/art/props/${n}.png`));
 }
 
 /** The atlas: every ornament drawn at SCALE with its shadow beneath; frame names are the ornament names. */

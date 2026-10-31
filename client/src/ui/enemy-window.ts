@@ -4,12 +4,13 @@ import { emblemHtml, rivalKingdom } from './emblem';
 import type { ArmyMode, CastleView, Job, PlayerView, RoomView, Row, ScoutReportView, ScoutTargetView } from '../types';
 import { ago, scoutButton, scoutReportHtml } from './scout-report';
 import { Win, type WinContext, type WinData } from './windows';
+import { asset } from '../env';
 
 // A rival's castle: send a scout, read the latest report, send an army. What is inside the castle is
 // not known here (only what the scouts bring), so this window never shows more than the reports do.
 
 const AVATAR = (seat: number) =>
-  `/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/UI%20Elements/UI%20Elements/Human%20Avatars/Avatars_${String(((seat - 1) % 25) + 1).padStart(2, '0')}.png`;
+  asset(`/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/UI%20Elements/UI%20Elements/Human%20Avatars/Avatars_${String(((seat - 1) % 25) + 1).padStart(2, '0')}.png`);
 
 export class EnemyWin extends Win {
   constructor(ctx: WinContext, private readonly seat: number, s: CastleView, room: RoomView | null) {
