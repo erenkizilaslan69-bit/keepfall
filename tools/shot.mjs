@@ -54,7 +54,7 @@ for (const size of SIZES) {
   await send('Emulation.setDeviceMetricsOverride', { width: size[0], height: size[1], deviceScaleFactor: 1, mobile: false });
   await send('Page.navigate', { url: URL });
   await sleep(3500);
-  await run('localStorage.clear(); sessionStorage.clear(); 1');
+  await run('localStorage.clear(); localStorage.setItem('keepfall_tutorial_seen', 'true'); sessionStorage.clear(); 1');
   await send('Page.navigate', { url: URL });
   await sleep(3500);
   await shot(size, 'home');

@@ -21,7 +21,7 @@ import { Minimap } from './minimap';
 import { EndScreen, HomeScreen, LobbyScreen } from './screens';
 import { setBotSeats } from './format';
 import { music, sfx } from './audio';
-import { mountGuideButton } from './ui/guide';
+import { mountGuideButton, showFirstTimeGuide } from './ui/guide';
 import { CloudCurtain } from './ui/clouds';
 import { fadeFrom } from './ui/transitions';
 import { warmUp } from './preload';
@@ -233,6 +233,7 @@ function showGame(): void {
   ui = new GameUi(document.getElementById('ui')!, net, net.seat, () => scene?.centerOnCastle());
   ui.setStatus(status, status === statusText.connected);
   if (import.meta.env.DEV) (window as unknown as { keepfallUi: GameUi }).keepfallUi = ui;
+  showFirstTimeGuide(); // only in the very first match of this browser (before the first castle state: the kingdom decree waits for it)
   if (lastCastle) onCastle(lastCastle);
 }
 

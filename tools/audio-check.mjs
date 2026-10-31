@@ -42,7 +42,7 @@ await send('Network.enable');
 await send('Page.enable');
 await send('Page.navigate', { url: URL });
 await sleep(3500);
-await run('localStorage.clear(); 1');
+await run('localStorage.clear(); localStorage.setItem('keepfall_tutorial_seen', 'true'); 1');
 await send('Page.navigate', { url: URL });
 await sleep(3500);
 

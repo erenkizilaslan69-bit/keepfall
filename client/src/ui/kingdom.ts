@@ -1,5 +1,6 @@
 import { esc } from '../format';
 import { emblemHtml } from './emblem';
+import { whenGuideClosed } from './guide';
 import type { GameConnection } from '../net';
 import type { CastleView, KingdomView, MapStateView, RoomView } from '../types';
 
@@ -47,7 +48,7 @@ export class KingdomUi {
     if (!k || c.eliminated) { this.fab.classList.add('hidden'); this.panel.classList.add('hidden'); return; }
     this.fab.classList.remove('hidden');
     this.fab.innerHTML = `${emblemHtml(k.look, 'emblem-fab')}${esc(k.name)}`;
-    if (!this.decreeShown) { this.decreeShown = true; this.showDecree(k); }
+    if (!this.decreeShown) { this.decreeShown = true; whenGuideClosed(() => this.showDecree(k)); }
     if (this.built !== `${k.id}:${this.signature(c)}`) this.build(k, c);
     this.refreshDynamic(k, c);
     this.refreshLists();

@@ -42,7 +42,7 @@ await send('Emulation.setDeviceMetricsOverride', { width: 1100, height: 720, dev
 const URL = `${BASE}?sur=3`;
 await send('Page.navigate', { url: URL });
 await sleep(3500);
-await run('localStorage.clear(); sessionStorage.clear(); 1');
+await run('localStorage.clear(); localStorage.setItem('keepfall_tutorial_seen', 'true'); sessionStorage.clear(); 1');
 await send('Page.navigate', { url: URL });
 await sleep(3500);
 await run(`(async () => { const n = window.keepfallNet; await n.createRoom('Eren'); for (const l of ['easy', 'medium']) await n.addBot(l); await n.setReady(true); await n.startMatch(); return 1; })()`);

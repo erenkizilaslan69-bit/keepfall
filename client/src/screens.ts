@@ -251,7 +251,9 @@ export class LobbyScreen {
         ${me?.isHost ? `<span class="tags">Bot ekle:
           <button class="btn small" data-a="addbot" data-level="easy">Kolay</button>
           <button class="btn small" data-a="addbot" data-level="medium">Orta</button>
-          <button class="btn small" data-a="addbot" data-level="hard">Zor</button></span>` : ''}</li>`).join('');
+          <button class="btn small" data-a="addbot" data-level="hard">Zor</button></span>` : ''}</li>`).join('')
+      // A host alone in the room (nobody else, no bot yet) learns how to test on their own.
+      + (me?.isHost && room.players.length === 1 ? `<li class="lobby-tip" role="note">💡 Tek başına mı test ediyorsun? Boş yerlerin yanındaki <b>Kolay / Orta / Zor</b> düğmeleriyle bot (yapay zekâ) ekleyebilirsin!</li>` : '');
 
     const nameInput = this.q<HTMLInputElement>('#myname');
     if (me && document.activeElement !== nameInput) nameInput.value = me.name;

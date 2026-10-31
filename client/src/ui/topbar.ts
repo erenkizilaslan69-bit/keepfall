@@ -1,5 +1,5 @@
 import { gearSvg, toggleSettings } from './settings';
-import { toggleGuide } from './guide';
+import { guideClicked, markGuideClicked, toggleGuide } from './guide';
 import { botMark, clock, esc, fmt, rate } from '../format';
 import type { CastleView, PlayerView, RoomView } from '../types';
 
@@ -52,7 +52,15 @@ export class TopBar {
         <div class="strip hit tb-speed hidden" data-f="speed"></div>
       </div>`;
     parent.appendChild(this.el);
-    this.q('[data-guide]').addEventListener('click', toggleGuide);
+    const guideBtn = this.q('[data-guide]');
+    // Until the "?" is clicked for the first time (or for the first 15 s of the match) it glows, so a new player finds the guide.
+    if (!guideClicked()) {
+      guideBtn.classList.add('kf-pulse');
+      const stop = () => guideBtn.classList.remove('kf-pulse');
+      setTimeout(stop, 15_000);
+      guideBtn.addEventListener('click', () => { markGuideClicked(); stop(); });
+    }
+    guideBtn.addEventListener('click', () => toggleGuide());
     this.q('[data-settings]').addEventListener('click', toggleSettings);
     this.el.addEventListener('click', (e) => {
       const t = e.target as HTMLElement;

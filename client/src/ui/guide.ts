@@ -34,6 +34,44 @@ export interface Guide {
 let cached: Promise<Guide> | null = null;
 let open: HTMLElement | null = null;
 
+// First-time onboarding: the guide opens by itself in the first match, and the "?" of the top bar glows until it is first clicked.
+const SEEN_KEY = 'keepfall_tutorial_seen', CLICKED_KEY = 'keepfall_guide_clicked';
+const store = {
+  get: (k: string): string | null => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k: string, v: string): void => { try { localStorage.setItem(k, v); } catch { /* private mode: the guide may open again, harmless */ } },
+};
+/** True when the player has closed the guide before (when the browser keeps nothing, true as well: never nag every match). */
+export function tutorialSeen(): boolean {
+  try { return localStorage.getItem(SEEN_KEY) === 'true'; } catch { return true; }
+}
+/** The "?" has been clicked once: it stops glowing for good. */
+export function guideClicked(): boolean { return store.get(CLICKED_KEY) === 'true'; }
+export function markGuideClicked(): void { store.set(CLICKED_KEY, 'true'); }
+const closeWaiters: (() => void)[] = [];
+let autoPending = false;
+const flushWaiters = (): void => { for (const cb of closeWaiters.splice(0)) cb(); };
+/** Runs `cb` now, or when the guide has been closed (the kingdom decree waits for the first-time guide instead of piling up on it). */
+export function whenGuideClosed(cb: () => void): void {
+  if (open || autoPending) closeWaiters.push(cb); else cb();
+}
+/** In the first match: open the guide half a second after the game screen is up. */
+export function showFirstTimeGuide(): void {
+  if (tutorialSeen()) return;
+  autoPending = true;
+  setTimeout(() => {
+    autoPending = false;
+    if (!open && !tutorialSeen()) toggleGuide(true); else if (!open) flushWaiters();
+  }, 500);
+}
+
+/** Three steps to read in three seconds, above the detailed decree. */
+const QUICK_START = `
+  <div class="guide-quick" aria-label="Hızlı başlangıç">
+    <div class="guide-quick-step"><b class="gq-ico" aria-hidden="true">⛏️</b><span><b>1. Ekonomi &amp; Üretim</b>İşçileri tarla, oduncu, maden ve demirhaneye dağıt; kaynaklarını topla, binalarını yükselt.</span></div>
+    <div class="guide-quick-step"><b class="gq-ico" aria-hidden="true">⚔️</b><span><b>2. Ordu Kur</b>Demirhanede silah üret, işçileri askere çevir ve ordunu taktiğine göre hazırla.</span></div>
+    <div class="guide-quick-step"><b class="gq-ico" aria-hidden="true">🏰</b><span><b>3. Keşfet &amp; Fethet</b>Gözcüyle savaş sisini aç, düşman kalelerini bul; kapıda kazanırsan kale düşer!</span></div>
+  </div>`;
+
 const minutes = (s: number) => `${Math.round(s / 60)} dk`;
 const num = (n: number) => (Math.abs(n - Math.round(n)) < 0.05 ? String(Math.round(n)) : n.toFixed(1).replace('.', ','));
 const range = (r: Range) => (r.min === r.max ? num(r.min) : `${num(r.min)}–${num(r.max)}`);
@@ -122,25 +160,31 @@ function load(): Promise<Guide> {
 }
 
 export function closeGuide(): void {
+  const wasOpen = !!open;
   open?.remove();
   open = null;
   window.removeEventListener('keydown', onKey, true);
+  if (!wasOpen) return;
+  store.set(SEEN_KEY, 'true');
+  flushWaiters();
 }
 
 function onKey(e: KeyboardEvent): void {
   if (e.key === 'Escape') { e.stopPropagation(); closeGuide(); }
 }
 
-/** Opens the decree (or closes it if it is open). */
-export function toggleGuide(): void {
-  if (open) { closeGuide(); return; }
+/** Opens the decree (or closes it if it is open); `auto` is the first-time opening (it never closes an open one). */
+export function toggleGuide(auto = false): void {
+  if (open) { if (!auto) closeGuide(); return; }
   const overlay = document.createElement('div');
   overlay.className = 'guide-overlay';
   overlay.innerHTML = `
     <div class="guide paper" role="dialog" aria-label="Nasıl oynanır">
       <div class="ribbon ribbon-blue guide-title">Nasıl oynanır</div>
       <button class="btn-round btn-red guide-close" data-act="close" title="Kapat (Esc)" aria-label="Kapat"><i class="ico ico-close"></i></button>
+      ${QUICK_START}
       <div class="guide-body"><p class="guide-note">Yükleniyor…</p></div>
+      <div class="guide-foot"><button class="btn kf-btn--green" data-act="close">${document.documentElement.classList.contains('in-game') ? 'Anladım, Savaşa Başla!' : 'Anladım!'}</button></div>
     </div>`;
   overlay.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;
@@ -161,6 +205,6 @@ export function mountGuideButton(): void {
   b.title = 'Nasıl oynanır?';
   b.setAttribute('aria-label', 'Nasıl oynanır?');
   b.innerHTML = '<b>?</b>';
-  b.addEventListener('click', toggleGuide);
+  b.addEventListener('click', () => toggleGuide());
   document.body.appendChild(b);
 }

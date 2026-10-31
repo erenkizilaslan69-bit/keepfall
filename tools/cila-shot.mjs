@@ -44,7 +44,7 @@ await send('Page.enable');
 await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
 await send('Page.navigate', { url: URL });
 await sleep(3500);
-await run('localStorage.clear(); 1');
+await run(process.env.FIRSTTIME ? 'localStorage.clear(); 1' : "localStorage.clear(); localStorage.setItem('keepfall_tutorial_seen', 'true'); 1"); // FIRSTTIME=1: the first-time guide opens
 await send('Page.navigate', { url: URL });
 await sleep(3500);
 await run(`(async () => { const n = window.keepfallNet; await n.createRoom('Eren'); for (const l of ${JSON.stringify(BOTS)}) await n.addBot(l); await n.setReady(true); await n.startMatch(); return 1; })()`);
