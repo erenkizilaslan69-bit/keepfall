@@ -469,3 +469,6 @@ html.in-menu .settings-fab.btn-round { display: inline-grid; }
   font-family: var(--font-text); font-size: .9em; line-height: 1.35;
 }
 @media (max-height: 700px) { .players li.lobby-tip { display: none; } } /* a small window has no room for it */
+
+/* the room code in the lobby: big, centred letters you can read out to a friend */
+.share input.share-code { text-align: center; font: 700 1.5em var(--font-pixel); letter-spacing: .3em; text-transform: uppercase; }

@@ -75,7 +75,6 @@ export class LobbyScreen {
 
   constructor(parent: HTMLElement, private readonly net: GameConnection, private readonly mySeat: number, room: RoomView,
     onName: (name: string) => void, onLeave: () => void) {
-    const link = `${location.origin}/oda/${room.code}`;
     const root = this.root = mount(parent, `
       <div class="screen menu paper lobby">
         <div class="lob-grid">
@@ -83,8 +82,8 @@ export class LobbyScreen {
             ${logoHtml()}
             <div class="title-ribbon ribbon ribbon-blue">Oda <span class="code">${esc(room.code)}</span></div>
             <div class="share">
-              <input readonly value="${esc(link)}" aria-label="Oda linki">
-              <button class="btn" data-a="copy">Linki kopyala</button>
+              <input class="share-code" readonly value="${esc(room.code)}" aria-label="Oda kodu">
+              <button class="btn" data-a="copy">Oda kodunu kopyala</button>
             </div>
             <ul class="players" id="players"></ul>
           </div>
@@ -269,7 +268,7 @@ export class LobbyScreen {
     this.q('#start-hint').textContent = !isHost
       ? 'Herkes hazır olunca oda sahibi maçı başlatır.'
       : room.players.length < room.minPlayers
-        ? `En az ${room.minPlayers} oyuncu gerekiyor. Linki paylaş.`
+        ? `En az ${room.minPlayers} oyuncu gerekiyor. Oda kodunu paylaş.`
         : notReady > 0 ? `${notReady} oyuncu henüz hazır değil.` : 'Herkes hazır.';
   }
 

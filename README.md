@@ -1,4 +1,4 @@
-# Keepfall
+﻿# Keepfall
 
 2–4 kişilik, maç tabanlı bir kale strateji oyunu. Her oyuncunun tek bir kalesi var. **Hazırlık fazında** işçileri işlere dağıtır, silah üretir ve askerleri hazırlarsın; **savaş fazında** ordular haritada yürür, yolda ve kale kapısında çarpışır. Son ayakta kalan kale kazanır; süre dolarsa en yüksek nüfus kazanır.
 
@@ -8,7 +8,7 @@ Tarayıcıda oynanır. Tüm oyun mantığı sunucudadır; istemci yalnızca komu
 
 **Maç**
 - 20 dk modu: 10 dk hazırlık + 10 dk savaş (kıtlık savaşın 4. dakikasında başlar). 30 dk modu: 20 dk hazırlık + 10 dk savaş (`config/balance.json`).
-- Oda kurulur (`/oda/ABCD`), link arkadaşlara gönderilir, herkes "Hazırım" der, oda sahibi başlatır.
+- Oda kurulur (`/oda/ABCD`), oda kodu arkadaşlara söylenir/gönderilir ("Odaya katıl" kutusuna yazılır), herkes "Hazırım" der, oda sahibi başlatır.
 
 **Hazırlık: ekonomi**
 - İşçileri çiftçi, oduncu, madenci ve demirci olarak çalıştırırsın; yemek, odun ve demir üretilir. İnsanlar yemek yer; yemek biterse tüm üretim yarıya iner.
@@ -65,7 +65,7 @@ dotnet run --project src/Keepfall.Server
 npm --prefix client run dev
 ```
 
-Son iki komut ayrı terminallerde çalışır. Sonra http://localhost:5173 adresini aç: "Oda kur" ile oda kurulur, linki (`/oda/ABCD`) diğer oyunculara gönder.
+Son iki komut ayrı terminallerde çalışır. Sonra http://localhost:5173 adresini aç: "Oda kur" ile oda kurulur, oda kodunu (ABCD) diğer oyunculara gönder.
 
 Geliştirme modunda:
 - Oda sahibine ×5 / ×20 hız butonları çıkar ve tek kişiyle de maç başlatılabilir.
@@ -123,7 +123,7 @@ winget install --id Cloudflare.cloudflared
 cloudflared tunnel --url http://localhost:5080
 ```
 
-Çıkan `https://….trycloudflare.com` adresini aç, oda kur ve oda linkini (`…/oda/ABCD`) arkadaşlara gönder. (`ngrok http 5080` de olur.)
+Çıkan `https://….trycloudflare.com` adresini aç, oda kur ve oda kodunu arkadaşlara gönder (onlar ana ekranda "Odaya katıl" kutusuna yazar). (`ngrok http 5080` de olur.)
 
 - İstemciyi her değiştirdiğinde `npm --prefix client run build` komutunu tekrar çalıştır; sunucu `client/dist`'i okur.
 - `config/balance.json` sunucu açılırken okunur: değiştirince sunucuyu yeniden başlat. Odalar bellektedir, yeniden başlatınca kaybolur.
