@@ -13,8 +13,20 @@ export const asset = (path: string): string => ROOT + path.replace(/^\//, '');
 
 /** Puts a route such as "/oda/ABCD" in the address bar (the self-hosted build only; an itch.io iframe keeps its address). */
 export function setRoute(path: string, mode: 'push' | 'replace' = 'push'): void {
-  if (embedded) return;
+  if (embedded) {
+    // The address stays, so the route is remembered per tab: a reload (language switch) returns to the same room.
+    try { sessionStorage.setItem(ROUTE_KEY, path); } catch { /* not remembered: a reload goes to the menu */ }
+    return;
+  }
   if (mode === 'push') history.pushState(null, '', path); else history.replaceState(null, '', path);
+}
+
+const ROUTE_KEY = 'keepfall.route';
+
+/** The current route ("/oda/ABCD", "/"): the address bar, or the remembered one in the embedded build. */
+export function currentRoute(): string {
+  if (!embedded) return location.pathname;
+  try { return sessionStorage.getItem(ROUTE_KEY)?.split('?')[0] ?? '/'; } catch { return '/'; }
 }
 
 export const SERVER_URL: string = String(import.meta.env.VITE_SERVER_URL ?? '').trim().replace(/\/+$/, '');

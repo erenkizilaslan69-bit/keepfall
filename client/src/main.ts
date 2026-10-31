@@ -29,7 +29,7 @@ import { loadHorse } from './scene/HorseArt';
 import { mountLangButton, mountSettingsButton, setLeaveAction } from './ui/settings';
 import { guarded, installErrorReporting } from './error-report';
 import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
-import { setRoute } from './env';
+import { currentRoute, setRoute } from './env';
 
 // Routes: "/" is the home screen, "/oda/ABCD" is a room. Inside a room the screen follows the
 // room's phase: lobby → game (preparation and war) → end screen.
@@ -65,7 +65,7 @@ document.addEventListener('click', (e) => { if ((e.target as HTMLElement | null)
 
 void loadHorse();
 installErrorReporting(() => ({
-  room: /^\/oda\/([A-Za-z]{4})/.exec(location.pathname)?.[1]?.toUpperCase(),
+  room: /^\/oda\/([A-Za-z]{4})/.exec(currentRoute())?.[1]?.toUpperCase(),
   seat: net.seat,
   phase: lastCastle?.phase,
   elapsedSeconds: lastCastle?.elapsedSeconds,
@@ -318,7 +318,7 @@ async function main(): Promise<void> {
     app.innerHTML = `<div class="screen"><p class="banner danger">${t('Sunucuya bağlanılamadı.')} <code>dotnet run --project src/Keepfall.Server</code> ${t('çalışıyor mu?')}</p></div>`;
     return;
   }
-  const code = /^\/oda\/([A-Za-z]{4})\/?$/.exec(location.pathname)?.[1]?.toUpperCase();
+  const code = /^\/oda\/([A-Za-z]{4})\/?$/.exec(currentRoute())?.[1]?.toUpperCase();
   if (!code) { showHome(); return; }
   const r = await net.joinRoom(code, loadName());
   if (!r.ok) {
