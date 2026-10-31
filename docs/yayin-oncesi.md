@@ -47,4 +47,23 @@ Amaç: demo / erken erişim öncesi kod sağlamlığı, oynanış ve yayın haz�
 
 ## 6. Oynayarak gözlemler
 
-Bu bölüm ve eklenti önerileri tanıtım görüntüleriyle birlikte kullanıcıya özet olarak iletildi (aşağı bak).
+**Güzel:** ana ekran ve lobi (deste kartları), dört krallığın kale/bina/sur görünümü, ordu yürüyüşü ve kapı kuşatması efektleri, görüş dairesi (sis), izleyici modu, savaş raporu şeritleri. 1920×1080 ve 1000×640'ta düzen bozulmuyor.
+
+**Mantıksız / pürüzlü:**
+- İlk açılışta rehber yok: yeni oyuncu 13 boşta işçiyle başlıyor, "önce ne yapmalıyım" sorusunun cevabı yalnız `?` rehberinde. İlk 2 dakikada küçük ipuçları (boş işçi → tarla/oduncu/maden) en büyük kazanç olur.
+- Elenince "Tüm insanlar elendi" kutusu izleyicide haritanın altını örter (kapanır, ama ilk bakışta kalabalık).
+- Savaşta kendi savaşçıların bir kısmı bazen "boşta" kalıyor ve oyuncu fark etmiyor (üstte "1 boşta!" şeridi var, görünür ama küçük).
+- Ana ekranda takma ad boşsa "Oyuncu" olarak katılır; ad alanı zorunlu olmaması iyi, ama yer tutucu "Oyuncu" ad gibi okunabiliyor.
+- Lobi: "Boş yer 4" iki satıra bölünüyor.
+
+**Eklenti önerileri (kolaydan zora):**
+1. İlk maçta 3–4 adımlık ipucu şeridi (kapatılabilir, "bir daha gösterme").
+2. Mağaza/erken erişim için hazır durum: sürüm etiketi, "geri bildirim gönder" bağlantısı (Discord/form), maç sonunda "bir maç daha" düğmesi (aynı odada yeniden başlat).
+3. Maç sonu özeti: kimin kime saldırdığı, en büyük savaş, ekonomi grafiği (bot sonuçlarından zaten çıkarılabilir).
+4. Tekrar oynatma: maç kaydı (sunucuda savaş kayıtları var) ve paylaşılabilir kısa video/GIF.
+5. Bot hile/ödül ayarı "kolay" için ilk maç modu (öğretici bot: saldırmaz, ipucu verir).
+6. Oda listesi / hızlı eşleşme (şimdilik yalnız link ile oda; barındırmaya geçince anlamlı).
+7. Mobil/dokunmatik düzen (şimdilik fare ve klavye için).
+8. Hesapsız küçük bir "bugünün haritası" ya da günlük meydan okuma (bota karşı sabit tohum).
+
+**Tanıtım görüntüleri:** `art/shots/yayin/secilen/` (git'e girmez: Free Pack içerir).
