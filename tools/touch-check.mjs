@@ -51,6 +51,23 @@ try {
   const z2 = (await cam()).z;
   ok(z2 < z1 * 0.8, `two fingers together zoom out (${z1.toFixed(2)} -> ${z2.toFixed(2)})`);
   ok(!(await b.js("!!document.querySelector('.ui-root .win')")), 'a pinch does not open a window');
+  // the canvas moved 70 px with no event (Safari's address bar): a pinch still zooms about the middle between the fingers, a tap still lands
+  await b.js("document.getElementById('stage').style.transform = 'translateY(70px)'");
+  await sleep(300);
+  const info = () => b.js("(() => { const c = keepfallScene.cameras.main, r = keepfallScene.game.canvas.getBoundingClientRect(); return { z: c.zoom, mx: c.midPoint.x, my: c.midPoint.y, w: c.width, h: c.height, top: r.top }; })()");
+  const worldAt = (i, x, y) => ({ x: i.mx + (x - i.w / 2) / i.z, y: i.my + (y - i.top - i.h / 2) / i.z });
+  const i0 = await info();
+  const m = { x: W * 0.5, y: H * 0.5 + 70 };
+  const p0 = worldAt(i0, m.x, m.y);
+  await touch('touchStart', [[m.x - 40, m.y], [m.x + 40, m.y]]);
+  for (let i = 1; i <= 8; i++) { await touch('touchMove', [[m.x - 40 - i * 10, m.y], [m.x + 40 + i * 10, m.y]]); await sleep(20); }
+  await touch('touchEnd', []); await sleep(300);
+  const i1 = await info();
+  const p1 = worldAt(i1, m.x, m.y);
+  ok(i1.z > i0.z * 1.3 && Math.hypot(p1.x - p0.x, p1.y - p0.y) < 8, `canvas shifted 70 px: pinch zooms about the fingers' middle (${i0.z.toFixed(2)} -> ${i1.z.toFixed(2)}, middle moved ${Math.hypot(p1.x - p0.x, p1.y - p0.y).toFixed(1)} world px)`);
+  await b.js("document.getElementById('stage').style.transform = ''");
+  await sleep(300);
+
   // long press on a button with a title: the tip shows and the button is not pressed
   const btn = await b.js("(() => { const e = document.querySelector('[data-cam=home]'); const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()");
   await touch('touchStart', [[btn.x, btn.y]]); await sleep(700);
@@ -61,8 +78,9 @@ try {
   const small = await b.js("[...document.querySelectorAll('.ui-root button, .guide-fab, .settings-fab, .lang-fab')].filter((e) => e.offsetParent !== null).map((e) => { const r = e.getBoundingClientRect(); return [e.className.toString().slice(0, 30), Math.round(r.width), Math.round(r.height)]; }).filter((x) => x[1] < 43 || x[2] < 43)");
   ok(small.length === 0, `every visible button is at least 44x44 (${JSON.stringify(small)})`);
   // a mouse still zooms with the wheel
+  const zBefore = (await cam()).z;
   await b.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: W / 2, y: H / 2, deltaX: 0, deltaY: -120 });
   await sleep(300);
-  ok((await cam()).z > z2, 'mouse wheel zoom still works');
+  ok((await cam()).z > zBefore, 'mouse wheel zoom still works');
 } finally { b.close(); }
 process.exit(bad ? 1 : 0);

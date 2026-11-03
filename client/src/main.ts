@@ -183,7 +183,17 @@ const onWindowResize = () => {
   const w = window.innerWidth, h = window.innerHeight;
   if (game.scale.gameSize.width !== w || game.scale.gameSize.height !== h) game.scale.resize(w, h);
   if (game.canvas) { game.canvas.style.width = `${w}px`; game.canvas.style.height = `${h}px`; }
+  game.scale.updateBounds();
 };
+/**
+ * Where the canvas is on the page, for turning a touch into a point on the map. Safari's address bar sliding in or out moves the canvas by tens of pixels without
+ * any resize event, and Phaser keeps the bounds it measured last: every touch would then land that far off. So the bounds are measured again at the start of every
+ * touch and every movement (before Phaser reads them) and whenever the visual viewport changes.
+ */
+const refreshBounds = () => game?.scale.updateBounds();
+for (const ev of ['touchstart', 'touchmove', 'pointerdown', 'pointermove', 'mousedown']) window.addEventListener(ev, refreshBounds, { capture: true, passive: true });
+window.addEventListener('scroll', refreshBounds, { passive: true });
+window.visualViewport?.addEventListener('scroll', refreshBounds);
 const onTurn = () => { onWindowResize(); for (const ms of [120, 400, 900]) setTimeout(onWindowResize, ms); };
 window.addEventListener('orientationchange', onTurn);
 window.addEventListener('pageshow', onWindowResize);
@@ -344,7 +354,15 @@ function startScene(color: CastleView['color'], layout: MapLayoutView): void {
     scene,
   });
   window.addEventListener('resize', onWindowResize);
-  game.events.once('ready', () => { if (game?.canvas) watchGlContext(game.canvas); });
+  game.events.once('ready', () => {
+    if (!game?.canvas) return;
+    watchGlContext(game.canvas);
+    // A touch is turned into a point of the canvas from the canvas's position measured NOW (not the one Phaser measured last): whatever moved the canvas
+    // since (Safari's address bar, a keyboard, a scroll), the point is where the finger is.
+    const canvas = game.canvas, scale = game.scale;
+    scale.transformX = (pageX: number) => { const r = canvas.getBoundingClientRect(); return (pageX - (r.left + window.scrollX)) * (scale.gameSize.width / Math.max(1, r.width)); };
+    scale.transformY = (pageY: number) => { const r = canvas.getBoundingClientRect(); return (pageY - (r.top + window.scrollY)) * (scale.gameSize.height / Math.max(1, r.height)); };
+  });
 }
 
 function showEnd(r: RoomView): void {

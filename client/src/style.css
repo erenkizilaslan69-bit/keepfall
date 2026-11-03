@@ -18,7 +18,7 @@ body {
 
 /* ---- the game: the map fills the window and the page never scrolls ----------------------------- */
 main.game { position: fixed; inset: 0; }
-#stage { position: absolute; inset: 0; }
+#stage { position: fixed; inset: 0; }
 #stage canvas { display: block; }
 .minimap {
   position: absolute; right: 8px; bottom: 8px; z-index: 2; width: 22%; max-width: 200px; aspect-ratio: 1;

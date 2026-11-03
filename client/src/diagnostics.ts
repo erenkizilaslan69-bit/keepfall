@@ -42,6 +42,27 @@ export function snapshot(src: DiagSource): Record<string, unknown> {
 
 let glLost = 0;
 
+/** Debug only: the last touch as the browser (red ring) and as Phaser (green ring, drawn on the map) understand it: when the two are apart, the canvas bounds are stale. */
+let lastTouch: { cx: number; cy: number; gx: number; gy: number; wx: number; wy: number } | null = null;
+let hooked: Phaser.Scene | null = null;
+function hookTouch(scene: Phaser.Scene): void {
+  if (hooked === scene) return;
+  hooked = scene;
+  scene.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+    const e = p.event as { clientX?: number; clientY?: number; changedTouches?: ArrayLike<{ clientX: number; clientY: number }> } | undefined;
+    const t = e?.changedTouches?.[0];
+    const cx = t?.clientX ?? e?.clientX ?? p.x, cy = t?.clientY ?? e?.clientY ?? p.y;
+    lastTouch = { cx, cy, gx: p.x, gy: p.y, wx: p.worldX, wy: p.worldY };
+    const ring = document.createElement('div');
+    ring.className = 'kf-touch-dom';
+    ring.style.left = `${cx}px`; ring.style.top = `${cy}px`;
+    document.body.appendChild(ring);
+    setTimeout(() => ring.remove(), 1000);
+    const g = scene.add.circle(p.worldX, p.worldY, 18 / Math.max(0.2, scene.cameras.main.zoom)).setStrokeStyle(4 / Math.max(0.2, scene.cameras.main.zoom), 0x33ff66).setDepth(1e7);
+    scene.time.delayedCall(1000, () => g.destroy());
+  });
+}
+
 export function startDiagnostics(src: DiagSource): void {
   const debug = new URLSearchParams(location.search).get('debug') === '1';
   let panel: HTMLPreElement | null = null;
@@ -55,8 +76,18 @@ export function startDiagnostics(src: DiagSource): void {
   setInterval(async () => {
     if (!panel || !inGame()) return;
     const s = snapshot(src);
+    const sc = src.scene(), game = src.game();
+    if (sc) hookTouch(sc);
+    const vv = window.visualViewport;
+    const cb = game?.scale.canvasBounds;
+    const extra = {
+      touch: lastTouch ? `client ${Math.round(lastTouch.cx)},${Math.round(lastTouch.cy)}  game ${Math.round(lastTouch.gx)},${Math.round(lastTouch.gy)}  world ${Math.round(lastTouch.wx)},${Math.round(lastTouch.wy)}` : '-',
+      bounds: cb ? `${Math.round(cb.left)},${Math.round(cb.top)} ${Math.round(cb.width)}x${Math.round(cb.height)}` : '-',
+      rect: game?.canvas ? (() => { const r = game.canvas.getBoundingClientRect(); return `${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)}`; })() : '-',
+      viewport: vv ? `off ${vv.offsetLeft.toFixed(0)},${vv.offsetTop.toFixed(0)} page ${vv.pageLeft.toFixed(0)},${vv.pageTop.toFixed(0)} scale ${vv.scale.toFixed(2)} ${Math.round(vv.width)}x${Math.round(vv.height)}` : '-',
+    };
     const ping = await src.net.ping();
-    panel.textContent = Object.entries({ ...device(), ...s, ping: ping === null ? '-' : Math.round(ping) }).map(([k, v]) => `${k}: ${v}`).join('\n');
+    panel.textContent = Object.entries({ ...device(), ...s, ...extra, ping: ping === null ? '-' : Math.round(ping) }).map(([k, v]) => `${k}: ${v}`).join('\n');
   }, 2000);
 
   setInterval(async () => {
