@@ -28,8 +28,9 @@ builder.Services.AddSingleton<ServerStats>();
 builder.Services.AddSingleton<ClientErrorLog>();
 builder.Services.AddHostedService<TickLoop>();
 // The page may be served from another address than the game server (an itch.io / CrazyGames iframe talking to the hosted server).
-// There are no cookies or passwords, a seat is held by a token the page sends itself, so any origin may call; the client asks for no credentials.
-builder.Services.AddCors(o => o.AddDefaultPolicy(p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+// There are no cookies or passwords, a seat is held by a token the page sends itself, so any origin may call (a game portal's iframe has a changing
+// origin). SetIsOriginAllowed(true) rather than AllowAnyOrigin so that AllowCredentials is possible too (the wildcard cannot be combined with it).
+builder.Services.AddCors(o => o.AddDefaultPolicy(p => p.SetIsOriginAllowed(_ => true).AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(o =>
 {
     // behind the host's proxy: the real client address (the error log's rate limit) and scheme come from X-Forwarded-*
@@ -43,6 +44,7 @@ builder.Services.AddSignalR().AddJsonProtocol(o =>
 var app = builder.Build();
 app.Logger.LogInformation("Ayar dosyası: {Path}", Path.GetFullPath(balancePath));
 app.UseForwardedHeaders();
+app.UseRouting(); // CORS needs the endpoint (the hub's negotiate and WebSocket upgrade) to be routed first: UseRouting -> UseCors -> MapHub
 app.UseCors();
 
 // A production build of the client (client/dist) can be served from here; in development Vite serves it.
