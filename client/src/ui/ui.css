@@ -269,6 +269,11 @@ html.in-menu .guide-fab { display: inline-grid; }
   position: absolute; right: calc(8px * var(--u)); bottom: calc(8px * var(--u) + min(22vw, 200px) + 14px); display: flex; flex-direction: column; align-items: flex-end;
   gap: calc(4px * var(--u)); pointer-events: none;
 }
+.cam-btns {
+  /* never taller than the room between the top bar and the minimap: what does not fit scrolls (see also touch.css for short phone screens) */
+  max-height: calc(100% - (8px * var(--u) + min(22vw, 200px) + 14px) - var(--top-h, 0px) - 6px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
+}
+.cam-btns::-webkit-scrollbar { display: none; }
 .cam-btns [data-f="rivals"] { display: contents; }
 .cam-rival { display: inline-flex; align-items: center; gap: calc(4px * var(--u)); }
 .cam-rival .dot { width: calc(10px * var(--u)); height: calc(10px * var(--u)); border-radius: 50%; background: var(--c, #888); border: 2px solid rgba(0, 0, 0, .35); }
@@ -487,3 +492,10 @@ html.in-menu .guide-fab { display: inline-grid; }
 .decree .decree-abilities { list-style: none; margin: 0 0 10px; padding: 0; text-align: left; }
 .decree .decree-abilities li { margin: 6px 0; display: flex; flex-direction: column; }
 .decree .decree-abilities span { font-size: .92em; opacity: .9; }
+
+/* The kingdom's decree: never taller than the screen; it scrolls inside, a fade says there is more, and "Got it" and the cross stay in sight. */
+.decree { max-height: calc(100dvh - 16px - var(--sa-t, 0px) - var(--sa-b, 0px)); overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+.decree > button.wide { position: sticky; bottom: 0; z-index: 2; width: 100%; box-shadow: 0 calc(-10px * var(--u)) calc(8px * var(--u)) calc(-2px * var(--u)) rgba(240, 225, 185, .95); }
+.decree.more::after { content: ''; position: sticky; display: block; bottom: calc(54px * var(--u)); height: calc(30px * var(--u)); margin-top: calc(-30px * var(--u)); pointer-events: none;
+  background: linear-gradient(to bottom, rgba(238, 222, 180, 0), rgba(238, 222, 180, .95)); }
+.guide-overlay .decree-x { position: fixed; top: calc(8px + var(--sa-t, 0px)); right: calc(8px + var(--sa-r, 0px)); z-index: 5; width: calc(40px * var(--u)); height: calc(40px * var(--u)); min-width: 44px; min-height: 44px; }

@@ -52,3 +52,13 @@ html.in-menu #app { padding: var(--sa-t) var(--sa-r) var(--sa-b) var(--sa-l); }
 .kf-touch-dom { position: fixed; z-index: 100003; width: 30px; height: 30px; margin: -15px 0 0 -15px; border: 3px solid #ff3355; border-radius: 50%; pointer-events: none; }
 #stage { position: fixed; }
 html.in-game body { position: fixed; inset: 0; width: 100%; }
+
+/* A phone held sideways: the camera buttons become a small grid of 44 px squares (the name is in the tip of a long press), so that they fit between the top bar and the minimap. */
+@media (pointer: coarse) and (max-height: 520px) {
+  :root, html { --kf-map: min(calc(236px * var(--u, 1)), 30vw, 28vh); }
+  .cam-btns { display: grid !important; grid-template-columns: repeat(3, 44px); gap: 4px !important; align-items: start; justify-content: end; }
+  .cam-btns [data-f="rivals"] { display: contents; }
+  .cam-btns .btn { min-width: 44px !important; width: 44px; height: 44px; padding: 0 !important; font-size: 0 !important; justify-content: center !important; gap: 0; }
+  .cam-btns .btn .ico { margin: 0; width: 24px; height: 24px; }
+  .cam-btns .cam-rival .dot { width: 18px; height: 18px; }
+}

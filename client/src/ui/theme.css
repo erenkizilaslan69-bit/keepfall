@@ -201,6 +201,7 @@
 
 /* ---- the camera buttons next to the minimap: player-coloured, chunky ---------------------------------- */
 .cam-btns { bottom: calc(8px * var(--u, 1) + var(--kf-map) + calc(16px * var(--u, 1))); gap: calc(8px * var(--u, 1)); }
+.cam-btns { max-height: calc(100% - (8px * var(--u, 1) + var(--kf-map) + 16px * var(--u, 1)) - var(--top-h, 0px) - 6px); }
 .cam-btns .btn { min-height: calc(38px * var(--u, 1)); padding: 0 calc(12px * var(--u, 1)); justify-content: flex-start; min-width: calc(150px * var(--u, 1)); }
 .cam-btns .btn .ico { width: calc(22px * var(--u, 1)); height: calc(22px * var(--u, 1)); }
 .cam-btns [data-cam="forest"] { --c: #4f9a3a; --c-hi: #86cf62; --c-lo: #2c5f1f; --edge: #12310b; }

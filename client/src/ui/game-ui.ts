@@ -153,6 +153,10 @@ export class GameUi {
       else if (b.dataset.cam === 'rival') this.scene?.focus({ kind: 'enemy', seat: Number(b.dataset.seat) });
     });
     root.appendChild(this.cam);
+    // The column of camera buttons stays under the top bar (its height is a variable the stylesheet uses).
+    const syncTop = () => root.style.setProperty('--top-h', `${Math.max(0, Math.round(this.top.getBoundingClientRect().bottom - root.getBoundingClientRect().top))}px`);
+    syncTop();
+    new ResizeObserver(syncTop).observe(this.top);
     this.windows = new WindowManager(root, () => this.top.getBoundingClientRect().bottom, () =>
       [this.cam, document.querySelector('.kf-minimap'), root.querySelector('.report-tags'), root.querySelector('.report-toggle')].filter((e): e is Element => !!e)
         .map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0));

@@ -30,9 +30,24 @@ await page.click('#quick');
 await page.waitForFunction("document.documentElement.classList.contains('in-game')", null, { timeout: 90000 });
 await sleep(6000);
 await page.screenshot({ path: `${tag}-2decree.png` });
+// (Playwright's WebKit build draws nothing after a viewport resize, which a real iPhone does not do: the address-bar states are shot with Chrome only)
+if (engine === 'chromium') {
+await page.setViewportSize({ width: W, height: H - 70 });
+await sleep(1200);
+await page.screenshot({ path: `${tag}-2decree-bar.png` });
+await page.setViewportSize({ width: W, height: H });
+await sleep(1200);
+}
 await page.evaluate("document.querySelector('#kingdom-decree [data-close]')?.click()");
 await sleep(1200);
 await page.screenshot({ path: `${tag}-3map.png` });
+if (engine === 'chromium') {
+await page.setViewportSize({ width: W, height: H - 70 });
+await sleep(1500);
+await page.screenshot({ path: `${tag}-3map-bar.png` });
+await page.setViewportSize({ width: W, height: H });
+await sleep(1500);
+}
 const open = async (name, expr) => { await page.evaluate(`keepfallScene.${expr}`); await sleep(1000); await page.screenshot({ path: `${tag}-${name}.png` }); await page.evaluate('keepfallUi.windows.close(true)'); await sleep(300); };
 await open('4castle', "select({ kind: 'castle' })");
 await open('5farm', "select({ kind: 'building', type: 'farm' })");

@@ -63,6 +63,7 @@ export class KingdomUi {
     box.id = 'kingdom-decree';
     box.className = 'guide-overlay kingdom-decree';
     box.innerHTML = `
+      <button class="btn-round btn-red decree-x" data-close title="${tt('Kapat')}" aria-label="${tt('Kapat')}"><i class="ico ico-close"></i></button>
       <div class="decree paper kd-${esc(k.look)}" role="dialog" aria-label="${tt('Ferman')}">
         <div class="decree-seal">${emblemHtml(k.look, 'emblem-decree')}</div>
         <div class="decree-kicker">${tt('Ferman')}</div>
@@ -78,6 +79,12 @@ export class KingdomUi {
       if (t === box || t.closest('[data-close]')) box.remove();
     });
     document.body.appendChild(box);
+    // A card taller than the screen scrolls: a fade at its foot says there is more until the end is reached; the close buttons never scroll away.
+    const card = box.querySelector<HTMLElement>('.decree')!;
+    const more = () => card.classList.toggle('more', card.scrollTop + card.clientHeight < card.scrollHeight - 6);
+    card.addEventListener('scroll', more, { passive: true });
+    requestAnimationFrame(more);
+    window.addEventListener('resize', more);
   }
 
   // ---- the panel ------------------------------------------------------------------------------
