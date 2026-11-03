@@ -84,6 +84,8 @@ export class WorldScene extends Phaser.Scene {
   /** Set by main.ts: the minimap is drawn from the scene's own frame loop. */
   minimap: Minimap | null = null;
   private dragged = false;
+  /** The middle of the view, remembered every frame (see the resize handler). */
+  private viewCenter: { x: number; y: number } | null = null;
   private map: MapStateView | null = null;
   private keys: Record<string, Phaser.Input.Keyboard.Key> = {};
 
@@ -465,7 +467,7 @@ export class WorldScene extends Phaser.Scene {
     const region = this.layout.regions.find((r) => r.seat === target.seat);
     if (!region) return;
     const cam = this.cameras.main;
-    cam.setZoom(Phaser.Math.Clamp(Math.min(cam.width / 1100, cam.height / 830), this.minZoom(), MAX_ZOOM));
+    cam.setZoom(Phaser.Math.Clamp(Math.min(cam.width / (1100 * this.farView()), cam.height / (830 * this.farView())), this.minZoom(), MAX_ZOOM));
     this.lookAt({ x: region.origin.x + CASTLE.x / TILE, y: region.origin.y + (CASTLE.y - 120) / TILE });
   }
 
@@ -546,9 +548,12 @@ export class WorldScene extends Phaser.Scene {
   centerOnCastle(): void {
     const cam = this.cameras.main;
     // The whole castle (a region and a little margin) fits on screen.
-    cam.setZoom(Phaser.Math.Clamp(Math.min(cam.width / 1100, cam.height / 830), this.minZoom(), MAX_ZOOM));
+    cam.setZoom(Phaser.Math.Clamp(Math.min(cam.width / (1100 * this.farView()), cam.height / (830 * this.farView())), this.minZoom(), MAX_ZOOM));
     cam.centerOn(CASTLE.x, CASTLE.y - 120);
   }
+
+  /** On a phone the first view is farther out: the castle and what is around it are seen together. */
+  private farView(): number { return window.matchMedia?.('(pointer: coarse)').matches ? 1.35 : 1; }
 
   /** The map always fills the view: never zoom out further than this. */
   private minZoom(): number {
@@ -574,6 +579,7 @@ export class WorldScene extends Phaser.Scene {
     // The canvas is the whole window: follow it (Phaser does not always notice a window that shrinks).
     if (this.scale.gameSize.width !== window.innerWidth || this.scale.gameSize.height !== window.innerHeight)
       this.scale.resize(window.innerWidth, window.innerHeight);
+    this.viewCenter = { x: this.cameras.main.midPoint.x, y: this.cameras.main.midPoint.y };
     // Each part on its own: a failure in one must not end the frame loop (the whole picture would freeze).
     guarded('scene-update', () => this.terrain.update(dt, this.cameras.main.worldView), 'terrain');
     guarded('scene-update', () => this.props?.cull(this.cameras.main.worldView), 'props');
@@ -760,7 +766,11 @@ export class WorldScene extends Phaser.Scene {
     cam.setBounds(topLeft.x - pad, topLeft.y - pad, size + 2 * pad, size + 2 * pad);
     this.centerOnCastle();
     // The canvas is the whole window: when it changes size, keep the map filling it.
-    this.scale.on('resize', () => cam.setZoom(Math.max(cam.zoom, this.minZoom())));
+    // (the same part of the map stays in the middle when the window changes shape: a phone being turned)
+    this.scale.on('resize', () => {
+      cam.setZoom(Math.max(cam.zoom, this.minZoom()));
+      if (this.viewCenter) cam.centerOn(this.viewCenter.x, this.viewCenter.y);
+    });
 
     // A click on empty ground (nothing under the pointer, not a drag) closes the open window.
     this.input.on('pointerup', (p: Phaser.Input.Pointer, over: unknown[]) => {

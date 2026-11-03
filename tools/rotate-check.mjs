@@ -1,0 +1,30 @@
+// A phone turned in the middle of a match (WebKit): the canvas follows the new size, the match goes on and the same part of the map stays in the middle.
+// PW_DIR=<playwright folder> node tools/rotate-check.mjs [http://localhost:5174]
+import { createRequire } from 'node:module';
+const require = createRequire(`${process.env.PW_DIR}/package.json`);
+const { webkit } = require('playwright');
+const URL = (process.argv[2] ?? 'http://localhost:5174').replace(/\/$/, '');
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let bad = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) bad++; };
+const browser = await webkit.launch();
+const ctx = await browser.newContext({ viewport: { width: 852, height: 393 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+await ctx.addInitScript("try{localStorage.setItem('keepfall_tutorial_seen','true');localStorage.setItem('keepfall_tutorial_done','true');localStorage.setItem('keepfall_lang','en')}catch(e){}");
+const page = await ctx.newPage();
+await page.goto(URL + '/'); await sleep(3000);
+await page.fill('#name', 'Rot'); await page.click('#quick');
+await page.waitForFunction("document.documentElement.classList.contains('in-game')", null, { timeout: 90000 });
+await sleep(6000);
+await page.evaluate("document.querySelector('#kingdom-decree [data-close]')?.click()");
+const state = () => page.evaluate("(() => { const c = keepfallScene.cameras.main; return { w: keepfallScene.scale.gameSize.width, h: keepfallScene.scale.gameSize.height, mx: Math.round(c.midPoint.x), my: Math.round(c.midPoint.y), game: document.documentElement.classList.contains('in-game'), seat: keepfallNet.seat, rotate: getComputedStyle(document.getElementById('rotate-screen')).display }; })()");
+const a = await state();
+await page.setViewportSize({ width: 393, height: 852 }); await sleep(1800);
+const p = await state();
+ok(p.w === 393 && p.h === 852 && p.rotate === 'flex' && p.game, `portrait: canvas ${p.w}x${p.h}, rotate screen shown, match still on`);
+await page.screenshot({ path: 'art/shots/rotate-portrait.png' });
+await page.setViewportSize({ width: 852, height: 393 }); await sleep(1800);
+const b = await state();
+ok(b.w === 852 && b.h === 393 && b.rotate === 'none' && b.game && b.seat === a.seat, `landscape again: canvas ${b.w}x${b.h}, same seat ${b.seat}`);
+ok(Math.abs(b.mx - a.mx) < 5 && Math.abs(b.my - a.my) < 5, `the map's middle stayed (${a.mx},${a.my}) -> (${b.mx},${b.my})`);
+await page.screenshot({ path: 'art/shots/rotate-landscape.png' });
+await browser.close();
+process.exit(bad ? 1 : 0);

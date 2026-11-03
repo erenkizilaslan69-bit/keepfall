@@ -126,10 +126,13 @@ export class WindowManager {
     const win = this.win;
     if (!win) return;
     const el = win.el;
-    const vw = window.innerWidth, vh = Math.min(window.innerHeight, window.visualViewport?.height ?? Infinity); // (above the on-screen keyboard)
-    const a = this.anchor?.();
+    // The interface layer may be inset from the screen (a notch, rounded corners: touch.css), so everything is worked out inside its own box.
+    const rr = this.root.getBoundingClientRect(), ox = rr.left, oy = rr.top;
+    const vw = rr.width, vh = Math.min(rr.height, (window.visualViewport?.height ?? Infinity) - oy); // (above the on-screen keyboard)
+    const a0 = this.anchor?.();
+    const a = a0 ? { ...a0, x: a0.x - ox, y: a0.y - oy } : a0;
     el.style.maxHeight = '';
-    const top = this.topBottom() + MARGIN;
+    const top = this.topBottom() - oy + MARGIN;
     // At most 80% of the screen (and never more than fits under the top bar); a long body scrolls inside the window. Set before measuring.
     const maxH = Math.max(120, Math.min(vh * WIN_MAX_SHARE, vh - top - MARGIN));
     el.style.setProperty('--win-max', `${Math.round(maxH)}px`);
@@ -148,7 +151,8 @@ export class WindowManager {
     }
     // Stay off the minimap and the home button: above them if there is room, else beside them.
     if (vw >= 760) {
-      for (const r of this.avoid()) {
+      for (const r0 of this.avoid()) {
+        const r = { left: r0.left - ox, right: r0.right - ox, top: r0.top - oy, bottom: r0.bottom - oy };
         if (x + w <= r.left || x >= r.right || y + h <= r.top || y >= r.bottom) continue;
         if (r.top - h - MARGIN >= top) y = r.top - h - MARGIN;
         else if (r.left - w - MARGIN >= MARGIN) x = r.left - w - MARGIN;

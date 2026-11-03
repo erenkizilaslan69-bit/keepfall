@@ -174,7 +174,21 @@ function onCastle(c: CastleView): void {
 
 // ---- screens -------------------------------------------------------------------------------
 
-const onWindowResize = () => game?.scale.resize(window.innerWidth, window.innerHeight);
+/**
+ * The canvas is the visible part of the window, whatever happens to it: a turn of the phone, Safari's address bar sliding away, the keyboard, a split view.
+ * iOS reports the new size late (after the event), so a turn is looked at again a moment later, and a slow check catches anything missed.
+ */
+const onWindowResize = () => {
+  if (!game) return;
+  const w = window.innerWidth, h = window.innerHeight;
+  if (game.scale.gameSize.width !== w || game.scale.gameSize.height !== h) game.scale.resize(w, h);
+  if (game.canvas) { game.canvas.style.width = `${w}px`; game.canvas.style.height = `${h}px`; }
+};
+const onTurn = () => { onWindowResize(); for (const ms of [120, 400, 900]) setTimeout(onWindowResize, ms); };
+window.addEventListener('orientationchange', onTurn);
+window.addEventListener('pageshow', onWindowResize);
+window.visualViewport?.addEventListener('resize', onWindowResize);
+setInterval(onWindowResize, 700);
 
 function clear(): void {
   window.removeEventListener('resize', onWindowResize);

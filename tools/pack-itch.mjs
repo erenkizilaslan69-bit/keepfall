@@ -3,7 +3,7 @@
 //   node tools/pack-itch.mjs https://my-keepfall.onrender.com [--crazy]     (the address replaces VITE_SERVER_URL of the env file)
 // The zip has index.html at its root. It holds the Tiny Swords files: upload it to the site, never commit it.
 import { execSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
@@ -45,5 +45,12 @@ if (process.platform === 'win32') execSync(`"C:/Windows/System32/tar.exe" -a -c 
 else execSync(`zip -qr "${zip}" .`, { cwd: dist, stdio: 'inherit' });
 let files = 0;
 (function count(d) { for (const f of readdirSync(d)) { const p = join(d, f); statSync(p).isDirectory() ? count(p) : files++; } })(dist);
+// CrazyGames' upload can take a folder as well as an archive: the same files, index.html at the folder's root, next to the repository (never inside it)
+if (crazy) {
+  const folder = join(root, '..', 'keepfall-crazygames-build');
+  rmSync(folder, { recursive: true, force: true });
+  cpSync(dist, folder, { recursive: true });
+  console.log(`folder: ${folder}`);
+}
 console.log(`${crazy ? 'keepfall-crazygames.zip' : 'keepfall-itchio.zip'}: ${files} files, ${(statSync(zip).size / 1048576).toFixed(1)} MB`);
 if (files > 1000) console.log('WARNING: itch.io accepts at most 1000 files in an HTML5 zip');

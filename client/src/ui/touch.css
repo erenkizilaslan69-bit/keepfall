@@ -25,15 +25,27 @@ body { -webkit-tap-highlight-color: transparent; }
 
 @media (pointer: coarse) {
   /* The three round buttons of the menus (language, settings, help): 44 px each with room between them, clear of the notch. */
-  .guide-fab.btn-round { top: calc(8px + env(safe-area-inset-top, 0px)); right: calc(8px + env(safe-area-inset-right, 0px)); width: 44px; height: 44px; }
-  .settings-fab.btn-round { top: calc(8px + env(safe-area-inset-top, 0px)); right: calc(60px + env(safe-area-inset-right, 0px)); }
-  .lang-fab.btn-round { top: calc(8px + env(safe-area-inset-top, 0px)); right: calc(112px + env(safe-area-inset-right, 0px)); }
+  .guide-fab.btn-round { top: calc(8px + var(--sa-t)); right: calc(8px + var(--sa-r)); width: 44px; height: 44px; }
+  .settings-fab.btn-round { top: calc(8px + var(--sa-t)); right: calc(60px + var(--sa-r)); }
+  .lang-fab.btn-round { top: calc(8px + var(--sa-t)); right: calc(112px + var(--sa-r)); }
 }
 /* A notch or a rounded corner: the game's interface layer stays inside the safe area (the map still fills the whole screen). */
-.ui-root { padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
+:root { --sa-t: env(safe-area-inset-top, 0px); --sa-r: env(safe-area-inset-right, 0px); --sa-b: env(safe-area-inset-bottom, 0px); --sa-l: env(safe-area-inset-left, 0px); }
+html.sim-inset { --sa-t: 0px; --sa-r: 59px; --sa-b: 21px; --sa-l: 59px; }
+.ui-root { inset: var(--sa-t) var(--sa-r) var(--sa-b) var(--sa-l); }
+html.in-menu #app { padding: var(--sa-t) var(--sa-r) var(--sa-b) var(--sa-l); }
+/* (a simulated Dynamic Island for the tests: tools/webkit-shots.mjs, inset=1) */
 
 /* The deck cards of the lobby: a tap picks, a long press turns over (screens.ts); their tiny buttons are not shown on a touch screen. */
 @media (pointer: coarse) { .ucard-btns { display: none !important; } }
 .touch-only { display: none; }
 @media (pointer: coarse) { .touch-only { display: block; } }
 .kf-diag { position: fixed; left: 4px; top: 4px; z-index: 100002; margin: 0; padding: 4px 6px; background: rgba(0, 0, 0, .72); color: #9f9; font: 10px/1.25 monospace; pointer-events: none; max-width: 40vw; }
+
+/* Windows on a touch screen: the close button sits inside the window's corner (not floating outside it over the map), and scrolling a window never scrolls anything behind it. */
+.win { overscroll-behavior: contain; }
+@media (pointer: coarse) {
+  .win { touch-action: pan-y; }
+  .btn-round.win-close { top: 2px; right: 2px; z-index: 5; }
+  .win-close { top: 2px; right: 2px; }
+}
