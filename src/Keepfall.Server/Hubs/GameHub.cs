@@ -17,7 +17,7 @@ namespace Keepfall.Server.Hubs;
 ///
 /// Groups: "oda:{code}" gets the public room state; "oda:{code}:o{seat}" gets that seat's castle.
 /// </summary>
-public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules) : Hub
+public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules, ILogger<GameHub> logger) : Hub
 {
     private const string CodeKey = "code";
     private const string TokenKey = "token";
@@ -89,6 +89,8 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     {
         if (Bound() is { } bound)
         {
+            // (what happened to the line is the only way to tell a phone's network blip from a server problem afterwards)
+            logger.LogInformation("Bağlantı koptu: oda {Room}, {Reason}", bound.Session.Room.Code, exception is null ? "temiz kapanış" : exception.GetType().Name + ": " + exception.Message);
             lock (bound.Session.Lock) bound.Session.Room.Disconnect(bound.Token, DateTime.UtcNow);
             await PushRoom(bound.Session);
         }

@@ -23,6 +23,8 @@ export class KingdomUi {
   private decreeShown = false;
 
   constructor(root: HTMLElement, private readonly ctx: Ctx) {
+    // Never two of them: whatever built this screen twice (a reconnect, a rebuilt page), the older button and panel go.
+    document.querySelectorAll('.kingdom-fab, .kingdom-panel').forEach((e) => e.remove());
     this.fab = document.createElement('button');
     this.fab.className = 'btn kingdom-fab hit hidden';
     this.fab.addEventListener('click', () => this.panel.classList.toggle('hidden'));
@@ -101,7 +103,7 @@ export class KingdomUi {
 
   private unitInputs(c: CastleView, prefix: string, defaults: Record<string, number> = {}): string {
     return c.units.map((u) =>
-      `<label class="kd-unit"><span>${esc(tr(u.name))}</span><input type="number" min="0" max="999" value="${defaults[u.id] ?? 0}" data-unit="${esc(u.id)}" data-form="${prefix}"></label>`).join('');
+      `<div class="kd-unit"><span>${esc(tr(u.name))}</span><span class="stepper kd-step"><button class="btn-round" type="button" data-step="-1" aria-label="${tt('Bir eksik')}">−</button><input type="number" min="0" max="999" value="${defaults[u.id] ?? 0}" data-unit="${esc(u.id)}" data-form="${prefix}" inputmode="numeric"><button class="btn-round" type="button" data-step="1" aria-label="${tt('Bir fazla')}">+</button></span></div>`).join('');
   }
 
   private build(k: KingdomView, c: CastleView): void {
@@ -159,8 +161,8 @@ export class KingdomUi {
         break;
     }
     this.panel.innerHTML = `
-      <div class="ribbon ribbon-sm ribbon-blue kd-title">${esc(tr(k.name))}</div>
-      <button class="btn-round btn-red win-close" data-a="close" title="${tt('Kapat')}"><i class="ico ico-close"></i></button>
+      <div class="kd-head"><div class="ribbon ribbon-sm ribbon-blue kd-title">${esc(tr(k.name))}</div>
+      <button class="btn-round btn-red kd-x" data-a="close" title="${tt('Kapat')}" aria-label="${tt('Kapat')}"><i class="ico ico-close"></i></button></div>
       <div class="kd-body">${body}</div>`;
     const pick = (sel: string, index: number) => { const el = this.panel.querySelector<HTMLSelectElement>(sel); if (el && el.options.length > index) el.selectedIndex = index; };
     pick('[data-f="env-as"]', 1); pick('[data-f="dis-as"]', 1);
@@ -250,6 +252,13 @@ export class KingdomUi {
   }
 
   private async click(e: Event): Promise<void> {
+    const step = (e.target as HTMLElement).closest<HTMLElement>('[data-step]');
+    if (step) {
+      const input = step.parentElement!.querySelector<HTMLInputElement>('input')!;
+      input.value = String(Math.max(Number(input.min) || 0, Math.min(Number(input.max) || 999, (Number(input.value) || 0) + Number(step.dataset.step))));
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      return;
+    }
     const b = (e.target as HTMLElement).closest<HTMLElement>('[data-a]');
     if (!b) return;
     const a = b.dataset.a;

@@ -75,6 +75,8 @@ const MARGIN = 8;
 const WIN_MAX_SHARE = 0.8;
 /** The close cross hangs this far (px) outside the window's right edge. */
 const CLOSE_OVERHANG = 34;
+/** The close cross of a window on a touch screen hangs this far out of its corner (see touch.css). */
+const CLOSE_OVERHANG_TOUCH = 26;
 
 export class WindowManager {
   private win: Win | null = null;
@@ -159,6 +161,16 @@ export class WindowManager {
         else x = Math.min(vw - w - MARGIN - CLOSE_OVERHANG, r.right + MARGIN);
       }
     }
+    // Whatever the rules above decided, the window is wholly inside the interface layer (so inside the safe area): on a phone held sideways it is a sheet in the
+    // middle of the free space, otherwise it is only pushed back from the edges.
+    const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+    const over = touch ? CLOSE_OVERHANG_TOUCH : CLOSE_OVERHANG;
+    if (touch && vh < 520) {
+      x = (vw - w) / 2;
+      y = top + (vh - top - MARGIN - h) / 2;
+    }
+    x = Math.max(MARGIN, Math.min(vw - w - MARGIN - over, x));
+    y = Math.max(top, Math.min(vh - h - MARGIN, y));
     el.style.left = `${Math.round(x)}px`;
     el.style.top = `${Math.round(y)}px`;
     el.style.visibility = '';

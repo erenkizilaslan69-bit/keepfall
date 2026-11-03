@@ -10,7 +10,6 @@ const IDLE_WORKERS = 3, IDLE_SECONDS = 20;
 export class Hints {
   private readonly seen = new Set<string>();
   private idleSince = 0;
-  private phase: CastleView['phase'] | null = null;
   private reports: number | null = null;
   /** Battle reports already known: only a new lost attack of ours gets the "build the next wave" tip. */
   private battles: Set<number> | null = null;
@@ -28,16 +27,13 @@ export class Hints {
     const now = performance.now();
     const idle = s.jobs.find((j) => j.job === 'idle')?.count ?? 0;
     this.idleSince = idle >= IDLE_WORKERS ? (this.idleSince || now) : 0;
-    const warStarted = this.phase === 'preparation' && s.phase === 'war';
     const newReport = this.reports !== null && s.scouting.reports.length > this.reports;
-    this.phase = s.phase;
     this.reports = s.scouting.reports.length;
     const known = this.battles;
     this.battles = new Set(s.war.battles.map((b) => b.id));
     const lostAttack = known !== null && s.war.battles.some((b) => !known.has(b.id) && b.attacking && !b.youWon && !b.raid);
     if (!showsHints() || s.eliminated) return;
 
-    if (warStarted) this.once('war', t('Savaş başladı! Bir rakip kalenin penceresinden ordularını yola çıkarabilirsin.'), quiet ? 5000 : undefined);
     if (s.war.incoming.length > 0) this.once('incoming', t('Bir düşman ordusu geliyor! Kale penceresinden işçileri askere çevir (kuşan) ve Savunma sekmesine bak.'), quiet ? 6000 : undefined);
     if (lostAttack) this.once('lost', t('Saldırı geri püskürtüldü. Bir sonraki dalgayı biriktir: daha çok silah üret, askere çevir, sonra yeniden saldır.'));
     if (quiet) return;

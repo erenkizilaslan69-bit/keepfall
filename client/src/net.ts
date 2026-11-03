@@ -41,6 +41,9 @@ export class GameConnection {
       .withAutomaticReconnect({ nextRetryDelayInMilliseconds: (ctx) => ctx.elapsedMilliseconds >= 600_000 ? null : ([0, 2000][ctx.previousRetryCount] ?? 5000) })
       .configureLogging(signalR.LogLevel.Warning)
       .build();
+    // (the server's own timeouts are 10 s keep-alive / 60 s: see Program.cs)
+    this.hub.serverTimeoutInMilliseconds = 60_000;
+    this.hub.keepAliveIntervalInMilliseconds = 10_000;
     this.hub.on('RoomState', (room: RoomView) => this.on.room(room));
     this.hub.on('CastleState', (castle: CastleView) => this.on.castle(castle));
     this.hub.on('MapLayout', (layout: MapLayoutView) => this.on.mapLayout(layout));

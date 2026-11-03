@@ -57,7 +57,7 @@ export class CastleWin extends Win {
         <p class="muted-ink small">${tt('Kale saldırıya uğrayınca evdeki askerler böyle dizilir. Kapıdaki okçular surun arkasından %25 fazla hasar verir; savaşı kaybedersen kale düşer.')}</p>
         ${rows}
         ${s.units.some((u) => SHOOTERS.includes(u.id)) ? `<div class="row"><span>${s.units.some((u) => u.id === 'okcu') ? tt('Okçu hedefi') : tt('Mancınık hedefi')}</span><select data-d="priority">${priority}</select></div>` : ''}
-        <div class="row center"><button class="btn" data-act="save-defense">${tt('Kaydet')}</button></div>
+        <div class="row center win-foot-sticky"><button class="btn" data-act="save-defense">${tt('Kaydet')}</button></div>
       </div>`;
     this.body.addEventListener('click', (e) => void this.click(e));
     this.body.addEventListener('change', (e) => { if ((e.target as HTMLElement).closest('[data-pane="defense"]')) this.defenseTouched = true; });

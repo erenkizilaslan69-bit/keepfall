@@ -38,7 +38,12 @@ builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>
     o.KnownIPNetworks.Clear();
     o.KnownProxies.Clear();
 });
-builder.Services.AddSignalR().AddJsonProtocol(o =>
+builder.Services.AddSignalR(o =>
+{
+    // A phone on Wi-Fi/4G has short gaps: the server waits a minute for a sign of life (the client sends one every 10 s) before it calls a connection dead.
+    o.KeepAliveInterval = TimeSpan.FromSeconds(10);
+    o.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+}).AddJsonProtocol(o =>
     o.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
 
 var app = builder.Build();

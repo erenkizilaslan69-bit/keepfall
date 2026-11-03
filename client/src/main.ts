@@ -44,12 +44,16 @@ import { currentRoute, setRoute } from './env';
 
 const app = document.getElementById('app')!;
 
+/** The "reconnecting" note waits a moment (a pending timer); once it is shown, the return is announced. */
+let downTimer = 0;
+let downShown = false;
+
 const statusText: Record<ConnectionStatus, string> = {
-  connecting: t('bağlanıyor…'),
-  connected: t('bağlı'),
-  reconnecting: t('bağlantı koptu, yeniden deneniyor…'),
-  disconnected: t('bağlantı yok — sunucu çalışıyor mu?'),
-  roomLost: t('oda kapandı'),
+  connecting: t('Bağlanıyor…'),
+  connected: t('Bağlı'),
+  reconnecting: t('Bağlantı koptu, yeniden deneniyor…'),
+  disconnected: t('Bağlantı yok — sunucu çalışıyor mu?'),
+  roomLost: t('Oda kapandı'),
 };
 
 type Screen = 'none' | 'home' | 'lobby' | 'game' | 'end';
@@ -120,9 +124,22 @@ const net = new GameConnection({
   matchEnded: (s) => { summary = s; end?.setSummary(s); },
   notification: (text) => ui?.notify(text),
   status: (s) => {
+    // A blip shorter than a second and a half is not worth a red ribbon: "reconnecting" is only shown if it lasts.
+    if (s === 'reconnecting') {
+      if (!downTimer && !downShown) {
+        downTimer = window.setTimeout(() => {
+          downTimer = 0; downShown = true;
+          status = statusText.reconnecting;
+          ui?.setStatus(status, false);
+          if (screen !== 'home' && screen !== 'game') showBanner(t('Yeniden bağlanılıyor...'));
+        }, 1500);
+      }
+      return;
+    }
+    if (downTimer) { window.clearTimeout(downTimer); downTimer = 0; }
+    if (s === 'connected' && downShown) { downShown = false; ui?.notify(t('Yeniden bağlandı')); }
     status = statusText[s];
     ui?.setStatus(status, s === 'connected');
-    if (s === 'reconnecting' && screen !== 'home' && screen !== 'game') showBanner(t('Yeniden bağlanılıyor...'));
     if (s === 'connected') hideBanner();
     if (s === 'disconnected' && screen !== 'home') showBanner(t('Sunucuyla bağlantı yok. Sayfayı yenileyince kaldığın yere dönersin.'));
     if (s === 'roomLost') showBanner(t('Oda kapanmış (sunucu yeniden başlamış olabilir). Ana menüye dönmek için buraya tıkla.'), () => location.assign('/'));

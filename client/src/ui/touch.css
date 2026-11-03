@@ -62,3 +62,49 @@ html.in-game body { position: fixed; inset: 0; width: 100%; }
   .cam-btns .btn .ico { margin: 0; width: 24px; height: 24px; }
   .cam-btns .cam-rival .dot { width: 18px; height: 18px; }
 }
+
+
+/* ---- (round 3 of the phone tests) ---- */
+/* The kingdom button is placed by its own coordinates: the generic button rule must not turn it into a button that sits in the flow. */
+.ui-root .kingdom-fab { position: absolute; }
+.cam-short { display: none; }
+
+/* A short label on each camera button (Me, Red, Yellow, Purple, Forest), in a row that sits to the left of the minimap: it never meets the minimap or the top bar. */
+@media (pointer: coarse) and (max-height: 520px) {
+  .cam-btns { display: flex !important; flex-direction: row !important; flex-wrap: nowrap; align-items: flex-end; justify-content: flex-end; gap: 4px !important; top: auto !important;
+    max-height: none !important; overflow: visible !important; bottom: calc(12px * var(--u, 1)) !important; right: calc(10px * var(--u, 1) + var(--kf-map) + 8px) !important; }
+  .cam-btns [data-f="rivals"] { display: contents; }
+  .cam-btns .btn { min-width: 54px !important; width: auto; height: 46px; padding: 0 6px !important; font-size: 0 !important; flex-direction: column; gap: 0 !important; justify-content: center !important; }
+  .cam-btns .btn .ico { margin: 0; width: 20px; height: 20px; }
+  .cam-btns .cam-rival .dot { width: 14px; height: 14px; margin: 0; }
+  .cam-btns .cam-short { display: block; font-size: 11px; line-height: 1.1; font-weight: 700; margin-top: 1px; }
+  .cam-btns [data-cam="forest"]::before { display: none; }
+}
+
+/* Windows: the close cross hangs out of the corner (not over the tabs), and a primary button at the foot stays in sight while the body scrolls. */
+@media (pointer: coarse) {
+  .btn-round.win-close, .win-close { top: -28px; right: -24px; }
+  .win-body { padding-top: calc(18px * var(--u, 1)); }
+}
+.win-foot-sticky { position: sticky; bottom: calc(-10px * var(--u, 1)); z-index: 3; padding: calc(8px * var(--u, 1)) 0 calc(6px * var(--u, 1)); background: linear-gradient(to bottom, rgba(238, 222, 180, 0), rgba(238, 222, 180, .96) 30%); }
+
+/* Notes: inside the screen, centred, one under the other (never wider than the screen). */
+.notes { max-width: 100%; gap: calc(4px * var(--u)); }
+.notes .ribbon { white-space: normal; text-align: center; max-width: calc(100vw - 48px); min-height: calc(28px * var(--u)); height: auto; }
+
+/* The kingdom panel: its head (title and close) stays at the top while the rest scrolls; steppers instead of bare number boxes. */
+.kingdom-panel { max-height: calc(100% - 112px * var(--u, 1) - 8px); }
+.kd-head { position: sticky; top: calc(-10px); z-index: 4; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: -10px -12px 6px; padding: 8px 12px 4px; background: linear-gradient(to bottom, rgba(238, 222, 180, 1) 75%, rgba(238, 222, 180, 0)); }
+.kd-head .kd-title { margin: 0; }
+.kd-head .kd-x { position: static; flex: none; width: calc(34px * var(--u, 1)); height: calc(34px * var(--u, 1)); min-width: 44px; min-height: 44px; }
+@media (pointer: fine) { .kd-head .kd-x { min-width: 0; min-height: 0; } }
+.kingdom-panel .kd-units { grid-template-columns: 1fr; }
+.kd-unit { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 2px 0; }
+.kd-step { display: inline-flex; align-items: center; gap: 4px; }
+.kd-step .btn-round { width: calc(28px * var(--u, 1)); height: calc(28px * var(--u, 1)); min-width: 0; font-size: 1em; line-height: 1; padding: 0; }
+@media (pointer: coarse) { .kd-step .btn-round { min-width: 44px !important; min-height: 44px !important; } }
+.kingdom-panel .kd-unit input { width: 3.1em; height: calc(28px * var(--u, 1)); min-height: 0; text-align: center; font: inherit; color: var(--ink); background: rgba(255, 250, 230, .7); border: calc(2px * var(--u, 1)) solid #8a6a3c; border-radius: 4px; padding: 0; -moz-appearance: textfield; }
+.kingdom-panel .kd-unit input::-webkit-outer-spin-button, .kingdom-panel .kd-unit input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+@media (pointer: coarse) { .kingdom-panel .kd-unit input { min-height: 44px; } }
+.notes { position: fixed; left: 50%; transform: translateX(-50%); top: calc(var(--sa-t, 0px) + var(--top-h, 60px) + 6px); width: max-content; max-width: calc(100vw - var(--sa-l, 0px) - var(--sa-r, 0px) - 24px); z-index: 14; }
+.notes .ribbon { max-width: 100%; }

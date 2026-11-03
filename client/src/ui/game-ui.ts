@@ -1,5 +1,5 @@
 import { fadeFrom } from './transitions';
-import { botMark, esc } from '../format';
+import { COLOR_NAMES, botMark, esc } from '../format';
 import { sfx } from '../audio';
 import { guarded } from '../error-report';
 import type { GameConnection } from '../net';
@@ -142,9 +142,9 @@ export class GameUi {
     this.cam = document.createElement('div');
     this.cam.className = 'cam-btns';
     this.cam.innerHTML = `
-      <button class="btn hit" data-cam="home" title="${t('Kamerayı kalene getirir (boşluk tuşu)')}"><i class="ico ico-shield"></i> ${t('Kaleme dön')}</button>
+      <button class="btn hit" data-cam="home" title="${t('Kamerayı kalene getirir (boşluk tuşu)')}"><i class="ico ico-shield"></i> ${t('Kaleme dön')}<b class="cam-short">${t('Ben')}</b></button>
       <span data-f="rivals"></span>
-      <button class="btn hit" data-cam="forest" title="${t('Kamerayı ormanın ortasına getirir')}">${t('Orman')}</button>`;
+      <button class="btn hit" data-cam="forest" title="${t('Kamerayı ormanın ortasına getirir')}">${t('Orman')}<b class="cam-short">${t('Orman')}</b></button>`;
     this.cam.addEventListener('click', (e) => {
       const b = (e.target as HTMLElement).closest<HTMLElement>('[data-cam]');
       if (!b) return;
@@ -381,7 +381,7 @@ export class GameUi {
     if (key !== this.camKey) {
       this.camKey = key;
       this.cam.querySelector('[data-f="rivals"]')!.innerHTML = rivals.map((p) =>
-        `<button class="btn hit cam-rival" data-cam="rival" data-seat="${p.seat}" data-color="${p.color}" title="${esc(t('Kamerayı {0} kalesine götürür', tr(p.name)))}"><i class="dot"></i>${botMark(p.seat)}${esc(tr(p.name))}</button>`).join('');
+        `<button class="btn hit cam-rival" data-cam="rival" data-seat="${p.seat}" data-color="${p.color}" title="${esc(t('Kamerayı {0} kalesine götürür', tr(p.name)))}"><i class="dot"></i>${botMark(p.seat)}${esc(tr(p.name))}<b class="cam-short">${esc(COLOR_NAMES[p.color] ?? p.color)}</b></button>`).join('');
     }
     this.updateFinish();
   }
