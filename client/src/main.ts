@@ -28,6 +28,8 @@ import { mountScenery } from './ui/scenery';
 import { loadHorse } from './scene/HorseArt';
 import { mountLangButton, mountSettingsButton, setLeaveAction } from './ui/settings';
 import { startFpsMeter } from './ui/fps-meter';
+import { crazyGameplay, crazyInstant, crazyInviteRoom, crazyLoaded, crazyRoom, crazyUsername, initCrazy, onCrazyJoin, watchCrazySettings } from './crazy';
+import { setSiteChatOff } from './prefs';
 import { guarded, installErrorReporting } from './error-report';
 import type { BattleStartedView, BotLevel, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 import { currentRoute, setRoute } from './env';
@@ -143,6 +145,9 @@ function onRoom(r: RoomView): void {
     scene?.setRoom(r);
   }
   else if (screen === 'end') end!.update(r);
+  // The site (CrazyGames) learns which room we are in, and that friends may join only while it is a lobby.
+  crazyRoom(r.code, r.phase === 'lobby');
+  crazyGameplay(screen === 'game');
 }
 
 function onCastle(c: CastleView): void {
@@ -173,10 +178,15 @@ function clear(): void {
 /** Back to the main menu; in a running match the castle stays in the game and the room's link brings the player back to it. */
 async function leaveToMenu(): Promise<void> {
   await net.leaveRoom();
+  crazyRoom(null, false);
+  crazyGameplay(false);
   lastCastle = null; lastLayout = null; lastMap = null; lastSpectator = null; pendingBattles = []; summary = null;
   setRoute(`/${location.search}`);
   showHome();
 }
+
+/** The CrazyGames account's name, when there is one: the name offered while the player has not typed their own. */
+let siteName = '';
 
 function showHome(defaults: { code?: string; error?: string } = {}): void {
   music.scene('prep');
@@ -184,7 +194,7 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
   clear();
   document.documentElement.classList.add('in-menu');
   screen = 'home';
-  new HomeScreen(app, { name: loadName(), code: defaults.code ?? '', error: defaults.error }, {
+  new HomeScreen(app, { name: loadName() || siteName, code: defaults.code ?? '', error: defaults.error }, {
     create: async (name) => {
       saveName(name);
       const r = await net.createRoom(name);
@@ -333,6 +343,13 @@ async function main(): Promise<void> {
   // The UI art is cut once; without it the UI falls back to plain boxes. Never wait long for it: it
   // can stall in a background tab, and it switches itself on whenever it is ready.
   await Promise.race([loadUiArt(), new Promise((resolve) => setTimeout(resolve, 2500))]);
+  // CrazyGames build only: the site's SDK (nothing happens anywhere else).
+  const onSite = await initCrazy();
+  if (onSite) {
+    siteName = (await crazyUsername()) ?? '';
+    watchCrazySettings((s) => { setSiteChatOff(s.disableChat); if (s.muteAudio) sfx.setMuted(true); });
+    onCrazyJoin((code) => void joinInvite(code));
+  }
   try {
     await net.start();
   } catch (e) {
@@ -340,13 +357,31 @@ async function main(): Promise<void> {
     app.innerHTML = `<div class="screen"><p class="banner danger">${t('Sunucuya bağlanılamadı.')} <code>dotnet run --project src/Keepfall.Server</code> ${t('çalışıyor mu?')}</p></div>`;
     return;
   }
-  const code = /^\/oda\/([A-Za-z]{4})\/?$/.exec(currentRoute())?.[1]?.toUpperCase();
-  if (!code) { showHome(); return; }
-  const r = await net.joinRoom(code, loadName());
+  const code = /^\/oda\/([A-Za-z]{4})\/?$/.exec(currentRoute())?.[1]?.toUpperCase() ?? crazyInviteRoom();
+  if (!code) {
+    if (crazyInstant()) {
+      // The site's "play with friends": straight into a private room of our own (the lobby), joinable at once.
+      const made = await net.createRoom(loadName() || siteName);
+      crazyLoaded();
+      if (made.ok) return;
+    }
+    showHome();
+    crazyLoaded();
+    return;
+  }
+  const r = await net.joinRoom(code, loadName() || siteName);
+  crazyLoaded();
   if (!r.ok) {
     setRoute(`/${location.search}`, 'replace');
     showHome({ code, error: r.error ?? t('Odaya katılınamadı.') });
   }
+}
+
+/** A friend's invitation arrives while we are in the game: leave what we are doing and join that room. */
+async function joinInvite(code: string): Promise<void> {
+  if (screen !== 'home' && screen !== 'none') await leaveToMenu();
+  const r = await net.joinRoom(code, loadName() || siteName);
+  if (!r.ok) showHome({ code, error: r.error ?? t('Odaya katılınamadı.') });
 }
 
 void main();

@@ -9,6 +9,7 @@ import { mountPortrait } from './ui/portraits';
 import { recolor } from './scene/KingdomSprites';
 import type { PlayerColor } from './types';
 import { asset } from './env';
+import { crazyActive, crazyInviteLink } from './crazy';
 
 // Plain-HTML screens around the game: home, lobby and the end screen, in the same parchment-and-ribbon
 // look as the in-game UI (ui/ui.css).
@@ -104,7 +105,7 @@ export class LobbyScreen {
             <div class="share">
               <input class="share-code" readonly value="${esc(`${t('Oda kodu')}: ${room.code}`)}" aria-label="${t('Oda kodu')}">
               <button class="btn" data-a="copy">${t('Oda kodunu kopyala')}</button>
-              ${inIframe() ? '' : `<button class="btn" data-a="copylink">${t('Bağlantıyı kopyala')}</button>`}
+              ${inIframe() && !crazyActive() ? '' : `<button class="btn" data-a="copylink">${t('Bağlantıyı kopyala')}</button>`}
             </div>
             <ul class="players" id="players"></ul>
           </div>
@@ -138,7 +139,7 @@ export class LobbyScreen {
       if (a === 'copy' || a === 'copylink') {
         // The room code (all that matters inside an iframe such as itch.io) or the address of the room; the button says "Copied!" for two seconds.
         const button = this.q<HTMLButtonElement>(`[data-a="${a}"]`);
-        const text = a === 'copy' ? this.room!.code : `${location.origin}/oda/${this.room!.code}`;
+        const text = a === 'copy' ? this.room!.code : crazyInviteLink(this.room!.code) ?? `${location.origin}/oda/${this.room!.code}`;
         const done = await copyText(text, this.q<HTMLInputElement>('.share input'));
         const label = button.textContent;
         button.textContent = done ? t('Kopyalandı!') : t('Kopyalanamadı');

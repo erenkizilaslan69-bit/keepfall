@@ -56,3 +56,7 @@ export function lowGraphics(): boolean {
 export function setLowGraphics(on: boolean): void {
   save({ ...prefs, lowGraphics: on });
 }
+
+// Messages in envoys (a decree from one player to another): the player can switch them off, and the site (CrazyGames) can switch chat off for everybody.
+const siteChat = { off: false };
+export function setSiteChatOff(off: boolean): void { siteChat.off = off; }
