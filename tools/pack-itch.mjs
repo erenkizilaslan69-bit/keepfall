@@ -3,7 +3,7 @@
 //   node tools/pack-itch.mjs https://my-keepfall.onrender.com [--crazy]     (the address replaces VITE_SERVER_URL of the env file)
 // The zip has index.html at its root. It holds the Tiny Swords files: upload it to the site, never commit it.
 import { execSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
@@ -21,6 +21,21 @@ const dist = join(client, crazy ? 'dist-crazy' : 'dist-itch');
 if (!existsSync(join(dist, 'index.html'))) { console.error(`${dist}/index.html missing`); process.exit(1); }
 const html = readFileSync(join(dist, 'index.html'), 'utf8');
 if (/(?:src|href)="\/[^/]/.test(html)) { console.error('index.html still has absolute paths'); process.exit(1); }
+
+// CrazyGames: no address of another site stays in the package (the credits show the artist's name only; the licence file keeps no link either)
+if (crazy) {
+  const scrub = (dir) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const f = join(dir, e.name);
+      if (e.isDirectory()) { scrub(f); continue; }
+      if (!/\.(js|html|css|json|txt)$/.test(e.name)) continue;
+      const text = readFileSync(f, 'utf8');
+      const clean = text.replace(/ ?\(pixelfrog-assets\.itch\.io\/tiny-swords\)/g, '').replace(/,? ?https:\/\/pixelfrog-assets\.itch\.io\/tiny-swords/g, '');
+      if (clean !== text) writeFileSync(f, clean);
+    }
+  };
+  scrub(dist);
+}
 
 const zip = join(root, crazy ? 'keepfall-crazygames.zip' : 'keepfall-itchio.zip');
 rmSync(zip, { force: true });
