@@ -26,8 +26,34 @@ export class Notifications {
     window.setInterval(() => this.renderIncoming(), 250);
   }
 
+  private readonly recent = new Map<string, number>();
+  private readonly held: Array<() => void> = [];
+  private holdTimer = 0;
+
+  /** True while a modal (the spectator countdown, the guide, the settings, a report) is open: notes wait their turn instead of lying over its text. */
+  private get modalOpen(): boolean {
+    return !!document.querySelector('.spec-wait:not(.hidden), .modal-shade:not(.hidden), .guide-overlay, .settings-overlay');
+  }
+
   /** A message that goes away by itself; <paramref name="onClick"/> makes it a button (and a click dismisses it). */
   push(text: string, kind: NoteKind = 'info', ms = 5000, onClick?: () => void): void {
+    // The same words twice within ten seconds are one note.
+    const now = performance.now();
+    if (now - (this.recent.get(text) ?? -1e9) < 10_000) return;
+    this.recent.set(text, now);
+    if (this.modalOpen) {
+      this.held.push(() => this.show(text, kind, ms, onClick));
+      if (!this.holdTimer) this.holdTimer = window.setInterval(() => {
+        if (this.modalOpen) return;
+        window.clearInterval(this.holdTimer); this.holdTimer = 0;
+        for (const f of this.held.splice(0, 2)) f(); // (at most two at a time, the rest is dropped: they were about moments that have passed)
+      }, 400);
+      return;
+    }
+    this.show(text, kind, ms, onClick);
+  }
+
+  private show(text: string, kind: NoteKind, ms: number, onClick?: () => void): void {
     const note = this.ribbon(text, COLOR[kind]);
     note.classList.add('fading');
     if (onClick) {

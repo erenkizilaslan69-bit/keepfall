@@ -63,6 +63,7 @@ export class GameUi {
   private readonly scroll: HTMLElement;
   private scrollSeat: number | null = null;
   private scrollAt: DOMRect | null = null;
+  private fallNote = -1e9;
   private camKey = '';
   private finishDismissed = false;
   private readonly mySeat: number;
@@ -288,9 +289,8 @@ export class GameUi {
     this.exploredSeen = explored;
     this.notes.setIncoming(s.eliminated ? [] : s.war.incoming, s.speed);
     this.notes.setSticky('hunger', s.starving && !s.eliminated, t('Açlık! Yemek bitti, tüm üretim yarıya indi.'));
-    this.notes.setSticky('out', s.eliminated, t('Kalen düştü — elendin. Artık sadece izleyicisin.'), 'info');
     if (this.phase === 'preparation' && s.phase === 'war') { sfx.play('battleStart'); this.notes.push(t('Savaş başladı! Orduların yola çıkabilir.'), 'battle', 6000); }
-    if (!this.eliminated && s.eliminated) { sfx.play('castleFall'); this.notes.push(t('Kalen düştü!'), 'danger', 6000); }
+    if (!this.eliminated && s.eliminated) { sfx.play('castleFall'); }
     this.phase = s.phase;
     this.eliminated = s.eliminated;
   }
@@ -337,9 +337,11 @@ export class GameUi {
     this.scroll.classList.remove('hidden');
     const at = this.scrollAt;
     if (at) {
-      const w = this.scroll.offsetWidth;
-      this.scroll.style.top = `${at.bottom + 6}px`;
-      this.scroll.style.left = `${Math.max(8, Math.min(window.innerWidth - w - 8, at.left + at.width / 2 - w / 2))}px`;
+      const rr = this.root.getBoundingClientRect();
+      const w = this.scroll.offsetWidth, h = this.scroll.offsetHeight;
+      const vh = Math.min(rr.height, (window.visualViewport?.height ?? Infinity) - rr.top);
+      this.scroll.style.top = `${Math.max(4, Math.min(vh - h - 4, at.bottom + 6 - rr.top))}px`;
+      this.scroll.style.left = `${Math.max(8, Math.min(rr.width - w - 8, at.left + at.width / 2 - w / 2 - rr.left))}px`;
     }
   }
 
@@ -415,6 +417,11 @@ export class GameUi {
 
   /** Something that happened to us (a server notification). */
   notify(text: string): void {
+    // The fall of our castle comes as three or four server messages and the countdown window already says it: one of them is enough ("... attack beat your defense").
+    if (/düştü|elendi/.test(text)) {
+      if (performance.now() - this.fallNote < 20_000) return;
+      this.fallNote = performance.now();
+    }
     // The ribbon with the countdown already says an army is coming.
     if (text.includes('yaklaşıyor')) { sfx.play('warning'); return; }
     if (/elendi/.test(text)) sfx.play('castleFall');

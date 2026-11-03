@@ -125,3 +125,37 @@ html.in-game body { position: fixed; inset: 0; width: 100%; }
 /* The lobby's bottom bar never rides over the list: it is part of the page flow (the page scrolls), not pinned. */
 .screen.lobby .lob-bottom { position: static; }
 @media (pointer: coarse) { .ucard-flip { display: block; } }
+
+
+/* ---- (round 5 of the phone tests) ---- */
+/* the pop-up of a rival (their last report): inside the screen, its cross inside its corner */
+.scroll-pop { max-width: calc(100% - 16px); max-height: calc(100% - 8px); overflow-x: hidden; }
+.scroll-pop .win-close { top: 2px; right: 2px; }
+.scroll-pop { padding-right: 40px; }
+/* the kingdom panel and every window: never a sideways scroll (the content shrinks and wraps instead) */
+.kingdom-panel, .win, .win-body, .scroll-pop, .decree { overflow-x: hidden; }
+.kingdom-panel *, .win-body * { min-width: 0; }
+.kingdom-panel { max-width: calc(100% - 20px); box-sizing: border-box; }
+.kingdom-panel .kd-row { flex-wrap: wrap; }
+.kingdom-panel p, .kingdom-panel span, .kingdom-panel label { overflow-wrap: anywhere; }
+.kingdom-panel select { max-width: 100%; }
+.kingdom-panel .kd-row .btn { flex: 0 0 auto; }
+/* the attack form of a rival's castle: a compact row: name and numbers on the first line, the row choice under it */
+.atk-head, .atk-row { grid-template-columns: 1fr auto; }
+.atk-head > :nth-child(3) { display: none; }
+.atk-row select { grid-column: 1 / -1; justify-self: end; min-height: 30px; font-size: .9em; }
+.atk-row .stepper { gap: 4px; }
+.atk-row .stepper .btn-round { width: calc(26px * var(--u, 1)); height: calc(26px * var(--u, 1)); min-width: 0; min-height: 0; font-size: .95em; padding: 0; position: relative; }
+.atk-row .stepper input { width: 2.6em; height: calc(26px * var(--u, 1)); min-height: 0; text-align: center; padding: 0; }
+@media (pointer: coarse) {
+  /* a small picture, a 44 px hit area: the button is drawn small and its touch area is larger than what is seen */
+  .atk-row .stepper .btn-round { min-width: 0 !important; min-height: 0 !important; width: 28px; height: 28px; }
+  .atk-row .stepper .btn-round::after { content: ''; position: absolute; inset: -8px; }
+  .atk-row select { min-height: 44px !important; }
+  .kd-step .btn-round { min-width: 0 !important; min-height: 0 !important; width: 28px; height: 28px; position: relative; }
+  .kd-step .btn-round::after { content: ''; position: absolute; inset: -8px; }
+  .kingdom-panel .kd-unit input { min-height: 28px; }
+}
+/* the report card on the left and the Reports button: the cards stand above the button, never over it */
+.report-tags { bottom: calc(56px * var(--u)); }
+@media (pointer: coarse) { .win { overflow: visible !important; } .win-body { overflow-y: auto; } }

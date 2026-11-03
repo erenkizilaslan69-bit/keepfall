@@ -70,3 +70,9 @@ export function setShowMessages(on: boolean): void { save({ ...prefs, showMessag
 /** "İpuçlarını göster": the short contextual tips (idle workers, low food, an army on its way ...). On by default. */
 export function showsHints(): boolean { return prefs.showHints; }
 export function setShowHints(on: boolean): void { save({ ...prefs, showHints: on }); }
+
+// ---- how many matches this browser has started (a new player's first three matches have easy bots) ------------------------------------------------------
+const MATCHES_KEY = 'keepfall.matches';
+export const matchesStarted = (): number => { try { return Number(localStorage.getItem(MATCHES_KEY)) || 0; } catch { return 0; } };
+export function countMatch(): void { try { localStorage.setItem(MATCHES_KEY, String(matchesStarted() + 1)); } catch { /* not counted */ } }
+export const newPlayer = (): boolean => matchesStarted() < 3;

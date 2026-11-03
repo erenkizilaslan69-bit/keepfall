@@ -35,7 +35,7 @@ import { startFpsMeter } from './ui/fps-meter';
 import { armTutorial, disarmTutorial, tutorialDone } from './ui/tutorial';
 import { CRAZY } from './crazy';
 import { crazyGameplay, crazyInstant, crazyInviteRoom, crazyLoaded, crazyRoom, crazyUsername, initCrazy, onCrazyJoin, watchCrazySettings } from './crazy';
-import { setSiteChatOff } from './prefs';
+import { countMatch, newPlayer, setSiteChatOff } from './prefs';
 import { guarded, installErrorReporting } from './error-report';
 import type { BattleStartedView, BotLevel, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 import { currentRoute, embedded, setRoute } from './env';
@@ -286,7 +286,8 @@ async function quickMatch(name: string): Promise<string | null> {
   // The very first Quick play is the guided one: three Easy bots and the interactive tutorial (ui/tutorial.ts).
   const guided = !tutorialDone();
   const fail = (error: string | null | undefined): string | null => { disarmTutorial(); return error ?? null; };
-  const levels: BotLevel[] = guided ? ['easy', 'easy', 'easy'] : ['easy', 'medium', Math.random() < 0.5 ? 'easy' : 'medium'];
+  // The first three matches of a browser have easy bots (the first one is the guided match, which counts); later a mix.
+  const levels: BotLevel[] = guided || newPlayer() ? ['easy', 'easy', 'easy'] : ['easy', 'medium', Math.random() < 0.5 ? 'easy' : 'medium'];
   for (const level of guided ? levels : levels.sort(() => Math.random() - 0.5)) {
     const a = await net.addBot(level);
     if (!a.ok) return fail(a.error);
@@ -296,6 +297,7 @@ async function quickMatch(name: string): Promise<string | null> {
   if (!ready.ok) return fail(ready.error);
   if (guided) armTutorial();
   const go = await net.startMatch();
+  if (go.ok) countMatch();
   return go.ok ? null : fail(go.error);
 }
 

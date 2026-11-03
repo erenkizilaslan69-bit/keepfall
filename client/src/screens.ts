@@ -2,6 +2,7 @@ import { sfx } from './audio';
 import { botMark, clock, COLOR_CSS, esc, fmt } from './format';
 import { inIframe, t, tr } from './i18n';
 import { isTouch } from './ui/touch';
+import { countMatch, newPlayer } from './prefs';
 import { emblemHtml } from './ui/emblem';
 import type { GameConnection } from './net';
 import type { BotLevel, RoomView, SummaryView } from './types';
@@ -171,7 +172,9 @@ export class LobbyScreen {
             if (!added.ok) { this.show(added); return; }
           }
         }
-        this.show(await this.net.startMatch());
+        const started = await this.net.startMatch();
+        if (started.ok) countMatch();
+        this.show(started);
       } else if (a === 'addbot') {
         const level = (e.target as HTMLElement).closest<HTMLElement>('[data-level]')?.dataset.level as BotLevel;
         this.show(await this.net.addBot(level));
@@ -207,8 +210,8 @@ export class LobbyScreen {
       const saved = JSON.parse(localStorage.getItem('keepfall.fill') ?? 'null') as { on?: boolean; level?: string } | null;
       this.q<HTMLInputElement>('#fillbots').checked = saved?.on !== false;
       if (saved?.level === 'easy' || saved?.level === 'hard') this.q<HTMLSelectElement>('#filllevel').value = saved.level;
-      else this.q<HTMLSelectElement>('#filllevel').value = 'medium';
-    } catch { this.q<HTMLInputElement>('#fillbots').checked = true; this.q<HTMLSelectElement>('#filllevel').value = 'medium'; }
+      else this.q<HTMLSelectElement>('#filllevel').value = newPlayer() ? 'easy' : 'medium';
+    } catch { this.q<HTMLInputElement>('#fillbots').checked = true; this.q<HTMLSelectElement>('#filllevel').value = newPlayer() ? 'easy' : 'medium'; }
     this.q('#fill').addEventListener('change', () => {
       try { localStorage.setItem('keepfall.fill', JSON.stringify(this.fill())); } catch { /* fine */ }
       if (this.room) this.update(this.room);
