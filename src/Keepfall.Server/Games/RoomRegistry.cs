@@ -14,6 +14,10 @@ public sealed class KeepfallOptions
     /// <summary>Rooms with nobody connected for this long are dropped.</summary>
     public double AbandonedRoomMinutes { get; set; } = 10;
     public double LobbyGraceMinutes { get; set; } = 2;
+    /// <summary>Most rooms the server holds at once (lobbies and matches); 0 = no limit. A full server turns room creation and quick play away.</summary>
+    public int MaxRooms { get; set; }
+    /// <summary>How often the server writes its load line (active rooms, tick time, memory) to the log; 0 = never.</summary>
+    public double StatsLogSeconds { get; set; } = 60;
 }
 
 /// <summary>A room plus the lock that guards it. Every read or write of <see cref="Room"/> happens under <see cref="Lock"/>.</summary>
@@ -34,8 +38,15 @@ public sealed class RoomRegistry(GameRules rules, Microsoft.Extensions.Options.I
 
     public IEnumerable<RoomSession> Sessions => _rooms.Values;
 
-    public RoomSession Create()
+    public int Count => _rooms.Count;
+
+    /// <summary>The room limit (<see cref="KeepfallOptions.MaxRooms"/>) is reached.</summary>
+    public bool IsFull => options.Value.MaxRooms > 0 && _rooms.Count >= options.Value.MaxRooms;
+
+    /// <summary>A new room, or null when the server is full.</summary>
+    public RoomSession? Create()
     {
+        if (IsFull) return null;
         var o = options.Value;
         var roomOptions = new RoomOptions
         {

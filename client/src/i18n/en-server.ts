@@ -106,6 +106,7 @@ export const EN_SERVER: Record<string, string> = {
   "Bu odada değilsin.": "You are not in this room.",
   "Bu komut sadece lobide kullanılabilir.": "This command can only be used in the lobby.",
   "Oda bulunamadı.": "Room not found.",
+  "Sunucu dolu, birazdan tekrar dene.": "The server is full, try again in a moment.",
   "Önce bir odaya katılmalısın.": "You must join a room first.",
   "Bu bağlantı zaten bir odada.": "This connection is already in a room.",
   "Mesajda geçersiz karakter var.": "The message has an invalid character.",

@@ -15,6 +15,7 @@ public sealed class TickLoop(
     IHubContext<GameHub> hub,
     IOptions<KeepfallOptions> options,
     Keepfall.Core.GameRules rules,
+    ServerStats stats,
     ILogger<TickLoop> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -23,6 +24,9 @@ public sealed class TickLoop(
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(tickSeconds));
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
+            stats.PassStarted(tickSeconds);
+            long started = System.Diagnostics.Stopwatch.GetTimestamp();
+            int rooms = 0, inMatch = 0, players = 0;
             foreach (var session in registry.Sessions)
             {
                 try
@@ -33,7 +37,15 @@ public sealed class TickLoop(
                 {
                     logger.LogError(ex, "Tick failed for room {Code}", session.Room.Code);
                 }
+                rooms++;
+                lock (session.Lock)
+                {
+                    if (session.Room.Phase is RoomPhase.Preparation or RoomPhase.War) inMatch++;
+                    players += session.Room.Players.Count(p => !p.IsBot && p.Connections > 0);
+                }
             }
+            stats.PassEnded(started);
+            if (stats.Report(options.Value.StatsLogSeconds, rooms, inMatch, players) is { } line) logger.LogInformation("{Line}", line);
         }
     }
 

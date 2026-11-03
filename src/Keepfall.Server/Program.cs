@@ -24,6 +24,7 @@ var rules = BalanceConfigLoader.LoadFromFile(balancePath);
 
 builder.Services.AddSingleton(rules);
 builder.Services.AddSingleton<RoomRegistry>();
+builder.Services.AddSingleton<ServerStats>();
 builder.Services.AddSingleton<ClientErrorLog>();
 builder.Services.AddHostedService<TickLoop>();
 // The page may be served from another address than the game server (an itch.io / CrazyGames iframe talking to the hosted server).

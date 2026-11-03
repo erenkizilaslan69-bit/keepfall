@@ -34,6 +34,7 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     {
         if (Context.Items.ContainsKey(CodeKey)) return JoinFail("Bu bağlantı zaten bir odada.");
         var session = registry.Create();
+        if (session is null) return JoinFail("Sunucu dolu, birazdan tekrar dene.");
         JoinResult result;
         lock (session.Lock) result = session.Room.Join(name, null, false, DateTime.UtcNow);
         return await Attach(session, result);
