@@ -9,7 +9,7 @@ export function uiScaleFor(width: number, height: number): number {
   if (base >= 1.35) return 1.25;
   // A phone held sideways is only 360-430 px tall: there the interface may shrink further (touch targets keep their 44 px, see touch.css).
   const phone = height < 500 && (window.matchMedia?.('(pointer: coarse)').matches ?? false);
-  return Math.max(phone ? 0.66 : 0.85, Math.min(1, base));
+  return Math.max(phone ? 0.78 : 0.85, Math.min(1, base));
 }
 
 export function watchUiScale(): void {

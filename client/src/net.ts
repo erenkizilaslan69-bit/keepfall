@@ -4,6 +4,9 @@ import { trace } from './debug-trace';
 import type { ArmyMode, BattleStartedView, BotLevel, BuildingType, CastleView, CommandResult, Job, JoinView, MapLayoutView, MapStateView, RoomView, Row, SpectatorStateView, SpectatorWaitView, SummaryView } from './types';
 import { serverUrl } from './env';
 
+/** The version of the conversation with the server; Hello on the hub answers with the server's (GameHub.Protocol). */
+export const PROTOCOL = 1;
+
 export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'roomLost';
 
 export interface ConnectionEvents {
@@ -71,6 +74,7 @@ export class GameConnection {
    * dropped and made again, and the seat is taken back with the room's token; a line the library has given up on is started afresh.
    */
   async recheck(): Promise<void> {
+    if (this.retired) return;
     const state = this.hub.state;
     if (state === signalR.HubConnectionState.Connecting || state === signalR.HubConnectionState.Reconnecting) return;
     if (state === signalR.HubConnectionState.Connected) {
@@ -92,6 +96,18 @@ export class GameConnection {
     await this.hub.start();
     this.on.status('connected');
   }
+
+  /** The conversation version of the server (null: an older server that does not know the question). */
+  async serverProtocol(): Promise<number | null> {
+    try { return await this.hub.invoke<number>('Hello', PROTOCOL); } catch { return null; }
+  }
+
+  /** Another tab of this browser has taken the seat: this one lets go of the line for good. */
+  async retire(): Promise<void> {
+    this.retired = true;
+    await this.abort();
+  }
+  retired = false;
 
   /** The line's state as a word (Connected, Reconnecting, ...). */
   get state(): string { return this.hub.state; }

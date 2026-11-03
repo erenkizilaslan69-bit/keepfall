@@ -28,6 +28,14 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     /// <summary>A round trip for the client's "FPS göster" counter; touches nothing.</summary>
     public Task<int> Ping() => Task.FromResult(0);
 
+    /// <summary>The version of the conversation between page and server. The page asks once when it connects: a page that is older (or newer) than the server is told to reload.</summary>
+    public const int Protocol = 1;
+    public Task<int> Hello(int clientProtocol) => Task.FromResult(Protocol);
+
+    /// <summary>Room-code guessing: this many wrong codes in a minute from one connection and the connection has to wait.</summary>
+    private const int MaxWrongCodes = 6;
+    private static readonly TimeSpan WrongCodeWindow = TimeSpan.FromMinutes(1);
+
     // ---- joining ---------------------------------------------------------------------------
 
     public async Task<JoinView> CreateRoom(string? name)
@@ -45,7 +53,15 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     public async Task<JoinView> JoinRoom(string? code, string? name, string? token, bool remembered)
     {
         if (Context.Items.ContainsKey(CodeKey)) return JoinFail("Bu bağlantı zaten bir odada.");
-        if (registry.Find(code) is not { } session) return JoinFail("Oda bulunamadı.");
+        var misses = Context.Items.TryGetValue("misses", out var m) && m is List<DateTime> list ? list : new List<DateTime>();
+        misses.RemoveAll(t => DateTime.UtcNow - t > WrongCodeWindow);
+        if (misses.Count >= MaxWrongCodes) return JoinFail("Çok fazla deneme. Bir dakika bekle.");
+        if (registry.Find(code) is not { } session)
+        {
+            misses.Add(DateTime.UtcNow);
+            Context.Items["misses"] = misses;
+            return JoinFail("Oda bulunamadı.");
+        }
         JoinResult result;
         lock (session.Lock) result = session.Room.Join(name, token, remembered, DateTime.UtcNow);
         return await Attach(session, result);
@@ -90,7 +106,7 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
         if (Bound() is { } bound)
         {
             // (what happened to the line is the only way to tell a phone's network blip from a server problem afterwards)
-            logger.LogInformation("Bağlantı koptu: oda {Room}, {Reason}", bound.Session.Room.Code, exception is null ? "temiz kapanış" : exception.GetType().Name + ": " + exception.Message);
+            logger.LogInformation("Connection dropped: room {Room}, {Reason}", bound.Session.Room.Code, exception is null ? "clean close" : exception.GetType().Name + ": " + exception.Message);
             lock (bound.Session.Lock) bound.Session.Room.Disconnect(bound.Token, DateTime.UtcNow);
             await PushRoom(bound.Session);
         }
@@ -114,6 +130,10 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
         Context.Items.Remove(TokenKey);
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, RoomGroup(code));
         if (seat > 0) await Groups.RemoveFromGroupAsync(Context.ConnectionId, PlayerGroup(code, seat));
+        // Everybody has left a lobby: the room is closed at once (a room in a match stays until it is abandoned, see TickLoop).
+        bool empty;
+        lock (bound.Session.Lock) empty = bound.Session.Room.Phase == RoomPhase.Lobby && bound.Session.Room.Players.All(p => p.IsBot || !p.Connected);
+        if (empty) { registry.Remove(code); return new CommandResultView(true, null); }
         await PushRoom(bound.Session);
         return new CommandResultView(true, null);
     }

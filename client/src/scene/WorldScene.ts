@@ -84,6 +84,9 @@ export class WorldScene extends Phaser.Scene {
   /** Set by main.ts: the minimap is drawn from the scene's own frame loop. */
   minimap: Minimap | null = null;
   private dragged = false;
+  /** Screen px a second of the last drag (touch only), for the glide after a flick. */
+  private dragVelocity = { x: 0, y: 0 };
+  private lastMove: { x: number; y: number; t: number } | null = null;
   /** The middle of the view, remembered every frame (see the resize handler). */
   private viewCenter: { x: number; y: number } | null = null;
   private map: MapStateView | null = null;
@@ -593,6 +596,7 @@ export class WorldScene extends Phaser.Scene {
     guarded('scene-update', () => this.onFrame(), 'onFrame');
     guarded('scene-update', () => this.clearTreesAroundBattles(dt), 'trees');
     guarded('scene-update', () => this.panWithKeys(dt), 'keys');
+    guarded('scene-update', () => this.glide(dt), 'glide');
     if (this.map) {
       const map = this.map;
       // The castle's circle comes from the server; the walking circles follow the drawn armies and scouts.
@@ -782,7 +786,7 @@ export class WorldScene extends Phaser.Scene {
     // before it counts as a drag, so a tap on a building is not taken for a drag.
     this.input.addPointer(1);
     let pinch: { dist: number; zoom: number; anchor: { x: number; y: number } } | null = null;
-    const startDrag = (p: Phaser.Input.Pointer) => { drag = { x: p.x, y: p.y, scrollX: cam.scrollX, scrollY: cam.scrollY }; };
+    const startDrag = (p: Phaser.Input.Pointer) => { drag = { x: p.x, y: p.y, scrollX: cam.scrollX, scrollY: cam.scrollY }; this.dragVelocity = { x: 0, y: 0 }; this.lastMove = { x: p.x, y: p.y, t: performance.now() }; };
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       startDrag(p);
       this.dragged = false;
@@ -806,8 +810,16 @@ export class WorldScene extends Phaser.Scene {
       if (!this.dragged && Math.hypot(dx, dy) < (p.wasTouch ? 12 : 6)) return; // a click, not a drag
       this.dragged = true;
       cam.setScroll(drag.scrollX - dx / cam.zoom, drag.scrollY - dy / cam.zoom);
+      if (p.wasTouch && this.lastMove) {
+        const now = performance.now(), dtm = Math.max(8, now - this.lastMove.t);
+        this.dragVelocity = { x: 0.6 * this.dragVelocity.x + 0.4 * ((p.x - this.lastMove.x) / dtm) * 1000, y: 0.6 * this.dragVelocity.y + 0.4 * ((p.y - this.lastMove.y) / dtm) * 1000 };
+        this.lastMove = { x: p.x, y: p.y, t: now };
+      }
     });
     this.input.on('pointerup', () => {
+      // a flick glides on; a drag that was held still before the lift does not
+      if (this.lastMove && performance.now() - this.lastMove.t > 90) this.dragVelocity = { x: 0, y: 0 };
+      if (pinch) this.dragVelocity = { x: 0, y: 0 };
       drag = null;
       pinch = null;
       // One finger of a pinch is still down: it carries on as a drag from where it is (without the map jumping).
@@ -833,6 +845,22 @@ export class WorldScene extends Phaser.Scene {
       this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT', false) as Record<string, Phaser.Input.Keyboard.Key>;
       kb.on('keydown-SPACE', () => { if (!typingInPanel()) this.centerOnCastle(); });
     }
+  }
+
+  /** The + / − buttons: one step in or out about the middle of the view. */
+  zoomStep(dir: number): void {
+    const cam = this.cameras.main;
+    cam.setZoom(Phaser.Math.Clamp(cam.zoom * (dir > 0 ? 1.25 : 0.8), this.minZoom(), MAX_ZOOM));
+  }
+
+  /** The map keeps gliding for a moment after a finger lets go (a flick), slowing down by itself. */
+  private glide(dt: number): void {
+    if (this.dragVelocity.x === 0 && this.dragVelocity.y === 0) return;
+    const cam = this.cameras.main;
+    cam.setScroll(cam.scrollX - (this.dragVelocity.x * dt) / cam.zoom, cam.scrollY - (this.dragVelocity.y * dt) / cam.zoom);
+    const f = Math.pow(0.0025, dt); // about 95 % of the speed gone after half a second
+    this.dragVelocity.x *= f; this.dragVelocity.y *= f;
+    if (Math.hypot(this.dragVelocity.x, this.dragVelocity.y) < 12) this.dragVelocity = { x: 0, y: 0 };
   }
 
   private panWithKeys(dt: number): void {

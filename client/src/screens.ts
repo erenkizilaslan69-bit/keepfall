@@ -146,6 +146,10 @@ export class LobbyScreen {
         // The room code (all that matters inside an iframe such as itch.io) or the address of the room; the button says "Copied!" for two seconds.
         const button = this.q<HTMLButtonElement>(`[data-a="${a}"]`);
         const text = a === 'copy' ? this.room!.code : crazyInviteLink(this.room!.code) ?? `${location.origin}/?room=${this.room!.code}`;
+        // On a phone the share sheet (messages, chats) is the natural way to send a link; where it is missing or refused, the link is copied.
+        if (a === 'copylink' && isTouch() && typeof navigator.share === 'function') {
+          try { await navigator.share({ title: 'Keepfall', text: t('Keepfall odama katıl: {0}', this.room!.code), url: text }); return; } catch (err) { if ((err as DOMException)?.name === 'AbortError') return; }
+        }
         const done = await copyText(text, this.q<HTMLInputElement>('.share input'));
         const label = button.textContent;
         button.textContent = done ? t('Kopyalandı!') : t('Kopyalanamadı');
@@ -269,6 +273,7 @@ export class LobbyScreen {
           <div class="ucard-inner">
             <div class="ucard-face front">
               <span class="ucard-check" aria-hidden="true">✓</span>
+              <button class="ucard-flip" type="button" data-a="flip" aria-label="${t('Kartı çevir')}" title="${t('Kartı çevir')}">↻</button>
               <div class="ucard-art"><canvas width="128" height="112"></canvas></div>
               <b class="ucard-name">${esc(tr(u.name))}</b>
               <span class="ucard-tag">${u.heal ? t('destek') : u.flank ? t('baskıncı') : u.backFirst ? t('kuşatma') : u.back ? t('menzilli') : t('yakın dövüş')}</span>

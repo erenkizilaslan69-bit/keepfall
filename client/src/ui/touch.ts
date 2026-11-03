@@ -5,7 +5,7 @@ import { t } from '../i18n';
 
 export const isTouch = (): boolean => window.matchMedia?.('(pointer: coarse)').matches ?? false;
 
-const LONG_PRESS_MS = 450;
+const LONG_PRESS_MS = 600;
 
 export function installTouch(): void {
   const root = document.documentElement;
@@ -32,6 +32,12 @@ export function installTouch(): void {
   });
 
   installLongPress();
+  // The keyboard goes away when a button is pressed (sending a message from an envoy form, for instance): the form is what the player wants to see.
+  document.addEventListener('click', (e) => {
+    if (!isTouch() || !(e.target as HTMLElement | null)?.closest?.('button')) return;
+    const a = document.activeElement as HTMLElement | null;
+    if (a && /^(INPUT|TEXTAREA)$/.test(a.tagName)) a.blur();
+  }, true);
 }
 
 /** A finger cannot hover: pressing and holding something that has a `title` shows that text for a moment (and the press does not count as a tap). */

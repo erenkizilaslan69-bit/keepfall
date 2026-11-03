@@ -27,7 +27,8 @@ export function setLeaveAction(action: (() => void) | null): void {
 }
 
 /** Asks before leaving a running match (the castle stays behind undefended). */
-function confirmLeave(): void {
+export function confirmLeave(): void {
+  if (document.querySelector('.settings-overlay')) return;
   const box = document.createElement('div');
   box.className = 'guide-overlay settings-overlay';
   box.innerHTML = `

@@ -22,6 +22,7 @@ import { setBotSeats } from './format';
 import { t, tr } from './i18n';
 import { installTouch } from './ui/touch';
 import { startDiagnostics, watchGlContext } from './diagnostics';
+import { PROTOCOL } from './net';
 import { music, sfx } from './audio';
 import { mountGuideButton, showFirstTimeGuide } from './ui/guide';
 import { CloudCurtain } from './ui/clouds';
@@ -29,7 +30,7 @@ import { fadeFrom } from './ui/transitions';
 import { warmUp } from './preload';
 import { mountScenery } from './ui/scenery';
 import { loadHorse } from './scene/HorseArt';
-import { mountLangButton, mountSettingsButton, setLeaveAction } from './ui/settings';
+import { confirmLeave, mountLangButton, mountSettingsButton, setLeaveAction } from './ui/settings';
 import { startFpsMeter } from './ui/fps-meter';
 import { armTutorial, disarmTutorial, tutorialDone } from './ui/tutorial';
 import { CRAZY } from './crazy';
@@ -37,7 +38,7 @@ import { crazyGameplay, crazyInstant, crazyInviteRoom, crazyLoaded, crazyRoom, c
 import { setSiteChatOff } from './prefs';
 import { guarded, installErrorReporting } from './error-report';
 import type { BattleStartedView, BotLevel, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
-import { currentRoute, setRoute } from './env';
+import { currentRoute, embedded, setRoute } from './env';
 
 // Routes: "/" is the home screen, "/oda/ABCD" is a room. Inside a room the screen follows the
 // room's phase: lobby → game (preparation and war) → end screen.
@@ -328,6 +329,7 @@ function showGame(): void {
       <div id="stage"></div>
       <div id="ui" class="ui-root"></div>
     </main>`;
+  armBack();
   ui = new GameUi(document.getElementById('ui')!, net, net.seat, () => scene?.centerOnCastle());
   ui.setStatus(status, status === statusText.connected);
   if (import.meta.env.DEV) (window as unknown as { keepfallUi: GameUi }).keepfallUi = ui;
@@ -413,7 +415,55 @@ function showBanner(text: string, onClick?: () => void): void {
 
 // ---- start ---------------------------------------------------------------------------------
 
-window.addEventListener('popstate', () => location.reload());
+// ---- the same player in a second tab: the newer tab takes the seat, the older one steps aside ----------------------------------------------------------
+const TAB_ID = Math.random().toString(36).slice(2);
+const tabs = 'BroadcastChannel' in window ? new BroadcastChannel('keepfall-tab') : null;
+tabs?.addEventListener('message', (e) => {
+  const m = e.data as { type: string; id: string; code?: string; to?: string };
+  if (m.type === 'claim' && m.id !== TAB_ID && m.code && m.code === net.roomCode && !net.retired) {
+    tabs.postMessage({ type: 'ack', id: TAB_ID, to: m.id });
+    void stepAside();
+  }
+});
+async function stepAside(): Promise<void> {
+  await net.retire();
+  document.getElementById('banner')?.remove();
+  const box = document.createElement('div');
+  box.className = 'guide-overlay';
+  box.style.zIndex = '90000';
+  box.innerHTML = `<div class="guide paper" role="alertdialog"><div class="ribbon ribbon-blue guide-title">${t('Başka bir sekmede açık')}</div><div class="guide-body"><p>${t('Keepfall bu tarayıcıda başka bir sekmede açıldı ve koltuğunu o aldı. Burada oynamaya devam etmek için sayfayı yenile.')}</p><section class="set-links"><button class="btn btn-red" data-act="reload">${t('Sayfayı yenile')}</button></section></div></div>`;
+  box.querySelector('[data-act="reload"]')!.addEventListener('click', () => location.reload());
+  document.body.appendChild(box);
+}
+/** Before taking a seat back: if another tab of ours holds it, ask it to let go (it answers within a moment) and wait for the line to drop. */
+async function claimSeat(code: string): Promise<void> {
+  if (!tabs) return;
+  const answered = await new Promise<boolean>((resolve) => {
+    const on = (e: MessageEvent) => { const m = e.data as { type: string; to?: string }; if (m.type === 'ack' && m.to === TAB_ID) { tabs.removeEventListener('message', on); resolve(true); } };
+    tabs.addEventListener('message', on);
+    tabs.postMessage({ type: 'claim', id: TAB_ID, code });
+    setTimeout(() => { tabs.removeEventListener('message', on); resolve(false); }, 350);
+  });
+  if (answered) await new Promise((r) => setTimeout(r, 1200));
+}
+
+// The server and the page must speak the same version: told once, when the line is up.
+async function checkVersion(): Promise<void> {
+  const server = await net.serverProtocol();
+  if (server !== null && server !== PROTOCOL) showBanner(t('Keepfall yeni sürüme geçti. Yenilemek için buraya tıkla.'), () => location.reload());
+}
+
+// The back button (Android): in a match it closes the window that is open, or asks "Leave the match?"; elsewhere it is the old behaviour.
+const BACK = { kfBack: 1 };
+function armBack(): void { if (!embedded && !history.state?.kfBack) history.pushState(BACK, ''); }
+window.addEventListener('popstate', () => {
+  if (screen === 'game' && ui) {
+    armBack();
+    if (!ui.closeTop()) confirmLeave();
+    return;
+  }
+  location.reload();
+});
 // A phone that slept, a tab that was in the background, a network that came back: check the line (and take the seat back if it dropped).
 document.addEventListener('visibilitychange', () => { if (!document.hidden) void net.recheck(); });
 window.addEventListener('online', () => void net.recheck());
@@ -470,6 +520,7 @@ async function main(): Promise<void> {
   const named = /^\/oda\/([A-Za-z]{6})\/?$/.exec(currentRoute())?.[1]?.toUpperCase() ?? (asked && /^[A-Za-z]{6}$/.test(asked) ? asked.toUpperCase() : null) ?? crazyInviteRoom();
   const resumed = !named && loadActiveRoom() !== null;
   const code = named ?? loadActiveRoom();
+  void checkVersion();
   if (!code) {
     if (crazyInstant()) {
       // The site's "play with friends": straight into a private room of our own (the lobby), joinable at once.
@@ -481,6 +532,7 @@ async function main(): Promise<void> {
     crazyLoaded();
     return;
   }
+  await claimSeat(code);
   const r = await net.joinRoom(code, loadName() || siteName);
   crazyLoaded();
   if (!r.ok) {

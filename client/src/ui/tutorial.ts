@@ -180,10 +180,10 @@ function createSteps(): Step[] {
         if (seat === undefined || !s.units.some((u) => u.soldiers > 0)) return null;
         if (!(c.win && c.win.kind === 'enemy')) return { world: { kind: 'enemy', seat } };
         const total = [...(c.el?.querySelectorAll<HTMLInputElement>('[data-count]') ?? [])].reduce((n, i) => n + (Number(i.value) || 0), 0);
-        return { dom: total > 0 ? '[data-act="send"]' : '[data-act="all"]' };
+        return { dom: total > 0 ? '[data-act="send"]' : '[data-act="half"]' };
       },
       text: (s, a) => (!a ? (s.units.some((u) => u.arming > 0) ? t('Askerlerin hazırlanıyor… birazdan saldırabilirsin.') : t('Saldırmak için önce kaleden asker çıkar: kale penceresinde +1.'))
-        : 'dom' in a ? (a.dom.includes('send') ? t('Şimdi Saldır\'a bas!') : t('Önce "Tümü"ne bas: asker ne kadar çoksa saldırı o kadar güçlü.')) : t('Savaş başladı! Bir rakip kaleye tıkla; daha çok asker, daha güçlü saldırı demek.')),
+        : 'dom' in a ? (a.dom.includes('send') ? t('Şimdi Saldır\'a bas!') : t('Önce "Yarısı"na bas: kaleyi savunacak asker bırak, yoksa kalen düşer!')) : t('Savaş başladı! Bir rakip kaleye tıkla; daha çok asker, daha güçlü saldırı demek.')),
     },
   ];
 }

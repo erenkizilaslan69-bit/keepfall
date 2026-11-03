@@ -107,6 +107,7 @@ export const EN_SERVER: Record<string, string> = {
   "Bu komut sadece lobide kullanılabilir.": "This command can only be used in the lobby.",
   "Oda bulunamadı.": "Room not found. Check the code and try again.",
   "Oda dolu.": "The room is full.",
+  "Çok fazla deneme. Bir dakika bekle.": "Too many tries. Wait a minute and try again.",
   "Yalnız oda sahibi rehberli maç isteyebilir.": "Only the host can ask for the guided match.",
   "Bu rehberli maçta savaşın ilk dakikalarında rakipler saldırmaz.": "In this guided match nobody attacks you in the first minutes of the war.",
   "Sunucu dolu, birazdan tekrar dene.": "The servers are full right now. Try again in a minute.",
