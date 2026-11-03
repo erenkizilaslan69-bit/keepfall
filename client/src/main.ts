@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import './style.css';
 import { GameUi } from './ui/game-ui';
-import { loadName, saveName } from './identity';
+import { loadActiveRoom, loadName, markActiveRoom, saveName } from './identity';
 import { GameConnection, type ConnectionStatus } from './net';
 import { WorldScene } from './scene/WorldScene';
 import { loadUiArt } from './ui/sprites';
@@ -117,6 +117,8 @@ const net = new GameConnection({
   status: (s) => {
     status = statusText[s];
     ui?.setStatus(status, s === 'connected');
+    if (s === 'reconnecting' && screen !== 'home' && screen !== 'game') showBanner(t('Yeniden bağlanılıyor...'));
+    if (s === 'connected') hideBanner();
     if (s === 'disconnected' && screen !== 'home') showBanner(t('Sunucuyla bağlantı yok. Sayfayı yenileyince kaldığın yere dönersin.'));
     if (s === 'roomLost') showBanner(t('Oda kapanmış (sunucu yeniden başlamış olabilir). Ana menüye dönmek için buraya tıkla.'), () => location.assign('/'));
   },
@@ -331,6 +333,8 @@ function showEnd(r: RoomView): void {
   end.update(r);
 }
 
+function hideBanner(): void { document.getElementById('banner')?.remove(); }
+
 function showBanner(text: string, onClick?: () => void): void {
   let el = document.getElementById('banner');
   if (!el) {
@@ -348,6 +352,9 @@ function showBanner(text: string, onClick?: () => void): void {
 // ---- start ---------------------------------------------------------------------------------
 
 window.addEventListener('popstate', () => location.reload());
+// A phone that slept, a tab that was in the background, a network that came back: check the line (and take the seat back if it dropped).
+document.addEventListener('visibilitychange', () => { if (!document.hidden) void net.recheck(); });
+window.addEventListener('online', () => void net.recheck());
 
 /**
  * The CrazyGames build connects with a plain "Connecting to server..." and no explanation: an attempt that takes longer than 8 seconds is dropped and made
@@ -396,7 +403,9 @@ async function main(): Promise<void> {
       return;
     }
   }
-  const code = /^\/oda\/([A-Za-z]{4})\/?$/.exec(currentRoute())?.[1]?.toUpperCase() ?? crazyInviteRoom();
+  const named = /^\/oda\/([A-Za-z]{4})\/?$/.exec(currentRoute())?.[1]?.toUpperCase() ?? crazyInviteRoom();
+  const resumed = !named && loadActiveRoom() !== null;
+  const code = named ?? loadActiveRoom();
   if (!code) {
     if (crazyInstant()) {
       // The site's "play with friends": straight into a private room of our own (the lobby), joinable at once.
@@ -412,7 +421,9 @@ async function main(): Promise<void> {
   crazyLoaded();
   if (!r.ok) {
     setRoute(`/${location.search}`, 'replace');
-    showHome({ code, error: r.error ?? t('Odaya katılınamadı.') });
+    // A return to the room we were in a moment ago that no longer exists is not an error worth showing: the home screen simply comes up.
+    markActiveRoom(null);
+    showHome(resumed ? {} : { code, error: r.error ?? t('Odaya katılınamadı.') });
   }
 }
 

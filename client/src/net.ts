@@ -1,5 +1,5 @@
 import * as signalR from '@microsoft/signalr';
-import { loadIdentity, saveIdentity } from './identity';
+import { loadIdentity, markActiveRoom, saveIdentity } from './identity';
 import { trace } from './debug-trace';
 import type { ArmyMode, BattleStartedView, BotLevel, BuildingType, CastleView, CommandResult, Job, JoinView, MapLayoutView, MapStateView, RoomView, Row, SpectatorStateView, SpectatorWaitView, SummaryView } from './types';
 import { serverUrl } from './env';
@@ -59,6 +59,29 @@ export class GameConnection {
       if (!result?.ok) this.on.status('roomLost');
     });
     this.hub.onclose(() => this.on.status('disconnected'));
+    // While we are in a room its record is kept fresh: a page that is reloaded within a minute finds its way back (see identity.ts).
+    setInterval(() => { if (this.roomCode && this.hub.state === signalR.HubConnectionState.Connected) markActiveRoom(this.roomCode); }, 5000);
+  }
+
+  /**
+   * The page is visible again (a phone woke up, the network came back): make sure the line is alive. A line that does not answer within 4 s is
+   * dropped and made again, and the seat is taken back with the room's token; a line the library has given up on is started afresh.
+   */
+  async recheck(): Promise<void> {
+    const state = this.hub.state;
+    if (state === signalR.HubConnectionState.Connecting || state === signalR.HubConnectionState.Reconnecting) return;
+    if (state === signalR.HubConnectionState.Connected) {
+      const alive = await Promise.race([this.hub.invoke('Ping').then(() => true, () => false), new Promise<boolean>((r) => setTimeout(() => r(false), 4000))]);
+      if (alive) return;
+      this.on.status('reconnecting');
+      try { await this.hub.stop(); } catch { /* already down */ }
+    }
+    this.on.status('reconnecting');
+    try { await this.hub.start(); } catch { this.on.status('disconnected'); return; }
+    this.on.status('connected');
+    if (!this.roomCode) return;
+    const result = await this.joinRoom(this.roomCode, this.name).catch(() => null);
+    if (!result?.ok) this.on.status('roomLost');
   }
 
   async start(): Promise<void> {
@@ -89,6 +112,7 @@ export class GameConnection {
       this.name = name;
       this.seat = result.seat;
       saveIdentity(result.code!, result.token!);
+      markActiveRoom(result.code);
       this.on.status('connected');
       if (result.room) this.on.room(result.room);
     }
@@ -117,6 +141,7 @@ export class GameConnection {
   /** Back to the main menu: the server unbinds this connection (a lobby seat is freed, a castle in a running match stays). */
   leaveRoom = async () => {
     const r = await this.call('LeaveRoom');
+    markActiveRoom(null);
     this.roomCode = null;
     this.seat = 0;
     return r;

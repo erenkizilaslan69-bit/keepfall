@@ -310,6 +310,7 @@ export const EN_GUIDE: Record<string, string> = {
   "Sunucuya bağlanılıyor...": "Connecting to server...",
   "Bağlanılamadı.": "Could not connect.",
   "Yeniden dene": "Retry",
+  "Yeniden bağlanılıyor...": "Reconnecting...",
   "Efektleri azalt": "Reduce effects",
   "(kamera sarsıntısı, kıvılcım ve ok izleri)": "(camera shake, sparks and arrow trails)",
   "Oyun hakkında": "About the game",

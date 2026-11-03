@@ -54,3 +54,27 @@ export function loadName(): string {
 export function saveName(name: string): void {
   if (!devSlot()) set(local, NAME_KEY, name);
 }
+
+// ---- the room a player is in right now -----------------------------------------------------------
+// Kept while connected (the time is refreshed every few seconds). A page that is reloaded or comes back from a sleeping phone within a minute of the
+// last sign of life goes straight back to the same room and seat (the room's token is stored above); an older record is ignored.
+
+const ACTIVE_KEY = 'keepfall.active';
+export const RESUME_WINDOW_MS = 60_000;
+
+export function markActiveRoom(code: string | null): void {
+  if (devSlot()) return;
+  try {
+    if (code) window.localStorage.setItem(ACTIVE_KEY, JSON.stringify({ code, at: Date.now() }));
+    else window.localStorage.removeItem(ACTIVE_KEY);
+  } catch { /* storage blocked: no automatic return */ }
+}
+
+/** The room this browser was in a moment ago (null when none, or when the record is older than a minute). */
+export function loadActiveRoom(): string | null {
+  if (devSlot()) return null;
+  try {
+    const v = JSON.parse(window.localStorage.getItem(ACTIVE_KEY) ?? 'null') as { code?: string; at?: number } | null;
+    return v?.code && typeof v.at === 'number' && Date.now() - v.at <= RESUME_WINDOW_MS ? v.code : null;
+  } catch { return null; }
+}

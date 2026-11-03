@@ -13,7 +13,7 @@ public sealed class KeepfallOptions
     public bool AllowSoloStart { get; set; }
     /// <summary>Rooms with nobody connected for this long are dropped.</summary>
     public double AbandonedRoomMinutes { get; set; } = 10;
-    public double LobbyGraceMinutes { get; set; } = 2;
+    public double LobbyGraceMinutes { get; set; } = 1;
     /// <summary>Most rooms the server holds at once (lobbies and matches); 0 = no limit. A full server turns room creation and quick play away.</summary>
     public int MaxRooms { get; set; }
     /// <summary>How often the server writes its load line (active rooms, tick time, memory) to the log; 0 = never.</summary>

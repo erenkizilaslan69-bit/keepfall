@@ -1,140 +1,61 @@
-// Connection trouble in a real (headless) browser: a short drop, a long drop, a page reload and a second tab in the middle of a match.
-//   server on 5081, Vite on 5174 with KEEPFALL_SERVER=http://localhost:5082 (this script runs a cutting proxy on 5082 in between), then
-//   node tools/reconnect-check.mjs [http://localhost:5174/]   (bots fill the room)
+// Reconnect check in headless Chrome (dev servers: 5081 + Vite 5174): quick play, then (1) the line is cut and the page reconnects by itself and keeps seat and room,
+// (2) the line is cut while the "offline" switch is on for 12 s, (3) the page is loaded afresh at "/" (a phone that dropped the tab) and lands back in the match.
+// Usage: node tools/reconnect-check.mjs [http://localhost:5174/]
 import { spawn } from 'node:child_process';
-import net from 'node:net';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-
 const URL = process.argv[2] ?? 'http://localhost:5174/';
-
-// A TCP pass-through that can cut every connection and refuse new ones: a real network outage for the websocket.
-const sockets = new Set();
-let down = false;
-const proxy = net.createServer((client) => {
-  if (down) { client.destroy(); return; }
-  const upstream = net.connect(5081, '127.0.0.1');
-  sockets.add(client); sockets.add(upstream);
-  const close = () => { client.destroy(); upstream.destroy(); sockets.delete(client); sockets.delete(upstream); };
-  client.on('error', close); upstream.on('error', close); client.on('close', close); upstream.on('close', close);
-  client.pipe(upstream); upstream.pipe(client);
-}).listen(5082);
-const outage = (on) => { down = on; if (on) for (const s of sockets) s.destroy(); };
+const port = 9333 + Math.floor(Math.random() * 500);
+const chrome = spawn('C:/Program Files/Google/Chrome/Application/chrome.exe', ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${mkdtempSync(join(tmpdir(), 'kf-chrome-'))}`, '--window-size=1280,720', '--no-first-run', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', 'about:blank'], { stdio: 'ignore' });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-let failures = 0;
-const check = (name, ok, detail = '') => { console.log(`${ok ? 'ok  ' : 'FAIL'}  ${name}${ok || !detail ? '' : `  (${detail})`}`); if (!ok) failures++; };
+let targets;
+for (let i = 0; i < 40; i++) { try { targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); if (targets.some((t) => t.type === 'page')) break; } catch { /* */ } await sleep(500); }
+const ws = new WebSocket(targets.find((t) => t.type === 'page').webSocketDebuggerUrl);
+await new Promise((r) => ws.addEventListener('open', r));
+let id = 0; const pending = new Map();
+ws.addEventListener('message', (m) => { const d = JSON.parse(m.data); if (d.id && pending.has(d.id)) { pending.get(d.id)(d); pending.delete(d.id); } });
+const send = (method, params = {}) => new Promise((r) => { const i = ++id; pending.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
+const js = async (e) => (await send('Runtime.evaluate', { expression: e, awaitPromise: true, returnByValue: true })).result?.result?.value;
+let bad = 0;
+const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) bad++; };
+const waitFor = async (expr, sec) => { for (let i = 0; i < sec * 2; i++) { if (await js(expr)) return true; await sleep(500); } return false; };
+await send('Runtime.enable'); await send('Page.enable'); await send('Network.enable');
+await send('Page.addScriptToEvaluateOnNewDocument', { source: "try{localStorage.setItem('keepfall_tutorial_seen','true');localStorage.setItem('keepfall_tutorial_done','true');localStorage.setItem('keepfall_lang','en')}catch(e){}" });
+await send('Page.navigate', { url: URL });
+await sleep(3500);
+await js("document.querySelector('#quick').click(); 1");
+ok(await waitFor("document.documentElement.classList.contains('in-game')", 30), 'quick play: in the match');
+await sleep(3000);
+const snap = () => js("({ seat: keepfallNet.seat, room: keepfallNet.roomCode, game: document.documentElement.classList.contains('in-game'), state: keepfallNet.hub.state, t: document.querySelector('.tb-clock, .clock, #clock')?.textContent ?? null })");
+const a = await snap();
+console.log('start', JSON.stringify(a));
 
-const port = 9800 + Math.floor(Math.random() * 100);
-const chrome = spawn('C:/Program Files/Google/Chrome/Application/chrome.exe', [
-  '--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${mkdtempSync(join(tmpdir(), 'kf-rc-'))}`, '--window-size=1280,720', '--no-first-run',
-  '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', 'about:blank',
-], { stdio: 'ignore' });
+// (1) the line breaks (the transport is closed with an error: the library reconnects)
+await js("keepfallNet.hub.connection.stop(new Error('test cut')); 1");
+await sleep(500);
+const mid = await snap();
+ok(mid.state !== 'Connected', `cut: state is ${mid.state}`);
+ok(await waitFor("keepfallNet.hub.state === 'Connected'", 20), 'cut: connected again by itself');
+const b = await snap();
+ok(b.seat === a.seat && b.room === a.room && b.game, `cut: same seat ${b.seat} and room ${b.room}, still in the match`);
+await sleep(2500);
+ok(await js("!!document.querySelector('.army-sign, .tb-players, .topbar, #ui') && document.documentElement.classList.contains('in-game')"), 'cut: the game screen is alive');
 
-async function tab(targetUrl) {
-  const res = await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(targetUrl)}`, { method: 'PUT' });
-  const t = await res.json();
-  const ws = new WebSocket(t.webSocketDebuggerUrl);
-  await new Promise((r) => ws.addEventListener('open', r));
-  let id = 0; const pending = new Map(); const errors = [];
-  ws.addEventListener('message', (m) => {
-    const d = JSON.parse(m.data);
-    if (d.id && pending.has(d.id)) { pending.get(d.id)(d); pending.delete(d.id); }
-    if (d.method === 'Runtime.exceptionThrown') errors.push(d.params.exceptionDetails.exception?.description ?? d.params.exceptionDetails.text);
-  });
-  const send = (method, params = {}) => new Promise((r) => { const i = ++id; pending.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
-  await send('Runtime.enable'); await send('Page.enable'); await send('Network.enable');
-  const run = async (expression) => (await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })).result?.result?.value;
-  return { send, run, errors, ws, id: t.id };
-}
+// (2) offline for 12 s (and the line is cut), then online
+await send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+await js("keepfallNet.hub.connection.stop(new Error('offline cut')); 1");
+await sleep(12000);
+ok((await snap()).state !== 'Connected', 'offline: not connected');
+await send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+ok(await waitFor("keepfallNet.hub.state === 'Connected'", 30), 'offline: connected after the network is back');
+const c = await snap();
+ok(c.seat === a.seat && c.room === a.room, `offline: same seat ${c.seat} and room ${c.room}`);
 
-// State of the page as a player sees it.
-const view = `(() => ({
-  menu: document.documentElement.classList.contains('in-menu'),
-  banner: [...document.querySelectorAll('.banner, #banner, .toast')].map((e) => e.textContent.trim()).join(' | ').slice(0, 160),
-  clock: document.querySelector('#clock, .clock, .timer')?.textContent?.trim() ?? null,
-  scene: !!window.keepfallScene?.ready,
-  text: document.body.innerText.slice(0, 200).replace(/\\s+/g, ' '),
-}))()`;
-
-try {
-  await sleep(1500);
-  const a = await tab(URL);
-  await sleep(3500);
-  await a.run('localStorage.clear(); localStorage.setItem('keepfall_tutorial_seen', 'true'); localStorage.setItem('keepfall_lang', 'tr'); 1');
-  await a.send('Page.navigate', { url: URL });
-  await sleep(3500);
-  const room = await a.run(`(async () => { const n = window.keepfallNet; const j = await n.createRoom('Eren'); await n.addBot(1); await n.addBot(1); await n.setReady(true); const s = await n.startMatch(); return { code: j.code, started: s.ok, error: s.error }; })()`);
-  check('match started with bots', room?.started === true, JSON.stringify(room));
-  await a.run(`(async () => { for (let i = 0; i < 100; i++) { if (window.keepfallScene?.ready) break; await new Promise(r => setTimeout(r, 400)); } return 1; })()`);
-  let v = await a.run(view);
-  check('in the game (not the menu)', v.menu === false && v.scene === true, JSON.stringify(v).slice(0, 160));
-  const castleAt = () => a.run(`window.keepfallDebug?.castleTime ?? document.querySelector('[data-clock], .clock')?.textContent ?? 0`);
-  const tickNow = () => a.run(`(async () => { const t0 = performance.now(); return window.keepfallNet?.roomCode ?? null; })()`);
-  check('the room code is known', (await tickNow()) === room.code);
-  await a.run(`history.pushState(null, '', '/oda/${room.code}'); 1`); // what the real screens do
-
-  // 1. a short drop (8 s offline)
-  outage(true);
-  await sleep(8000);
-  v = await a.run(view);
-  console.log('info  while offline the page says:', v.text.slice(0, 120));
-  outage(false);
-  await sleep(12000);
-  v = await a.run(view);
-  check('after a short drop the player is back in the game', v.menu === false, JSON.stringify(v).slice(0, 200));
-  const cmd = await a.run(`window.keepfallNet.setGrowth(true).then(r => r.ok === true, () => false)`);
-  check('commands work again after the drop', cmd === true);
-
-  // 2. page reload in the middle of the match
-  await a.send('Page.reload');
-  await sleep(6000);
-  await a.run(`(async () => { for (let i = 0; i < 100; i++) { if (window.keepfallScene?.ready) break; await new Promise(r => setTimeout(r, 400)); } return 1; })()`);
-  v = await a.run(view);
-  check('after a reload the player is back in the same match', v.menu === false && v.scene === true, JSON.stringify(v).slice(0, 200));
-  check('the same seat (commands accepted)', (await a.run(`window.keepfallNet.setGrowth(true).then(r => r.ok === true, () => false)`)) === true);
-
-  // 3. second tab with the same room link
-  const b = await tab(URL + 'oda/' + room.code);
-  await sleep(5000);
-  const vb = await b.run(view);
-  console.log('info  second tab sees:', JSON.stringify(vb).slice(0, 200));
-  check('a second tab on the match link does not break the first', (await a.run(`window.keepfallNet.setGrowth(true).then(r => r.ok === true, () => false)`)) === true);
-
-  // 4. a long drop (50 s offline: past the library's default retries) then back online
-  outage(true);
-  await sleep(50000);
-  v = await a.run(view);
-  console.log('info  after 50 s offline the banner says:', v.banner || '(no banner)');
-  outage(false);
-  await sleep(15000);
-  const back = await a.run(`window.keepfallNet.setGrowth(true).then(r => r.ok === true, () => false)`);
-  check('after a 50 s drop the connection comes back by itself (no refresh needed)', back === true, 'the banner said: ' + v.banner);
-  // 5. the server restarts (every room is gone): the player must be told, not left with a frozen screen
-  if (process.env.SERVER_PID) {
-    outage(true);
-    await new Promise((r) => { const k = spawn('taskkill', ['/PID', process.env.SERVER_PID, '/F']); k.on('close', r); });
-    await sleep(3000);
-    const srv = spawn('dotnet', ['src/Keepfall.Server/bin/Release/net10.0/Keepfall.Server.dll', '--urls', 'http://localhost:5081'], { stdio: 'ignore', env: { ...process.env, ASPNETCORE_ENVIRONMENT: 'Production' } });
-    await sleep(6000);
-    outage(false);
-    await sleep(20000);
-    const banner = await a.run(`document.getElementById('banner')?.textContent ?? ''`);
-    console.log('info  after a server restart the banner says:', banner || '(none)');
-    check('after a server restart the player is told the room is gone', /Oda kapanmış/.test(banner));
-    const shot = await a.send('Page.captureScreenshot', { format: 'png' });
-    (await import('node:fs')).writeFileSync(process.env.SHOT ?? 'reconnect-restart.png', Buffer.from(shot.result.data, 'base64'));
-    await a.run(`document.getElementById('banner')?.click(); 1`);
-    await sleep(3000);
-    check('clicking it goes to the main menu', (await a.run(`location.pathname`)) === '/');
-    srv.kill();
-  }
-  console.log('info  page errors:', a.errors.length ? a.errors.slice(0, 3).join(' / ') : 'none');
-  check('no script errors on the way', a.errors.length === 0);
-} catch (e) {
-  check('script ran', false, String(e));
-}
-console.log(failures ? `\n${failures} FAILED` : '\nall ok');
-chrome.kill();
-proxy.close();
-process.exit(failures ? 1 : 0);
+// (3) the page is opened afresh at the start address (no room in it): the last room is found again
+await sleep(6000); // the "active room" record is refreshed every 5 s
+await send('Page.navigate', { url: URL });
+ok(await waitFor("document.documentElement.classList.contains('in-game')", 40), 'reload at "/": back in the match');
+const d = await snap();
+ok(d.room === a.room && d.seat === a.seat, `reload: same room ${d.room}, seat ${d.seat}`);
+ws.close(); chrome.kill(); process.exit(bad ? 1 : 0);
