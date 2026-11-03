@@ -1,8 +1,7 @@
-// CrazyGames SDK (v3), for the build made for that site only (VITE_PLATFORM=crazygames, `npm run build:crazy`). Everywhere else (the server's own page,
-// itch.io, localhost) nothing is loaded and every function here does nothing, so the game is the same as ever. All SDK calls are wrapped: a failing
-// SDK must never stop the game.
+// CrazyGames SDK (v3), for the build made for that site only (VITE_PLATFORM=crazygames, `npm run build:crazy`). The <script> for it is put into that
+// build's index.html by vite.config.ts; everywhere else (the server's own page, itch.io, localhost) it is not there, `window.CrazyGames` does not exist and
+// every function here does nothing, so the game is the same as ever. All SDK calls are wrapped: a failing SDK must never stop the game.
 
-const SDK_URL = 'https://sdk.crazygames.com/crazygames-sdk-v3.js';
 export const CRAZY: boolean = import.meta.env.VITE_PLATFORM === 'crazygames';
 if (CRAZY) document.documentElement.classList.add('crazy');
 
@@ -21,30 +20,21 @@ interface UserApi { getUser(): Promise<{ username?: string } | null>; isUserAcco
 interface Sdk { init(): Promise<void>; environment: 'local' | 'crazygames' | 'disabled'; game: GameApi; user: UserApi }
 
 let sdk: Sdk | null = null;
+/** Each state is announced once: loadingStart/Stop and gameplayStart/Stop are never sent twice in a row. */
+let loading = false;
+let wanted = false; // a match is being played (what the game wants), `playing` is what the site was told
 const guard = <T>(f: () => T): T | undefined => { try { return f(); } catch (e) { console.warn('CrazyGames SDK:', e); return undefined; } };
 
-function loadScript(): Promise<boolean> {
-  return new Promise((resolve) => {
-    const s = document.createElement('script');
-    s.src = SDK_URL;
-    s.onload = () => resolve(true);
-    s.onerror = () => resolve(false);
-    document.head.appendChild(s);
-    setTimeout(() => resolve(false), 6000);
-  });
-}
-
-/** Loads and starts the SDK (on CrazyGames or the local test mode only). True when it is there to use. */
+/** Starts the SDK (on CrazyGames or the local test mode only). True when it is there to use; without `window.CrazyGames` it is a silent no-op. */
 export async function initCrazy(): Promise<boolean> {
   if (!CRAZY) return false;
-  const w = window as unknown as { CrazyGames?: { SDK?: Sdk } };
-  if (!w.CrazyGames?.SDK && !(await loadScript())) return false;
-  const s = w.CrazyGames?.SDK;
+  const s = (window as unknown as { CrazyGames?: { SDK?: Sdk } }).CrazyGames?.SDK;
   if (!s) return false;
   try {
     await s.init();
     if (s.environment === 'disabled') return false; // any other site: the SDK refuses every call
     sdk = s;
+    loading = true;
     guard(() => s.game.loadingStart());
     return true;
   } catch (e) {
@@ -94,15 +84,26 @@ export function crazyRoom(code: string | null, joinable: boolean): void {
 }
 
 let playing = false;
-/** gameplayStart while a match is being played, gameplayStop in menus and on the end screen. */
-export function crazyGameplay(on: boolean): void {
+const syncGameplay = (): void => {
+  const on = wanted && !document.hidden;
   if (!sdk || on === playing) return;
   playing = on;
   guard(() => (on ? sdk!.game.gameplayStart() : sdk!.game.gameplayStop()));
+};
+/** gameplayStart while a match is being played, gameplayStop in menus, on the end screen and after elimination (and while the tab is hidden or closing). */
+export function crazyGameplay(on: boolean): void {
+  wanted = on;
+  syncGameplay();
+}
+if (CRAZY) {
+  document.addEventListener('visibilitychange', syncGameplay);
+  window.addEventListener('pagehide', () => { wanted = false; syncGameplay(); });
 }
 
 /** The loading screen is over (the home screen or a joined room is up). */
 export function crazyLoaded(): void {
+  if (!loading) return;
+  loading = false;
   guard(() => sdk?.game.loadingStop());
 }
 

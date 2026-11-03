@@ -149,11 +149,12 @@ function onRoom(r: RoomView): void {
   else if (screen === 'end') end!.update(r);
   // The site (CrazyGames) learns which room we are in, and that friends may join only while it is a lobby.
   crazyRoom(r.code, r.phase === 'lobby');
-  crazyGameplay(screen === 'game');
+  crazyGameplay(screen === 'game' && !lastCastle?.eliminated);
 }
 
 function onCastle(c: CastleView): void {
   lastCastle = c;
+  if (screen === 'game') crazyGameplay(!c.eliminated); // an eliminated player only watches: the site is told the play has stopped
   if (c.summary) { summary = c.summary; end?.setSummary(c.summary); }
   if (screen === 'game') {
     music.scene(c.phase === 'war' ? 'war' : 'prep'); // the lively track for the war, the calm one before it
@@ -373,17 +374,17 @@ async function connectOnSite(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  watchUiScale();
-  // The UI art is cut once; without it the UI falls back to plain boxes. Never wait long for it: it
-  // can stall in a background tab, and it switches itself on whenever it is ready.
-  await Promise.race([loadUiArt(), new Promise((resolve) => setTimeout(resolve, 2500))]);
-  // CrazyGames build only: the site's SDK (nothing happens anywhere else).
+  // CrazyGames build only: loading starts here, before anything is fetched: the site's SDK (nothing happens anywhere else); loadingStop comes when the lobby is up.
   const onSite = await initCrazy();
   if (onSite) {
     siteName = (await crazyUsername()) ?? '';
     watchCrazySettings((s) => { setSiteChatOff(s.disableChat); if (s.muteAudio) sfx.setMuted(true); });
     onCrazyJoin((code) => void joinInvite(code));
   }
+  watchUiScale();
+  // The UI art is cut once; without it the UI falls back to plain boxes. Never wait long for it: it
+  // can stall in a background tab, and it switches itself on whenever it is ready.
+  await Promise.race([loadUiArt(), new Promise((resolve) => setTimeout(resolve, 2500))]);
   if (CRAZY) {
     await connectOnSite();
   } else {
