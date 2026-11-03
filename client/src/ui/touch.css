@@ -83,8 +83,9 @@ html.in-game body { position: fixed; inset: 0; width: 100%; }
 
 /* Windows: the close cross hangs out of the corner (not over the tabs), and a primary button at the foot stays in sight while the body scrolls. */
 @media (pointer: coarse) {
-  .btn-round.win-close, .win-close { top: -28px; right: -24px; }
-  .win-body { padding-top: calc(18px * var(--u, 1)); }
+  /* the cross sits in the title row, inside the window's edge (on the ribbon's line), not hanging out of the corner */
+  .btn-round.win-close, .win-close { top: -24px; right: 8px; }
+  .win-body { padding-top: 30px; }
 }
 .win-foot-sticky { position: sticky; bottom: calc(-10px * var(--u, 1)); z-index: 3; padding: calc(8px * var(--u, 1)) 0 calc(6px * var(--u, 1)); background: linear-gradient(to bottom, rgba(238, 222, 180, 0), rgba(238, 222, 180, .96) 30%); }
 

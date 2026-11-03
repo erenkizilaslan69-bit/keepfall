@@ -76,7 +76,7 @@ const WIN_MAX_SHARE = 0.8;
 /** The close cross hangs this far (px) outside the window's right edge. */
 const CLOSE_OVERHANG = 34;
 /** The close cross of a window on a touch screen hangs this far out of its corner (see touch.css). */
-const CLOSE_OVERHANG_TOUCH = 26;
+const CLOSE_OVERHANG_TOUCH = 0;
 
 export class WindowManager {
   private win: Win | null = null;
