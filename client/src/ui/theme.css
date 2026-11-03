@@ -541,3 +541,10 @@ html.crazy input, html.crazy textarea { -webkit-user-select: text; user-select: 
 @keyframes tut-bounce-down { from { margin-top: 0; } to { margin-top: -10px; } }
 @media (prefers-reduced-motion: reduce) { .tut-frame, .tut-hand { animation: none; } }
 @media (max-height: 560px) { .tut-card { width: min(230px, 92vw); font-size: 12px; padding: 6px 9px; } .tut-hand { font-size: 24px; } }
+
+/* ---- the CrazyGames build's loading screen: a spinner and "Connecting to server...", then a Retry button after a minute ---- */
+.kf-connect { display: flex; flex-direction: column; align-items: center; gap: calc(14px * var(--u, 1)); margin-top: 22vh; text-align: center; color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, .45); }
+.kf-connect p { margin: 0; font-size: 1.2em; }
+.kf-spinner { width: calc(44px * var(--u, 1)); height: calc(44px * var(--u, 1)); border: calc(6px * var(--u, 1)) solid rgba(255, 255, 255, .35); border-top-color: #ffd45a; border-radius: 50%; animation: kf-spin .9s linear infinite; }
+@keyframes kf-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .kf-spinner { animation-duration: 3s; } }

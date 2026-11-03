@@ -29,6 +29,7 @@ import { loadHorse } from './scene/HorseArt';
 import { mountLangButton, mountSettingsButton, setLeaveAction } from './ui/settings';
 import { startFpsMeter } from './ui/fps-meter';
 import { armTutorial, disarmTutorial, tutorialDone } from './ui/tutorial';
+import { CRAZY } from './crazy';
 import { crazyGameplay, crazyInstant, crazyInviteRoom, crazyLoaded, crazyRoom, crazyUsername, initCrazy, onCrazyJoin, watchCrazySettings } from './crazy';
 import { setSiteChatOff } from './prefs';
 import { guarded, installErrorReporting } from './error-report';
@@ -347,6 +348,30 @@ function showBanner(text: string, onClick?: () => void): void {
 
 window.addEventListener('popstate', () => location.reload());
 
+/**
+ * The CrazyGames build connects with a plain "Connecting to server..." and no explanation: an attempt that takes longer than 8 seconds is dropped and made
+ * again by itself (a sleeping hosted server needs a while), and after a minute without a connection there is a "Retry" button.
+ */
+async function connectOnSite(): Promise<void> {
+  const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+  for (;;) {
+    app.innerHTML = `<div class="screen kf-connect"><div class="kf-spinner" aria-hidden="true"></div><p>${t('Sunucuya bağlanılıyor...')}</p></div>`;
+    const t0 = Date.now();
+    while (Date.now() - t0 < 60_000) {
+      const attempt = net.start();
+      attempt.catch(() => undefined);
+      const result = await Promise.race([attempt.then(() => true, () => false), sleep(8000).then(() => null)]);
+      if (result === true) return;
+      await net.abort(); // the attempt that failed or hung is dropped before the next one
+      await sleep(1000);
+    }
+    await new Promise<void>((resolve) => {
+      app.innerHTML = `<div class="screen kf-connect"><p>${t('Bağlanılamadı.')}</p><button class="btn" id="kf-retry">${t('Yeniden dene')}</button></div>`;
+      document.getElementById('kf-retry')!.addEventListener('click', () => resolve());
+    });
+  }
+}
+
 async function main(): Promise<void> {
   watchUiScale();
   // The UI art is cut once; without it the UI falls back to plain boxes. Never wait long for it: it
@@ -359,12 +384,16 @@ async function main(): Promise<void> {
     watchCrazySettings((s) => { setSiteChatOff(s.disableChat); if (s.muteAudio) sfx.setMuted(true); });
     onCrazyJoin((code) => void joinInvite(code));
   }
-  try {
-    await net.start();
-  } catch (e) {
-    console.error(e);
-    app.innerHTML = `<div class="screen"><p class="banner danger">${t('Sunucuya bağlanılamadı.')} <code>dotnet run --project src/Keepfall.Server</code> ${t('çalışıyor mu?')}</p></div>`;
-    return;
+  if (CRAZY) {
+    await connectOnSite();
+  } else {
+    try {
+      await net.start();
+    } catch (e) {
+      console.error(e);
+      app.innerHTML = `<div class="screen"><p class="banner danger">${t('Sunucuya bağlanılamadı.')} <code>dotnet run --project src/Keepfall.Server</code> ${t('çalışıyor mu?')}</p></div>`;
+      return;
+    }
   }
   const code = /^\/oda\/([A-Za-z]{4})\/?$/.exec(currentRoute())?.[1]?.toUpperCase() ?? crazyInviteRoom();
   if (!code) {

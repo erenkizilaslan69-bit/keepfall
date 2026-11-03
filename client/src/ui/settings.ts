@@ -1,5 +1,6 @@
 import { sfx } from '../audio';
 import { restartTutorial } from './tutorial';
+import { CRAZY } from '../crazy';
 import { lowGraphics, setLowGraphics, setShowHints, showsHints, setReduceEffects, setShowFps, setShowMessages, showsFps, userReducesEffects, userShowsMessages } from '../prefs';
 import { toggleGuide } from './guide';
 import { lang, t, toggleLang } from '../i18n';
@@ -95,7 +96,7 @@ export function toggleSettings(): void {
           <p><b>Keepfall</b> — ${t('sürüm')} ${VERSION} (${typeof __BUILD_DATE__ === 'string' ? __BUILD_DATE__ : ''})</p>
           <p>${t('Yapımcı:')} <b>Eren</b></p>
           <h4>${t('Kaynaklar ve lisanslar')}</h4>
-          <dl>${CREDITS.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
+          <dl>${CREDITS.map(([k, v]) => `<dt>${k}</dt><dd>${CRAZY ? v.replace(/\s*\(pixelfrog-assets\.itch\.io\/tiny-swords\)/, '') : v}</dd>`).join('')}</dl>
         </section>
       </div>
     </div>`;
