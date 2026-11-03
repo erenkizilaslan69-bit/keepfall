@@ -71,6 +71,8 @@ const SOLDIER_GOAL = 5;
 const soldierCount = (s: CastleView): number => s.soldiers + s.units.reduce((n, u) => n + u.arming, 0);
 const weaponStock = (s: CastleView): number => s.units.reduce((n, u) => n + u.weapons, 0);
 const queuedWeapons = (s: CastleView): number => s.queue.reduce((n, o) => n + o.remaining, 0);
+/** Farmers the tutorial asks for: three make 24 food a minute, enough for the people and the five soldiers (balance.json: 8 a farmer, 1 a person, 1.5 a soldier). */
+const FARMERS = 3;
 const hasSoldierOrWeapon = (s: CastleView): boolean => s.soldiers > 0 || s.units.some((u) => u.weapons > 0 || u.soldiers > 0 || u.arming > 0);
 /** The weapon to order: the cheapest the stores can pay for (the deck's own units only). */
 function cheapest(s: CastleView): UnitView | undefined {
@@ -79,13 +81,13 @@ function cheapest(s: CastleView): UnitView | undefined {
 }
 
 /** A step "click the building, then press the button in its window": the building on the map first, the button once the window is open. */
-function press(group: number, bType: BuildingType, selector: (s: CastleView) => string, done: (s: CastleView) => boolean, worldText: () => string, domText: () => string, needsIdle = false): Step {
+function press(group: number, bType: BuildingType, selector: (s: CastleView) => string, done: (s: CastleView) => boolean, worldText: (s: CastleView) => string, domText: (s: CastleView) => string, needsIdle = false): Step {
   const win = building(bType);
   return {
     group, win, done,
     aim: (s, c) => (needsIdle && idleOf(s) === 0 ? null : c.win && sameTarget(c.win, win) ? { dom: selector(s) } : { world: win }),
     text: (s, a) => (needsIdle && idleOf(s) === 0 ? t('Boşta işçi kalmadı: önce başka bir binada − düğmesine bas.')
-      : a && 'dom' in a ? domText() : worldText()),
+      : a && 'dom' in a ? domText(s) : worldText(s)),
   };
 }
 
@@ -94,6 +96,9 @@ function createSteps(): Step[] {
   return [
     press(1, 'farm', () => IN, (s) => jobOf(s, 'farmer') >= 1,
       () => t('Tarlana tıkla: yemek buradan gelir.'), () => t('Boştaki bir işçiyi tarlaya ver: +'), true),
+    press(1, 'farm', () => IN, (s) => jobOf(s, 'farmer') >= FARMERS,
+      (s) => t('Herkesi doyurmak için tarlaya yine tıkla ({0}/{1} çiftçi).', jobOf(s, 'farmer'), FARMERS),
+      (s) => t('Tarlaya bir işçi daha ekle: + ({0}/{1} çiftçi)', jobOf(s, 'farmer'), FARMERS), true),
     press(2, 'lumberCamp', () => IN, (s) => jobOf(s, 'lumberjack') >= 1,
       () => t('Şimdi oduncu kampına tıkla.'), () => t('Oduncu kampına bir işçi ekle: +'), true),
     press(2, 'mine', () => IN, (s) => jobOf(s, 'miner') >= 1,
@@ -178,7 +183,7 @@ function createSteps(): Step[] {
         return { dom: total > 0 ? '[data-act="send"]' : '[data-act="all"]' };
       },
       text: (s, a) => (!a ? (s.units.some((u) => u.arming > 0) ? t('Askerlerin hazırlanıyor… birazdan saldırabilirsin.') : t('Saldırmak için önce kaleden asker çıkar: kale penceresinde +1.'))
-        : 'dom' in a ? (a.dom.includes('send') ? t('Şimdi Saldır\'a bas!') : t('Önce "Tümü"ne bas: askerlerini seç.')) : t('Savaş başladı! Bir rakip kaleye tıkla.')),
+        : 'dom' in a ? (a.dom.includes('send') ? t('Şimdi Saldır\'a bas!') : t('Önce "Tümü"ne bas: asker ne kadar çoksa saldırı o kadar güçlü.')) : t('Savaş başladı! Bir rakip kaleye tıkla; daha çok asker, daha güçlü saldırı demek.')),
     },
   ];
 }

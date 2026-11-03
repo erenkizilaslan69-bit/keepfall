@@ -160,7 +160,7 @@ export class GameUi {
       army: (id) => this.scene?.resolveArmy(id), seat, sites: () => this.sites };
     this.kingdom = new KingdomUi(root, { net, say: (m) => this.error(m), info: (m) => { sfx.play('uiConfirm'); this.notes.push(m, 'info', 3500); }, seat });
     window.addEventListener('keydown', this.onKey);
-    this.hints = new Hints((text) => this.notes.push(text, 'info', 9000));
+    this.hints = new Hints((text, ms) => this.notes.push(text, 'info', ms ?? 9000));
     if (tutorialArmed()) this.startTutorial();
     window.addEventListener('kf-tutorial-restart', this.onTutorialRestart);
   }
