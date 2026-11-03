@@ -17,6 +17,7 @@ ws.addEventListener('message', (m) => { const d = JSON.parse(m.data); if (d.id &
 const send = (method, params = {}) => new Promise((r) => { const i = ++id; pending.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
 const evalJs = async (expression) => { const r = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }); return r.result?.exceptionDetails ? 'ERR ' + (r.result.exceptionDetails.exception?.description ?? r.result.exceptionDetails.text) : r.result?.result?.value; };
 await send('Runtime.enable'); await send('Page.enable');
+if (process.env.EMULATE) { const [w, h] = (process.env.SIZE ?? '1280,800').split(',').map(Number); await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: false }); }
 await send('Page.navigate', { url: URL });
 await sleep(3500);
 const C = process.env.COLORS ? process.env.COLORS.split(',') : ['red', 'purple'];

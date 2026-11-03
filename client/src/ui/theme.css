@@ -24,7 +24,7 @@
   --ink-soft: #6b5434;
   --gold: var(--kf-gold-hi);
   /* The size of the round minimap (the camera buttons stack above it). */
-  --kf-map: min(calc(236px * var(--u, 1)), 30vw, 42vh);
+  --kf-map: min(calc(236px * var(--u, 1)), 30vw, 34vh);
 }
 
 /* ---- BasePanel ------------------------------------------------------------------------------------ */
@@ -498,3 +498,29 @@ html.in-menu .lang-fab.btn-round { display: inline-grid; }
 /* CrazyGames asks for no text selection or magnifier menus on touch devices (the build for that site sets html.crazy). */
 html.crazy body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 html.crazy input, html.crazy textarea { -webkit-user-select: text; user-select: text; }
+
+/* ---- short windows (CrazyGames' mobile frame is 800x450): the menus and the end panel give up their decoration so the buttons stay on screen ---- */
+@media (max-height: 560px) {
+  .screen { margin-top: 14px; margin-bottom: 10px; }
+  .screen .title-ribbon { margin-top: -22px; margin-bottom: 4px; }
+  .kf-logo-img, .screen.lobby .kf-logo-img { width: 150px; }
+  .kf-logo-sub, .screen.home .or { margin-top: 2px; margin-bottom: 0; }
+  .home .field, .lobby .field { margin-top: 4px; margin-bottom: 4px; }
+  .home .or { margin: 4px 0 0; }
+  .end-art { min-height: 0; }
+  .end-art img { max-height: 84px; width: auto; }
+  .screen.end { max-height: calc(100dvh - 40px); }
+  .screen.lobby .kf-logo-word { font-size: 28px; }
+}
+/* ... and the lobby goes into two columns from 700 px wide when the window is short (it is one tall column otherwise) */
+@media (max-height: 560px) and (min-width: 700px) {
+  .screen.lobby { max-width: calc(100vw - 120px); }
+  .screen.lobby .lob-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); column-gap: 14px; row-gap: 4px; }
+  .screen.lobby .lob-bottom { grid-column: 1 / -1; flex-wrap: nowrap; }
+  .screen.lobby .lob-bottom #start-hint { flex-basis: auto; flex: 1.2; text-align: left; }
+  .screen.lobby .deck > p { display: none; }
+  .screen.lobby .deck-cards { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .screen.lobby .players li { padding: 2px 8px; margin-bottom: 4px; }
+  /* name, ready and start stay at the bottom of the window while the rest scrolls */
+  .screen.lobby .lob-bottom { position: sticky; bottom: 0; z-index: 3; padding: 6px 4px 2px; background: rgba(240, 226, 178, .97); border-top: 2px solid rgba(90, 66, 34, .4); }
+}
