@@ -169,7 +169,7 @@ export function extraTexture(scene: Phaser.Scene, look: string, kind: ExtraKind,
 /** What each level adds, and where (in the main picture's own frame: x from its centre, y up from its base, as shares of its width/height). */
 export const ADDITIONS: { level: number; kind: ExtraKind; x: number; y: number }[] = [
   { level: 2, kind: 'banner', x: 0.46, y: 0 },
-  { level: 3, kind: 'chest', x: -0.36, y: 0.02 },
+  { level: 3, kind: 'chest', x: -0.52, y: 0.02 },
   { level: 4, kind: 'fence', x: 0.2, y: 0.01 },
   { level: 4, kind: 'lantern', x: -0.46, y: 0 },
 ];
