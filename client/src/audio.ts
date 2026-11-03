@@ -87,6 +87,11 @@ class Sfx {
   private voices = 0;
   private lastAt = new Map<SoundName, number>();
 
+  /** The host site (CrazyGames) asked for silence: it wins over the player's own setting and is not remembered. */
+  private siteMuted = false;
+  private get silent(): boolean { return this.prefs.muted || this.siteMuted; }
+  setSiteMuted(on: boolean): void { this.siteMuted = on; this.applyLevel(); }
+
   get muted(): boolean { return this.prefs.muted; }
   get volume(): number { return this.prefs.volume; }
   get musicVolume(): number { return this.prefs.music; }
@@ -162,7 +167,7 @@ class Sfx {
 
   /** <paramref name="loudness"/> 0–1: how loud this one is (e.g. far from the camera = quieter). */
   play(name: SoundName, loudness = 1): void {
-    if (this.prefs.muted || this.prefs.volume <= 0 || loudness <= 0.02) return;
+    if (this.silent || this.prefs.volume <= 0 || loudness <= 0.02) return;
     const now = performance.now();
     if (now - (this.lastAt.get(name) ?? -1e9) < MIN_GAP_MS[name]) return;
     if (this.voices >= MAX_VOICES) return;
@@ -313,8 +318,8 @@ class Sfx {
   }
 
   private applyLevel(): void {
-    if (this.master) this.master.gain.value = this.prefs.muted ? 0 : this.prefs.volume * MASTER_SCALE;
-    if (this.musicBus) this.musicBus.gain.value = this.prefs.muted ? 0 : this.prefs.music * MUSIC_SCALE;
+    if (this.master) this.master.gain.value = this.silent ? 0 : this.prefs.volume * MASTER_SCALE;
+    if (this.musicBus) this.musicBus.gain.value = this.silent ? 0 : this.prefs.music * MUSIC_SCALE;
   }
 
   private noiseBuffer(ctx: AudioContext): AudioBuffer {

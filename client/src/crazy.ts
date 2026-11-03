@@ -11,6 +11,9 @@ interface GameApi {
   leftRoom(): void;
   inviteLink(params: Record<string, string | number>): string;
   getInviteParam(name: string): string | null;
+  inviteParams?: Record<string, string> | null;
+  showInviteButton?(params: Record<string, string | number>): string;
+  hideInviteButton?(): void;
   isInstantMultiplayer?: boolean;
   settings?: { disableChat?: boolean; muteAudio?: boolean };
   addJoinRoomListener?(listener: (params: Record<string, string>) => void): void;
@@ -56,7 +59,8 @@ export const crazyInstant = (): boolean => !!sdk && sdk.game.isInstantMultiplaye
 
 /** The room code of the invitation this page was opened from, if any. */
 export function crazyInviteRoom(): string | null {
-  const code = sdk ? guard(() => sdk!.game.getInviteParam('room')) : null;
+  // getInviteParam('room'); `inviteParams` is the same thing as an object (the docs say to look at it when the game starts)
+  const code = sdk ? guard(() => sdk!.game.getInviteParam('room') ?? sdk!.game.inviteParams?.room ?? null) : null;
   return code && /^[A-Za-z]{6}$/.test(code) ? code.toUpperCase() : null;
 }
 
@@ -71,15 +75,19 @@ export function crazyInviteLink(code: string): string | null {
 }
 
 let lastRoom = '';
-/** Tells the site which room we are in and whether friends can still join (the lobby: yes; a running match: no). */
+/**
+ * Tells the site which room we are in and whether friends can still join (a private room's lobby: yes; a running match: no): the room data
+ * (updateRoom / leftRoom) and the invite button (shown while friends can join, hidden when they cannot or when we leave).
+ */
 export function crazyRoom(code: string | null, joinable: boolean): void {
   if (!sdk) return;
   const key = `${code}:${joinable}`;
   if (key === lastRoom) return;
   lastRoom = key;
   guard(() => {
-    if (code === null) sdk!.game.leftRoom();
-    else sdk!.game.updateRoom({ roomId: code, isJoinable: joinable, inviteParams: { room: code } });
+    if (code === null) { sdk!.game.hideInviteButton?.(); sdk!.game.leftRoom(); return; }
+    sdk!.game.updateRoom({ roomId: code, isJoinable: joinable, inviteParams: { room: code } });
+    if (joinable) sdk!.game.showInviteButton?.({ room: code }); else sdk!.game.hideInviteButton?.();
   });
 }
 

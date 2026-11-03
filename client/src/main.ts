@@ -150,7 +150,7 @@ function onRoom(r: RoomView): void {
   }
   else if (screen === 'end') end!.update(r);
   // The site (CrazyGames) learns which room we are in, and that friends may join only while it is a lobby.
-  crazyRoom(r.code, r.phase === 'lobby');
+  crazyRoom(r.code, r.phase === 'lobby' && !soloRoom);
   crazyGameplay(screen === 'game' && !lastCastle?.eliminated);
 }
 
@@ -186,6 +186,7 @@ async function leaveToMenu(): Promise<void> {
   disarmTutorial();
   crazyRoom(null, false);
   crazyGameplay(false);
+  soloRoom = false;
   lastCastle = null; lastLayout = null; lastMap = null; lastSpectator = null; pendingBattles = []; summary = null;
   setRoute(`/${location.search}`);
   showHome();
@@ -193,6 +194,8 @@ async function leaveToMenu(): Promise<void> {
 
 /** The CrazyGames account's name, when there is one: the name offered while the player has not typed their own. */
 let siteName = '';
+/** A quick match (the player and bots only) is not a room to invite friends to: the CrazyGames invite button stays away from it. */
+let soloRoom = false;
 
 function showHome(defaults: { code?: string; error?: string } = {}): void {
   music.scene('prep');
@@ -203,6 +206,7 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
   new HomeScreen(app, { name: loadName() || siteName, code: defaults.code ?? '', error: defaults.error }, {
     create: async (name) => {
       saveName(name);
+      soloRoom = false;
       const r = await net.createRoom(name);
       if (!r.ok) return r.error;
       setRoute(`/oda/${r.code}${location.search}`);
@@ -226,7 +230,9 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
 
 /** "Hızlı oyna": a room of our own with three bots (a mix of Easy and Medium), everybody ready, and off it goes; deck and kingdom are drawn by lot. Null when it worked. */
 async function quickMatch(name: string): Promise<string | null> {
+  soloRoom = true;
   const r = await net.createRoom(name);
+  if (!r.ok) soloRoom = false;
   if (!r.ok) return r.error;
   setRoute(`/oda/${r.code}${location.search}`);
   // The very first Quick play is the guided one: three Easy bots and the interactive tutorial (ui/tutorial.ts).
@@ -385,7 +391,7 @@ async function main(): Promise<void> {
   const onSite = await initCrazy();
   if (onSite) {
     siteName = (await crazyUsername()) ?? '';
-    watchCrazySettings((s) => { setSiteChatOff(s.disableChat); if (s.muteAudio) sfx.setMuted(true); });
+    watchCrazySettings((s) => { setSiteChatOff(s.disableChat); sfx.setSiteMuted(s.muteAudio); });
     onCrazyJoin((code) => void joinInvite(code));
   }
   watchUiScale();
