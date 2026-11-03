@@ -18,9 +18,10 @@ const js = async (e) => (await send('Runtime.evaluate', { expression: e, awaitPr
 await send('Runtime.enable'); await send('Page.enable');
 const [VW, VH] = (process.env.SIZE ?? '800,450').split(',').map(Number);
 await send('Emulation.setDeviceMetricsOverride', { width: VW, height: VH, deviceScaleFactor: 1, mobile: false }); // the window size includes the browser's own frame
-await send('Page.addScriptToEvaluateOnNewDocument', { source: "localStorage.setItem('keepfall_tutorial_seen','true');localStorage.setItem('keepfall_lang','tr')" });
+await send('Page.addScriptToEvaluateOnNewDocument', { source: `localStorage.setItem('keepfall_tutorial_seen','true');localStorage.setItem('keepfall_lang','${process.env.KFLANG ?? 'tr'}')` });
 await send('Page.navigate', { url: URL });
 await sleep(3500);
+console.log('home (turkish left):', await js("(()=>{const re=/[çğıöşüÇĞİÖŞÜ]|\\b(Kale|Tarla|Orman|Maden|Demirhane|Odun|Demir|Yemek|Asker|Gözcü|Ulak|Oda|Deste|Başlat|Savaş|Rapor|Hazır|Oyuncu|Krallık|Ordu|Silah|Sandık|Köy|Kamp)\\b/; const out=new Set(); for(const l of document.body.innerText.split('\\n')){const s=l.trim(); if(s&&re.test(s)) out.add(s)} for(const e of document.querySelectorAll('[title],[aria-label],[placeholder]')){for(const a of ['title','aria-label','placeholder']){const v=e.getAttribute(a); if(v&&re.test(v)) out.add('['+a+'] '+v)}} return JSON.stringify([...out].filter((x)=>!/Türkçe$/.test(x)))})()"));
 writeFileSync(`${OUT}-home.png`, Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).result.data, 'base64'));
 await js("document.querySelector('#name').value='Aylin'; 1");
 writeFileSync(`${OUT}-home.png`, Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).result.data, 'base64'));
@@ -28,6 +29,7 @@ await js("document.querySelector('#create').click(); 1");
 for (let i = 0; i < 15; i++) { await sleep(1000); if (await js("!!document.querySelector('.lobby')")) break; }
 await js("(async()=>{const n=window.keepfallNet; for (const l of ['easy','medium','hard']) await n.addBot(l); return 1})()");
 await sleep(2500);
+console.log('lobby (turkish left):', await js("(()=>{const re=/[çğıöşüÇĞİÖŞÜ]|\\b(Kale|Tarla|Orman|Maden|Demirhane|Odun|Demir|Yemek|Asker|Gözcü|Ulak|Oda|Deste|Başlat|Savaş|Rapor|Hazır|Oyuncu|Krallık|Ordu|Silah|Sandık|Köy|Kamp)\\b/; const out=new Set(); for(const l of document.body.innerText.split('\\n')){const s=l.trim(); if(s&&re.test(s)) out.add(s)} for(const e of document.querySelectorAll('[title],[aria-label],[placeholder]')){for(const a of ['title','aria-label','placeholder']){const v=e.getAttribute(a); if(v&&re.test(v)) out.add('['+a+'] '+v)}} return JSON.stringify([...out].filter((x)=>!/Türkçe$/.test(x)))})()"));
 writeFileSync(`${OUT}-lobby.png`, Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).result.data, 'base64'));
 console.log('lobby scroll height', await js('document.documentElement.scrollHeight'), 'viewport', await js('innerHeight'));
 ws.close(); chrome.kill(); process.exit(0);

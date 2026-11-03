@@ -18,6 +18,7 @@ const send = (method, params = {}) => new Promise((r) => { const i = ++id; pendi
 const evalJs = async (expression) => { const r = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }); return r.result?.exceptionDetails ? 'ERR ' + (r.result.exceptionDetails.exception?.description ?? r.result.exceptionDetails.text) : r.result?.result?.value; };
 await send('Runtime.enable'); await send('Page.enable');
 if (process.env.EMULATE) { const [w, h] = (process.env.SIZE ?? '1280,800').split(',').map(Number); await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: false }); }
+await send('Page.addScriptToEvaluateOnNewDocument', { source: `localStorage.setItem('keepfall_lang','${process.env.KFLANG ?? 'tr'}')` });
 await send('Page.navigate', { url: URL });
 await sleep(3500);
 const C = process.env.COLORS ? process.env.COLORS.split(',') : ['red', 'purple'];
@@ -36,6 +37,7 @@ for (const [name, mySeat, color] of [['victory', 0, C[0]], ['defeat', 1, C[1]]])
       result: { winners: [0], byElimination: true, ranking, summaries: [{ seat: 0, name: 'Aylin', color: 'red', summary: sum }, { seat: 1, name: 'Bora', color: 'blue', summary: sum }, { seat: 2, name: 'Cem', color: 'yellow', summary: sum }] } });
     await new Promise((r) => setTimeout(r, 900)); return 1; })()`);
   console.log(name, r);
+  console.log(name, 'turkish left:', await evalJs("(()=>{const re=/[çğıöşüÇĞİÖŞÜ]|\\b(Kale|Tarla|Orman|Maden|Demirhane|Odun|Demir|Yemek|Asker|Gözcü|Ulak|Oda|Deste|Başlat|Savaş|Rapor|Hazır|Oyuncu|Krallık|Ordu|Silah|Sandık|Köy|Kamp)\\b/; const out=new Set(); for(const l of document.body.innerText.split('\\n')){const s=l.trim(); if(s&&re.test(s)) out.add(s)} for(const e of document.querySelectorAll('[title],[aria-label],[placeholder]')){for(const a of ['title','aria-label','placeholder']){const v=e.getAttribute(a); if(v&&re.test(v)) out.add('['+a+'] '+v)}} return JSON.stringify([...out].filter((x)=>!/Türkçe$/.test(x)))})()"));
   const s = await send('Page.captureScreenshot', { format: 'png' });
   writeFileSync(`${OUT}-${name}.png`, Buffer.from(s.result.data, 'base64'));
 }

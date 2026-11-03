@@ -3,7 +3,7 @@
 //   t('{0} sn kaldı', seconds)         → positional parameters, {0} {1} ...
 //   tr(serverText)                     → a text the server made ("Bu oyuncu elendi", "Hayalet ordu için 4 altın gerekiyor."): looked up whole, or by pattern
 // A text without an English entry stays Turkish (tools/i18n-scan.mjs lists those, so none is missed). The language is picked once per page load:
-// the saved choice, else the browser's (Turkish browser → Turkish, anything else → English); the switch button saves it and reloads the page.
+// the saved choice, else the browser's (Turkish browser → Turkish, anything else → English; the CrazyGames build: English); the switch button saves it and reloads the page.
 import { EN } from './en';
 import { EN_SERVER } from './en-server';
 import { EN_GUIDE } from './en-guide';
@@ -16,6 +16,8 @@ function detect(): Lang {
     const saved = localStorage.getItem(KEY);
     if (saved === 'tr' || saved === 'en') return saved;
   } catch { /* storage blocked: the browser language decides */ }
+  // The CrazyGames build starts in English for everybody (their checklist asks for it); Turkish only when the player picks it.
+  if (import.meta.env.VITE_PLATFORM === 'crazygames') return 'en';
   return (navigator.language || '').toLowerCase().startsWith('tr') ? 'tr' : 'en';
 }
 
