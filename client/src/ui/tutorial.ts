@@ -66,6 +66,11 @@ const GROUPS = 7;
 const building = (type: BuildingType): Target => ({ kind: 'building', type });
 const idleOf = (s: CastleView): number => s.jobs.find((j) => j.job === 'idle')?.count ?? 0;
 const jobOf = (s: CastleView, job: string): number => s.jobs.find((j) => j.job === job)?.count ?? 0;
+/** The tutorial asks for this many soldiers before the first attack (the first one is armed in step 4; weapons and arming for the rest follow in step 7). */
+const SOLDIER_GOAL = 5;
+const soldierCount = (s: CastleView): number => s.soldiers + s.units.reduce((n, u) => n + u.arming, 0);
+const weaponStock = (s: CastleView): number => s.units.reduce((n, u) => n + u.weapons, 0);
+const queuedWeapons = (s: CastleView): number => s.queue.reduce((n, o) => n + o.remaining, 0);
 const hasSoldierOrWeapon = (s: CastleView): boolean => s.soldiers > 0 || s.units.some((u) => u.weapons > 0 || u.soldiers > 0 || u.arming > 0);
 /** The weapon to order: the cheapest the stores can pay for (the deck's own units only). */
 function cheapest(s: CastleView): UnitView | undefined {
@@ -133,6 +138,32 @@ function createSteps(): Step[] {
       text: (_s, a) => (!a ? t('Gözcü için boşta bir işçi gerekir: bir binadan − ile işçi al.')
         : 'dom' in a ? t('Gözcü göndermek için "Bu bölgeyi keşfet"e bas.') : t('Ormana tıkla: gözcü gönderip yağma yerlerini bulacağız.')),
     },
+    { // up to five soldiers: weapons first (blacksmith), then arming (castle); the preparation is long enough for it
+      group: 7, done: (s) => soldierCount(s) >= SOLDIER_GOAL,
+      aim: (s, c) => {
+        const need = SOLDIER_GOAL - soldierCount(s) - weaponStock(s) - queuedWeapons(s);
+        if (need > 0) {
+          const u = cheapest(s);
+          if (!u || u.wood > s.resources.wood || u.iron > s.resources.iron) return null; // waiting for wood and iron
+          const n = need >= 5 && u.wood * 5 <= s.resources.wood && u.iron * 5 <= s.resources.iron ? 5 : 1;
+          return c.win && c.win.kind === 'building' && c.win.type === 'forge' ? { dom: `[data-unit="${u.id}"] [data-act="queue"][data-n="${n}"]` } : { world: building('forge') };
+        }
+        const u = s.units.find((x) => x.weapons > 0);
+        if (!u) return null; // the weapons are still being forged
+        const n = Math.min(u.weapons, SOLDIER_GOAL - soldierCount(s)) >= 5 ? 5 : 1;
+        return c.win && c.win.kind === 'castle' ? { dom: `.unit-row[data-unit="${u.id}"] [data-act="arm"][data-n="${n}"]` } : { world: { kind: 'castle' } };
+      },
+      text: (s, a) => {
+        const have = soldierCount(s);
+        const n = a && 'dom' in a ? /data-n="(\d+)"/.exec(a.dom)?.[1] ?? '1' : '1';
+        if (!a) return SOLDIER_GOAL - have - weaponStock(s) - queuedWeapons(s) > 0
+          ? t('Silah için odun ve demir bekleniyor… ({0}/{1} asker)', have, SOLDIER_GOAL)
+          : t('Silahlar üretiliyor… ({0}/{1} asker)', have, SOLDIER_GOAL);
+        if ('dom' in a) return a.dom.includes('queue') ? t('Silah sırala: +{0}', n) : t('Silahları askere çevirmek için +{0}\'e bas.', n);
+        return a.world.kind === 'castle' ? t('Silahları askere çevir ({0}/{1}): kaleye tıkla.', have, SOLDIER_GOAL)
+          : t('Savaşa en az {1} asker lazım ({0}/{1}): demirhaneye tıkla, silah sırala.', have, SOLDIER_GOAL);
+      },
+    },
     { // wait for the war
       group: 7, done: (s) => s.phase === 'war', aim: () => null,
       text: (s) => t('Hazırlık sürüyor. Savaşa {0} kaldı: üretmeye ve geliştirmeye devam et!', clock(s.prepSeconds - s.elapsedSeconds)),
@@ -141,13 +172,12 @@ function createSteps(): Step[] {
       group: 7, done: (s) => s.war.armies.length > 0,
       aim: (s, c) => {
         const seat = c.rivals[0];
-        if (seat === undefined || (s.soldiers === 0 && !s.units.some((u) => u.soldiers > 0))) return null;
+        if (seat === undefined || !s.units.some((u) => u.soldiers > 0)) return null;
         if (!(c.win && c.win.kind === 'enemy')) return { world: { kind: 'enemy', seat } };
         const total = [...(c.el?.querySelectorAll<HTMLInputElement>('[data-count]') ?? [])].reduce((n, i) => n + (Number(i.value) || 0), 0);
         return { dom: total > 0 ? '[data-act="send"]' : '[data-act="all"]' };
       },
-      text: (s, a) => (s.war.incoming.length > 0 && !(a && 'dom' in a) ? t('Düşman orduları yolda! Kale penceresinden asker kuşan, sonra saldır.')
-        : !a ? t('Saldırmak için önce kaleden asker çıkar: kale penceresinde +1.')
+      text: (s, a) => (!a ? (s.units.some((u) => u.arming > 0) ? t('Askerlerin hazırlanıyor… birazdan saldırabilirsin.') : t('Saldırmak için önce kaleden asker çıkar: kale penceresinde +1.'))
         : 'dom' in a ? (a.dom.includes('send') ? t('Şimdi Saldır\'a bas!') : t('Önce "Tümü"ne bas: askerlerini seç.')) : t('Savaş başladı! Bir rakip kaleye tıkla.')),
     },
   ];
@@ -261,7 +291,10 @@ export class Tutorial {
       return;
     }
     const step = this.steps[this.idx];
-    const aim = step.aim(s, this.ctx());
+    const ctx = this.ctx();
+    const aim = step.aim(s, ctx);
+    // A thing on the map that another window covers (the blacksmith's window over the castle): the window is closed so the thing can be clicked.
+    if (aim && 'world' in aim && ctx.win && !sameTarget(ctx.win, aim.world)) this.host.closeWindow();
     this.card.hidden = false;
     this.stepEl.textContent = t('Adım {0} / {1}', step.group, GROUPS);
     const text = step.text(s, aim);

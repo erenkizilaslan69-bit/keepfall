@@ -127,7 +127,7 @@ public sealed record CommandResultView(bool Ok, string? Error);
 
 /// <summary>Public facts about a player. Never the token.</summary>
 public sealed record PlayerView(int Seat, string Name, PlayerColor Color, bool Ready, bool Connected, bool IsHost, bool Eliminated,
-    bool IsBot = false, BotDifficulty? BotLevel = null);
+    bool IsBot = false, BotDifficulty? BotLevel = null, bool Sheltered = false);
 
 /// <summary>Sent to everyone once the match is over: the hidden-information rule ends with the match.</summary>
 public sealed record RankView(int Seat, string Name, PlayerColor Color, int Place, int Population, bool Eliminated, string? Kingdom = null);
@@ -146,7 +146,7 @@ public static class ViewMapper
 {
     public static RoomView ToView(Room room) => new(
         room.Code, room.Phase,
-        room.Players.Select(p => new PlayerView(p.Seat, p.Name, p.Color, p.Ready, p.Connected, p.Seat == room.HostSeat, room.IsEliminated(p), p.IsBot, p.Bot)).ToList(),
+        room.Players.Select(p => new PlayerView(p.Seat, p.Name, p.Color, p.Ready, p.Connected, p.Seat == room.HostSeat, room.IsEliminated(p), p.IsBot, p.Bot, room.Game?.IsShielded(p.CastleKey) == true)).ToList(),
         room.Options.MinPlayers, room.Options.MaxPlayers, room.CanStart, room.Game?.RemainingSeconds,
         room.Phase == RoomPhase.Ended ? ResultOf(room) : null, room.AllHumansOut);
 

@@ -140,6 +140,13 @@ public sealed partial class GameState
     /// <summary>Time left in the current phase.</summary>
     public double RemainingSeconds => Math.Max(0, PhaseEndsAt - ElapsedSeconds);
     public double WarElapsedSeconds => Math.Max(0, ElapsedSeconds - PrepSeconds);
+
+    /// <summary>Castles that nobody attacks for the first <see cref="GameRules.MatchRules"/> shield seconds of the war (the human of a guided match).</summary>
+    public HashSet<string> ShieldedKeys { get; } = [];
+
+    /// <summary>True while the castle is under the guided match's shield: no army, phantom or hired camp may be sent at it.</summary>
+    public bool IsShielded(string key) => ShieldedKeys.Contains(key) && Phase == MatchPhase.War && WarElapsedSeconds < Rules.Match.GuidedShieldSeconds;
+
     /// <summary>Late in the war food production drops (famine).</summary>
     public bool Famine => Phase == MatchPhase.War && WarElapsedSeconds + 1e-9 >= FamineAfter;
     public double FamineStartsIn => Math.Max(0, PrepSeconds + FamineAfter - ElapsedSeconds);
@@ -716,12 +723,15 @@ public sealed partial class GameState
 
     // ---- war ---------------------------------------------------------------------------------
 
+    private const string ShieldMessage = "Bu rehberli maçta savaşın ilk dakikalarında rakipler saldırmaz.";
+
     private CommandResult LaunchArmy(string from, PlayerEconomy player, SendArmy c)
     {
         if (Phase != MatchPhase.War) return CommandResult.Fail("Saldırı sadece savaş fazında yapılabilir.");
         if (c.TargetKey == from) return CommandResult.Fail("Kendi kalene saldıramazsın.");
         if (!_players.ContainsKey(c.TargetKey)) return CommandResult.Fail("Böyle bir rakip yok.");
         if (_eliminated.ContainsKey(c.TargetKey)) return CommandResult.Fail("Bu oyuncu elendi.");
+        if (IsShielded(c.TargetKey)) return CommandResult.Fail(ShieldMessage);
 
         var parsed = ParseArmy(c.Units, c.Rows, c.ArcherPriority, out var units, out var rows, out var priority);
         if (!parsed.Ok) return parsed;
@@ -806,6 +816,7 @@ public sealed partial class GameState
             if (key == from) return CommandResult.Fail("Kendi kalene saldıramazsın.");
             if (!_players.ContainsKey(key)) return CommandResult.Fail("Böyle bir rakip yok.");
             if (_eliminated.ContainsKey(key)) return CommandResult.Fail("Bu oyuncu elendi.");
+            if (IsShielded(key)) return CommandResult.Fail(ShieldMessage);
             target = key;
             node = WorldMap.GateNode(_corners[key]);
         }

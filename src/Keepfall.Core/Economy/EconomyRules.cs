@@ -15,7 +15,9 @@ public sealed record MatchRules(
     double SpectatorWaitSeconds,
     double SpectatorMinSeconds = 0,
     /// <summary>Turning a worker into a soldier takes this long: in between they neither work nor fight (0: at once). Hiring a mercenary is always at once.</summary>
-    double ArmSeconds = 0);
+    double ArmSeconds = 0,
+    /// <summary>The guided first match: the humans' castles are left alone by computer players this long (game seconds) from the start of the war.</summary>
+    double GuidedShieldSeconds = 180);
 
 /// <summary>War phase ("Maç" and "Binalar" sheets): famine, castle and siege.</summary>
 public sealed record WarRules(

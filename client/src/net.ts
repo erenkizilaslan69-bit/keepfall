@@ -101,6 +101,8 @@ export class GameConnection {
   // Lobby
   setName = (name: string) => { this.name = name; return this.call('SetName', name); };
   setReady = (ready: boolean) => this.call('SetReady', ready);
+  /** The guided first match: computer players leave this (single human) player alone for the first minutes of the war. */
+  setGuided = (on: boolean) => this.call('SetGuided', on);
   setDeck = (units: string[]) => this.call('SetDeck', units);
   startMatch = () => this.call('StartMatch');
   addBot = (level: BotLevel) => this.call('AddBot', level);

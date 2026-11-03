@@ -118,6 +118,7 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
 
     public Task<CommandResultView> SetName(string? name) => RoomCommand((room, token) => room.SetName(token, name));
     public Task<CommandResultView> SetReady(bool ready) => RoomCommand((room, token) => room.SetReady(token, ready));
+    public Task<CommandResultView> SetGuided(bool on) => RoomCommand((room, token) => room.SetGuided(token, on));
     public Task<CommandResultView> SetDeck(string[]? units) => RoomCommand((room, token) => room.SetDeck(token, units));
     public Task<CommandResultView> StartMatch() => RoomCommand((room, token) => room.Start(token), pushCastles: true, pushLayout: true);
     public Task<CommandResultView> BackToLobby() => RoomCommand((room, token) => room.BackToLobby(token));

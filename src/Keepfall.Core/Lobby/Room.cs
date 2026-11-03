@@ -317,6 +317,16 @@ public sealed class Room
         return CommandResult.Success;
     });
 
+    /// <summary>The host asks for the guided first match (the tutorial): computer players leave the human alone for the first minutes of the war. Honoured only when one human plays.</summary>
+    public bool Guided { get; private set; }
+
+    public CommandResult SetGuided(string token, bool on) => InLobby(token, p =>
+    {
+        if (p.Seat != HostSeat) return CommandResult.Fail("Yalnız oda sahibi rehberli maç isteyebilir.");
+        Guided = on;
+        return CommandResult.Success;
+    });
+
     public CommandResult SetReady(string token, bool ready) => InLobby(token, p =>
     {
         p.Ready = ready;
@@ -358,6 +368,8 @@ public sealed class Room
                 GameState.AssignCorners(keys, new Random(seed + 17)), Options.ForestSeed ?? new Random(seed + 31).Next(), decks, factions);
         else
             Game = new GameState(_rules, keys, Options.PrepSeconds, Options.WarSeconds, forestSeed: Options.ForestSeed, decks: decks, factions: factions);
+        if (Guided && _players.Count(p => !p.IsBot) == 1)
+            foreach (var human in _players.Where(p => !p.IsBot)) Game.ShieldedKeys.Add(human.CastleKey);
         Phase = RoomPhase.Preparation;
     }
 

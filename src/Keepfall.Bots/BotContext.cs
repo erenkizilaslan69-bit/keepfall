@@ -53,7 +53,7 @@ public sealed class BotContext(GameRules rules, BotInput input, BotMemory memory
         }
     }
     public VecView? MyGate => Input.Layout?.Regions.FirstOrDefault(r => r.Seat == Seat)?.Gate;
-    public IEnumerable<PlayerView> Rivals => Input.Room.Players.Where(p => p.Seat != Seat && !p.Eliminated);
+    public IEnumerable<PlayerView> Rivals => Input.Room.Players.Where(p => p.Seat != Seat && !p.Eliminated && !p.Sheltered); // (a sheltered human is left alone for now: guided match)
 
     /// <summary>The newest scout report about a rival (null: never scouted).</summary>
     public ScoutReportView? LatestReport(int seat) =>

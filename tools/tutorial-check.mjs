@@ -48,11 +48,17 @@ const read = () => js(`(() => {
     frame: fr ? { x: fr.x + fr.width / 2, y: fr.y + fr.height / 2, w: fr.width, h: fr.height } : null });
 })()`);
 
-const seen = new Set(); let n = 0, sped = false, last = '';
+const REAL = !!process.env.REALTIME; // real time (x1) from the first click to the end: no speed-up; hints and the first minutes of the war are watched afterwards
+const seen = new Set(); let n = 0, sped = false, last = '', lastLog = 0, completed = false;
+const stateLine = () => js("(() => { const c = window.keepfallUi.castle; if (!c) return null; return JSON.stringify({ phase: c.phase, t: Math.round(c.elapsedSeconds), war: Math.round(Math.max(0, c.elapsedSeconds - c.prepSeconds)), soldiers: c.soldiers, arming: c.units.reduce((n, u) => n + u.arming, 0), weapons: c.units.reduce((n, u) => n + u.weapons, 0), queued: c.queue.reduce((n, o) => n + o.remaining, 0), armies: c.war.armies.length, incoming: c.war.incoming.length, eliminated: c.eliminated, reports: c.scouting.reports.length, speed: c.speed }); })()");
+const hintsSeen = new Set();
+const watchHints = async () => { const raw = await js("JSON.stringify([...document.querySelectorAll('.notes .ribbon, .notes > *')].map((n) => n.textContent.trim()))"); for (const h of JSON.parse(raw ?? '[]')) if (!hintsSeen.has(h)) { hintsSeen.add(h); console.log('   ribbon:', h.slice(0, 150)); } };
 const t0 = Date.now();
-while (Date.now() - t0 < 420_000) {
+while (Date.now() - t0 < (REAL ? 1_500_000 : 420_000)) {
+  if (REAL && Date.now() - lastLog > 30_000) { lastLog = Date.now(); console.log('   [state]', await stateLine()); }
+  if (REAL) await watchHints();
   const raw = await read();
-  if (!raw) { console.log('tutorial element gone'); break; }
+  if (!raw) { console.log('tutorial element gone'); completed = true; break; }
   const st = JSON.parse(raw);
   const countdown = /the war starts in|Savaşa/.test(st.text);
   if (!st.hidden && st.text !== last && !(countdown && /the war starts in|Savaşa/.test(last))) {
@@ -65,14 +71,30 @@ while (Date.now() - t0 < 420_000) {
     if (!/the war starts in/.test(st.text)) console.log('   state:', await js("(() => { const c = window.keepfallUi.castle; return JSON.stringify({ soldiers: c.soldiers, pop: c.population, jobs: c.jobs.map((j) => j.job + ':' + j.count).join(' '), phase: c.phase, armies: c.war.armies.length + ':' + c.war.armies.map((a) => a.state + a.units.map((u) => u.count).join('/')).join(','), notes: [...document.querySelectorAll('.notes .ribbon, .notes > *')].map((n) => n.textContent.trim()).join(' | ').slice(0, 160), win: window.keepfallUi.windows.current && window.keepfallUi.windows.current.kind, queue: c.queue.length, units: c.units.filter((u) => u.weapons + u.soldiers + u.arming > 0).map((u) => [u.id, u.weapons, u.soldiers, u.arming]) }); })()"));
   }
   if (countdown) last = st.text;
-  if (/Nice work|Harika/.test(st.text)) break;
+  if (/Nice work|Harika/.test(st.text)) { completed = true; if (!REAL) break; }
   // waiting for the war: speed the match up (development server) and drop back to x1 when about 45 s are left, so the attack step is played in real time
-  const left = /the war starts in (\d+):(\d+)/.exec(st.text);
+  const left = REAL ? null : /the war starts in (\d+):(\d+)/.exec(st.text);
   if (left && !sped && Number(left[1]) * 60 + Number(left[2]) > 60) { sped = true; await js('window.keepfallNet.setSpeed(20); 1'); }
-  if (sped && (!left || Number(left[1]) * 60 + Number(left[2]) <= 60)) { await js('window.keepfallNet.setSpeed(1); 1'); sped = false; }
+  if (!REAL && sped && (!left || Number(left[1]) * 60 + Number(left[2]) <= 60)) { await js('window.keepfallNet.setSpeed(1); 1'); sped = false; }
   if (st.frame) await click(st.frame.x, st.frame.y);
   if (/First press|Önce/.test(st.text)) { for (let k = 0; k < 14; k++) { await sleep(150); const r2 = await read(); if (!r2) { console.log('   (gone)'); break; } const q = JSON.parse(r2); console.log('   dbg:', await js("(() => { const b = document.querySelector('.win [data-act=all]'); const r = b && b.getBoundingClientRect(); const f = document.querySelector('.tut-frame').getBoundingClientRect(); return JSON.stringify({ disabled: b && b.disabled, btn: r && [Math.round(r.x + r.width / 2), Math.round(r.y + r.height / 2)], frame: [Math.round(f.x + f.width / 2), Math.round(f.y + f.height / 2)], home: [...document.querySelectorAll('.win [data-f=home]')].map((e) => e.textContent) }); })()"), await js("JSON.stringify([...document.querySelectorAll('.win [data-count]')].map((i) => i.value))")); if (q.text !== st.text) { console.log('   next:', q.text, q.frame ? '(frame)' : '(no frame)'); if (q.frame) { await click(q.frame.x, q.frame.y); console.log('   clicked it'); } break; } } }
   await sleep(900);
+}
+if (REAL) {
+  // after the tutorial: watch the first minutes of the war (is the player still alive?), send a scout to a rival to see the report hint
+  let scouted = false;
+  const t1 = Date.now();
+  while (Date.now() - t1 < 330_000) {
+    const raw = await stateLine(); if (!raw) break;
+    const c = JSON.parse(raw);
+    await watchHints();
+    if (Date.now() - lastLog > 20_000) { lastLog = Date.now(); console.log('   [state]', raw); }
+    if (!scouted && c.phase === 'war') { scouted = true; console.log('   scout to the rival:', await js("(async () => { const c = window.keepfallUi.castle; const seat = c.scouting.targets[0].seat; return JSON.stringify(await window.keepfallNet.sendScout(seat, 'idle')); })()")); }
+    if (c.eliminated) { console.log('   ELIMINATED at war second', c.war); break; }
+    if (c.war >= 270) { console.log('   still alive at war second', c.war); break; }
+    await sleep(1500);
+  }
+  await shot('final');
 }
 console.log('steps seen:', n, '| distinct texts:', seen.size, '| page errors:', errors.length ? errors.slice(0, 3).join(' | ') : 'none');
 console.log('tutorial done flag:', await js("localStorage.getItem('keepfall_tutorial_done')"));

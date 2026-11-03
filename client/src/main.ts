@@ -233,6 +233,7 @@ async function quickMatch(name: string): Promise<string | null> {
     const a = await net.addBot(level);
     if (!a.ok) return fail(a.error);
   }
+  if (guided) { const g = await net.setGuided(true); if (!g.ok) return fail(g.error); }
   const ready = await net.setReady(true);
   if (!ready.ok) return fail(ready.error);
   if (guided) armTutorial();

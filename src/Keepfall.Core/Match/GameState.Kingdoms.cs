@@ -143,6 +143,7 @@ public sealed partial class GameState
         if (c.TargetKey == from) return CommandResult.Fail("Kendi kalene gönderilmez.");
         if (!_players.ContainsKey(c.TargetKey)) return CommandResult.Fail("Böyle bir rakip yok.");
         if (_eliminated.ContainsKey(c.TargetKey)) return CommandResult.Fail("Bu oyuncu elendi.");
+        if (IsShielded(c.TargetKey)) return CommandResult.Fail(ShieldMessage);
         var parsed = ParseArmy(c.Units, null, null, out var units, out var rows, out var priority);
         if (!parsed.Ok) return parsed;
         int total = units.Values.Sum();
@@ -229,6 +230,7 @@ public sealed partial class GameState
         if (c.TargetKey == from) return CommandResult.Fail("Kendi kalene saldırtılmaz.");
         if (!_players.ContainsKey(c.TargetKey)) return CommandResult.Fail("Böyle bir rakip yok.");
         if (_eliminated.ContainsKey(c.TargetKey)) return CommandResult.Fail("Bu oyuncu elendi.");
+        if (IsShielded(c.TargetKey)) return CommandResult.Fail(ShieldMessage);
         if (!_sites.TryGetValue(c.SiteId, out var site) || !Knows(from, c.SiteId)) return CommandResult.Fail("Böyle bir yer bilmiyorsun.");
         if (site.Site.Kind is not (SiteKind.Camp or SiteKind.BigCamp)) return CommandResult.Fail("Bu bir haydut kampı değil.");
         if (_knowledge[from][c.SiteId].Gone || site.Gone || site.BanditCount == 0) return CommandResult.Fail("Bu kamp boşalmış görünüyor.");

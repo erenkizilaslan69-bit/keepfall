@@ -46,6 +46,8 @@ public sealed class MatchConfig
     public double SpectatorMinSeconds { get; set; } = 120;
     /// <summary>Seconds it takes to turn a worker into a soldier (0 = at once).</summary>
     public double ArmSeconds { get; set; }
+    /// <summary>The guided first match (the tutorial): for this long (game seconds) from the start of the war the computer players do not attack the human player. Only a room that asked for it uses it.</summary>
+    public double GuidedShieldSeconds { get; set; } = 180;
     public int StartingPopulation { get; set; } = 10;
     public ProductionConfig StartingResources { get; set; } = new();
 }
@@ -383,6 +385,7 @@ public static class BalanceConfigLoader
         if (mc.SpectatorDelaySeconds < 0) errors.Add("match.spectatorDelaySeconds negatif olamaz.");
         if (mc.SpectatorWaitSeconds < 0) errors.Add("match.spectatorWaitSeconds negatif olamaz.");
         if (mc.SpectatorMinSeconds < 0) errors.Add("match.spectatorMinSeconds negatif olamaz.");
+        if (mc.GuidedShieldSeconds < 0) errors.Add("match.guidedShieldSeconds negatif olamaz.");
         if (mc.ArmSeconds < 0) errors.Add("match.armSeconds negatif olamaz.");
         if (mc.StartingPopulation < 0) errors.Add("match.startingPopulation negatif olamaz.");
         var sr = mc.StartingResources;
@@ -534,7 +537,7 @@ public static class BalanceConfigLoader
                 mc.ShortModePrepMinutes * 60, mc.LongModePrepMinutes * 60,
                 (mc.ShortModeMinutes - mc.ShortModePrepMinutes) * 60,
                 (mc.LongModeMinutes - mc.LongModePrepMinutes) * 60,
-                mc.ServerTickSeconds, mc.StartingPopulation, sr.Food, sr.Wood, sr.Iron, mc.SpectatorDelaySeconds, mc.SpectatorWaitSeconds, mc.SpectatorMinSeconds, mc.ArmSeconds),
+                mc.ServerTickSeconds, mc.StartingPopulation, sr.Food, sr.Wood, sr.Iron, mc.SpectatorDelaySeconds, mc.SpectatorWaitSeconds, mc.SpectatorMinSeconds, mc.ArmSeconds, mc.GuidedShieldSeconds),
             new EconomyRules(
                 e.WorkerFoodPerMinute, e.SoldierFoodPerMinute, e.StarvationMultiplier,
                 e.NewPersonBaseCost, e.NewPersonCostGrowth, e.NewPersonBasePopulation, e.GrowthReserveSeconds,
