@@ -332,6 +332,7 @@ export const EN_GUIDE: Record<string, string> = {
   "Sayfayı yenile": "Reload",
   "Keepfall yeni sürüme geçti. Yenilemek için buraya tıkla.": "Keepfall has been updated. Tap here to reload.",
   "Keepfall odama katıl: {0}": "Join my Keepfall room: {0}",
+  "Sunucu yeniden başladı, maç kapandı. Ana menüye dönülüyor…": "The server restarted and the match is over. Going back to the main menu…",
   "Efektleri azalt": "Reduce effects",
   "(kamera sarsıntısı, kıvılcım ve ok izleri)": "(camera shake, sparks and arrow trails)",
   "Oyun hakkında": "About the game",

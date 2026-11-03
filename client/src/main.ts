@@ -143,7 +143,12 @@ const net = new GameConnection({
     ui?.setStatus(status, s === 'connected');
     if (s === 'connected') hideBanner();
     if (s === 'disconnected' && screen !== 'home') showBanner(t('Sunucuyla bağlantı yok. Sayfayı yenileyince kaldığın yere dönersin.'));
-    if (s === 'roomLost') showBanner(t('Oda kapanmış (sunucu yeniden başlamış olabilir). Ana menüye dönmek için buraya tıkla.'), () => location.assign('/'));
+    if (s === 'roomLost') {
+      // The server was restarted (or the room closed): the match is gone. A clear message, then the main menu by itself (a tap is not needed, but still works).
+      const toMenu = () => { markActiveRoom(null); setRoute('/', 'replace'); location.reload(); };
+      showBanner(t('Sunucu yeniden başladı, maç kapandı. Ana menüye dönülüyor…'), toMenu);
+      window.setTimeout(toMenu, 3500);
+    }
   },
 });
 startFpsMeter(net);

@@ -1,0 +1,11 @@
+<!doctype html>
+<!-- A stand-in for the CrazyGames page: the game in a phone-sized iframe, on another origin than the game, with a minimal fake SDK that answers like the real one does on the site.
+     Serve this file from one port and the game from another (see tools/iframe-check.mjs). The iframe is 852x393, the size of a phone held sideways. -->
+<html><body style="margin:0;background:#222;color:#ccc;font:14px sans-serif">
+<p style="margin:6px">Fake CrazyGames page (the game below is in an iframe from another origin)</p>
+<iframe id="g" src="" style="width:852px;height:393px;border:2px solid #555" allow="autoplay; fullscreen"></iframe>
+<script>
+  const src = new URLSearchParams(location.search).get('game') || 'http://localhost:5175/';
+  document.getElementById('g').src = src + (new URLSearchParams(location.search).get('q') || '');
+</script>
+</body></html>

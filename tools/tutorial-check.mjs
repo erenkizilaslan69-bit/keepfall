@@ -25,12 +25,20 @@ ws.addEventListener('message', (m) => {
 const send = (method, params = {}) => new Promise((r) => { const i = ++id; pending.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
 const js = async (e) => (await send('Runtime.evaluate', { expression: e, awaitPromise: true, returnByValue: true })).result?.result?.value;
 const shot = async (name) => writeFileSync(`${OUT}-${name}.png`, Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).result.data, 'base64'));
+const MOBILE = !!process.env.MOBILE; // a phone: touch events (a tap in the middle of the frame), mobile emulation, a simulated Dynamic Island
 const click = async (x, y) => {
+  if (MOBILE) {
+    await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
+    await sleep(60);
+    await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    return;
+  }
   for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await send('Input.dispatchMouseEvent', { type, x, y, button: 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: 1 });
 };
 await send('Runtime.enable'); await send('Page.enable');
-await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
-await send('Page.addScriptToEvaluateOnNewDocument', { source: `localStorage.setItem('keepfall_lang','${process.env.KFLANG ?? 'en'}')` });
+await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: MOBILE });
+if (MOBILE) await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+await send('Page.addScriptToEvaluateOnNewDocument', { source: `localStorage.setItem('keepfall_lang','${process.env.KFLANG ?? 'en'}');${MOBILE ? "document.addEventListener('DOMContentLoaded', () => document.documentElement.classList.add('sim-inset'))" : ''}` });
 await send('Page.navigate', { url: URL });
 await sleep(3500);
 await js("document.querySelector('#quick').click(); 1");
