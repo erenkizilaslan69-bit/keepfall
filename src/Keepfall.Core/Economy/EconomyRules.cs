@@ -50,7 +50,7 @@ public sealed record DeckRules(bool Enabled, int Size)
 /// <param name="MaxScouts">Most scouts one player can have out at once (a spy, a tour of a quarter and a chest run all count).</param>
 /// <param name="MaxCargo">An envoy carries at most this many goods in all (food, wood, iron and gold together).</param>
 /// <param name="MaxMessageLength">Longest message an envoy carries (characters).</param>
-/// <param name="ProfanityFilter">Messages have a short list of swear words masked with stars (off by default).</param>
+/// <param name="ProfanityFilter">Messages have a short list of swear words masked with stars (on in the shipped config).</param>
 public sealed record EnvoyRules(int MaxCargo = 40, int MaxMessageLength = 140, bool ProfanityFilter = false)
 {
     public static EnvoyRules Default { get; } = new();

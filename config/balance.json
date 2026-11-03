@@ -201,8 +201,8 @@
     "maxCargo": 40,
     // Mesajın en uzun hali (karakter); denetim karakteri içeremez.
     "maxMessageLength": 140,
-    // Kısa bir küfür listesi yıldızla maskelenir (Türkçe + İngilizce). Varsayılan kapalı.
-    "profanityFilter": false
+    // Kısa bir küfür listesi yıldızla maskelenir (Türkçe + İngilizce); ulak mesajları ve oyuncu adları. Açık (CrazyGames kuralı: sohbet denetimi).
+    "profanityFilter": true
   },
 
   // Krallıklar (2026-10-28 gece; ayrıntı: src/Keepfall.Core/Match/Factions.cs). Maç başında her oyuncuya rastgele, tekrarsız bir krallık verilir.

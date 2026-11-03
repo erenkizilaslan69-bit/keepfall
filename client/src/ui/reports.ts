@@ -1,5 +1,6 @@
 import { COLOR_CSS, botMark, esc } from '../format';
 import { t as tt, tr } from '../i18n';
+import { messagesOn } from '../prefs';
 import type { BattleReportView, LetterView, ScoutReportView } from '../types';
 import { dot, reportHtml, resultWord } from './report-html';
 import { scoutReportHtml } from './scout-report';
@@ -135,7 +136,12 @@ export class ReportTags {
     }
     if (!goods.children.length) goods.textContent = tt('Yük yok, yalnız mesaj.');
     win.append(close, title, from, goods);
-    if (l.message) {
+    if (l.message && !messagesOn()) {
+      const hidden = document.createElement('p');
+      hidden.className = 'muted-ink';
+      hidden.textContent = tt('Mesaj gizlendi (ayarlarda mesajlar kapalı).');
+      win.append(hidden);
+    } else if (l.message) {
       const quote = document.createElement('blockquote');
       quote.className = 'letter-text';
       quote.textContent = l.message; // plain text, whatever it contains

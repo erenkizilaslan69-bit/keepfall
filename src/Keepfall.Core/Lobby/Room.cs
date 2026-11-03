@@ -506,6 +506,7 @@ public sealed class Room
             if (char.IsHighSurrogate(clean[cut - 1])) cut--; // never split an emoji in two: a lone half cannot be sent as JSON
             clean = clean[..cut].TrimEnd();
         }
+        clean = Keepfall.Core.Match.EnvoyMessage.Mask(clean); // names too: the same short list of swear words
         return clean.Length == 0 ? $"Oyuncu {seat}" : clean;
     }
 

@@ -26,6 +26,15 @@ public class RoomTests
 
     private static void Ok(CommandResult result) => Assert.True(result.Ok, result.Error);
 
+    [Fact]
+    public void Swear_words_in_names_are_masked_with_stars()
+    {
+        var room = NewRoom();
+        Assert.Equal("******", Join(room, "siktir").Name);
+        Ok(room.SetName(Join(room, "Aylin").Token, "fuck you"));
+        Assert.Equal("**** you", room.Players.First(p => p.Seat == 2).Name);
+    }
+
     /// <summary>Two players in a started match.</summary>
     private static (Room room, RoomPlayer a, RoomPlayer b) StartedMatch()
     {

@@ -179,10 +179,10 @@ public class EnvoyMessageTests
     private static readonly EnvoyRules Off = new(40, 140, false), On = new(40, 140, true);
 
     [Fact]
-    public void The_filter_is_off_in_the_shipped_config_and_off_means_the_text_is_left_alone()
+    public void The_filter_is_on_in_the_shipped_config_and_off_means_the_text_is_left_alone()
     {
         var rules = BalanceConfigLoader.LoadFromFile(BalanceConfigLoader.FindDefaultPath(AppContext.BaseDirectory)!);
-        Assert.False(rules.Envoy.ProfanityFilter);
+        Assert.True(rules.Envoy.ProfanityFilter);
         Assert.Equal("fuck you", EnvoyMessage.Check("fuck you", Off).Text);
         // An emoji is fine, half of one cannot be sent as JSON.
         Assert.True(EnvoyMessage.Check("selam \U0001F600", Off).Ok);

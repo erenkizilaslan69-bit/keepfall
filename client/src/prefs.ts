@@ -2,14 +2,14 @@
 
 const KEY = 'keepfall.prefs';
 
-interface Prefs { reduceEffects: boolean; showFps: boolean; lowGraphics: boolean }
+interface Prefs { reduceEffects: boolean; showFps: boolean; lowGraphics: boolean; showMessages: boolean }
 
 function load(): Prefs {
   try {
     const p = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<Prefs>;
-    return { reduceEffects: p.reduceEffects === true, showFps: p.showFps === true, lowGraphics: p.lowGraphics === true };
+    return { reduceEffects: p.reduceEffects === true, showFps: p.showFps === true, lowGraphics: p.lowGraphics === true, showMessages: p.showMessages !== false };
   } catch {
-    return { reduceEffects: false, showFps: false, lowGraphics: false };
+    return { reduceEffects: false, showFps: false, lowGraphics: false, showMessages: true };
   }
 }
 
@@ -58,5 +58,9 @@ export function setLowGraphics(on: boolean): void {
 }
 
 // Messages in envoys (a decree from one player to another): the player can switch them off, and the site (CrazyGames) can switch chat off for everybody.
+// Off means no message is shown and the envoy window has no box to write one; goods still travel.
 const siteChat = { off: false };
 export function setSiteChatOff(off: boolean): void { siteChat.off = off; }
+export function messagesOn(): boolean { return prefs.showMessages && !siteChat.off; }
+export function userShowsMessages(): boolean { return prefs.showMessages; }
+export function setShowMessages(on: boolean): void { save({ ...prefs, showMessages: on }); }

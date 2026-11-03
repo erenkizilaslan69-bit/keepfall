@@ -1,5 +1,6 @@
 import { BACK_LINE, SHOOTERS, botMark, clock, colorNote, esc } from '../format';
 import { t as tt, tr } from '../i18n';
+import { messagesOn } from '../prefs';
 import { emblemHtml, rivalKingdom } from './emblem';
 import type { ArmyMode, CastleView, Job, PlayerView, RoomView, Row, ScoutReportView, ScoutTargetView } from '../types';
 import { ago, scoutButton, scoutReportHtml } from './scout-report';
@@ -45,7 +46,7 @@ export class EnemyWin extends Win {
         <label><i class="ico ico-iron"></i><input type="number" min="0" value="0" data-env="iron" aria-label="${tt('Demir')}"><small data-f="env-have-iron"></small></label>
         <label><i class="ico ico-coin"></i><input type="number" min="0" value="0" data-env="gold" aria-label="${tt('Altın')}"><small data-f="env-have-gold"></small></label>
       </div>
-      <textarea class="envoy-text" data-f="env-text" rows="2" placeholder="${tt('Mesaj (isteğe bağlı)')}" aria-label="${tt('Ulak mesajı')}"></textarea>
+      <textarea class="envoy-text" data-f="env-text" rows="2" ${messagesOn() ? '' : 'hidden'} placeholder="${tt('Mesaj (isteğe bağlı)')}" aria-label="${tt('Ulak mesajı')}"></textarea>
       <div class="row"><small class="muted-ink" data-f="env-total"></small>
         <button class="btn" data-act="envoy">${tt('Ulak gönder')}</button></div>
       <div class="row sub"><span data-f="env-info"></span></div>
@@ -215,7 +216,7 @@ export class EnemyWin extends Win {
     if (btn.dataset.act === 'envoy') {
       const n = (g: string) => Math.max(0, Math.floor(Number(this.q<HTMLInputElement>(`[data-env="${g}"]`).value) || 0));
       const textBox = this.q<HTMLTextAreaElement>('[data-f="env-text"]');
-      const r = await net.sendEnvoy(this.seat, n('food'), n('wood'), n('iron'), n('gold'), textBox.value.trim(), this.q<HTMLSelectElement>('[data-f="source"]').value as Job);
+      const r = await net.sendEnvoy(this.seat, n('food'), n('wood'), n('iron'), n('gold'), messagesOn() ? textBox.value.trim() : '', this.q<HTMLSelectElement>('[data-f="source"]').value as Job);
       if (!r.ok) { this.ctx.say(tr(r.error ?? tt('Ulak gönderilemedi.'))); return; }
       for (const i of this.body.querySelectorAll<HTMLInputElement>('[data-env]')) i.value = '0';
       textBox.value = '';
