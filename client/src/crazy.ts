@@ -4,6 +4,7 @@
 
 const SDK_URL = 'https://sdk.crazygames.com/crazygames-sdk-v3.js';
 export const CRAZY: boolean = import.meta.env.VITE_PLATFORM === 'crazygames';
+if (CRAZY) document.documentElement.classList.add('crazy');
 
 interface GameApi {
   gameplayStart(): void; gameplayStop(): void; loadingStart(): void; loadingStop(): void;
