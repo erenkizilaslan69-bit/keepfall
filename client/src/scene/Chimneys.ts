@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { reducedEffects } from '../prefs';
+import { lowGraphics, reducedEffects } from '../prefs';
 
 // A small drifting smoke over the chimneys of the kingdoms' buildings, next to the still smoke the pictures already carry. The spots are the
 // chimneys' tops as shares of the picture (x from the left, y from the top); a building without a chimney has none. Cosmetic only.
@@ -30,7 +30,7 @@ export class Chimneys {
   private readonly enabled: boolean;
 
   constructor(private readonly scene: Phaser.Scene) {
-    this.enabled = new URLSearchParams(location.search).get('fx') !== '0';
+    this.enabled = new URLSearchParams(location.search).get('fx') !== '0' && !lowGraphics();
     if (this.enabled) puffTexture(scene);
   }
 

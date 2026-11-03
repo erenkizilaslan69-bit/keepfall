@@ -6,6 +6,7 @@ import { esc } from '../format';
 import { t, tr } from '../i18n';
 import { CAMP, type Point } from './layout';
 import { NO_OFFSET } from './parts';
+import { lowGraphics } from '../prefs';
 
 // Soldiers wait in front of the castle around a camp fire, a group for each unit type (the groups sit round the fire in the order of
 // the list), all turned toward the flames. Shield bearers always keep their shield raised (Warrior_Guard) and are drawn a bit larger,
@@ -76,11 +77,11 @@ export class Soldiers {
       this.scene.tweens.add({ targets: f, scaleY: scale * 1.14, scaleX: scale * 0.94, duration: 260 + i * 90, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
       return f;
     });
-    const embers = this.scene.textures.exists('kf-spark') ? this.scene.add.particles(x, y - 14, 'kf-spark', {
+    const embers = !lowGraphics() && this.scene.textures.exists('kf-spark') ? this.scene.add.particles(x, y - 14, 'kf-spark', {
       lifespan: { min: 800, max: 1500 }, frequency: 220, speedY: { min: -52, max: -28 }, speedX: { min: -14, max: 14 },
       scale: { start: 0.9, end: 0.1 }, alpha: { start: 1, end: 0 }, tint: [0xffe27a, 0xffa63a, 0xff7a2a], blendMode: 'ADD',
     }).setDepth(y + 2) : null;
-    const smoke = this.scene.textures.exists('kf-puff') ? this.scene.add.particles(x, y - 46, 'kf-puff', {
+    const smoke = !lowGraphics() && this.scene.textures.exists('kf-puff') ? this.scene.add.particles(x, y - 46, 'kf-puff', {
       lifespan: { min: 1800, max: 2600 }, frequency: 520, speedY: { min: -22, max: -12 }, speedX: { min: 4, max: 14 },
       scale: { start: 0.5, end: 1.6 }, alpha: { start: 0.32, end: 0 }, tint: 0xb9b0a6,
     }).setDepth(y + 3) : null;

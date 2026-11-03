@@ -3,6 +3,7 @@ import type { MapLayoutView, Vec } from '../types';
 import { distanceToSegment, seeded, toWorld } from './world';
 import { DEPTH } from './Terrain';
 import { asset } from '../env';
+import { lowGraphics } from '../prefs';
 
 // The still ornaments of the map from the generated sheet (public/art/props, cleaned by tools/art-ui.mjs): oaks, pines, dark pines, berry bushes, small
 // rocks, mossy boulders, flower clumps and stumps, each with a soft translucent shadow instead of the sheet's purple one. They are scattered from the
@@ -86,6 +87,8 @@ export class MapProps {
       c = { blitter: this.scene.add.blitter(0, 0, ATLAS).setDepth(DEPTH.flora + 400), x: cx * CHUNK, y: cy * CHUNK };
       this.chunks.set(key, c);
     }
+    // Low graphics: about a third of the ornaments, chosen by their place (the same ones every time).
+    if (lowGraphics() && ((Math.imul(Math.round(x), 73856093) ^ Math.imul(Math.round(y), 19349663)) >>> 0) % 100 >= 34) return;
     const bob = c.blitter.create(x - f.w / 2, y - f.h + 9, name);
     bob.flipX = flip;
     this.count++;

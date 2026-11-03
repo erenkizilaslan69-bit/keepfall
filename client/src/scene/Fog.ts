@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { Rect, TrailView, Vec, VisionView } from '../types';
 import { TILE } from './layout';
 import { toWorld } from './world';
+import { lowGraphics } from '../prefs';
 
 // Fog of war, drawn: the map darkened everywhere except the circles the player sees through. This is
 // only the picture; the real fog is on the server, which never sends what lies outside the circles.
@@ -11,7 +12,7 @@ import { toWorld } from './world';
 const SCALE = 8;
 const DEPTH = 9_500; // above everything that stands on the map, below labels and bars
 const FOG_COLOR = 0x0b1016, FOG_ALPHA = 0.62;
-const REDRAW_MS = 80;
+const REDRAW_MS = lowGraphics() ? 240 : 80;
 
 export class Fog {
   private readonly rt: Phaser.GameObjects.RenderTexture;
@@ -31,7 +32,7 @@ export class Fog {
     this.base = { x: topLeft.x - pad * TILE, y: topLeft.y - pad * TILE };
     this.rt = scene.add.renderTexture(this.base.x, this.base.y, size, size).setOrigin(0).setScale(SCALE).setDepth(DEPTH);
     // Blown up with smoothing (the pixel-art setting would make every edge of the fog a staircase of 8 px blocks).
-    this.rt.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    this.rt.texture.setFilter(lowGraphics() ? Phaser.Textures.FilterMode.NEAREST : Phaser.Textures.FilterMode.LINEAR);
     this.hole = scene.make.image({ key: Fog.holeTexture(scene), add: false });
     this.eraser = scene.make.graphics({ x: 0, y: 0 }, false);
     this.refog = scene.make.graphics({ x: 0, y: 0 }, false);

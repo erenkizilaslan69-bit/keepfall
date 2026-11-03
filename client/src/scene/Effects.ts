@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { reducedEffects } from '../prefs';
+import { lowGraphics, reducedEffects } from '../prefs';
 
 // Battle and castle effects: sparks where a blow lands, dust where soldiers fall or a gate is hit, arrow trails, smoke and fire on a damaged
 // castle, the collapse of a fallen one, camera shake. Cosmetic only: nothing here reads or changes the game, and every effect is skipped
@@ -55,7 +55,7 @@ export class Effects {
   }
 
   /** The player asked for less (settings), or the system did: no shake, sparks or trails. */
-  private get still(): boolean { return reducedEffects(); }
+  private get still(): boolean { return reducedEffects() || lowGraphics(); }
 
   /** One of the limited bursts a second. */
   private budget(): boolean {
@@ -111,7 +111,7 @@ export class Effects {
   }
 
   private once(key: 'dust' | 'explosion', x: number, y: number, scale: number, tint: number, alpha: number): void {
-    if (!this.enabled || this.alive >= MAX_SPRITES || !this.seen(x, y, 200) || !this.scene.anims.exists(key)) return;
+    if (!this.enabled || (lowGraphics() && key === 'dust') || this.alive >= MAX_SPRITES || !this.seen(x, y, 200) || !this.scene.anims.exists(key)) return;
     this.alive++;
     const s = this.scene.add.sprite(x, y, key).setScale(scale).setDepth(DEPTH_FX + 1).setTint(tint).setAlpha(alpha);
     let gone = false;
