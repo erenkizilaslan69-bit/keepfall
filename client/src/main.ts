@@ -21,6 +21,7 @@ import { EndScreen, HomeScreen, LobbyScreen } from './screens';
 import { setBotSeats } from './format';
 import { t, tr } from './i18n';
 import { installTouch } from './ui/touch';
+import { startDiagnostics, watchGlContext } from './diagnostics';
 import { music, sfx } from './audio';
 import { mountGuideButton, showFirstTimeGuide } from './ui/guide';
 import { CloudCurtain } from './ui/clouds';
@@ -128,6 +129,7 @@ const net = new GameConnection({
   },
 });
 startFpsMeter(net);
+startDiagnostics({ game: () => game, scene: () => scene, net });
 
 // Dev only: lets the console (and browser tests) send commands as this tab's player.
 if (import.meta.env.DEV) (window as unknown as { keepfallNet: GameConnection }).keepfallNet = net;
@@ -328,6 +330,7 @@ function startScene(color: CastleView['color'], layout: MapLayoutView): void {
     scene,
   });
   window.addEventListener('resize', onWindowResize);
+  game.events.once('ready', () => { if (game?.canvas) watchGlContext(game.canvas); });
 }
 
 function showEnd(r: RoomView): void {

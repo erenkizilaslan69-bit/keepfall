@@ -629,11 +629,19 @@ export class WorldScene extends Phaser.Scene {
 
   // ---- ground ------------------------------------------------------------------------------
 
+  /** The colour of the pack's water tile (read once from its first pixel; the sea behind the map is that one colour). */
+  private waterColor(): number {
+    const px = this.textures.getPixel(0, 0, 'water');
+    return px ? Phaser.Display.Color.GetColor(px.red, px.green, px.blue) : 0x47aba9;
+  }
+
   /** The whole map: one grass island inside a one-tile water border. */
   private drawGround(): Phaser.Tilemaps.TilemapLayer {
     const topLeft = toWorld({ x: 0, y: 0 });
     const cols = this.layout.size, rows = this.layout.size;
-    this.add.tileSprite(topLeft.x - WATER_FAR * TILE, topLeft.y - WATER_FAR * TILE, (cols + 2 * WATER_FAR) * TILE, (rows + 2 * WATER_FAR) * TILE, 'water')
+    // The open sea is one flat colour (the pack's water tile is a plain fill). It used to be a tile sprite as big as the sea, and Phaser backs a tile sprite
+    // with a texture of its own size: 15104 x 15104 px, 870 MB of GPU memory, which is what killed iOS Safari. A plain rectangle costs nothing.
+    this.add.rectangle(topLeft.x - WATER_FAR * TILE, topLeft.y - WATER_FAR * TILE, (cols + 2 * WATER_FAR) * TILE, (rows + 2 * WATER_FAR) * TILE, this.waterColor())
       .setOrigin(0).setDepth(DEPTH_WATER);
     const data = Array.from({ length: rows }, (_, y) => Array.from({ length: cols }, (_, x) => {
       if (x === 0 || y === 0 || x === cols - 1 || y === rows - 1) return -1;

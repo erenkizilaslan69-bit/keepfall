@@ -36,3 +36,4 @@ body { -webkit-tap-highlight-color: transparent; }
 @media (pointer: coarse) { .ucard-btns { display: none !important; } }
 .touch-only { display: none; }
 @media (pointer: coarse) { .touch-only { display: block; } }
+.kf-diag { position: fixed; left: 4px; top: 4px; z-index: 100002; margin: 0; padding: 4px 6px; background: rgba(0, 0, 0, .72); color: #9f9; font: 10px/1.25 monospace; pointer-events: none; max-width: 40vw; }

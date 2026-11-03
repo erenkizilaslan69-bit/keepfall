@@ -90,6 +90,9 @@ export class GameConnection {
     this.on.status('connected');
   }
 
+  /** The line's state as a word (Connected, Reconnecting, ...). */
+  get state(): string { return this.hub.state; }
+
   /** Gives up an attempt to connect that is still pending (the next `start()` begins afresh). */
   async abort(): Promise<void> {
     try { await this.hub.stop(); } catch { /* nothing to stop */ }

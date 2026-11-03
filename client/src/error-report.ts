@@ -47,6 +47,20 @@ export function guarded(kind: string, step: () => void, source?: string): void {
   }
 }
 
+/** How many errors this page has sent (diagnostics lines are counted apart). */
+export const errorCounts = () => ({ sent });
+
+let diagSent = 0;
+/** A diagnostics line (device, memory, frame rate) for the server log: `kind: diag`, the numbers as JSON in the message. Not de-duplicated, but capped per page. */
+export function reportDiag(message: string): void {
+  if (diagSent >= 400) return;
+  diagSent++;
+  let ctx: ErrorContext = {};
+  try { ctx = contextOf(); } catch { /* never a second error */ }
+  const body = JSON.stringify({ kind: 'diag', message: message.slice(0, 1900), url: location.href, userAgent: navigator.userAgent, ...ctx });
+  try { void fetch(serverUrl('/api/client-log'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {}); } catch { /* offline */ }
+}
+
 export function installErrorReporting(context: () => ErrorContext): void {
   contextOf = context;
   window.addEventListener('error', (ev) => {
