@@ -31,7 +31,11 @@ const MAX_DRAWN = 30;
 const PER_ROW = 3;
 const ROW_GAP = 34, COL_GAP = 38; // px: far enough apart to tell the types from each other
 /** Never extrapolate further than this many ticks without news (stops runaways if ticks stop). */
-const MAX_AHEAD_TICKS = 1.5;
+// How far the picture walks on by itself when no news arrives (a phone's network stalling, a throttled tab). A cap of 1.5 ticks made the column stand still
+// during a gap of four seconds and then jump seven tiles when the news came: a wrong place to the player. The armies keep to known roads, so walking on is safe.
+const MAX_AHEAD_TICKS = 6;
+/** The column catches up at most this fast (tiles a second) when the news puts it farther ahead than a glide covers: it is seen running, not teleported. */
+const CATCH_UP_TILES_PER_SECOND = 14;
 
 interface Track {
   key: string;
@@ -232,8 +236,10 @@ export class Movers {
       }
       // Glide onto the new estimate rather than jumping when a tick corrects it.
       const k = Math.min(1, dt * 12);
-      const jump = Math.hypot(target.x - t.shown.x, target.y - t.shown.y) > 3;
-      t.shown = jump ? target : { x: t.shown.x + (target.x - t.shown.x) * k, y: t.shown.y + (target.y - t.shown.y) * k };
+      const gap = Math.hypot(target.x - t.shown.x, target.y - t.shown.y);
+      if (gap > 30) t.shown = target; // (a recall or a new order from far away: not a correction)
+      else if (gap > 3) { const step = Math.min(gap, CATCH_UP_TILES_PER_SECOND * Math.max(dt, 0.016)) / gap; t.shown = { x: t.shown.x + (target.x - t.shown.x) * step, y: t.shown.y + (target.y - t.shown.y) * step }; }
+      else t.shown = { x: t.shown.x + (target.x - t.shown.x) * k, y: t.shown.y + (target.y - t.shown.y) * k };
       if (heading.x !== 0 || heading.y !== 0) t.heading = heading;
       const hidden = t.fighting || (!t.scout && this.inReplay(t.shown));
       for (const s of t.sprites) s.setVisible(!hidden);

@@ -136,9 +136,15 @@ export class WindowManager {
     el.style.maxHeight = '';
     const top = this.topBottom() - oy + MARGIN;
     // At most 80% of the screen (and never more than fits under the top bar); a long body scrolls inside the window. Set before measuring.
-    const maxH = Math.max(120, Math.min(vh * WIN_MAX_SHARE, vh - top - MARGIN));
+    let maxH = Math.max(120, Math.min(vh * WIN_MAX_SHARE, vh - top - MARGIN));
     el.style.setProperty('--win-max', `${Math.round(maxH)}px`);
-    const w = el.offsetWidth, h = Math.min(el.offsetHeight, maxH);
+    // The title, the frame and the foot add to the body's height: the window as a whole must fit, so what is over is taken off the body's share.
+    const room = vh - top - MARGIN;
+    if (el.offsetHeight > room) {
+      maxH = Math.max(100, maxH - (el.offsetHeight - room));
+      el.style.setProperty('--win-max', `${Math.round(maxH)}px`);
+    }
+    const w = el.offsetWidth, h = el.offsetHeight;
     let x: number, y: number;
     if (vw < 760 || !a) {
       // A narrow window: a sheet at the bottom of the screen.

@@ -47,12 +47,13 @@ const AUDIT_JS = `(opts) => {
   const iw = innerWidth, ih = innerHeight, touch = opts.touch, inset = opts.inset || { t: 0, r: 0, b: 0, l: 0 };
   const out = [];
   const desc = (e) => { if (!e) return '?'; const c = (e.className && e.className.baseVal === undefined ? String(e.className) : '').trim().split(/\\s+/).slice(0, 2).join('.'); const txt = (e.getAttribute('aria-label') || e.textContent || e.title || '').trim().replace(/\\s+/g, ' ').slice(0, 24); return e.tagName.toLowerCase() + (c ? '.' + c : '') + (txt ? ' "' + txt + '"' : ''); };
-  const visible = (e) => { const r = e.getBoundingClientRect(); if (r.width <= 0 || r.height <= 0) return false; for (let n = e; n && n.nodeType === 1; n = n.parentElement) { const cs = getComputedStyle(n); if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity < 0.05 || n.hidden) return false; } return true; };
+  const faceAway = (e) => { const f = e.closest('.ucard-face'); const card = e.closest('.ucard'); return !!(f && card && (f.classList.contains('back') !== card.classList.contains('flipped'))); }; // (the side of a deck card that is turned away)
+  const visible = (e) => { if (faceAway(e)) return false; const r = e.getBoundingClientRect(); if (r.width <= 0 || r.height <= 0) return false; for (let n = e; n && n.nodeType === 1; n = n.parentElement) { const cs = getComputedStyle(n); if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity < 0.05 || n.hidden) return false; } return true; };
   const scroller = (e) => { for (let n = e.parentElement; n; n = n.parentElement) { const cs = getComputedStyle(n); if (/(auto|scroll)/.test(cs.overflowY) && n.scrollHeight > n.clientHeight + 2) return n; } return null; };
   const clipRect = (e) => { let r = e.getBoundingClientRect(); const vis = { left: 0, top: 0, right: iw, bottom: ih }; for (let n = e.parentElement; n; n = n.parentElement) { const cs = getComputedStyle(n); if (cs.overflowX !== 'visible' || cs.overflowY !== 'visible') { const b = n.getBoundingClientRect(); vis.left = Math.max(vis.left, b.left); vis.top = Math.max(vis.top, b.top); vis.right = Math.min(vis.right, b.right); vis.bottom = Math.min(vis.bottom, b.bottom); } } return { r, vis }; };
   const add = (sev, type, e, note, rect) => { const r = rect || (e && e.getBoundingClientRect()); out.push({ sev, type, el: desc(e), note: note || '', rect: r ? [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)] : null }); };
   const SEL = 'button, a[href], input, select, textarea, [role=button], [data-act], [data-a], [data-cam], [data-tab], .btn, .btn-round, .tab, .chip[data-seat], .report-tag';
-  const skip = (e) => e.closest('.kf-diag, .kf-touch-dom, .kf-tip, .tut-root, .tb-speed, .tb-c, #kingdom-decree-none') || e.matches('input[type=hidden]'); // (.tb-speed: dev-only speed buttons; .tb-c: the player's banner hangs from the top edge by design)
+  const skip = (e) => e.closest('.kf-diag, .kf-touch-dom, .kf-tip, .tut-root, .tb-speed, .tb-c, .dev-only, .kf-debug, [data-dev]') || e.matches('input[type=hidden]'); // (.tb-speed: dev-only speed buttons; .tb-c: the player's banner hangs from the top edge by design)
   const pageScrolls = !!document.scrollingElement && document.scrollingElement.scrollHeight > ih + 2 && document.documentElement.classList.contains('in-menu');
   const els = [...new Set([...document.querySelectorAll(SEL)])].filter((e) => visible(e) && !skip(e));
   const rotate = document.getElementById('rotate-screen'); const rotateOn = rotate && getComputedStyle(rotate).display !== 'none';
@@ -72,7 +73,7 @@ const AUDIT_JS = `(opts) => {
     const cx = Math.min(Math.max(r.left + r.width / 2, vis.left + 1), vis.right - 1), cy = Math.min(Math.max(r.top + r.height / 2, vis.top + 1), vis.bottom - 1);
     if (cx >= 0 && cy >= 0 && cx <= iw && cy <= ih) {
       const top = document.elementFromPoint(cx, cy);
-      if (e.matches('input[type=checkbox], input[type=radio]')) { /* custom-drawn: the label covers it on purpose */ } else if (top && top.closest('.guide-overlay, .modal-shade, .spec-wait') && !e.closest('.guide-overlay, .modal-shade, .spec-wait')) { /* a modal blocks what is under it on purpose */ } else if (top && !(top === e || e.contains(top) || top.contains(e) || (e.tagName === 'INPUT' && top.closest('label') === e.closest('label')))) add('critical', 'covered', e, 'covered by ' + desc(top));
+      if (e.matches('input[type=checkbox], input[type=radio]')) { /* custom-drawn: the label covers it on purpose */ } else if (top && top.closest('.guide-overlay, .modal-shade, .spec-wait, .win, .kingdom-panel, .scroll-pop, .decree, .settings, .guide, .screen.end, .screen.lobby') && !e.closest('.guide-overlay, .modal-shade, .spec-wait, .win, .kingdom-panel, .scroll-pop, .decree, .settings, .guide, .screen.end, .screen.lobby')) { /* a window lies over what is behind it on purpose: only its own things and what must stay reachable are counted */ } else if (top && !(top === e || e.contains(top) || top.contains(e) || (e.tagName === 'INPUT' && top.closest('label') === e.closest('label')))) add('critical', 'covered', e, 'covered by ' + desc(top));
     }
     // touch target
     if (touch && (r.width < 43.5 || r.height < 43.5)) { const hit = getComputedStyle(e, '::after'); const grown = hit && hit.content !== 'none' && hit.position === 'absolute'; if (!grown) add(Math.min(r.width, r.height) < 28 ? 'important' : 'minor', 'small-target', e, Math.round(r.width) + 'x' + Math.round(r.height) + ' px'); }
@@ -111,7 +112,7 @@ const AUDIT_JS = `(opts) => {
   const modal = [...document.querySelectorAll('.spec-wait:not(.hidden) .paper, .modal-shade:not(.hidden) > *, .guide-overlay .guide')].filter(visible)[0];
   if (modal) for (const n of notes) { const a = n.getBoundingClientRect(), b = modal.getBoundingClientRect(); if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) { add('important', 'note-over-modal', n, 'a note lies over ' + desc(modal)); break; } }
   // the page itself
-  const se = document.scrollingElement; if (se && se.scrollWidth > iw + 1 && !document.documentElement.classList.contains('in-menu')) add('important', 'page-hscroll', document.body, 'page scrolls sideways by ' + (se.scrollWidth - iw));
+  const se = document.scrollingElement; if (se && se.scrollWidth > iw + 1) add('important', 'page-hscroll', document.body, 'page scrolls sideways by ' + (se.scrollWidth - iw));
   const cv = [...document.querySelectorAll('#stage canvas:not(.minimap)')].sort((a, b) => b.width - a.width)[0];
   if (cv && document.documentElement.classList.contains('in-game')) { const b = cv.getBoundingClientRect(); if (Math.abs(b.left) > 1 || Math.abs(b.top) > 1 || Math.abs(b.width - iw) > 2 || Math.abs(b.height - ih) > 2) add('critical', 'canvas-not-full', cv, 'canvas ' + Math.round(b.width) + 'x' + Math.round(b.height) + ' at ' + Math.round(b.left) + ',' + Math.round(b.top) + ' on ' + iw + 'x' + ih); }
   return { issues: out, clickable: els.length };
@@ -160,26 +161,26 @@ async function run(device, lang) {
   const sig = () => page.evaluate("document.body.innerText.length + ':' + document.querySelectorAll('*').length + ':' + document.documentElement.className + ':' + (window.keepfallUi && keepfallUi.windows && keepfallUi.windows.isOpen)");
   const NO_TAP = /quick|hızlı oyna|private room|oda kur|join room|odaya katıl|leave|ayrıl|ana menü|main menu|reload|yenile|retry|finish|bitir|rehberi tekrar|restart|restart tutorial|new match|yeni maç|again|tekrar/i;
   /** Tap every visible clickable thing inside `root`, one by one: what changed is audited and shot, then `reopen` puts the screen back. */
+  const LIST = `(sel) => { const box = document.querySelector(sel); if (!box) return []; const vis = (e) => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
+    return [...box.querySelectorAll('button, [data-act], [data-a], [data-tab], select, .tab, .btn, a[href]')].filter((e) => vis(e) && e.tagName !== 'SELECT' && !/^(−|-)$/.test((e.textContent || '').trim()) && !e.disabled && e.getAttribute('aria-disabled') !== 'true' && !/(^| )(disabled|inactive|off)( |$)/.test(e.className) && getComputedStyle(e).pointerEvents !== 'none' && !e.matches('.win-close, [data-close], .kd-x, [data-act=close], [data-a=close]'))
+      .map((e, i) => { const r = e.getBoundingClientRect(); return { i, x: r.left + r.width / 2, y: r.top + r.height / 2, label: (e.getAttribute('aria-label') || e.textContent || e.dataset.act || e.dataset.a || e.dataset.tab || e.tagName).trim().replace(/\s+/g, ' ').slice(0, 20) }; }); }`;
+  /** Tap every visible clickable thing inside `root`, one by one: what changed is audited and shot, then `reopen` puts the screen back. */
   const exercise = async (state, root, reopen, cap = 14) => {
-    const list = await page.evaluate((sel) => {
-      const box = document.querySelector(sel); if (!box) return [];
-      const vis = (e) => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
-      return [...box.querySelectorAll('button, [data-act], [data-a], [data-tab], select, .tab, .btn, a[href]')].filter((e) => vis(e) && !e.disabled && !e.matches('.win-close, [data-close], .kd-x, [data-act=close], [data-a=close]')).map((e, i) => { const r = e.getBoundingClientRect(); return { i, x: r.left + r.width / 2, y: r.top + r.height / 2, label: (e.getAttribute('aria-label') || e.textContent || e.dataset.act || e.dataset.a || e.dataset.tab || e.tagName).trim().replace(/\s+/g, ' ').slice(0, 20) }; });
-    }, root);
+    const list = await page.evaluate(`(${LIST})(${JSON.stringify(root)})`);
     let n = 0;
     for (const t of list) {
       if (n >= cap) break;
       if (NO_TAP.test(t.label) || t.label === 'TR' || t.label === 'EN') continue;
       n++;
       await reopen();
-      const els = await page.evaluate((sel) => { const box = document.querySelector(sel); const vis = (e) => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; }; return [...(box?.querySelectorAll('button, [data-act], [data-a], [data-tab], select, .tab, .btn, a[href]') ?? [])].filter((e) => vis(e) && !e.disabled && !e.matches('.win-close, [data-close], .kd-x, [data-act=close], [data-a=close]')).map((e) => { const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }); }, root);
-      const at = els[t.i]; if (!at) continue;
+      const els = await page.evaluate(`(${LIST})(${JSON.stringify(root)})`);
+      const at = els[t.i]; if (!at || at.label !== t.label) continue; // (the screen is not the same any more: nothing is tapped blindly)
       const before = await sig();
-      try { await tap(at[0], at[1]); } catch { continue; }
+      try { await tap(at.x, at.y); } catch { continue; }
       await sleep(450);
       const after = await sig();
       const tapState = `${state}-tap-${t.label.replace(/[^a-z0-9]+/gi, '_')}`;
-      if (before === after) { results.issues.push({ sev: 'minor', type: 'no-reaction', el: t.label, note: 'the tap changed nothing', rect: null, state: tapState, shot: null }); continue; }
+      if (before === after) { results.issues.push({ sev: 'critical', type: 'dead-button', el: t.label, note: 'an active button; the tap changed nothing', rect: null, state: tapState, shot: null }); continue; }
       await audit(tapState, 'after tapping "' + t.label + '"');
     }
   };
@@ -222,7 +223,8 @@ async function run(device, lang) {
       await home();
       await page.fill('#name', 'Audit'); await page.evaluate("document.querySelector('#quick').click()");
       await page.waitForFunction("typeof window.keepfallScene === 'object' && !!keepfallScene.state", null, { timeout: 90000 });
-      await page.waitForSelector('#kingdom-decree', { timeout: 20000 }).catch(() => {}); await sleep(1500);
+      await page.waitForSelector('#kingdom-decree', { timeout: 20000 }).catch(() => {});
+      await page.waitForFunction("!document.querySelector('.cloud-curtain')", null, { timeout: 15000 }).catch(() => {}); await sleep(900);
       await audit('decree');
       await page.evaluate("document.querySelector('#kingdom-decree [data-close]')?.click()"); await sleep(500);
       const decreeAgain = await page.evaluate("!!document.getElementById('kingdom-decree')");
@@ -344,7 +346,7 @@ for (const r of all) for (const c of r.consoleErrors) issues.push({ sev: 'critic
 for (const r of all) for (const f of r.failed) issues.push({ sev: 'important', type: 'failed-request', el: f.url, note: f.why, rect: null, state: f.state, shot: null, device: r.device, lang: r.lang });
 // the same problem on the same element in the same state on many devices/languages is one line with a count
 const groups = new Map();
-for (const i of issues) { const wide = ['small-text', 'small-target', 'outside-safe-area', 'covered', 'no-reaction'].includes(i.type); const k = [i.sev, i.type, wide ? '(several screens)' : i.state, i.el].join('|'); const g = groups.get(k) ?? { ...i, state: wide ? '(several screens)' : i.state, where: [], count: 0 }; g.count++; if (g.where.length < 4) g.where.push(`${i.device}/${i.lang}`); if (!g.shot && i.shot) g.shot = i.shot; groups.set(k, g); }
+for (const i of issues) { const wide = ['small-text', 'small-target', 'outside-safe-area', 'covered', 'dead-button'].includes(i.type); const k = [i.sev, i.type, wide ? '(several screens)' : i.state, i.el].join('|'); const g = groups.get(k) ?? { ...i, state: wide ? '(several screens)' : i.state, where: [], count: 0 }; g.count++; if (g.where.length < 4) g.where.push(`${i.device}/${i.lang}`); if (!g.shot && i.shot) g.shot = i.shot; groups.set(k, g); }
 const grouped = [...groups.values()].sort((a, b) => SEV_ORDER[a.sev] - SEV_ORDER[b.sev] || b.count - a.count);
 const byType = {};
 for (const i of issues) byType[i.type] = (byType[i.type] ?? 0) + 1;
@@ -387,7 +389,7 @@ md.push('# UI audit', '', `Generated by \`tools/ui-audit.mjs\` (${new Date().toI
 md.push('## Summary', '', `- Screens audited: **${screens}** (${all.length} runs).`, `- Issues: **${issues.length}** (critical ${bySev.critical}, important ${bySev.important}, minor ${bySev.minor}); ${grouped.length} distinct after grouping equal problems across devices.`, `- By type: ${Object.entries(byType).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ')}.`, '');
 md.push('### Ten most critical', '');
 grouped.slice(0, 10).forEach((g, i) => md.push(`${i + 1}. **${g.sev}** \`${g.type}\` in *${g.state}* — ${g.el} ${g.note ? '(' + g.note + ')' : ''} — ${g.count}× (${g.where.join(', ')}) — ${g.shot ? '`' + g.shot + '`' : ''}`));
-md.push('', '## Contact sheets', '', ...sheets.map((s) => `- \`${s}\``), '');
+md.push('', '## Active buttons that did nothing (dead buttons)', '', ...(grouped.filter((g) => g.type === 'dead-button').map((g) => `- ${g.el} — ${g.state} — ${g.count}× (${g.where.join(', ')})`) || []), '', '## Contact sheets', '', ...sheets.map((s) => `- \`${s}\``), '');
 for (const sev of ['critical', 'important', 'minor']) {
   const rows = grouped.filter((g) => g.sev === sev);
   md.push(`## ${sev[0].toUpperCase() + sev.slice(1)} (${rows.length})`, '', '| type | state | element | note | count | where | picture |', '|---|---|---|---|---|---|---|');
