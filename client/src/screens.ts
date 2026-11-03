@@ -319,12 +319,14 @@ export class EndScreen {
     const root = this.root = mount(parent, `
       <div class="screen menu paper end">
         <div class="title-ribbon ribbon ribbon-blue" id="end-title">${t('Maç bitti')}</div>
-        <div class="end-art" id="end-art"></div>
-        <p class="muted center" id="end-reason"></p>
-        <div id="ranking"></div>
-        <div id="summary"><p class="muted">${t('Özet hazırlanıyor…')}</p></div>
-        <div id="others"></div>
-        <div class="start">
+        <div class="end-scroll">
+          <div class="end-art" id="end-art"></div>
+          <p class="muted center" id="end-reason"></p>
+          <div id="ranking"></div>
+          <div id="summary"><p class="muted">${t('Özet hazırlanıyor…')}</p></div>
+          <div id="others"></div>
+        </div>
+        <div class="start end-foot">
           <button data-a="lobby" id="lobby" class="btn wide hidden">${t('Lobiye dön')}</button>
           <p class="muted small center" id="lobby-hint"></p>
         </div>
