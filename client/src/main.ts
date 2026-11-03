@@ -29,7 +29,7 @@ import { loadHorse } from './scene/HorseArt';
 import { mountLangButton, mountSettingsButton, setLeaveAction } from './ui/settings';
 import { startFpsMeter } from './ui/fps-meter';
 import { guarded, installErrorReporting } from './error-report';
-import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
+import type { BattleStartedView, BotLevel, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 import { currentRoute, setRoute } from './env';
 
 // Routes: "/" is the home screen, "/oda/ABCD" is a room. Inside a room the screen follows the
@@ -192,6 +192,10 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
       setRoute(`/oda/${r.code}${location.search}`);
       return null;
     },
+    quick: async (name) => {
+      saveName(name);
+      return quickMatch(name);
+    },
     join: async (name, code) => {
       const c = code.trim().toUpperCase();
       if (!/^[A-Z]{4}$/.test(c)) return t('Oda kodu 4 harf olmalı.');
@@ -202,6 +206,22 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
       return null;
     },
   });
+}
+
+/** "Hızlı oyna": a room of our own with three bots (a mix of Easy and Medium), everybody ready, and off it goes; deck and kingdom are drawn by lot. Null when it worked. */
+async function quickMatch(name: string): Promise<string | null> {
+  const r = await net.createRoom(name);
+  if (!r.ok) return r.error;
+  setRoute(`/oda/${r.code}${location.search}`);
+  const levels: BotLevel[] = ['easy', 'medium', Math.random() < 0.5 ? 'easy' : 'medium'];
+  for (const level of levels.sort(() => Math.random() - 0.5)) {
+    const a = await net.addBot(level);
+    if (!a.ok) return a.error ?? null;
+  }
+  const ready = await net.setReady(true);
+  if (!ready.ok) return ready.error ?? null;
+  const go = await net.startMatch();
+  return go.ok ? null : go.error ?? null;
 }
 
 function showLobby(r: RoomView): void {

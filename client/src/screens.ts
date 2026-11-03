@@ -54,13 +54,15 @@ export class HomeScreen {
   constructor(
     parent: HTMLElement,
     defaults: { name: string; code: string; error?: string },
-    actions: { create: (name: string) => Promise<string | null>; join: (name: string, code: string) => Promise<string | null> },
+    actions: { create: (name: string) => Promise<string | null>; join: (name: string, code: string) => Promise<string | null>; quick: (name: string) => Promise<string | null> },
   ) {
     const root = mount(parent, `
       <div class="screen menu paper home">
         ${logoHtml()}
         <p class="muted center kf-logo-sub">${t('2–4 kişilik kale savunma ve fetih oyunu')}</p>
         <label class="field">${t('Adın')} <input id="name" maxlength="16" autocomplete="nickname" value="${esc(defaults.name)}" placeholder="${t('Oyuncu')}"></label>
+        <button id="quick" class="btn wide kf-btn--green">${t('Hızlı oyna')} <small>${t('(3 bota karşı, hemen)')}</small></button>
+        <div class="or">${t('ya da arkadaşlarınla')}</div>
         <button id="create" class="btn wide">${t('Oda kur')}</button>
         <div class="or">${t('ya da')}</div>
         <div class="join-row">
@@ -78,6 +80,7 @@ export class HomeScreen {
       error.textContent = tr((await action()) ?? '');
       buttons.forEach((b) => (b.disabled = false));
     };
+    root.querySelector('#quick')!.addEventListener('click', () => run(() => actions.quick(name.value)));
     root.querySelector('#create')!.addEventListener('click', () => run(() => actions.create(name.value)));
     root.querySelector('#join')!.addEventListener('click', () => run(() => actions.join(name.value, code.value)));
     code.addEventListener('keydown', (e) => { if (e.key === 'Enter') void run(() => actions.join(name.value, code.value)); });
@@ -327,13 +330,21 @@ export class EndScreen {
           <div id="others"></div>
         </div>
         <div class="start end-foot">
+          <button data-a="again" id="again" class="btn wide kf-btn--green hidden">${t('Aynı oyuncularla yeni maç')}</button>
           <button data-a="lobby" id="lobby" class="btn wide hidden">${t('Lobiye dön')}</button>
           <p class="muted small center" id="lobby-hint"></p>
         </div>
         <p class="error" id="error"></p>
       </div>`);
     root.addEventListener('click', async (e) => {
-      if ((e.target as HTMLElement).closest('button[data-a="lobby"]')) {
+      if ((e.target as HTMLElement).closest('button[data-a="again"]')) {
+        // Back to the lobby with the same players (bots stay), everybody ready, and straight into the next match.
+        const error = this.root.querySelector('#error');
+        let r = await this.net.backToLobby();
+        if (r.ok) r = await this.net.setReady(true);
+        if (r.ok) r = await this.net.startMatch();
+        if (error) error.textContent = r.ok ? '' : tr(r.error ?? '');
+      } else if ((e.target as HTMLElement).closest('button[data-a="lobby"]')) {
         const r = await this.net.backToLobby();
         const error = this.root.querySelector('#error');
         if (error) error.textContent = r.ok ? '' : tr(r.error ?? '');
@@ -400,6 +411,7 @@ export class EndScreen {
     }
     const isHost = !!room.players.find((p) => p.seat === this.mySeat)?.isHost;
     this.root.querySelector('#lobby')!.classList.toggle('hidden', !isHost);
+    this.root.querySelector('#again')!.classList.toggle('hidden', !isHost);
     this.root.querySelector('#lobby-hint')!.textContent = isHost
       ? t('Aynı oyuncularla yeni bir hazırlık için lobiye dön.')
       : t('Oda sahibi lobiye dönünce yeni maç kurulabilir.');
