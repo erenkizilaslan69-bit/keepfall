@@ -2,6 +2,8 @@
 // build's index.html by vite.config.ts; everywhere else (the server's own page, itch.io, localhost) it is not there, `window.CrazyGames` does not exist and
 // every function here does nothing, so the game is the same as ever. All SDK calls are wrapped: a failing SDK must never stop the game.
 
+import { FEATURE_CRAZY_INVITE } from './features';
+
 export const CRAZY: boolean = import.meta.env.VITE_PLATFORM === 'crazygames';
 if (CRAZY) document.documentElement.classList.add('crazy');
 
@@ -55,23 +57,24 @@ export async function crazyUsername(): Promise<string | null> {
 }
 
 /** The page was started by the site's "play with friends" button: land in a joinable room of our own at once. */
-export const crazyInstant = (): boolean => !!sdk && sdk.game.isInstantMultiplayer === true;
+export const crazyInstant = (): boolean => FEATURE_CRAZY_INVITE && !!sdk && sdk.game.isInstantMultiplayer === true;
 
 /** The room code of the invitation this page was opened from, if any. */
 export function crazyInviteRoom(): string | null {
   // getInviteParam('room'); `inviteParams` is the same thing as an object (the docs say to look at it when the game starts)
-  const code = sdk ? guard(() => sdk!.game.getInviteParam('room') ?? sdk!.game.inviteParams?.room ?? null) : null;
+  const code = sdk && FEATURE_CRAZY_INVITE ? guard(() => sdk!.game.getInviteParam('room') ?? sdk!.game.inviteParams?.room ?? null) : null;
   return code && /^[A-Za-z]{6}$/.test(code) ? code.toUpperCase() : null;
 }
 
 /** A friend joins while we are playing: the callback gets the room code. */
 export function onCrazyJoin(callback: (code: string) => void): void {
+  if (!FEATURE_CRAZY_INVITE) return;
   guard(() => sdk?.game.addJoinRoomListener?.((p) => { const c = p?.room; if (c && /^[A-Za-z]{6}$/.test(c)) callback(c.toUpperCase()); }));
 }
 
 /** The link a player can send (it opens the game on the site and joins the room). */
 export function crazyInviteLink(code: string): string | null {
-  return sdk ? guard(() => sdk!.game.inviteLink({ room: code })) ?? null : null;
+  return sdk && FEATURE_CRAZY_INVITE ? guard(() => sdk!.game.inviteLink({ room: code })) ?? null : null;
 }
 
 let lastRoom = '';
@@ -80,7 +83,7 @@ let lastRoom = '';
  * (updateRoom / leftRoom) and the invite button (shown while friends can join, hidden when they cannot or when we leave).
  */
 export function crazyRoom(code: string | null, joinable: boolean): void {
-  if (!sdk) return;
+  if (!sdk || !FEATURE_CRAZY_INVITE) return;
   const key = `${code}:${joinable}`;
   if (key === lastRoom) return;
   lastRoom = key;

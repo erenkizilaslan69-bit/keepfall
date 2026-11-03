@@ -57,5 +57,5 @@ Kalan kritik/önemli: ölü düğme adayları (267; çoğu sınırda anlamlı "+
 **Geri açmak için:**
 1. `client/.env.crazy` içindeki iki satırı sil (ya da `1` yap).
 2. Sunucu zaten destekliyor (`Hello`, `/version`, kod hız sınırı, oda kapanışı); Render'ın güncel olduğunu `/version` ile doğrula.
-3. `node tools/crazy-sdk-check.mjs` (`FLAGS=on`), `node tools/invite-check.mjs`, `node tools/tab-check.mjs`, `node tools/touch-check.mjs` koştur.
+3. `node tools/crazy-sdk-check.mjs` (bayraklar açık; kapalı sınaması `FLAGS=off`, vite'a iki `VITE_FEATURE_*=0` ekle), `node tools/invite-check.mjs`, `node tools/tab-check.mjs`, `node tools/touch-check.mjs` koştur.
 4. Mobil için önce Tur C ve gerçek cihaz turu, sonra `docs/crazygames.md` kutuları (Mobil uyumlu, Çok oyunculu, Instant Multiplayer) işaretlenir.

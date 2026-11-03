@@ -113,3 +113,4 @@ html.in-menu body::before {
 #app > * { animation: kf-screen-in .35s ease-out; }
 @keyframes kf-screen-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { #app > * { animation: none; } }
+.share[hidden] { display: none; }

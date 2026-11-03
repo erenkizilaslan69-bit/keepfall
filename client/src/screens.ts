@@ -11,6 +11,7 @@ import { mountPortrait } from './ui/portraits';
 import { recolor } from './scene/KingdomSprites';
 import type { PlayerColor } from './types';
 import { asset } from './env';
+import { FEATURE_PRIVATE_ROOM } from './features';
 import { crazyActive, crazyInviteLink } from './crazy';
 
 // Plain-HTML screens around the game: home, lobby and the end screen, in the same parchment-and-ribbon
@@ -65,17 +66,17 @@ export class HomeScreen {
         <p class="muted center kf-logo-sub">${t('2–4 kişilik kale savunma ve fetih oyunu')}</p>
         <label class="field">${t('Adın')} <input id="name" maxlength="16" autocomplete="nickname" value="${esc(defaults.name)}" placeholder="${t('Oyuncu')}"></label>
         <button id="quick" class="btn wide kf-btn--green">${t('Hızlı oyna')} <small>${t('(3 bota karşı, hemen)')}</small></button>
-        <div class="or">${t('ya da arkadaşlarınla')}</div>
+        ${FEATURE_PRIVATE_ROOM ? `<div class="or">${t('ya da arkadaşlarınla')}</div>
         <button id="create" class="btn wide">${t('Oda kur')}</button>
         <div class="or">${t('ya da')}</div>
         <div class="join-row">
           <label class="field">${t('Oda kodu')} <input id="code" maxlength="6" value="${esc(defaults.code)}" placeholder="ABCDEF" autocapitalize="characters"></label>
           <button id="join" class="btn btn-red">${t('Odaya katıl')}</button>
-        </div>
+        </div>` : ''}
         <p class="error" id="error">${esc(defaults.error ?? '')}</p>
       </div>`);
     const name = root.querySelector<HTMLInputElement>('#name')!;
-    const code = root.querySelector<HTMLInputElement>('#code')!;
+    const code = root.querySelector<HTMLInputElement>('#code') ?? name;
     const error = root.querySelector<HTMLElement>('#error')!;
     const buttons = root.querySelectorAll<HTMLButtonElement>('button');
     const run = async (action: () => Promise<string | null>) => {
@@ -84,8 +85,8 @@ export class HomeScreen {
       buttons.forEach((b) => (b.disabled = false));
     };
     root.querySelector('#quick')!.addEventListener('click', () => run(() => actions.quick(name.value)));
-    root.querySelector('#create')!.addEventListener('click', () => run(() => actions.create(name.value)));
-    root.querySelector('#join')!.addEventListener('click', () => run(() => actions.join(name.value, code.value)));
+    root.querySelector('#create')?.addEventListener('click', () => run(() => actions.create(name.value)));
+    root.querySelector('#join')?.addEventListener('click', () => run(() => actions.join(name.value, code.value)));
     code.addEventListener('keydown', (e) => { if (e.key === 'Enter') void run(() => actions.join(name.value, code.value)); });
     (defaults.code ? name : name.value ? code : name).focus();
   }
@@ -104,7 +105,7 @@ export class LobbyScreen {
           <div class="lob-left">
             ${logoHtml()}
             <div class="title-ribbon ribbon ribbon-blue">${t('Oda')} <span class="code">${esc(room.code)}</span></div>
-            <div class="share">
+            <div class="share"${FEATURE_PRIVATE_ROOM ? '' : ' hidden'}>
               <input class="share-code" readonly value="${esc(`${t('Oda kodu')}: ${room.code}`)}" aria-label="${t('Oda kodu')}">
               <button class="btn" data-a="copy">${t('Oda kodunu kopyala')}</button>
               ${inIframe() && !crazyActive() ? '' : `<button class="btn" data-a="copylink">${t('Bağlantıyı kopyala')}</button>`}
@@ -470,7 +471,7 @@ export class EndScreen {
         <details class="other-summary"><summary>${dot(x.color)}${esc(tr(x.name))} · ${t('özet')}</summary>${summaryHtml(x.summary)}</details>`).join('');
     }
     const isHost = !!room.players.find((p) => p.seat === this.mySeat)?.isHost;
-    this.root.querySelector('#lobby')!.classList.toggle('hidden', !isHost);
+    this.root.querySelector('#lobby')!.classList.toggle('hidden', !isHost || !FEATURE_PRIVATE_ROOM);
     this.root.querySelector('#again')!.classList.toggle('hidden', !isHost);
     this.root.querySelector('#lobby-hint')!.textContent = isHost
       ? t('Aynı oyuncularla yeni bir hazırlık için lobiye dön.')

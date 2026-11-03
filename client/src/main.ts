@@ -34,6 +34,7 @@ import { confirmLeave, mountLangButton, mountSettingsButton, setLeaveAction } fr
 import { startFpsMeter } from './ui/fps-meter';
 import { armTutorial, disarmTutorial, tutorialDone } from './ui/tutorial';
 import { CRAZY } from './crazy';
+import { FEATURE_PRIVATE_ROOM } from './features';
 import { crazyGameplay, crazyInstant, crazyInviteRoom, crazyLoaded, crazyRoom, crazyUsername, initCrazy, onCrazyJoin, watchCrazySettings } from './crazy';
 import { countMatch, newPlayer, setSiteChatOff } from './prefs';
 import { guarded, installErrorReporting } from './error-report';
@@ -523,8 +524,8 @@ async function main(): Promise<void> {
     }
   }
   // A room in the address: /oda/KOD (the page's own address) or ?room=KOD (an invitation link; the CrazyGames link carries it too)
-  const asked = new URLSearchParams(location.search).get('room');
-  const named = /^\/oda\/([A-Za-z]{6})\/?$/.exec(currentRoute())?.[1]?.toUpperCase() ?? (asked && /^[A-Za-z]{6}$/.test(asked) ? asked.toUpperCase() : null) ?? crazyInviteRoom();
+  const asked = FEATURE_PRIVATE_ROOM ? new URLSearchParams(location.search).get('room') : null;
+  const named = !FEATURE_PRIVATE_ROOM ? null : /^\/oda\/([A-Za-z]{6})\/?$/.exec(currentRoute())?.[1]?.toUpperCase() ?? (asked && /^[A-Za-z]{6}$/.test(asked) ? asked.toUpperCase() : null) ?? crazyInviteRoom();
   const resumed = !named && loadActiveRoom() !== null;
   const code = named ?? loadActiveRoom();
   void checkVersion();
