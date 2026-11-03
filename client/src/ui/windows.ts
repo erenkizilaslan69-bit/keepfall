@@ -71,6 +71,8 @@ export abstract class Win {
 }
 
 const MARGIN = 8;
+/** A window is at most this share of the screen's height. */
+const WIN_MAX_SHARE = 0.8;
 /** The close cross hangs this far (px) outside the window's right edge. */
 const CLOSE_OVERHANG = 34;
 
@@ -78,6 +80,8 @@ export class WindowManager {
   private win: Win | null = null;
   private target: Target | null = null;
   private anchor: (() => Anchor | null) | null = null;
+  /** Re-places the window when its content grows or shrinks (the map's frame callback alone is too slow to catch that). */
+  private watch: ResizeObserver | null = null;
 
   /** <paramref name="avoid"/>: parts of the screen a window should not cover (the minimap, the home button and the report tags). */
   constructor(private readonly root: HTMLElement, private readonly topBottom: () => number,
@@ -95,10 +99,14 @@ export class WindowManager {
     win.el.style.visibility = 'hidden';
     this.root.appendChild(win.el);
     this.reposition();
+    this.watch = new ResizeObserver(() => this.reposition());
+    this.watch.observe(win.el);
   }
 
   close(silent = false): void {
     if (this.win && !silent) sfx.play('uiClose');
+    this.watch?.disconnect();
+    this.watch = null;
     this.win?.el.remove();
     this.win = null;
     this.target = null;
@@ -120,7 +128,10 @@ export class WindowManager {
     const a = this.anchor?.();
     el.style.maxHeight = '';
     const top = this.topBottom() + MARGIN;
-    const w = el.offsetWidth, h = Math.min(el.offsetHeight, vh - top - MARGIN);
+    // At most 80% of the screen (and never more than fits under the top bar); a long body scrolls inside the window. Set before measuring.
+    const maxH = Math.max(120, Math.min(vh * WIN_MAX_SHARE, vh - top - MARGIN));
+    el.style.setProperty('--win-max', `${Math.round(maxH)}px`);
+    const w = el.offsetWidth, h = Math.min(el.offsetHeight, maxH);
     let x: number, y: number;
     if (vw < 760 || !a) {
       // A narrow window: a sheet at the bottom of the screen.
@@ -144,7 +155,6 @@ export class WindowManager {
     }
     el.style.left = `${Math.round(x)}px`;
     el.style.top = `${Math.round(y)}px`;
-    el.style.setProperty('--win-max', `${Math.max(120, vh - top - MARGIN)}px`);
     el.style.visibility = '';
   }
 }

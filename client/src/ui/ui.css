@@ -217,8 +217,10 @@ html.in-menu .guide-fab { display: inline-grid; }
 .win { position: absolute; width: calc(330px * var(--u)); max-width: 94vw; overflow: visible; }
 .win.paper { padding: 0; }
 .win-title { position: absolute; left: 50%; top: calc(-34px * var(--u)); transform: translateX(-50%); z-index: 1; }
-.win-body { padding: calc(14px * var(--u)) calc(14px * var(--u)) calc(10px * var(--u)); max-height: calc(var(--win-max, 80vh) - 60px * var(--u)); overflow-y: auto; overflow-x: hidden; }
+.win-body { padding: calc(14px * var(--u)) calc(14px * var(--u)) calc(10px * var(--u)); max-height: calc(var(--win-max, 80vh) - 24px * var(--u)); overflow-y: auto; overscroll-behavior: contain; overflow-x: hidden; }
 .win.paper { border-radius: 8px; }
+/* Placed by WindowManager with left/top in the UI layer; a later `.paper { position: relative }` must not win (it shifted windows down by their siblings' height). */
+.ui-root > .win.paper { position: absolute; }
 .win .row { display: flex; align-items: center; justify-content: space-between; gap: calc(8px * var(--u)); padding: calc(3px * var(--u)) 0; }
 .win .row.sub { padding-top: 0; color: var(--ink-soft); font-size: .9em; }
 .win .warn { color: #b23a2e; font-weight: 700; }
@@ -460,7 +462,7 @@ html.in-menu .guide-fab { display: inline-grid; }
 
 /* ---- kingdoms: the decree, the button and the panel with the abilities' controls ---- */
 .kingdom-fab { position: absolute; left: calc(10px * var(--u, 1)); top: calc(72px * var(--u, 1)); z-index: 12; display: flex; align-items: center; gap: 6px; }
-.kingdom-panel { position: absolute; left: calc(10px * var(--u, 1)); top: calc(112px * var(--u, 1)); width: min(calc(360px * var(--u, 1)), calc(100vw - 24px)); max-height: calc(100vh - 160px); overflow: auto; z-index: 12; padding: 10px 12px 12px; }
+.kingdom-panel { position: absolute; left: calc(10px * var(--u, 1)); top: calc(112px * var(--u, 1)); width: min(calc(360px * var(--u, 1)), calc(100vw - 24px)); max-height: min(80vh, calc(100vh - 160px)); overflow: auto; z-index: 12; padding: 10px 12px 12px; }
 .kingdom-panel .kd-title { margin-bottom: 8px; }
 .kingdom-panel section { margin: 10px 0; padding-top: 6px; border-top: 1px solid rgba(60, 40, 20, .25); }
 .kingdom-panel h4 { margin: 0 0 4px; font-size: 1em; }
@@ -476,7 +478,7 @@ html.in-menu .guide-fab { display: inline-grid; }
 .kd-badge.big { width: 56px; height: 56px; border-width: 3px; border-radius: 10px; }
 .kd-shadow { --kd: #5b3f8f; } .kd-merchant { --kd: #d8a527; } .kd-oracle { --kd: #3f86b5; } .kd-schemer { --kd: #b24a4a; }
 .kingdom-decree { z-index: 60; }
-.decree { width: min(calc(520px * var(--u, 1)), calc(100vw - 24px)); max-height: calc(100vh - 32px); overflow: auto; padding: 18px 22px 16px; text-align: center; position: relative; }
+.decree { width: min(calc(520px * var(--u, 1)), calc(100vw - 24px)); max-height: min(80vh, calc(100vh - 32px)); overflow: auto; padding: 18px 22px 16px; text-align: center; position: relative; }
 .decree .decree-seal { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); }
 .decree .decree-kicker { margin-top: 56px; letter-spacing: .2em; text-transform: uppercase; opacity: .7; font-size: .8em; }
 .decree h2 { margin: 2px 0; }
