@@ -114,8 +114,12 @@ export class Effects {
     if (!this.enabled || this.alive >= MAX_SPRITES || !this.seen(x, y, 200) || !this.scene.anims.exists(key)) return;
     this.alive++;
     const s = this.scene.add.sprite(x, y, key).setScale(scale).setDepth(DEPTH_FX + 1).setTint(tint).setAlpha(alpha);
-    s.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => { s.destroy(); this.alive--; });
+    let gone = false;
+    const done = () => { if (gone) return; gone = true; s.destroy(); this.alive--; };
+    s.once(Phaser.Animations.Events.ANIMATION_COMPLETE, done);
     s.play({ key, repeat: 0 }); // (the animation itself loops, for the building dust: this one plays once and is gone)
+    // A puff that never got to finish (the animation was swapped, the sprite was restarted) must not stay on the map as a blotch.
+    this.scene.time.delayedCall(2500, done);
   }
 
   /** Shake the picture; the stronger one wins while it lasts, and nothing moves for people who asked for less motion. */

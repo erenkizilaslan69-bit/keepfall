@@ -336,7 +336,15 @@ export class WorldScene extends Phaser.Scene {
     const img = seat === this.mySeat ? this.castleSprite : this.otherCastles.get(seat)?.image;
     if (!img) return;
     const id = `siege:${seat}`;
-    if (done) { if (!wins) this.time.delayedCall(4000, () => this.fx.clearDamage(id)); return; }
+    if (done) {
+      // A lost siege clears a few seconds after; a won one too unless the castle really fell (a raid of horsemen wins the gate and the castle stands).
+      const clearAfter = wins ? 6000 : 4000;
+      this.time.delayedCall(clearAfter, () => {
+        const fell = seat === this.mySeat ? this.ownFallen === true : this.otherCastles.get(seat)?.fallen === true;
+        if (!fell) this.fx.clearDamage(id);
+      });
+      return;
+    }
     this.fx.damage(id, img.x, img.y, 1 - progress * (wins ? 0.8 : 0.5), false);
     if (seat === this.mySeat && performance.now() - this.lastTremor > 1100) { this.lastTremor = performance.now(); this.fx.shake(160, 0.0028); } // the walls take a beating
   }
