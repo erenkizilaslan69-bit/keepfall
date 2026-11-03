@@ -34,7 +34,11 @@ export function toggleLang(): void { setLang(lang === 'tr' ? 'en' : 'tr'); }
 
 const DICT: Record<string, string> = { ...EN, ...EN_SERVER, ...EN_GUIDE };
 
-const fill = (text: string, args: readonly (string | number)[]): string => (args.length ? text.replace(/\{(\d+)\}/g, (m, i) => String(args[Number(i)] ?? m)) : text);
+/** {0} {1} ... take the arguments; an English text may also say {0:one|many}: the first word when argument 0 is exactly 1, the second otherwise ("{0} {0:soldier|soldiers}"). */
+const fill = (text: string, args: readonly (string | number)[]): string => (args.length
+  ? text.replace(/\{(\d+):([^|{}]*)\|([^|{}]*)\}/g, (_m, i, one, many) => (Number(args[Number(i)]) === 1 ? one : many))
+    .replace(/\{(\d+)\}/g, (m, i) => String(args[Number(i)] ?? m))
+  : text);
 
 /** A text of the interface (the Turkish original is the key), with {0} {1} ... filled from the arguments. */
 export function t(text: string, ...args: (string | number)[]): string {
