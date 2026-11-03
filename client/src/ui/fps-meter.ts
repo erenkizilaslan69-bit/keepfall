@@ -1,6 +1,7 @@
 import type { GameConnection } from '../net';
 import { lowGraphics, onShowFpsChange, setLowGraphics, showsFps } from '../prefs';
 import { t } from '../i18n';
+import { tutorialArmed } from './tutorial';
 
 // "FPS göster": a small counter in the corner (frames a second and the round trip to the server), for whoever wants to see why a game feels slow.
 // It also watches the frame rate in a running match: when it stays under 30 for most of half a minute, it offers "Düşük grafik" once.
@@ -52,7 +53,7 @@ export function startFpsMeter(net: GameConnection): void {
 function offerLowGraphics(): void {
   let dismissed = false;
   try { dismissed = sessionStorage.getItem(DISMISSED) === '1'; } catch { /* asked again next time */ }
-  if (lowGraphics() || dismissed || document.querySelector('.kf-lowfps')) return;
+  if (lowGraphics() || dismissed || tutorialArmed() || document.querySelector('.kf-lowfps')) return; // (not while the tutorial is talking)
   const box = document.createElement('div');
   box.className = 'kf-lowfps paper';
   box.setAttribute('role', 'alert');

@@ -524,3 +524,20 @@ html.crazy input, html.crazy textarea { -webkit-user-select: text; user-select: 
   /* name, ready and start stay at the bottom of the window while the rest scrolls */
   .screen.lobby .lob-bottom { position: sticky; bottom: 0; z-index: 3; padding: 6px 4px 2px; background: rgba(240, 226, 178, .97); border-top: 2px solid rgba(90, 66, 34, .4); }
 }
+
+/* ---- the interactive tutorial (ui/tutorial.ts): a glowing frame, a bouncing hand and a card with one sentence; the map stays usable ---- */
+.tut-root { position: fixed; inset: 0; pointer-events: none; z-index: 90; }
+.tut-frame { position: absolute; border: 3px solid #ffd45a; border-radius: 10px; box-shadow: 0 0 0 2px #6b3f0e, 0 0 16px 5px rgba(255, 212, 90, .75); animation: tut-glow .9s ease-in-out infinite alternate; pointer-events: none; }
+.tut-hand { position: absolute; font-size: 30px; line-height: 1; transform: translateX(-50%); filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .5)); animation: tut-bounce .6s ease-in-out infinite alternate; pointer-events: none; }
+.tut-hand.down { animation-name: tut-bounce-down; }
+.tut-card { position: absolute; width: min(calc(270px * var(--u, 1)), 92vw); padding: calc(8px * var(--u, 1)) calc(12px * var(--u, 1)); font-size: calc(14px * var(--u, 1)); pointer-events: auto; box-shadow: 0 4px 14px rgba(0, 0, 0, .45); }
+.tut-card[hidden], .tut-frame[hidden], .tut-hand[hidden] { display: none; }
+.tut-step { font-size: .8em; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft, #6b5434); }
+.tut-text { margin: 2px 0 6px; font-weight: 700; line-height: 1.3; }
+.tut-buttons { display: flex; justify-content: flex-end; }
+.tut-buttons .btn { font-size: .85em; padding: 2px 12px; min-height: 0; }
+@keyframes tut-glow { from { box-shadow: 0 0 0 2px #6b3f0e, 0 0 8px 2px rgba(255, 212, 90, .5); } to { box-shadow: 0 0 0 2px #6b3f0e, 0 0 20px 8px rgba(255, 212, 90, .9); } }
+@keyframes tut-bounce { from { margin-top: 0; } to { margin-top: 10px; } }
+@keyframes tut-bounce-down { from { margin-top: 0; } to { margin-top: -10px; } }
+@media (prefers-reduced-motion: reduce) { .tut-frame, .tut-hand { animation: none; } }
+@media (max-height: 560px) { .tut-card { width: min(230px, 92vw); font-size: 12px; padding: 6px 9px; } .tut-hand { font-size: 24px; } }

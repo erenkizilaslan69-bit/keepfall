@@ -28,6 +28,7 @@ import { mountScenery } from './ui/scenery';
 import { loadHorse } from './scene/HorseArt';
 import { mountLangButton, mountSettingsButton, setLeaveAction } from './ui/settings';
 import { startFpsMeter } from './ui/fps-meter';
+import { armTutorial, disarmTutorial, tutorialDone } from './ui/tutorial';
 import { crazyGameplay, crazyInstant, crazyInviteRoom, crazyLoaded, crazyRoom, crazyUsername, initCrazy, onCrazyJoin, watchCrazySettings } from './crazy';
 import { setSiteChatOff } from './prefs';
 import { guarded, installErrorReporting } from './error-report';
@@ -178,6 +179,7 @@ function clear(): void {
 /** Back to the main menu; in a running match the castle stays in the game and the room's link brings the player back to it. */
 async function leaveToMenu(): Promise<void> {
   await net.leaveRoom();
+  disarmTutorial();
   crazyRoom(null, false);
   crazyGameplay(false);
   lastCastle = null; lastLayout = null; lastMap = null; lastSpectator = null; pendingBattles = []; summary = null;
@@ -223,18 +225,23 @@ async function quickMatch(name: string): Promise<string | null> {
   const r = await net.createRoom(name);
   if (!r.ok) return r.error;
   setRoute(`/oda/${r.code}${location.search}`);
-  const levels: BotLevel[] = ['easy', 'medium', Math.random() < 0.5 ? 'easy' : 'medium'];
-  for (const level of levels.sort(() => Math.random() - 0.5)) {
+  // The very first Quick play is the guided one: three Easy bots and the interactive tutorial (ui/tutorial.ts).
+  const guided = !tutorialDone();
+  const fail = (error: string | null | undefined): string | null => { disarmTutorial(); return error ?? null; };
+  const levels: BotLevel[] = guided ? ['easy', 'easy', 'easy'] : ['easy', 'medium', Math.random() < 0.5 ? 'easy' : 'medium'];
+  for (const level of guided ? levels : levels.sort(() => Math.random() - 0.5)) {
     const a = await net.addBot(level);
-    if (!a.ok) return a.error ?? null;
+    if (!a.ok) return fail(a.error);
   }
   const ready = await net.setReady(true);
-  if (!ready.ok) return ready.error ?? null;
+  if (!ready.ok) return fail(ready.error);
+  if (guided) armTutorial();
   const go = await net.startMatch();
-  return go.ok ? null : go.error ?? null;
+  return go.ok ? null : fail(go.error);
 }
 
 function showLobby(r: RoomView): void {
+  disarmTutorial();
   music.scene('prep');
   setBotSeats(r.players);
   clear();
@@ -309,6 +316,7 @@ function startScene(color: CastleView['color'], layout: MapLayoutView): void {
 }
 
 function showEnd(r: RoomView): void {
+  disarmTutorial();
   music.scene('prep');
   setLeaveAction(null);
   clear();

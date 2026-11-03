@@ -2,14 +2,14 @@
 
 const KEY = 'keepfall.prefs';
 
-interface Prefs { reduceEffects: boolean; showFps: boolean; lowGraphics: boolean; showMessages: boolean }
+interface Prefs { reduceEffects: boolean; showFps: boolean; lowGraphics: boolean; showMessages: boolean; showHints: boolean }
 
 function load(): Prefs {
   try {
     const p = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<Prefs>;
-    return { reduceEffects: p.reduceEffects === true, showFps: p.showFps === true, lowGraphics: p.lowGraphics === true, showMessages: p.showMessages !== false };
+    return { reduceEffects: p.reduceEffects === true, showFps: p.showFps === true, lowGraphics: p.lowGraphics === true, showMessages: p.showMessages !== false, showHints: p.showHints !== false };
   } catch {
-    return { reduceEffects: false, showFps: false, lowGraphics: false, showMessages: true };
+    return { reduceEffects: false, showFps: false, lowGraphics: false, showMessages: true, showHints: true };
   }
 }
 
@@ -64,3 +64,7 @@ export function setSiteChatOff(off: boolean): void { siteChat.off = off; }
 export function messagesOn(): boolean { return prefs.showMessages && !siteChat.off; }
 export function userShowsMessages(): boolean { return prefs.showMessages; }
 export function setShowMessages(on: boolean): void { save({ ...prefs, showMessages: on }); }
+
+/** "İpuçlarını göster": the short contextual tips (idle workers, low food, an army on its way ...). On by default. */
+export function showsHints(): boolean { return prefs.showHints; }
+export function setShowHints(on: boolean): void { save({ ...prefs, showHints: on }); }

@@ -19,6 +19,8 @@ import { TopBar } from './topbar';
 import { WorldLabels } from './world-labels';
 import { KingdomUi } from './kingdom';
 import { setLiveKingdoms } from './emblem';
+import { Tutorial, armTutorial, rivalSeats, setTutorialDone, tutorialArmed } from './tutorial';
+import { Hints } from './hints';
 
 // Everything drawn over the map: the top bar, ribbons, report tags (and, step by step, the windows).
 // One instance per game screen; `update` takes every castle state the server sends.
@@ -49,6 +51,10 @@ export class GameUi {
   private phase: CastleView['phase'] | null = null;
   private eliminated = false;
   private readonly onKey = (e: KeyboardEvent) => this.keydown(e);
+  /** The first-match tutorial (only in the guided Quick play, a match with one human) and the contextual tips. */
+  private tutorial: Tutorial | null = null;
+  private readonly hints: Hints;
+  private readonly root: HTMLElement;
 
   /** The "every human is out" box for the host, and whether they already chose to keep watching. */
   private readonly finish: HTMLElement;
@@ -64,6 +70,7 @@ export class GameUi {
 
   constructor(root: HTMLElement, net: GameConnection, seat: number, home: () => void) {
     root.innerHTML = '';
+    this.root = root;
     this.mySeat = seat;
     // The signs on the map get a layer of their own UNDER the minimap (z-index 2) and under the top bar, the buttons and the windows (the UI layer, 10),
     // so nothing on the map can ever be drawn over the HUD.
@@ -153,7 +160,33 @@ export class GameUi {
       army: (id) => this.scene?.resolveArmy(id), seat, sites: () => this.sites };
     this.kingdom = new KingdomUi(root, { net, say: (m) => this.error(m), info: (m) => { sfx.play('uiConfirm'); this.notes.push(m, 'info', 3500); }, seat });
     window.addEventListener('keydown', this.onKey);
+    this.hints = new Hints((text) => this.notes.push(text, 'info', 9000));
+    if (tutorialArmed()) this.startTutorial();
+    window.addEventListener('kf-tutorial-restart', this.onTutorialRestart);
   }
+
+  private startTutorial(): void {
+    this.tutorial?.destroy();
+    this.tutorial = new Tutorial({
+      root: this.root,
+      scene: () => this.scene,
+      windowTarget: () => this.windows.current,
+      windowEl: () => this.windows.element,
+      closeWindow: () => this.windows.close(),
+      topBottom: () => this.top.getBoundingClientRect().bottom,
+      rivals: () => rivalSeats(this.room, this.mySeat),
+    });
+  }
+
+  /** "Rehberi tekrar başlat" in the settings: starts at once when this is a match with bots only, else the next guided Quick play will run it. */
+  private readonly onTutorialRestart = (e: Event): void => {
+    const humans = (this.room?.players ?? []).filter((p) => !p.isBot).length;
+    if (humans > 1 || this.spectating) return;
+    setTutorialDone(false);
+    armTutorial();
+    this.startTutorial();
+    (e as CustomEvent<{ handled: boolean }>).detail.handled = true;
+  };
 
   /** The map the windows are anchored on. */
   attach(scene: WorldScene): void {
@@ -194,6 +227,8 @@ export class GameUi {
 
   destroy(): void {
     window.removeEventListener('keydown', this.onKey);
+    window.removeEventListener('kf-tutorial-restart', this.onTutorialRestart);
+    this.tutorial?.destroy();
     window.clearInterval(this.waitTimer);
     this.labels.destroy();
     this.labelRoot.remove();
@@ -209,6 +244,8 @@ export class GameUi {
     guarded('ui-update', () => this.renderScroll(), 'scroll');
     guarded('ui-update', () => this.reports.update(s.war.battles, s.elapsedSeconds), 'report tags');
     guarded('ui-update', () => this.updateNotes(s), 'ribbons');
+    guarded('ui-update', () => this.tutorial?.update(s), 'tutorial');
+    guarded('ui-update', () => this.hints.update(s, !!this.tutorial && tutorialArmed()), 'hints');
   }
 
   /** The ribbons that follow from a new state: scouts home, gold, a toured quarter, hunger, the war, a fallen castle. */
@@ -331,6 +368,7 @@ export class GameUi {
 
   setRoom(room: RoomView): void {
     this.room = room;
+    if (this.tutorial && room.players.filter((p) => !p.isBot).length > 1) { this.tutorial.destroy(); this.tutorial = null; } // a room of people: tips only
     this.kingdom.setRoom(room);
     this.bar.setRoom(room);
     // One camera button per rival castle, in that player's colour.

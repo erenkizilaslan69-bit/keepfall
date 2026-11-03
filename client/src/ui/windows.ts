@@ -89,6 +89,8 @@ export class WindowManager {
 
   get current(): Target | null { return this.target; }
   get isOpen(): boolean { return this.win !== null; }
+  /** The open window's element (null: none). */
+  get element(): HTMLElement | null { return this.win?.el ?? null; }
 
   open(target: Target, win: Win, anchor: () => Anchor | null): void {
     if (this.win === null) sfx.play('uiOpen'); // moving from one window to another is not an opening

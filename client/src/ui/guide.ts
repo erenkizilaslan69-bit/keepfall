@@ -56,15 +56,8 @@ const flushWaiters = (): void => { for (const cb of closeWaiters.splice(0)) cb()
 export function whenGuideClosed(cb: () => void): void {
   if (open || autoPending) closeWaiters.push(cb); else cb();
 }
-/** In the first match: open the guide half a second after the game screen is up. */
-export function showFirstTimeGuide(): void {
-  if (tutorialSeen()) return;
-  autoPending = true;
-  setTimeout(() => {
-    autoPending = false;
-    if (!open && !tutorialSeen()) toggleGuide(true); else if (!open) flushWaiters();
-  }, 500);
-}
+/** The guide no longer opens by itself in the first match: the interactive tutorial (ui/tutorial.ts) takes its place; "?" still opens it. */
+export function showFirstTimeGuide(): void { /* nothing to do */ }
 
 /** Three steps to read in three seconds, above the detailed decree. */
 const quickStart = (): string => `

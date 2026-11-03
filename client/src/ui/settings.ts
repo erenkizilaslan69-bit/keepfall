@@ -1,5 +1,6 @@
 import { sfx } from '../audio';
-import { lowGraphics, setLowGraphics, setReduceEffects, setShowFps, setShowMessages, showsFps, userReducesEffects, userShowsMessages } from '../prefs';
+import { restartTutorial } from './tutorial';
+import { lowGraphics, setLowGraphics, setShowHints, showsHints, setReduceEffects, setShowFps, setShowMessages, showsFps, userReducesEffects, userShowsMessages } from '../prefs';
 import { toggleGuide } from './guide';
 import { lang, t, toggleLang } from '../i18n';
 
@@ -80,11 +81,14 @@ export function toggleSettings(): void {
           <div class="set-row"><label for="set-low">${t('Düşük grafik')} <small>${t('(parçacık efektleri, duman, harita süsleri ve sis yumuşatması azalır; yavaş bilgisayarlar için)')}</small></label><input id="set-low" type="checkbox" class="set-check"></div>
           <div class="set-row"><label for="set-fps">${t('FPS göster')} <small>${t('(köşede kare hızı ve sunucu gecikmesi)')}</small></label><input id="set-fps" type="checkbox" class="set-check"></div>
           <div class="set-row"><label for="set-msg">${t('Ulak mesajlarını göster')} <small>${t('(kapalıyken gelen mesajlar gizlenir ve mesaj kutusu çıkmaz)')}</small></label><input id="set-msg" type="checkbox" class="set-check"></div>
+          <div class="set-row"><label for="set-hints">${t('İpuçlarını göster')} <small>${t('(boşta işçi, yemek azalması, yaklaşan ordu gibi anlarda kısa uyarılar)')}</small></label><input id="set-hints" type="checkbox" class="set-check"></div>
         </section>
         <section class="set-links">
           <button class="btn" data-act="guide">${t('Nasıl oynanır?')}</button>
           <button class="btn" data-act="about">${t('Oyun hakkında')}</button>
+          <button class="btn" data-act="tutorial">${t('Rehberi tekrar başlat')}</button>
         </section>
+        <p class="muted small hidden" data-f="tut-note"></p>
         ${leaveAction ? `<section class="set-links"><button class="btn btn-red" data-act="leave">${t('Ana menüye dön')}</button></section>` : ''}
         <section class="set-about hidden" data-f="about">
           <h3>${t('Oyun hakkında')}</h3>
@@ -96,7 +100,7 @@ export function toggleSettings(): void {
       </div>
     </div>`;
   const q = <T extends HTMLElement>(sel: string) => overlay.querySelector<T>(sel)!;
-  const music_ = q<HTMLInputElement>('#set-music'), sfx_ = q<HTMLInputElement>('#set-sfx'), mute = q<HTMLInputElement>('#set-mute'), fx = q<HTMLInputElement>('#set-fx'), low = q<HTMLInputElement>('#set-low'), fps = q<HTMLInputElement>('#set-fps'), msg = q<HTMLInputElement>('#set-msg');
+  const music_ = q<HTMLInputElement>('#set-music'), sfx_ = q<HTMLInputElement>('#set-sfx'), mute = q<HTMLInputElement>('#set-mute'), fx = q<HTMLInputElement>('#set-fx'), low = q<HTMLInputElement>('#set-low'), fps = q<HTMLInputElement>('#set-fps'), msg = q<HTMLInputElement>('#set-msg'), hintsBox = q<HTMLInputElement>('#set-hints');
   const show = () => {
     music_.value = String(Math.round(sfx.musicVolume * 100));
     sfx_.value = String(Math.round(sfx.volume * 100));
@@ -105,6 +109,7 @@ export function toggleSettings(): void {
     low.checked = lowGraphics();
     fps.checked = showsFps();
     msg.checked = userShowsMessages();
+    hintsBox.checked = showsHints();
     music_.disabled = sfx_.disabled = sfx.muted;
     q('[data-o="music"]').textContent = `${music_.value}%`;
     q('[data-o="sfx"]').textContent = `${sfx_.value}%`;
@@ -116,18 +121,26 @@ export function toggleSettings(): void {
   fx.addEventListener('change', () => setReduceEffects(fx.checked));
   fps.addEventListener('change', () => setShowFps(fps.checked));
   msg.addEventListener('change', () => setShowMessages(msg.checked));
+  hintsBox.addEventListener('change', () => setShowHints(hintsBox.checked));
   // The map's ornaments and fog are built with the map: in a running match the page loads again (the same seat comes back), in the menus it just applies to the next map.
   low.addEventListener('change', () => {
     setLowGraphics(low.checked);
     if (document.documentElement.classList.contains('in-game')) location.reload();
   });
   overlay.addEventListener('click', (e) => {
-    const t = e.target as HTMLElement;
-    const act = t.closest<HTMLElement>('[data-act]')?.dataset.act;
-    if (t === overlay || act === 'close') closeSettings();
+    const target = e.target as HTMLElement;
+    const act = target.closest<HTMLElement>('[data-act]')?.dataset.act;
+    if (target === overlay || act === 'close') closeSettings();
     else if (act === 'guide') { closeSettings(); toggleGuide(); }
     else if (act === 'leave') { closeSettings(); confirmLeave(); }
     else if (act === 'about') q('[data-f="about"]').classList.toggle('hidden');
+    else if (act === 'tutorial') {
+      const now = restartTutorial();
+      const note = q('[data-f="tut-note"]');
+      note.textContent = now ? t('Rehber yeniden başladı.') : t('Rehber, bir sonraki "Hızlı oyna" ile başlar.');
+      note.classList.remove('hidden');
+      if (now) window.setTimeout(closeSettings, 700);
+    }
   });
   document.body.appendChild(overlay);
   open = overlay;
