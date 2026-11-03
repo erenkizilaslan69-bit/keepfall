@@ -1,6 +1,7 @@
 import { sfx } from './audio';
 import { botMark, clock, COLOR_CSS, esc, fmt } from './format';
 import { inIframe, t, tr } from './i18n';
+import { isTouch } from './ui/touch';
 import { emblemHtml } from './ui/emblem';
 import type { GameConnection } from './net';
 import type { BotLevel, RoomView, SummaryView } from './types';
@@ -113,6 +114,7 @@ export class LobbyScreen {
             <div class="deck" id="deck" hidden>
               <h3>${t('Destem')} <span class="deck-medal" id="deck-count" title="${t('Seçilen birlik')}"></span></h3>
               <p class="muted small">${t("Maçta yalnız seçtiğin 4 birliği üretebilirsin. Kartı çevirmek için tıkla; seçmek için <b>Seç</b>'e bas ya da çift tıkla. Rakip destene yalnız gözcü raporu bakar; seçmezsen rastgele verilir.")}</p>
+              <p class="muted small touch-only">${t('Kartı seçmek için dokun, çevirmek için basılı tut.')}</p>
               <div class="deck-cards" id="deck-cards"></div>
             </div>
           </div>
@@ -174,10 +176,22 @@ export class LobbyScreen {
       }
     });
     // A click on the card itself turns it over; a double click picks it.
+    // On a touch screen the little Flip / Select buttons are too small for a finger (they are hidden there): a tap picks the card, a long press turns it over.
+    let held: number | undefined, longPressed = false;
+    this.q('#deck-cards').addEventListener('pointerdown', (e) => {
+      longPressed = false;
+      const card = (e.target as HTMLElement).closest<HTMLElement>('.ucard');
+      if (!card || !isTouch() || e.pointerType !== 'touch') return;
+      held = window.setTimeout(() => { longPressed = true; card.classList.toggle('flipped'); }, 450);
+    });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) this.q('#deck-cards').addEventListener(ev, () => window.clearTimeout(held));
     this.q('#deck-cards').addEventListener('click', (e) => {
       const t = e.target as HTMLElement;
       if (t.closest('button')) return;
-      t.closest<HTMLElement>('.ucard')?.classList.toggle('flipped');
+      const card = t.closest<HTMLElement>('.ucard');
+      if (!card) return;
+      if (isTouch()) { if (!longPressed) void this.toggleDeck(card.dataset.unit!); return; }
+      card.classList.toggle('flipped');
     });
     this.q('#deck-cards').addEventListener('dblclick', (e) => {
       const card = (e.target as HTMLElement).closest<HTMLElement>('.ucard');

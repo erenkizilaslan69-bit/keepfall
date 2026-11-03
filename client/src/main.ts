@@ -9,6 +9,7 @@ import { watchUiScale } from './ui/scale';
 import './ui/ui.css';
 import './ui/theme.css';
 import './ui/kf-art.css';
+import './ui/touch.css';
 import '@fontsource/pixelify-sans/latin-400.css';
 import '@fontsource/pixelify-sans/latin-ext-400.css';
 import '@fontsource/atkinson-hyperlegible-next/latin-400.css';
@@ -19,6 +20,7 @@ import { Minimap } from './minimap';
 import { EndScreen, HomeScreen, LobbyScreen } from './screens';
 import { setBotSeats } from './format';
 import { t, tr } from './i18n';
+import { installTouch } from './ui/touch';
 import { music, sfx } from './audio';
 import { mountGuideButton, showFirstTimeGuide } from './ui/guide';
 import { CloudCurtain } from './ui/clouds';
@@ -59,12 +61,14 @@ let lastSpectator: SpectatorStateView | null = null;
 let summary: SummaryView | null = null;
 let status = '';
 
+installTouch();
 mountGuideButton(); // the "?" for the menus (in the game it is in the top bar)
 mountSettingsButton(); // the gear next to it
 mountLangButton(); // and the TR / EN switch
 
 // Sound: browsers start it only after a gesture; every button press gets a small click.
-window.addEventListener('pointerdown', () => sfx.unlock(), { capture: true });
+// (iOS only lets a sound start from the end of a touch or a click, so those unlock it as well)
+for (const ev of ['pointerdown', 'touchend', 'click']) window.addEventListener(ev, () => sfx.unlock(), { capture: true });
 window.addEventListener('keydown', () => sfx.unlock(), { capture: true });
 document.addEventListener('click', (e) => { if ((e.target as HTMLElement | null)?.closest?.('button')) sfx.play('click'); }, true);
 

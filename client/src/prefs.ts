@@ -7,7 +7,9 @@ interface Prefs { reduceEffects: boolean; showFps: boolean; lowGraphics: boolean
 function load(): Prefs {
   try {
     const p = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<Prefs>;
-    return { reduceEffects: p.reduceEffects === true, showFps: p.showFps === true, lowGraphics: p.lowGraphics === true, showMessages: p.showMessages !== false, showHints: p.showHints !== false };
+    // A touch device (a phone) starts with low graphics until the player chooses otherwise.
+    const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+    return { reduceEffects: p.reduceEffects === true, showFps: p.showFps === true, lowGraphics: typeof p.lowGraphics === 'boolean' ? p.lowGraphics : touch, showMessages: p.showMessages !== false, showHints: p.showHints !== false };
   } catch {
     return { reduceEffects: false, showFps: false, lowGraphics: false, showMessages: true, showHints: true };
   }

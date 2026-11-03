@@ -756,22 +756,46 @@ export class WorldScene extends Phaser.Scene {
 
     // A click on empty ground (nothing under the pointer, not a drag) closes the open window.
     this.input.on('pointerup', (p: Phaser.Input.Pointer, over: unknown[]) => {
-      if (!this.dragged && over.length === 0 && Math.hypot(p.x - p.downX, p.y - p.downY) < 6) this.onDeselect();
+      if (!this.dragged && over.length === 0 && Math.hypot(p.x - p.downX, p.y - p.downY) < (p.wasTouch ? 12 : 6)) this.onDeselect();
     });
 
     let drag: { x: number; y: number; scrollX: number; scrollY: number } | null = null;
+    // Touch: one finger drags the map, two fingers pinch to zoom (the point between them stays where it is). A finger has to move further than a mouse
+    // before it counts as a drag, so a tap on a building is not taken for a drag.
+    this.input.addPointer(1);
+    let pinch: { dist: number; zoom: number; anchor: { x: number; y: number } } | null = null;
+    const startDrag = (p: Phaser.Input.Pointer) => { drag = { x: p.x, y: p.y, scrollX: cam.scrollX, scrollY: cam.scrollY }; };
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      drag = { x: p.x, y: p.y, scrollX: cam.scrollX, scrollY: cam.scrollY };
+      startDrag(p);
       this.dragged = false;
     });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+      const p1 = this.input.pointer1, p2 = this.input.pointer2;
+      if (p1.isDown && p2.isDown) {
+        const dist = Math.max(1, Math.hypot(p1.x - p2.x, p1.y - p2.y));
+        const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+        this.dragged = true;
+        drag = null;
+        if (!pinch) { pinch = { dist, zoom: cam.zoom, anchor: cam.getWorldPoint(mid.x, mid.y) }; return; }
+        cam.setZoom(Phaser.Math.Clamp(pinch.zoom * dist / pinch.dist, this.minZoom(), MAX_ZOOM));
+        cam.preRender();
+        const at = cam.getWorldPoint(mid.x, mid.y);
+        cam.setScroll(cam.scrollX + pinch.anchor.x - at.x, cam.scrollY + pinch.anchor.y - at.y);
+        return;
+      }
       if (!drag || !p.isDown) return;
       const dx = p.x - drag.x, dy = p.y - drag.y;
-      if (!this.dragged && Math.hypot(dx, dy) < 6) return; // a click, not a drag
+      if (!this.dragged && Math.hypot(dx, dy) < (p.wasTouch ? 12 : 6)) return; // a click, not a drag
       this.dragged = true;
       cam.setScroll(drag.scrollX - dx / cam.zoom, drag.scrollY - dy / cam.zoom);
     });
-    this.input.on('pointerup', () => { drag = null; });
+    this.input.on('pointerup', () => {
+      drag = null;
+      pinch = null;
+      // One finger of a pinch is still down: it carries on as a drag from where it is (without the map jumping).
+      const left = [this.input.pointer1, this.input.pointer2].find((q) => q.isDown);
+      if (left) startDrag(left);
+    });
     // A drag that is let go of over the UI never reaches the canvas: end it here.
     const endDrag = () => { drag = null; };
     window.addEventListener('pointerup', endDrag);

@@ -126,7 +126,7 @@ export class WindowManager {
     const win = this.win;
     if (!win) return;
     const el = win.el;
-    const vw = window.innerWidth, vh = window.innerHeight;
+    const vw = window.innerWidth, vh = Math.min(window.innerHeight, window.visualViewport?.height ?? Infinity); // (above the on-screen keyboard)
     const a = this.anchor?.();
     el.style.maxHeight = '';
     const top = this.topBottom() + MARGIN;
