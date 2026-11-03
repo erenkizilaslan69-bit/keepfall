@@ -57,12 +57,12 @@ export const crazyInstant = (): boolean => !!sdk && sdk.game.isInstantMultiplaye
 /** The room code of the invitation this page was opened from, if any. */
 export function crazyInviteRoom(): string | null {
   const code = sdk ? guard(() => sdk!.game.getInviteParam('room')) : null;
-  return code && /^[A-Za-z]{4}$/.test(code) ? code.toUpperCase() : null;
+  return code && /^[A-Za-z]{6}$/.test(code) ? code.toUpperCase() : null;
 }
 
 /** A friend joins while we are playing: the callback gets the room code. */
 export function onCrazyJoin(callback: (code: string) => void): void {
-  guard(() => sdk?.game.addJoinRoomListener?.((p) => { const c = p?.room; if (c && /^[A-Za-z]{4}$/.test(c)) callback(c.toUpperCase()); }));
+  guard(() => sdk?.game.addJoinRoomListener?.((p) => { const c = p?.room; if (c && /^[A-Za-z]{6}$/.test(c)) callback(c.toUpperCase()); }));
 }
 
 /** The link a player can send (it opens the game on the site and joins the room). */

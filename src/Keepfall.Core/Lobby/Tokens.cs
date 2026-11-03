@@ -7,7 +7,7 @@ public static class Tokens
 {
     /// <summary>Letters that cannot be mistaken for each other when read aloud or typed (no I, O, 0, 1).</summary>
     public const string RoomCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-    public const int RoomCodeLength = 4;
+    public const int RoomCodeLength = 6;
 
     /// <summary>A secret player token: 256 random bits, base64url.</summary>
     public static string NewPlayerToken() =>

@@ -548,3 +548,9 @@ html.crazy input, html.crazy textarea { -webkit-user-select: text; user-select: 
 .kf-spinner { width: calc(44px * var(--u, 1)); height: calc(44px * var(--u, 1)); border: calc(6px * var(--u, 1)) solid rgba(255, 255, 255, .35); border-top-color: #ffd45a; border-radius: 50%; animation: kf-spin .9s linear infinite; }
 @keyframes kf-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .kf-spinner { animation-duration: 3s; } }
+
+/* ---- lobby: "fill empty seats with bots" ---- */
+.screen.lobby .fill { display: flex; flex-wrap: wrap; align-items: center; gap: calc(10px * var(--u, 1)); flex: 1 1 100%; order: 98; }
+.screen.lobby .fill.hidden { display: none; }
+.screen.lobby .fill .check { display: inline-flex; align-items: center; gap: calc(6px * var(--u, 1)); white-space: nowrap; }
+.screen.lobby .lob-bottom #start-hint { order: 99; flex: 1 1 100%; width: 100%; }

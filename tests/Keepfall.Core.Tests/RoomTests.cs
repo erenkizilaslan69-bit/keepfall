@@ -66,7 +66,7 @@ public class RoomTests
         for (int i = 0; i < 500; i++)
         {
             var code = Tokens.NewRoomCode();
-            Assert.Equal(4, code.Length);
+            Assert.Equal(Tokens.RoomCodeLength, code.Length);
             Assert.DoesNotContain(code, c => "IO01".Contains(c));
             Assert.Equal(code, Tokens.NormalizeRoomCode(code.ToLowerInvariant()));
         }

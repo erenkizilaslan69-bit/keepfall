@@ -18,7 +18,7 @@ import '@fontsource/atkinson-hyperlegible-next/latin-ext-700.css';
 import { Minimap } from './minimap';
 import { EndScreen, HomeScreen, LobbyScreen } from './screens';
 import { setBotSeats } from './format';
-import { t } from './i18n';
+import { t, tr } from './i18n';
 import { music, sfx } from './audio';
 import { mountGuideButton, showFirstTimeGuide } from './ui/guide';
 import { CloudCurtain } from './ui/clouds';
@@ -70,7 +70,7 @@ document.addEventListener('click', (e) => { if ((e.target as HTMLElement | null)
 
 void loadHorse();
 installErrorReporting(() => ({
-  room: /^\/oda\/([A-Za-z]{4})/.exec(currentRoute())?.[1]?.toUpperCase(),
+  room: /^\/oda\/([A-Za-z]{6})/.exec(currentRoute())?.[1]?.toUpperCase(),
   seat: net.seat,
   phase: lastCastle?.phase,
   elapsedSeconds: lastCastle?.elapsedSeconds,
@@ -214,7 +214,7 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
     },
     join: async (name, code) => {
       const c = code.trim().toUpperCase();
-      if (!/^[A-Z]{4}$/.test(c)) return t('Oda kodu 4 harf olmalı.');
+      if (!/^[A-Z]{6}$/.test(c)) return t('Oda kodu 6 harf olmalı.');
       saveName(name);
       const r = await net.joinRoom(c, name);
       if (!r.ok) return r.error;
@@ -403,7 +403,9 @@ async function main(): Promise<void> {
       return;
     }
   }
-  const named = /^\/oda\/([A-Za-z]{4})\/?$/.exec(currentRoute())?.[1]?.toUpperCase() ?? crazyInviteRoom();
+  // A room in the address: /oda/KOD (the page's own address) or ?room=KOD (an invitation link; the CrazyGames link carries it too)
+  const asked = new URLSearchParams(location.search).get('room');
+  const named = /^\/oda\/([A-Za-z]{6})\/?$/.exec(currentRoute())?.[1]?.toUpperCase() ?? (asked && /^[A-Za-z]{6}$/.test(asked) ? asked.toUpperCase() : null) ?? crazyInviteRoom();
   const resumed = !named && loadActiveRoom() !== null;
   const code = named ?? loadActiveRoom();
   if (!code) {
@@ -423,7 +425,7 @@ async function main(): Promise<void> {
     setRoute(`/${location.search}`, 'replace');
     // A return to the room we were in a moment ago that no longer exists is not an error worth showing: the home screen simply comes up.
     markActiveRoom(null);
-    showHome(resumed ? {} : { code, error: r.error ?? t('Odaya katılınamadı.') });
+    showHome(resumed ? {} : { code, error: tr(r.error ?? t('Odaya katılınamadı.')) });
   }
 }
 
@@ -431,7 +433,7 @@ async function main(): Promise<void> {
 async function joinInvite(code: string): Promise<void> {
   if (screen !== 'home' && screen !== 'none') await leaveToMenu();
   const r = await net.joinRoom(code, loadName() || siteName);
-  if (!r.ok) showHome({ code, error: r.error ?? t('Odaya katılınamadı.') });
+  if (!r.ok) showHome({ code, error: tr(r.error ?? t('Odaya katılınamadı.')) });
 }
 
 void main();

@@ -67,7 +67,7 @@ export class HomeScreen {
         <button id="create" class="btn wide">${t('Oda kur')}</button>
         <div class="or">${t('ya da')}</div>
         <div class="join-row">
-          <label class="field">${t('Oda kodu')} <input id="code" maxlength="4" value="${esc(defaults.code)}" placeholder="ABCD" autocapitalize="characters"></label>
+          <label class="field">${t('Oda kodu')} <input id="code" maxlength="6" value="${esc(defaults.code)}" placeholder="ABCDEF" autocapitalize="characters"></label>
           <button id="join" class="btn btn-red">${t('Odaya katıl')}</button>
         </div>
         <p class="error" id="error">${esc(defaults.error ?? '')}</p>
@@ -118,6 +118,10 @@ export class LobbyScreen {
           </div>
           <div class="lob-bottom">
             <label class="field">${t('Adın')} <input id="myname" maxlength="16"></label>
+            <div class="fill hidden" id="fill">
+              <label class="check"><input type="checkbox" id="fillbots"> ${t('Boş yerleri botla doldur')}</label>
+              <select id="filllevel" aria-label="${t('Bot zorluğu')}"><option value="easy">${t('Kolay')}</option><option value="medium">${t('Orta')}</option><option value="hard">${t('Zor')}</option></select>
+            </div>
             <button class="btn" data-a="ready" id="ready"></button>
             <button class="btn" data-a="leave" id="leave">${t('Odadan çık')}</button>
             <div class="start">
@@ -139,7 +143,7 @@ export class LobbyScreen {
       if (a === 'copy' || a === 'copylink') {
         // The room code (all that matters inside an iframe such as itch.io) or the address of the room; the button says "Copied!" for two seconds.
         const button = this.q<HTMLButtonElement>(`[data-a="${a}"]`);
-        const text = a === 'copy' ? this.room!.code : crazyInviteLink(this.room!.code) ?? `${location.origin}/oda/${this.room!.code}`;
+        const text = a === 'copy' ? this.room!.code : crazyInviteLink(this.room!.code) ?? `${location.origin}/?room=${this.room!.code}`;
         const done = await copyText(text, this.q<HTMLInputElement>('.share input'));
         const label = button.textContent;
         button.textContent = done ? t('Kopyalandı!') : t('Kopyalanamadı');
@@ -153,6 +157,14 @@ export class LobbyScreen {
       } else if (a === 'leave') {
         onLeave();
       } else if (a === 'start') {
+        // The host starts the match; empty seats are filled with computer players of the chosen level first (when that is switched on).
+        const room = this.room!;
+        if (this.fill().on) {
+          for (let n = room.players.length; n < room.maxPlayers; n++) {
+            const added = await this.net.addBot(this.fill().level);
+            if (!added.ok) { this.show(added); return; }
+          }
+        }
         this.show(await this.net.startMatch());
       } else if (a === 'addbot') {
         const level = (e.target as HTMLElement).closest<HTMLElement>('[data-level]')?.dataset.level as BotLevel;
@@ -173,8 +185,23 @@ export class LobbyScreen {
       card.classList.toggle('flipped'); // the two clicks of the double click turned it twice already: put it as it was
       void this.toggleDeck(card.dataset.unit!);
     });
+    try {
+      const saved = JSON.parse(localStorage.getItem('keepfall.fill') ?? 'null') as { on?: boolean; level?: string } | null;
+      this.q<HTMLInputElement>('#fillbots').checked = saved?.on !== false;
+      if (saved?.level === 'easy' || saved?.level === 'hard') this.q<HTMLSelectElement>('#filllevel').value = saved.level;
+      else this.q<HTMLSelectElement>('#filllevel').value = 'medium';
+    } catch { this.q<HTMLInputElement>('#fillbots').checked = true; this.q<HTMLSelectElement>('#filllevel').value = 'medium'; }
+    this.q('#fill').addEventListener('change', () => {
+      try { localStorage.setItem('keepfall.fill', JSON.stringify(this.fill())); } catch { /* fine */ }
+      if (this.room) this.update(this.room);
+    });
     this.update(room);
     void this.setupDeck();
+  }
+
+  /** "Fill empty seats with bots" (the host's choice, remembered in this browser). */
+  private fill(): { on: boolean; level: BotLevel } {
+    return { on: this.q<HTMLInputElement>('#fillbots').checked, level: this.q<HTMLSelectElement>('#filllevel').value as BotLevel };
   }
 
   private room: RoomView | null = null;
@@ -289,10 +316,13 @@ export class LobbyScreen {
     const isHost = !!me?.isHost;
     const start = this.q<HTMLButtonElement>('#start');
     start.classList.toggle('hidden', !isHost);
-    start.disabled = !room.canStart;
+    this.q('#fill').classList.toggle('hidden', !isHost);
     const notReady = room.players.filter((p) => !p.isBot && (!p.ready || !p.connected)).length;
+    const filling = isHost && this.fill().on && room.players.length < room.maxPlayers;
+    start.disabled = !(room.canStart || (filling && notReady === 0));
     this.q('#start-hint').textContent = !isHost
       ? t('Herkes hazır olunca oda sahibi maçı başlatır.')
+      : filling && notReady === 0 ? t('Boş yerler botla dolacak.')
       : room.players.length < room.minPlayers
         ? t('En az {0} oyuncu gerekiyor. Oda kodunu paylaş.', room.minPlayers)
         : notReady > 0 ? t('{0} oyuncu henüz hazır değil.', notReady) : t('Herkes hazır.');
