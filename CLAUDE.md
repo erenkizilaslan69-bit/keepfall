@@ -112,6 +112,9 @@ Bot dengesi: `BattleSim bot --mac 400 --zorluk karisik|bekleyen|orta|zor-orta` (
 - **SDK**: `<script src=".../crazygames-sdk-v3.js">` yalnız `--mode crazy` index.html'ine (`vite.config.ts` eklentisi); `crazy.ts` `window.CrazyGames` yoksa sessiz boş. loadingStart açılışta (`main()` başı), loadingStop lobi/ana ekran hazırken; gameplayStart/Stop bayraklı (`wanted`/`playing`/`loading`), elenince, menüye/maç sonuna dönünce, sekme gizlenince ve `pagehide`'da durur. Reklam çağrısı yok.
 - Zip kontrolü: `tools/zip-check.mjs <adres> <png>` (`NOSDK=1` ile SDK engelli), zip'i açmak için Windows `tar.exe -xf` (Git Bash'inki zip açamaz).
 
+## Mobil + davetli çok oyunculu: sonraki güncellemeye kaldı (2026-11-04)
+- CrazyGames'e şimdilik masaüstü + Hızlı Maç ile başvuruluyor; mobil/dokunmatik ve davetli çok oyunculu kodu repoda, crazy yapısında **bayrakla kapalı** (`client/src/features.ts`, `client/.env.crazy`). Durum, commit'ler, test araçları, ui-audit bulguları ve geri açma adımları: `docs/sonraki-plan.md`. Hiçbir şeyi silme.
+
 ## Önemli tasarım kararları (kısa)
 - **Kale düşmesi**: kale canı, sur seviyeleri, `UpgradeWall` kalktı; saldıran kapıdaki savaşı kazanırsa (boş kale dahil) kale düşer. `walls.archerDefenseBonus` (+%25) kapıdaki savunan okçulara hep geçerli. Düşüren ordu depodaki yemek/odun/demir/altının yarısını (`war.fallLootShare`) ve hayatta kalan işçilerin üçte birini (`war.fallWorkerShare`) eve getirir. Esir: `war.prisonerShare` 0,5 (savunanın savaşa giren ordusunun payı, saldıranın askeri olur, yolda yemek yer, nüfusa sayılır; kullanıcı kararıyla olduğu gibi kalır).
 - **Işınlanma hatası** düzeltildi: `GameState.WayHome` yönlendirilmiş ordular için bulunduğu yerden kapıya rota kurar; `ContinuityViolations` her tick konum sıçramasını sayar (hedef 0; `ContinuityTests` ×1/×5/×20).
