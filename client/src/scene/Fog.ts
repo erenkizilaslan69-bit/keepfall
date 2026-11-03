@@ -22,6 +22,7 @@ export class Fog {
   /** The same rectangle in fog colour, drawn the way the eraser is. */
   private readonly refog: Phaser.GameObjects.Graphics;
   private lastDraw = 0;
+  private lastSig = '';
 
   /** The fog texture's top-left corner (scene px): it reaches <paramref name="pad"/> tiles beyond the map, over the sea too, so the water never changes shade at the map's edge. */
   private readonly base: { x: number; y: number };
@@ -51,6 +52,15 @@ export class Fog {
     const now = performance.now();
     if (!force && now - this.lastDraw < REDRAW_MS) return;
     this.lastDraw = now;
+    // Nothing the fog is made of has moved (a quiet castle, no army or scout on the road): the picture is the same, so it is not painted again.
+    const q = (n: number) => Math.round(n * 2);
+    let sig = `${trail.length}|${foreign.length}`;
+    for (const c of trail) sig += `|t${q(c.center.x)},${q(c.center.y)},${q(c.radius)},${Math.round(c.fade * 40)}`;
+    for (const r of foreign) sig += `|f${r.x},${r.y},${r.w},${r.h}`;
+    for (const c of fixed) sig += `|c${q(c.center.x)},${q(c.center.y)},${q(c.radius)}`;
+    for (const c of moving) sig += `|m${q(c.center.x)},${q(c.center.y)},${q(c.radius)}`;
+    if (!force && sig === this.lastSig) return;
+    this.lastSig = sig;
     const topLeft = this.base;
     this.rt.clear().fill(FOG_COLOR, FOG_ALPHA);
     const open = (c: { center: Vec; radius: number }, alpha: number) => {
