@@ -27,6 +27,7 @@ import { warmUp } from './preload';
 import { mountScenery } from './ui/scenery';
 import { loadHorse } from './scene/HorseArt';
 import { mountLangButton, mountSettingsButton, setLeaveAction } from './ui/settings';
+import { startFpsMeter } from './ui/fps-meter';
 import { guarded, installErrorReporting } from './error-report';
 import type { BattleStartedView, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 import { currentRoute, setRoute } from './env';
@@ -116,6 +117,7 @@ const net = new GameConnection({
     if (s === 'roomLost') showBanner(t('Oda kapanmış (sunucu yeniden başlamış olabilir). Ana menüye dönmek için buraya tıkla.'), () => location.assign('/'));
   },
 });
+startFpsMeter(net);
 
 // Dev only: lets the console (and browser tests) send commands as this tab's player.
 if (import.meta.env.DEV) (window as unknown as { keepfallNet: GameConnection }).keepfallNet = net;

@@ -90,6 +90,14 @@ export class GameConnection {
     return result;
   }
 
+  /** Milliseconds for one trip to the server and back (null if the server is too old to know `Ping`, or the line is down). */
+  ping = async (): Promise<number | null> => {
+    if (this.hub.state !== signalR.HubConnectionState.Connected) return null;
+    const t0 = performance.now();
+    try { await this.hub.invoke('Ping'); } catch { return null; }
+    return performance.now() - t0;
+  };
+
   // Lobby
   setName = (name: string) => { this.name = name; return this.call('SetName', name); };
   setReady = (ready: boolean) => this.call('SetReady', ready);

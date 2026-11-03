@@ -1,5 +1,5 @@
 import { sfx } from '../audio';
-import { setReduceEffects, userReducesEffects } from '../prefs';
+import { lowGraphics, setLowGraphics, setReduceEffects, setShowFps, showsFps, userReducesEffects } from '../prefs';
 import { toggleGuide } from './guide';
 import { lang, t, toggleLang } from '../i18n';
 
@@ -77,6 +77,8 @@ export function toggleSettings(): void {
         <section>
           <h3>${t('Görünüm')}</h3>
           <div class="set-row"><label for="set-fx">${t('Efektleri azalt')} <small>${t('(kamera sarsıntısı, kıvılcım ve ok izleri)')}</small></label><input id="set-fx" type="checkbox" class="set-check"></div>
+          <div class="set-row"><label for="set-low">${t('Düşük grafik')} <small>${t('(parçacık efektleri, duman, harita süsleri ve sis yumuşatması azalır; yavaş bilgisayarlar için)')}</small></label><input id="set-low" type="checkbox" class="set-check"></div>
+          <div class="set-row"><label for="set-fps">${t('FPS göster')} <small>${t('(köşede kare hızı ve sunucu gecikmesi)')}</small></label><input id="set-fps" type="checkbox" class="set-check"></div>
         </section>
         <section class="set-links">
           <button class="btn" data-act="guide">${t('Nasıl oynanır?')}</button>
@@ -93,12 +95,14 @@ export function toggleSettings(): void {
       </div>
     </div>`;
   const q = <T extends HTMLElement>(sel: string) => overlay.querySelector<T>(sel)!;
-  const music_ = q<HTMLInputElement>('#set-music'), sfx_ = q<HTMLInputElement>('#set-sfx'), mute = q<HTMLInputElement>('#set-mute'), fx = q<HTMLInputElement>('#set-fx');
+  const music_ = q<HTMLInputElement>('#set-music'), sfx_ = q<HTMLInputElement>('#set-sfx'), mute = q<HTMLInputElement>('#set-mute'), fx = q<HTMLInputElement>('#set-fx'), low = q<HTMLInputElement>('#set-low'), fps = q<HTMLInputElement>('#set-fps');
   const show = () => {
     music_.value = String(Math.round(sfx.musicVolume * 100));
     sfx_.value = String(Math.round(sfx.volume * 100));
     mute.checked = sfx.muted;
     fx.checked = userReducesEffects();
+    low.checked = lowGraphics();
+    fps.checked = showsFps();
     music_.disabled = sfx_.disabled = sfx.muted;
     q('[data-o="music"]').textContent = `${music_.value}%`;
     q('[data-o="sfx"]').textContent = `${sfx_.value}%`;
@@ -108,6 +112,12 @@ export function toggleSettings(): void {
   sfx_.addEventListener('change', () => sfx.play('sword')); // a sample at the new level
   mute.addEventListener('change', () => { sfx.setMuted(mute.checked); show(); });
   fx.addEventListener('change', () => setReduceEffects(fx.checked));
+  fps.addEventListener('change', () => setShowFps(fps.checked));
+  // The map's ornaments and fog are built with the map: in a running match the page loads again (the same seat comes back), in the menus it just applies to the next map.
+  low.addEventListener('change', () => {
+    setLowGraphics(low.checked);
+    if (document.documentElement.classList.contains('in-game')) location.reload();
+  });
   overlay.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;
     const act = t.closest<HTMLElement>('[data-act]')?.dataset.act;

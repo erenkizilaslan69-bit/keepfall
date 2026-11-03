@@ -25,6 +25,9 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     public static string RoomGroup(string code) => $"oda:{code}";
     public static string PlayerGroup(string code, int seat) => $"oda:{code}:o{seat}";
 
+    /// <summary>A round trip for the client's "FPS göster" counter; touches nothing.</summary>
+    public Task<int> Ping() => Task.FromResult(0);
+
     // ---- joining ---------------------------------------------------------------------------
 
     public async Task<JoinView> CreateRoom(string? name)

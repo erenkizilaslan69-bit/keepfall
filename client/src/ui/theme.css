@@ -487,3 +487,10 @@ html.in-menu .lang-fab.btn-round { display: inline-grid; }
 /* an empty slot keeps "Add Bot: Easy Medium Hard" on one row (the name gives way and wraps instead) */
 .players li.empty .tags { flex-wrap: nowrap; white-space: nowrap; align-items: center; flex: none; }
 .players li.empty .pname { min-width: 0; flex: 1 1 0; line-height: 1.15; }
+
+/* ---- FPS counter and the low-frame-rate offer ------------------------------------------------- */
+.kf-fps { position: fixed; left: 8px; bottom: 8px; z-index: 70; padding: 2px 8px; border-radius: 4px; background: rgba(15, 20, 28, .72); color: #d8f0d0; font: 12px/1.4 var(--font-text, monospace); pointer-events: none; }
+.kf-fps.slow { color: #ffb4a8; }
+.kf-lowfps { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 80; width: min(calc(460px * var(--u, 1)), 94vw); padding: 12px 16px; text-align: center; font-size: calc(14px * var(--u, 1)); }
+.kf-lowfps p { margin: 0 0 10px; }
+.kf-lowfps-buttons { display: flex; gap: 10px; justify-content: center; }
