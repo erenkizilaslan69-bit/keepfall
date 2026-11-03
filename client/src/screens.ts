@@ -391,8 +391,12 @@ export class EndScreen {
         // Back to the lobby with the same players (bots stay), everybody ready, and straight into the next match.
         const error = this.root.querySelector('#error');
         let r = await this.net.backToLobby();
-        if (r.ok) r = await this.net.setReady(true);
-        if (r.ok) r = await this.net.startMatch();
+        // Alone with bots: straight into the next match. With other people: everybody meets in the lobby (the host starts it there; seats of people who do not come
+        // back are filled with bots by "fill empty seats with bots").
+        if (r.ok && this.endRoom && this.endRoom.players.filter((p) => !p.isBot).length <= 1) {
+          r = await this.net.setReady(true);
+          if (r.ok) r = await this.net.startMatch();
+        }
         if (error) error.textContent = r.ok ? '' : tr(r.error ?? '');
       } else if ((e.target as HTMLElement).closest('button[data-a="lobby"]')) {
         const r = await this.net.backToLobby();
@@ -428,7 +432,10 @@ export class EndScreen {
     this.root.querySelector('#summary')!.innerHTML = `<h2>${t('Senin özetin')}</h2>${summaryHtml(summary)}`;
   }
 
+  private endRoom: RoomView | null = null;
+
   update(room: RoomView): void {
+    this.endRoom = room;
     const r = room.result;
     if (r && !this.resultShown) {
       this.resultShown = true;

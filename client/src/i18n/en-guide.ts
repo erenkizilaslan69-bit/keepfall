@@ -254,7 +254,7 @@ export const EN_GUIDE: Record<string, string> = {
   "Hızlı oyna": "Quick Match",
   "(3 bota karşı, hemen)": "(vs 3 bots, instantly)",
   "ya da arkadaşlarınla": "or with friends",
-  "Aynı oyuncularla yeni maç": "Play again with the same players",
+  "Aynı oyuncularla yeni maç": "Play again with this group",
   "Ulak mesajlarını göster": "Show envoy messages",
   "(kapalıyken gelen mesajlar gizlenir ve mesaj kutusu çıkmaz)": "(when off, incoming messages are hidden and there is no message box)",
   "Mesaj gizlendi (ayarlarda mesajlar kapalı).": "Message hidden (messages are off in the settings).",
