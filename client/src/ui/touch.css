@@ -182,3 +182,9 @@ html.in-game body { position: fixed; inset: 0; width: 100%; }
 .ui-root:has(.bot-end:not(.hidden)) .cam-btns, .ui-root:has(.bot-end:not(.hidden)) .zoom-btns { display: none !important; }
 /* the flip icon of a deck card sits at the card's foot, away from the round buttons that float at the top right of the screen */
 .ucard-flip { top: auto !important; bottom: 3%; left: 3% !important; }
+
+/* A window (centered) is open on a desktop screen: the notes leave the top centre, where they lay over the window's cross, and stand in the free strip at the left, under the kingdom button. */
+@media (pointer: fine), (min-height: 521px) {
+  .ui-root:has(.win:not(.hidden), .scroll-pop:not(.hidden)):not(:has(.kingdom-panel:not(.hidden))) .notes { left: 12px; transform: none; top: calc(var(--top-h, 60px) + 56px); width: min(26vw, 340px); max-width: 26vw; align-items: flex-start; z-index: 5; }
+  .ui-root:has(.win:not(.hidden), .scroll-pop:not(.hidden)):not(:has(.kingdom-panel:not(.hidden))) .notes .ribbon { max-width: 100%; font-size: .9em; }
+}
