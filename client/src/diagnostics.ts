@@ -64,7 +64,8 @@ function hookTouch(scene: Phaser.Scene): void {
 }
 
 export function startDiagnostics(src: DiagSource): void {
-  const debug = new URLSearchParams(location.search).get('debug') === '1';
+  // The on-screen panel is a development aid: not reachable in the CrazyGames build (the 30-second log to the server stays).
+  const debug = import.meta.env.VITE_PLATFORM !== 'crazygames' && new URLSearchParams(location.search).get('debug') === '1';
   let panel: HTMLPreElement | null = null;
   if (debug) {
     panel = document.createElement('pre');
