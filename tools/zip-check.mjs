@@ -32,6 +32,10 @@ for (let i = 0; i < 80; i++) {
   if (/Oda kur|Create room|Quick play|Hızlı oyna/i.test(state)) break;
 }
 console.log('screen:', state ?? 'n/a');
+// The crazy build: no private room / join-by-code on the home screen, no dev hooks, no debug panel even with ?debug=1.
+const dom = (await send('Runtime.evaluate', { expression: `JSON.stringify({ create: !!document.querySelector('#create'), join: !!document.querySelector('#join'), code: !!document.querySelector('#code'), quick: !!document.querySelector('#quick'), hooks: ['keepfallScene', 'keepfallUi', 'keepfallNet', 'keepfallAudio'].filter((k) => k in window), diag: !!document.querySelector('.kf-diag') })`, returnByValue: true })).result.value;
+console.log('dom:', dom);
+if (process.env.CRAZYFLAGS && (/"create":true|"join":true|"code":true|"quick":false|"diag":true/.test(dom) || !/"hooks":\[\]/.test(dom))) { console.log('FAIL: flags/hooks'); problems.push('flags/hooks wrong: ' + dom); }
 const shot = await send('Page.captureScreenshot', { format: 'png' });
 writeFileSync(OUT, Buffer.from(shot.data, 'base64'));
 console.log(problems.length ? 'PROBLEMS:\n' + [...new Set(problems)].join('\n') : 'no console errors / failed requests');

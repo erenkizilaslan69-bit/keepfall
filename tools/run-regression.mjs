@@ -21,15 +21,15 @@ run('client build (tsc + vite)', 'npm', ['--prefix', 'client', 'run', 'build:cra
 
 const server = spawn('dotnet', ['run', '--project', 'src/Keepfall.Server', '-c', 'Release', '--no-build', '--urls', 'http://localhost:5081'],
   { cwd: root, shell, stdio: 'ignore', env: { ...process.env, ASPNETCORE_ENVIRONMENT: 'Development', Keepfall__MaxRooms: '0' } });
-const vite = spawn('npx', ['vite', '--port', '5175'], {
+const vite = spawn('npx', ['vite', '--port', '5174'], {
   cwd: root + '/client', shell, stdio: 'ignore',
-  env: { ...process.env, VITE_PLATFORM: 'crazygames', VITE_FEATURE_PRIVATE_ROOM: '0', VITE_FEATURE_CRAZY_INVITE: '0', KEEPFALL_SERVER: 'http://localhost:5081', KEEPFALL_CLIENT_PORT: '5175' } });
+  env: { ...process.env, VITE_PLATFORM: 'crazygames', VITE_FEATURE_PRIVATE_ROOM: '0', VITE_FEATURE_CRAZY_INVITE: '0', KEEPFALL_SERVER: 'http://localhost:5081', KEEPFALL_CLIENT_PORT: '5174' } });
 try {
   await sleep(9000);
   run('cors-check', 'node', ['tools/cors-check.mjs']);
-  run('crazy-sdk-check (flags off, with SDK mock + without SDK)', 'node', ['tools/crazy-sdk-check.mjs', 'http://localhost:5175'], { FLAGS: 'off' });
+  run('crazy-sdk-check (flags off, with SDK mock + without SDK)', 'node', ['tools/crazy-sdk-check.mjs', 'http://localhost:5174'], { FLAGS: 'off' });
   run('movers-stall-check', 'node', ['tools/movers-stall-check.mjs']);
-  if (process.argv.includes('--long')) run('desktop guided match, real time', 'node', ['tools/tutorial-check.mjs', 'art/shots/reg-tut', 'http://localhost:5175/'], { REALTIME: '1', SIZE: '1280,720', KFLANG: 'en' });
+  if (process.argv.includes('--long')) run('desktop guided match, real time', 'node', ['tools/tutorial-check.mjs', 'art/shots/reg-tut', 'http://localhost:5174/'], { REALTIME: '1', SIZE: '1280,720', KFLANG: 'en' });
 } finally {
   for (const p of [server, vite]) spawnSync('taskkill', ['/PID', String(p.pid), '/T', '/F'], { shell });
 }
