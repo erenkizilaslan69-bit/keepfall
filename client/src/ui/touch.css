@@ -133,8 +133,12 @@ html.in-game body { position: fixed; inset: 0; width: 100%; }
 .scroll-pop .win-close { top: 2px; right: 2px; }
 .scroll-pop { padding-right: 40px; }
 /* the kingdom panel and every window: never a sideways scroll (the content shrinks and wraps instead) */
-.kingdom-panel, .win, .win-body, .scroll-pop, .decree { overflow-x: hidden; }
-.kingdom-panel *, .win-body * { min-width: 0; }
+/* (touch screens only: on a desktop the window's cross hangs outside the window box and the -/+ buttons keep their size, whatever the window height) */
+@media (pointer: coarse) {
+  .kingdom-panel, .win, .win-body, .scroll-pop, .decree { overflow-x: hidden; }
+  .kingdom-panel *, .win-body * { min-width: 0; }
+}
+.kingdom-panel, .win-body, .scroll-pop, .decree { overflow-x: hidden; }
 .kingdom-panel { max-width: calc(100% - 20px); box-sizing: border-box; }
 .kingdom-panel .kd-row { flex-wrap: wrap; }
 .kingdom-panel p, .kingdom-panel span, .kingdom-panel label { overflow-wrap: anywhere; }

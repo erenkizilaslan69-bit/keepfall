@@ -34,6 +34,8 @@ const DEVICES = [
   { id: 'pixel7', engine: 'chromium', w: 915, h: 412, touch: true, dpr: 2.625, inset: null },
   { id: 'small', engine: 'chromium', w: 640, h: 360, touch: true, dpr: 2, inset: null },
   { id: 'ipad', engine: 'chromium', w: 1180, h: 820, touch: true, dpr: 2, inset: null },
+  { id: 'cg1196', engine: 'chromium', w: 1196, h: 630, touch: false, dpr: 1, inset: null }, // CrazyGames QA preview sizes (mouse, desktop layout)
+  { id: 'cg1024', engine: 'chromium', w: 1024, h: 576, touch: false, dpr: 1, inset: null },
   { id: 'desk1366', engine: 'chromium', w: 1366, h: 768, touch: false, dpr: 1, inset: null },
   { id: 'desk1920', engine: 'chromium', w: 1920, h: 1080, touch: false, dpr: 1, inset: null },
 ];
