@@ -59,3 +59,10 @@ Kalan kritik/önemli: ölü düğme adayları (267; çoğu sınırda anlamlı "+
 2. Sunucu zaten destekliyor (`Hello`, `/version`, kod hız sınırı, oda kapanışı); Render'ın güncel olduğunu `/version` ile doğrula.
 3. `node tools/crazy-sdk-check.mjs` (bayraklar açık; kapalı sınaması `FLAGS=off`, vite'a iki `VITE_FEATURE_*=0` ekle), `node tools/invite-check.mjs`, `node tools/tab-check.mjs`, `node tools/touch-check.mjs` koştur.
 4. Mobil için önce Tur C ve gerçek cihaz turu, sonra `docs/crazygames.md` kutuları (Mobil uyumlu, Çok oyunculu, Instant Multiplayer) işaretlenir.
+
+## 6. CrazyGames masaüstü paketi: bilinen küçük sorunlar (2026-11-05)
+- Masaüstü ui-audit (`docs/ui-audit-desktop-final.md`): ayarlar/rehber/krallık panelinde 8 px'lik yatay kaydırma uyarısı (görsel sorun yok), kaydırılan krallık panelinin altındaki adımlayıcılar "sınır dışı" sayılıyor (yanlış alarm), "+1/Yarısı" gibi sınırdaki düğmeler "ölü düğme" görünüyor, savaş raporu etiketi (TR) 2 px taşıyor.
+- Rehberli maç/hızlı maç testleri `FinishMatch` ile bitirilemiyor (içinde insan varken sunucu reddediyor): maç sonu x1 gerçek süreyle (~18 dk) denenir (`tools/run-regression2.mjs`).
+- `?debug=1` paneli ve `keepfall*` kancaları crazy yapısında yok; itch/yerel yapıda `?debug=1` hâlâ çalışır.
+- Fragman çekim araçları `tools/promo/`; çekimde başka pencere görünürse take reddedilir (ekranda yalnız oyun olmalı). Çıktılar `art/promo/` (git'te yok).
+
