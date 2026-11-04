@@ -23,7 +23,24 @@ export class Notifications {
     this.el.className = 'notes';
     parent.appendChild(this.el);
     // The countdown runs between server ticks too.
-    window.setInterval(() => this.renderIncoming(), 250);
+    window.setInterval(() => { this.renderIncoming(); this.avoidWindows(); }, 250);
+  }
+
+  /**
+   * A window (docked at the left, the right or in the middle) must never lie under the notes, nor the notes over the window's cross: while one is open the notes stand in
+   * the widest free strip beside it, under the top bar; with no room on either side they stay where they are (top centre). Phones have their own rule (touch.css).
+   */
+  private avoidWindows(): void {
+    const s = this.el.style;
+    const win = document.querySelector<HTMLElement>('.ui-root .win:not(.hidden), .ui-root .scroll-pop:not(.hidden)');
+    if (!win || window.matchMedia('(pointer: coarse) and (max-height: 520px)').matches) { if (s.left) { s.left = s.top = s.width = s.maxWidth = s.transform = s.alignItems = ''; } return; }
+    const r = win.getBoundingClientRect(), vw = window.innerWidth;
+    const top = Math.max(document.querySelector<HTMLElement>('.topbar')?.getBoundingClientRect().bottom ?? 60, document.querySelector<HTMLElement>('.kingdom-fab:not(.hidden)')?.getBoundingClientRect().bottom ?? 0) + 10;
+    const left = r.left - 24, right = vw - r.right - 24 - 240; // (the right edge keeps the rail of buttons and the minimap)
+    if (Math.max(left, right) < 200) { if (s.left) { s.left = s.top = s.width = s.maxWidth = s.transform = s.alignItems = ''; } return; }
+    const w = Math.min(340, Math.max(left, right));
+    s.left = `${left >= right ? Math.max(12, r.left - 12 - w) : r.right + 12}px`;
+    s.top = `${top}px`; s.width = `${w}px`; s.maxWidth = `${w}px`; s.transform = 'none'; s.alignItems = 'flex-start';
   }
 
   private readonly recent = new Map<string, number>();
