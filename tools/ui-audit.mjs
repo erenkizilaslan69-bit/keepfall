@@ -65,7 +65,8 @@ const AUDIT_JS = `(opts) => {
     const { r, vis } = clipRect(e);
     const sc = scroller(e);
     const ix = Math.max(0, Math.min(r.right, vis.right) - Math.max(r.left, vis.left)), iy = Math.max(0, Math.min(r.bottom, vis.bottom) - Math.max(r.top, vis.top));
-    const hiddenInScroll = sc && (iy < r.height - 1) && !(r.top < 0 || r.bottom > ih); // scrolled out of its own scroller: not an error
+    const scr = sc && sc.getBoundingClientRect(); const clippedByScroller = !!sc && (r.bottom > scr.bottom + 1 || r.top < scr.top - 1) && scr.bottom <= ih + 1 && scr.top >= -1; // (cut off by its own scroller, which is itself inside the screen: it scrolls)
+    const hiddenInScroll = sc && (iy < r.height - 1) && (!(r.top < 0 || r.bottom > ih) || clippedByScroller); // scrolled out of its own scroller: not an error
     if (hiddenInScroll || ix === 0 || iy === 0) continue;
     // outside the screen
     const outB = pageScrolls ? 0 : r.bottom - ih; // (a menu page that scrolls: the part below the fold is not hidden)
@@ -175,7 +176,7 @@ async function run(device, lang) {
     if (res.issues.length === 0) results.worked.push(state);
     return res;
   };
-  const sig = () => page.evaluate("document.body.innerText.length + ':' + document.querySelectorAll('*').length + ':' + document.documentElement.className + ':' + (window.keepfallUi && keepfallUi.windows && keepfallUi.windows.isOpen)");
+  const sig = () => page.evaluate("document.body.innerText.length + ':' + document.querySelectorAll('*').length + ':' + document.documentElement.className + ':' + (window.keepfallUi && keepfallUi.windows && keepfallUi.windows.isOpen) + ':' + [...document.querySelectorAll('input, select, textarea')].map((e) => e.value + (e.checked ? '+' : '')).join(',') + ':' + [...document.querySelectorAll('button')].filter((e) => e.disabled).length");
   const NO_TAP = /quick|hızlı oyna|private room|oda kur|join room|odaya katıl|leave|ayrıl|ana menü|main menu|reload|yenile|retry|finish|bitir|rehberi tekrar|restart|restart tutorial|new match|yeni maç|again|tekrar/i;
   /** Tap every visible clickable thing inside `root`, one by one: what changed is audited and shot, then `reopen` puts the screen back. */
   const LIST = `(sel) => { const box = document.querySelector(sel); if (!box) return []; const vis = (e) => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
@@ -192,8 +193,8 @@ async function run(device, lang) {
       await reopen();
       let els = await page.evaluate(`(${LIST})(${JSON.stringify(root)})`);
       // a button below the fold of its (scrolling) window is scrolled into view first, like a finger would do: otherwise the tap lands outside the screen and looks dead
-      await page.evaluate(`(i) => { const e = document.querySelector('[data-audit-i="' + i + '"]'); if (e) e.scrollIntoView({ block: 'center', inline: 'center' }); }`, t.i).catch(() => {});
-      await sleep(120);
+      await page.evaluate(`(i) => { const e = document.querySelector('[data-audit-i="' + i + '"]'); if (e) e.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' }); }`, t.i).catch(() => {});
+      await sleep(250);
       els = await page.evaluate(`(${LIST})(${JSON.stringify(root)})`);
       const at = els[t.i]; if (!at || at.label !== t.label) continue; // (the screen is not the same any more: nothing is tapped blindly)
       const before = await sig();
