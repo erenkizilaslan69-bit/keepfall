@@ -1,0 +1,40 @@
+/* ---- (round 7, "Tur C", step 2: touch targets of 44 px and 8 px between neighbours: touch screens only) ---- */
+@media (pointer: coarse) {
+  /* every pressable thing is 44 x 44 (small ones are drawn small and carry an invisible larger hit area, or are simply that big) */
+  .btn, .kf-btn, button.tab, select { min-width: var(--tap) !important; }
+  input[type="number"], input[type="text"], input:not([type]), textarea, .kingdom-panel .kd-unit input, .atk-row .stepper input { min-height: var(--tap) !important; min-width: var(--tap); }
+  input[type="range"] { min-height: var(--tap); }
+  input[type="checkbox"], input[type="radio"], input.set-check { width: var(--tap); height: var(--tap); }
+  /* the players' chips of the top bar: the drawing stays, the hit area grows (8 px each side, 10 above and below), with room between the chips so the areas do not meet */
+  .tb-players { gap: calc(var(--tap-gap) * 2) !important; }
+  .chip { position: relative; }
+  .chip::after { content: ''; position: absolute; left: -8px; right: -8px; top: -10px; bottom: -10px; }
+  /* room between pressable neighbours */
+  .stepper, .atk-row .stepper, .kd-step, .set-links, .row.quick > span, .ucard-btns, .win-foot, .kd-row { gap: var(--tap-gap) !important; }
+  .cam-btns { gap: var(--tap-gap) !important; }
+  .zoom-btns { gap: var(--tap-gap); }
+}
+
+@media (pointer: coarse) {
+  /* more air between pressable neighbours (8 px at least): the icon row of the top bar, tabs, the rows of a window, the attack form, the lobby */
+  .tb-icons { gap: var(--tap-gap) !important; }
+  .tabs { gap: var(--tap-gap); }
+  .win .row { padding-top: 5px; padding-bottom: 5px; }
+  .atk-head, .atk-row, .unit-row, .order { column-gap: var(--tap-gap); row-gap: var(--tap-gap); }
+  .row.quick > span { display: inline-flex; gap: var(--tap-gap); }
+  .kd-unit { margin: 0; }
+  .kingdom-panel .kd-units { row-gap: var(--tap-gap); }
+  .kingdom-panel .kd-row { gap: var(--tap-gap); margin: 6px 0; }
+  .tags { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--tap-gap); }
+  .screen.lobby .lob-bottom { gap: 12px; }
+}
+
+@media (pointer: coarse) {
+  /* vertical air between stacked rows of fields and buttons (8 px at least) */
+  .envoy-goods { gap: var(--tap-gap); }
+  .envoy-text { margin-top: var(--tap-gap); }
+  .atk-row + .atk-row { margin-top: var(--tap-gap); }
+  .unit-row { padding-top: 6px; padding-bottom: 6px; }
+  .order { padding-top: 5px; padding-bottom: 5px; }
+  .kingdom-panel .kd-row, .kingdom-panel label.field, .kingdom-panel section > label { margin-top: 9px; margin-bottom: 9px; }
+}
