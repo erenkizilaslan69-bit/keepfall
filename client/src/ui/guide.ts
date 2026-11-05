@@ -2,6 +2,7 @@ import { esc } from '../format';
 import { isEnglish, numLocale, t, tr } from '../i18n';
 import { emblemHtml } from './emblem';
 import { serverUrl } from '../env';
+import { safeLocal } from './safe-storage';
 
 // "Nasıl oynanır": a short decree (a parchment over the screen) opened with the "?" button, in the menus and in the game. Every number in it
 // comes from the server (/api/guide, which reads config/balance.json), so it follows the settings when they change.
@@ -38,14 +39,9 @@ let open: HTMLElement | null = null;
 
 // First-time onboarding: the guide opens by itself in the first match, and the "?" of the top bar glows until it is first clicked.
 const SEEN_KEY = 'keepfall_tutorial_seen', CLICKED_KEY = 'keepfall_guide_clicked';
-const store = {
-  get: (k: string): string | null => { try { return localStorage.getItem(k); } catch { return null; } },
-  set: (k: string, v: string): void => { try { localStorage.setItem(k, v); } catch { /* private mode: the guide may open again, harmless */ } },
-};
-/** True when the player has closed the guide before (when the browser keeps nothing, true as well: never nag every match). */
-export function tutorialSeen(): boolean {
-  try { return localStorage.getItem(SEEN_KEY) === 'true'; } catch { return true; }
-}
+const store = safeLocal;
+/** True when the player has closed the guide before (when the browser blocks storage, remembered in memory until reload). */
+export function tutorialSeen(): boolean { return store.get(SEEN_KEY) === 'true'; }
 /** The "?" has been clicked once: it stops glowing for good. */
 export function guideClicked(): boolean { return store.get(CLICKED_KEY) === 'true'; }
 export function markGuideClicked(): void { store.set(CLICKED_KEY, 'true'); }

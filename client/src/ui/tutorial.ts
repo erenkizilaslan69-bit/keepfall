@@ -2,6 +2,7 @@ import { sfx } from '../audio';
 import { t } from '../i18n';
 import type { WorldScene } from '../scene/WorldScene';
 import type { BuildingType, CastleView, RoomView, UnitView } from '../types';
+import { safeLocal, safeSession } from './safe-storage';
 import { sameTarget, type Target } from './windows';
 
 // The interactive tutorial of the first Quick play: a short list of things to DO, one at a time. The thing to use is shown with a glowing frame and a
@@ -10,19 +11,14 @@ import { sameTarget, type Target } from './windows';
 
 const DONE_KEY = 'keepfall_tutorial_done', RUN_KEY = 'keepfall.tut';
 
-const store = {
-  get: (k: string): string | null => { try { return localStorage.getItem(k); } catch { return null; } },
-  set: (k: string, v: string): void => { try { localStorage.setItem(k, v); } catch { /* private mode: the tutorial may come again, harmless */ } },
-};
+const store = safeLocal;
 const session = {
-  get: (): { step: number } | null => { try { const v = sessionStorage.getItem(RUN_KEY); return v ? JSON.parse(v) as { step: number } : null; } catch { return null; } },
-  set: (v: { step: number } | null): void => { try { if (v) sessionStorage.setItem(RUN_KEY, JSON.stringify(v)); else sessionStorage.removeItem(RUN_KEY); } catch { /* not kept over a reload */ } },
+  get: (): { step: number } | null => { try { const v = safeSession.get(RUN_KEY); return v ? JSON.parse(v) as { step: number } : null; } catch { return null; } },
+  set: (v: { step: number } | null): void => { if (v) safeSession.set(RUN_KEY, JSON.stringify(v)); else safeSession.remove(RUN_KEY); },
 };
 
-/** The player has finished (or skipped) the tutorial before. When the browser keeps nothing it counts as done (never nag every match). */
-export function tutorialDone(): boolean {
-  try { return localStorage.getItem(DONE_KEY) === 'true'; } catch { return true; }
-}
+/** The player has finished (or skipped) the tutorial before. When the browser blocks storage the answer is kept in memory (forgotten on reload). */
+export function tutorialDone(): boolean { return store.get(DONE_KEY) === 'true'; }
 export function setTutorialDone(done: boolean): void { store.set(DONE_KEY, done ? 'true' : 'false'); }
 /** The guided match is about to start (set by Quick play): the game screen of this tab runs the tutorial. */
 export function armTutorial(): void { session.set({ step: 0 }); }
