@@ -109,3 +109,13 @@ Yeni sürüm (`tiny-swords-new`) yok; şimdilik Free Pack + Warfare. Free Pack'i
 - Süvari: `NewUnits.ts` Lancer'dan binici birleştirme ve AI at kalkar; Horseman Idle/Run/Attack doğrudan. `suvari-idle/run/attack` anahtarları korunur.
 - Haydut siyahı: Warfare'da da Black var (Swordsman, Horseman, Catapult, King); orman yerleri Free Pack Black Units kullanmaya devam eder.
 - Eşleşmeyen ya da sorulacak bir şey çıkmadı: 7 birliğin hepsinin karşılığı var. Tek çekince yukarıdaki ölçek ayarı.
+
+---
+
+## 4. Uygulandı (2026-11-05, adım 2 kodu)
+
+- Birimler artık Warfare/Free Pack sayfalarından yüklenir (`scene/assets.ts`, yol öneki `@wf/`); anahtarlar aynı kaldı (`suvari-*`, `mancinik-*`, yeni `swordsman-*`, `lord-*`). Kılıçlı = Swordsman, Kalkanlı = Warrior (Guard), Süvari = Horseman, Mancınık = Catapult + Stone_Idle mermisi.
+- Ölçekler (`unitScale`): piyadeler 0,55; Kılıçlı 0,46 (gövdesi daha iri); Süvari 0,50; Mancınık 0,48 (piyadenin ~1,6–2 katı); Kalkanlı ×1,18 büyütmesi kaldırıldı.
+- AI at (`HorseArt.ts`, `art/horse`) ve AI mancınık (`CatapultArt.ts`, `art/mancinik.png`) ile kodla çizilen mancınık (`PixelArt.catapult`) silindi.
+- Lord (King): `scene/Lord.ts`; kendi kalenin kapısında ve izleyicinin gördüğü kalelerde (`RegionDisplay`) durur, kuşatmada gürzünü savurur, kale düşünce devrilir. Yalnız istemci.
+- Eski araçlar `tools/shot-horse.mjs`, `shot-catapult.mjs`, `shot-compare.mjs` kaldırılan dosyalara bakar: 6. adımda silinecek.

@@ -33,7 +33,6 @@ import { CloudCurtain } from './ui/clouds';
 import { fadeFrom } from './ui/transitions';
 import { warmUp } from './preload';
 import { mountScenery } from './ui/scenery';
-import { loadHorse } from './scene/HorseArt';
 import { confirmLeave, mountLangButton, mountSettingsButton, setLeaveAction } from './ui/settings';
 import { startFpsMeter } from './ui/fps-meter';
 import { armTutorial, disarmTutorial, tutorialDone } from './ui/tutorial';
@@ -83,7 +82,6 @@ for (const ev of ['pointerdown', 'touchend', 'click']) window.addEventListener(e
 window.addEventListener('keydown', () => sfx.unlock(), { capture: true });
 document.addEventListener('click', (e) => { if ((e.target as HTMLElement | null)?.closest?.('button')) sfx.play('click'); }, true);
 
-void loadHorse();
 installErrorReporting(() => ({
   room: /^\/oda\/([A-Za-z]{6})/.exec(currentRoute())?.[1]?.toUpperCase(),
   seat: net.seat,

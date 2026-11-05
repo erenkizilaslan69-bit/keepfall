@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { UnitView } from '../types';
-import { SHIELD_SCALE, UNIT_SCALE, playRandom, unitOriginY } from './assets';
+import { UNIT_SCALE, playRandom, unitOriginY, unitScale } from './assets';
 import type { WorldLabels } from '../ui/world-labels';
 import { esc } from '../format';
 import { t, tr } from '../i18n';
@@ -9,19 +9,18 @@ import { NO_OFFSET } from './parts';
 import { lowGraphics } from '../prefs';
 
 // Soldiers wait in front of the castle around a camp fire, a group for each unit type (the groups sit round the fire in the order of
-// the list), all turned toward the flames. Shield bearers always keep their shield raised (Warrior_Guard) and are drawn a bit larger,
-// so they never read as swordsmen.
+// the list), all turned toward the flames. Shield bearers always keep their shield raised (Warrior_Guard); swordsmen are Warfare's Swordsman.
 
 interface Look { anim: string; scale: number }
 
 const LOOKS: Record<string, Look> = {
   okcu: { anim: 'archer-idle', scale: UNIT_SCALE },
   mizrakci: { anim: 'lancer-idle', scale: UNIT_SCALE },
-  kilicli: { anim: 'warrior-idle', scale: UNIT_SCALE },
-  kalkanli: { anim: 'warrior-guard', scale: SHIELD_SCALE },
+  kilicli: { anim: 'swordsman-idle', scale: unitScale('kilicli') },
+  kalkanli: { anim: 'warrior-guard', scale: UNIT_SCALE },
   kesis: { anim: 'monk-idle', scale: UNIT_SCALE },
-  mancinik: { anim: 'mancinik-idle', scale: UNIT_SCALE },
-  suvari: { anim: 'suvari-idle', scale: UNIT_SCALE },
+  mancinik: { anim: 'mancinik-idle', scale: unitScale('mancinik') },
+  suvari: { anim: 'suvari-idle', scale: unitScale('suvari') },
 };
 const BLOCK_ORDER = ['okcu', 'mancinik', 'kesis', 'mizrakci', 'kilicli', 'kalkanli', 'suvari'];
 const FALLBACK: Look = { anim: 'pawn-idle', scale: UNIT_SCALE };

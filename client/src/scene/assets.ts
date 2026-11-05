@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import type { PlayerColor } from '../types';
-import { makeNewUnitArt } from './NewUnits';
 import { preloadKingdomArt } from './KingdomSprites';
 import { preloadForestArt } from './ForestSprites';
 import { preloadPropsArt } from './MapProps';
@@ -10,15 +9,21 @@ import { asset } from '../env';
 // loaded in the player's own colour; terrain and props are shared.
 
 const ROOT = asset('/assets/tiny-swords/Tiny Swords (Free Pack)/');
-const url = (path: string) => encodeURI(ROOT + path);
+/** Tiny Swords Warfare (also not in the repo): a path starting with "@wf/" is looked up here instead. Every unit comes in all five colours. */
+const WF_ROOT = asset('/assets/Warfare_001/Warfare/');
+const url = (path: string) => encodeURI(path.startsWith('@wf/') ? WF_ROOT + path.slice(4) : ROOT + path);
 
 /** Folder name of each player colour in the pack (Black stays spare). */
 const COLOR_FOLDER: Record<PlayerColor, string> = { blue: 'Blue', red: 'Red', yellow: 'Yellow', purple: 'Purple', black: 'Black' };
 
-/** Every unit is drawn at this scale so they stay in proportion (the Lancer's frame is just bigger, not its body). */
+/** The foot soldiers (archer, spearman, monk, shield bearer) are drawn at this scale so they stay in proportion (the Lancer's frame is just bigger, not its body). */
 export const UNIT_SCALE = 0.55;
-/** Shield bearers stand a little larger so they read differently from swordsmen at a glance. */
-export const SHIELD_SCALE = UNIT_SCALE * 1.18;
+/**
+ * The scale of each unit. The five foot soldiers stand at the same height: Warfare's Swordsman has a bigger body in a 320 px frame, so he is drawn
+ * smaller; the horseman is a little larger than they are, the catapult about one and a half to two foot soldiers.
+ */
+const UNIT_SCALES: Record<string, number> = { kilicli: 0.46, suvari: 0.5, mancinik: 0.48, lord: 0.55 };
+export const unitScale = (unitId: string): number => UNIT_SCALES[unitId] ?? UNIT_SCALE;
 
 interface SheetDef { key: string; path: string; frame: number; frameHeight?: number }
 
@@ -57,6 +62,25 @@ const units = (color: string): SheetDef[] => {
     { key: 'monk-run', path: `${u}Monk/Run.png`, frame: 192 },
     { key: 'monk-heal', path: `${u}Monk/Heal.png`, frame: 192 },
     { key: 'monk-heal-fx', path: `${u}Monk/Heal_Effect.png`, frame: 192 },
+    ...warfare(color),
+  ];
+};
+
+/** The Warfare pack's units (swordsman, cavalry, catapult, the lord) in one colour. Sheet keys keep the names the rest of the map code uses. */
+const warfare = (color: string): SheetDef[] => {
+  const w = (dir: string, name: string, file: string, frame: number): SheetDef => ({ key: name, path: `@wf/${dir}/${dir} Animations/${dir}_${color}/${file}_${color}.png`, frame });
+  return [
+    w('Swordsman', 'swordsman-idle', 'Swordsman_Idle', 320),
+    w('Swordsman', 'swordsman-run', 'Swordsman_Run', 320),
+    w('Swordsman', 'swordsman-attack', 'Swordsman_Attack', 320),
+    w('Horseman', 'suvari-idle', 'Horseman_Idle', 320),
+    w('Horseman', 'suvari-run', 'Horseman_Run', 320),
+    w('Horseman', 'suvari-attack', 'Horseman_Attack', 320),
+    w('Catapult', 'mancinik-idle', 'Catapult_Idle', 256),
+    w('Catapult', 'mancinik-run', 'Catapult_Move', 256),
+    w('Catapult', 'mancinik-fire', 'Catapult_FireStone', 256),
+    w('King', 'lord-idle', 'King_Idle', 192),
+    w('King', 'lord-attack', 'King_Attack', 192),
   ];
 };
 
@@ -98,6 +122,7 @@ const buildingImages = (color: PlayerColor): Record<string, string> => {
 const IMAGES: Record<string, string> = {
   water: 'Terrain/Tileset/Water Background color.png',
   arrow: 'Units/Blue Units/Archer/Arrow.png',
+  'stone-shot': '@wf/Catapult/Stone Projectile/Stone_Idle.png',
   stump1: 'Terrain/Resources/Wood/Trees/Stump 1.png',
   stump2: 'Terrain/Resources/Wood/Trees/Stump 2.png',
   'wood-pile': 'Terrain/Resources/Wood/Wood Resource/Wood Resource.png',
@@ -110,8 +135,10 @@ const IMAGES: Record<string, string> = {
 };
 
 /** Sheets other players' armies and scouts need on the map, loaded in their colours as "<colour>-<key>". */
-const MOVER_KEYS = ['pawn-run', 'warrior-run', 'archer-run', 'lancer-run', 'warrior-guard', 'warrior-attack', 'archer-shoot', 'lancer-attack',
-  'warrior-idle', 'archer-idle', 'lancer-idle', 'pawn-idle', 'monk-idle', 'monk-run', 'monk-heal', 'monk-heal-fx'];
+const MOVER_KEYS = ['pawn-run', 'archer-run', 'lancer-run', 'warrior-guard', 'archer-shoot', 'lancer-attack',
+  'warrior-idle', 'archer-idle', 'lancer-idle', 'pawn-idle', 'monk-idle', 'monk-run', 'monk-heal', 'monk-heal-fx',
+  'swordsman-idle', 'swordsman-run', 'swordsman-attack', 'suvari-idle', 'suvari-run', 'suvari-attack', 'mancinik-idle', 'mancinik-run', 'mancinik-fire',
+  'lord-idle', 'lord-attack'];
 const moverSheets = (others: PlayerColor[]): SheetDef[] =>
   others.flatMap((c) => units(COLOR_FOLDER[c]).filter((s) => MOVER_KEYS.includes(s.key)).map((s) => ({ ...s, key: `${c}-${s.key}` })));
 
@@ -190,7 +217,6 @@ export function loadSpectatorAssets(scene: Phaser.Scene, others: PlayerColor[], 
   for (const s of missing) scene.load.spritesheet(s.key, url(s.path), { frameWidth: s.frame, frameHeight: s.frameHeight ?? s.frame });
   scene.load.once('complete', () => {
     createSheetAnimations(scene, missing);
-    makeNewUnitArt(scene, '__none__' as PlayerColor, others); // every colour gets its prefix
     done();
   });
   scene.load.start();
@@ -229,26 +255,29 @@ function oreSheet(scene: Phaser.Scene, goldKey: string): void {
 }
 
 function createSheetAnimations(scene: Phaser.Scene, list: SheetDef[]): void {
-  const rates: Record<string, number> = { 'pawn-run': 12, dust: 14, explosion: 14 };
+  const rates: Record<string, number> = { 'pawn-run': 12, dust: 14, explosion: 14, 'suvari-run': 12, 'suvari-attack': 14, 'mancinik-run': 6, 'mancinik-fire': 12,
+    'swordsman-attack': 16, 'lord-attack': 12 };
   for (const s of list) if (/pawn-run-gold$/.test(s.key)) oreSheet(scene, s.key);
   for (const s of list) {
     if (scene.anims.exists(s.key)) continue;
     if (s.key === 'tiles') continue;
     const texture = scene.textures.get(s.key);
     const frames = texture.frameTotal - 1; // minus the __BASE frame
-    const once = /heal(-fx)?$/.test(s.key); // the monk's heal and its sparkle play once per heal
+    const once = /(heal(-fx)?|suvari-attack|mancinik-fire)$/.test(s.key); // the monk's heal and its sparkle, a lance thrust and a throw play once each time
     scene.anims.create({
       key: s.key,
       frames: scene.anims.generateFrameNumbers(s.key, { start: 0, end: frames - 1 }),
-      frameRate: rates[s.key] ?? (once ? 14 : /(^|-)pawn-(run|work)/.test(s.key) ? 10 : 8),
+      frameRate: rates[s.key] ?? (once ? 14 : /(^|-)(pawn|swordsman)-(run|work)/.test(s.key) ? 10 : 8),
       repeat: once ? 0 : -1,
     });
   }
 }
 
-/** Where a unit's feet are inside its frame (the Lancer's frame is taller). */
+/** Where a unit's feet are inside its frame (the Lancer's and Warfare's frames are taller). */
 export function unitOriginY(textureKey: string): number {
-  if (textureKey.includes('suvari')) return 0.94;
-  if (textureKey.includes('mancinik')) return 0.88;
+  if (textureKey.includes('suvari')) return 0.65;
+  if (textureKey.includes('mancinik')) return 0.74;
+  if (textureKey.includes('swordsman')) return 0.6;
+  if (textureKey.includes('lord')) return 0.65;
   return textureKey.startsWith('lancer') ? 0.6 : 0.65;
 }

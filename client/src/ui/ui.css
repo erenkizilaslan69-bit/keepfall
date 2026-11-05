@@ -342,16 +342,24 @@ html.in-menu .guide-fab { display: inline-grid; }
 }
 /* The first frame of each unit's idle sheet (blue; the shape is what tells the types apart). */
 .unit-okcu { background-image: url('/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/Units/Blue%20Units/Archer/Archer_Idle.png'); }
-.unit-kilicli { background-image: url('/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/Units/Blue%20Units/Warrior/Warrior_Idle.png'); }
+.unit-kilicli {
+  background-image: url('/assets/Warfare_001/Warfare/Swordsman/Swordsman%20Animations/Swordsman_Blue/Swordsman_Idle_Blue.png');
+  background-size: auto 267%; background-position: calc(var(--ico) * -0.82) calc(var(--ico) * -0.71);
+}
 .unit-kalkanli { background-image: url('/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/Units/Blue%20Units/Warrior/Warrior_Guard.png'); }
 .unit-mizrakci {
   background-image: url('/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/Units/Blue%20Units/Lancer/Lancer_Idle.png');
   background-size: auto 420%; background-position: calc(var(--ico) * -1.55) calc(var(--ico) * -1.45);
 }
 .unit-kesis { background-image: url('/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/Units/Blue%20Units/Monk/Idle.png'); }
-.unit-mancinik, .unit-suvari { background-size: 100% 100%; background-position: 0 0; }
-.unit-mancinik { background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='19' width='26' height='4' fill='%23a56d3c' stroke='%231b2a3d'/%3E%3Cpath d='M12 19 L14 8 L18 8 L20 19Z' fill='%23744827' stroke='%231b2a3d'/%3E%3Cpath d='M16 9 L6 20' stroke='%23cd9459' stroke-width='3'/%3E%3Ccircle cx='6' cy='20' r='3' fill='%239aa3ac' stroke='%231b2a3d'/%3E%3Ccircle cx='9' cy='26' r='4' fill='%236e4526' stroke='%231b2a3d'/%3E%3Ccircle cx='23' cy='26' r='4' fill='%236e4526' stroke='%231b2a3d'/%3E%3C/svg%3E"); }
-.unit-suvari { background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M9 6 L11 2 L14 6 L19 4 L21 6 L17 12 L26 20 L26 26 L18 26 L14 18 L8 26 L4 26 L6 14Z' fill='%23c08a56' stroke='%231b2a3d' stroke-width='1.5'/%3E%3Ccircle cx='18' cy='13' r='1.6' fill='%23150f1a'/%3E%3Cpath d='M6 12 L10 6 L12 14Z' fill='%235c3a24'/%3E%3C/svg%3E"); }
+.unit-mancinik {
+  background-image: url('/assets/Warfare_001/Warfare/Catapult/Catapult%20Animations/Catapult_Blue/Catapult_Idle_Blue.png');
+  background-size: auto 179%; background-position: calc(var(--ico) * -0.315) calc(var(--ico) * -0.427);
+}
+.unit-suvari {
+  background-image: url('/assets/Warfare_001/Warfare/Horseman/Horseman%20Animations/Horseman_Blue/Horseman_Idle_Blue.png');
+  background-size: auto 205%; background-position: calc(var(--ico) * -0.6) calc(var(--ico) * -0.417);
+}
 /* deck picker in the lobby: portrait cards that turn over (front: the unit; back: what it does and who it beats) */
 .deck h3 { margin: calc(8px * var(--u)) 0 calc(2px * var(--u)); display: flex; align-items: center; gap: calc(10px * var(--u)); }
 .deck-medal { display: inline-grid; place-items: center; min-width: calc(46px * var(--u)); height: calc(30px * var(--u)); padding: 0 calc(8px * var(--u)); border-radius: calc(16px * var(--u));

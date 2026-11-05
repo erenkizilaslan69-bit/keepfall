@@ -19,7 +19,7 @@ import { serverUrl } from '../env';
 //  * leak         — a replay's soldiers still on screen seconds after it ended
 // And the numbers over time: frames a second, sprites on the scene, tweens alive.
 
-const UNIT_TEXTURE = /^(?:[a-z]+-)?(warrior|archer|lancer|pawn|monk|suvari|mancinik)-(idle|run|guard|attack|shoot|work|fire)/;
+const UNIT_TEXTURE = /^(?:[a-z]+-)?(warrior|swordsman|archer|lancer|pawn|monk|suvari|mancinik|lord)-(idle|run|guard|attack|shoot|work|fire)/;
 const TILE = 64;
 
 export interface Violation { at: number; game: number; kind: string; id: string; message: string; trace: TraceEvent[] }

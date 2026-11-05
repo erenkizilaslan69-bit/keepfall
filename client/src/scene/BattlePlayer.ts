@@ -5,10 +5,9 @@ import { reportError } from '../error-report';
 import type { Effects } from './Effects';
 import { reducedEffects } from '../prefs';
 import type { BattleStartedView, PlayerColor, Vec } from '../types';
-import { SHIELD_SCALE, UNIT_SCALE, colorKey, playRandom, unitOriginY } from './assets';
+import { UNIT_SCALE, colorKey, playRandom, unitOriginY, unitScale } from './assets';
 import type { Point } from './layout';
 import { toWorld } from './world';
-import { makeNewUnitArt } from './NewUnits';
 
 // Replays a battle we fight in, exactly as the server simulated it: the two sides line up facing
 // each other, the melee closes in during the approach, every hit in the record is an attack (archers
@@ -25,13 +24,13 @@ const COL = 0.75, LINE = 0.55; // tiles between soldiers across and along
 const FRONT_START = 1.7, FRONT_MEET = 0.6, BACK = 2.4; // tiles from the centre
 
 const LOOK: Record<string, { run: string; attack: string | null; scale: number }> = {
-  kalkanli: { run: 'warrior-guard', attack: null, scale: SHIELD_SCALE },
-  kilicli: { run: 'warrior-run', attack: 'warrior-attack', scale: UNIT_SCALE },
+  kalkanli: { run: 'warrior-guard', attack: null, scale: UNIT_SCALE },
+  kilicli: { run: 'swordsman-run', attack: 'swordsman-attack', scale: unitScale('kilicli') },
   mizrakci: { run: 'lancer-run', attack: 'lancer-attack', scale: UNIT_SCALE },
   okcu: { run: 'archer-run', attack: 'archer-shoot', scale: UNIT_SCALE },
   kesis: { run: 'monk-run', attack: null, scale: UNIT_SCALE },
-  mancinik: { run: 'mancinik-run', attack: 'mancinik-fire', scale: UNIT_SCALE },
-  suvari: { run: 'suvari-run', attack: 'suvari-attack', scale: UNIT_SCALE },
+  mancinik: { run: 'mancinik-run', attack: 'mancinik-fire', scale: unitScale('mancinik') },
+  suvari: { run: 'suvari-run', attack: 'suvari-attack', scale: unitScale('suvari') },
 };
 /** They stand back and do not close in: shooters, the catapult and the monk. */
 const STAYS_BACK = new Set(['okcu', 'mancinik', 'kesis']);
@@ -112,11 +111,6 @@ export class BattlePlayer {
     const p = { x: -f.y, y: f.x };
     // At a castle the fight is in front of the gate, on the road the attackers came along.
     const centre = view.kind === 'siege' ? { x: view.at.x - f.x * 1.6, y: view.at.y - f.y * 1.6 } : view.at;
-    // A colour whose cavalry and catapult pictures are not made yet (a battle right after the map came up, or one between players we have not met): make
-    // them now, so no soldier is drawn with the engine's black "missing texture" square.
-    if (view.sides.some((side) => !this.scene.textures.exists(colorKey(side.color, this.ownColor, 'suvari-run')))) {
-      try { makeNewUnitArt(this.scene, this.ownColor, view.sides.map((side) => side.color)); } catch (e) { reportError('battle-art', e, {}); }
-    }
     const fighters: (Fighter | null)[] = [];
     try {
     view.sides.forEach((side, s) => {
@@ -241,7 +235,7 @@ export class BattlePlayer {
     }
     if (a.ranged && b) {
       const stone = a.unit === 'mancinik';
-      const arrow = this.scene.add.image(a.sprite.x, a.sprite.y - (stone ? 60 : 30), stone ? 'stone-shot' : 'arrow').setScale(stone ? 1 : 0.6).setDepth(20_000);
+      const arrow = this.scene.add.image(a.sprite.x, a.sprite.y - (stone ? 60 : 30), stone ? 'stone-shot' : 'arrow').setScale(stone ? 0.4 : 0.6).setDepth(20_000);
       // The shot flies in an arc (a stone high and slow) and the arrow turns along it; it ends where its target stood.
       const from = { x: arrow.x, y: arrow.y }, to = { x: b.sprite.x, y: b.sprite.y - 24 };
       const lift = Math.min(70, 14 + Math.hypot(to.x - from.x, to.y - from.y) * (stone ? 0.45 : 0.18));

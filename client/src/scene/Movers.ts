@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { MapStateView, MoverUnit, PlayerColor, Vec } from '../types';
-import { SHIELD_SCALE, UNIT_SCALE, colorKey, playRandom, unitOriginY } from './assets';
+import { UNIT_SCALE, colorKey, playRandom, unitOriginY, unitScale } from './assets';
 import type { Target } from '../ui/windows';
 import type { WorldLabels } from '../ui/world-labels';
 import { COLOR_CSS } from '../format';
@@ -17,13 +17,13 @@ import type { Effects } from './Effects';
 // heading) and corrected smoothly when the next tick arrives.
 
 const RUN: Record<string, { anim: string; scale: number }> = {
-  kalkanli: { anim: 'warrior-guard', scale: SHIELD_SCALE },
-  kilicli: { anim: 'warrior-run', scale: UNIT_SCALE },
+  kalkanli: { anim: 'warrior-guard', scale: UNIT_SCALE },
+  kilicli: { anim: 'swordsman-run', scale: unitScale('kilicli') },
   mizrakci: { anim: 'lancer-run', scale: UNIT_SCALE },
   okcu: { anim: 'archer-run', scale: UNIT_SCALE },
   kesis: { anim: 'monk-run', scale: UNIT_SCALE },
-  mancinik: { anim: 'mancinik-run', scale: UNIT_SCALE },
-  suvari: { anim: 'suvari-run', scale: UNIT_SCALE },
+  mancinik: { anim: 'mancinik-run', scale: unitScale('mancinik') },
+  suvari: { anim: 'suvari-run', scale: unitScale('suvari') },
 };
 /** Marching order, front to back. */
 const ORDER = ['suvari', 'kalkanli', 'kilicli', 'mizrakci', 'okcu', 'mancinik', 'kesis'];

@@ -1,8 +1,6 @@
 // @ts-nocheck
-import { catapultFrame, FIRE_ARM } from './CatapultArt';
-// Pixel art drawn in code, so it can sit in the repository: the catapult's fallback drawing and the camp fire (Tiny Swords style: one dark
-// outline, three tones, team colour on the cloth). The rider of the cavalry is the pack's own Lancer, composed at load time from the
-// loaded sheet (nothing derived from the pack is ever written to disk). Everything here draws into plain canvases.
+// Pixel art drawn in code, so it can sit in the repository: the camp fire (Tiny Swords style: one dark outline, three tones).
+// Everything here draws into plain canvases.
 // Tiny pixel-art toolkit: parts are masks painted with an outline, a shade on the lower-right and a light on the upper-left.
 const OUT = '#1b2a3d';
 class Spr {
@@ -55,48 +53,6 @@ const TEAM = {
   blue: ['#3f78c4', '#2a4f8e', '#79aee8'], red: ['#d4503f', '#97302a', '#f08a74'], yellow: ['#e0b73a', '#a47c22', '#f6dc7c'], black: ['#4a4f5c', '#2c3038', '#8a90a0'], purple: ['#9a58c8', '#683a8e', '#c590ea'],
 };
 
-// Catapult (side view, facing right): wooden frame, two spoked wheels, a throwing arm with a bucket; team colour on the cloth and the wheel hubs.
-function catapult(team = 'blue', fired = false, wheel = 0) {
-  const S = new Spr(180, 130); S.ox = 26; S.oy = 30; const [t1, t2, t3] = TEAM[team];
-  const wood = ['#a56d3c', '#744827', '#cd9459'], dwood = ['#6e4526', '#47291a', '#8f5f38'];
-  const W3 = (m) => S.part3(m, wood[0], wood[1], wood[2], '#4a2c18'), D3 = (m) => S.part3(m, dwood[0], dwood[1], dwood[2], '#2e1a10');
-  const rope = '#dcc690', iron = ['#8896a6', '#5c6878', '#b4c0cc'];
-  const gy = 84;
-  const wheelAt = (cx) => {
-    D3(S.ell(cx, gy - 12, 13, 13));
-    W3(S.ell(cx, gy - 12, 9, 9));
-    for (let k = 0; k < 4; k++) { const a = wheel + k * Math.PI / 4; S.flat(S.line(cx - Math.cos(a) * 9, gy - 12 - Math.sin(a) * 9, cx + Math.cos(a) * 9, gy - 12 + Math.sin(a) * 9, 2), dwood[1]); }
-    S.part(S.ell(cx, gy - 12, 3.2, 3.2), t1, t2, t3);
-  };
-  wheelAt(34); wheelAt(88);
-  W3(S.rect(16, 54, 104, 64));
-  D3(S.rect(20, 64, 100, 69));
-  W3(S.poly([[96, 54], [118, 50], [118, 58], [104, 64]]));
-  W3(S.poly([[44, 54], [50, 20], [58, 20], [60, 54]]));
-  W3(S.poly([[60, 54], [60, 20], [68, 20], [78, 54]]));
-  D3(S.rect(46, 34, 76, 38));
-  const pivot = [63, 20];
-  const ang = fired ? -0.95 : 2.45;
-  const ax = (L) => [pivot[0] + Math.cos(ang) * L, pivot[1] + Math.sin(ang) * L];
-  const tip = ax(56), tail = ax(-16);
-  W3(S.line(tail[0], tail[1], tip[0], tip[1], 5));
-  S.part(S.rect(Math.round(tail[0]) - 6, Math.round(tail[1]) - 2, Math.round(tail[0]) + 6, Math.round(tail[1]) + 10), iron[0], iron[1], iron[2]);
-  D3(S.poly([[tip[0] - 10, tip[1] - 3], [tip[0] + 10, tip[1] - 3], [tip[0] + 6, tip[1] + 8], [tip[0] - 6, tip[1] + 8]]));
-  if (!fired) S.part(S.ell(tip[0], tip[1] - 6, 6.5, 6.5), '#9aa3ac', '#6d7681', '#c9d0d6');
-  S.part(S.ell(pivot[0], pivot[1], 4, 4), iron[0], iron[1], iron[2]);
-  S.part(S.poly([[48, 40], [74, 40], [74, 52], [61, 47], [48, 52]]), t1, t2, t3);
-  S.flat(S.line(tip[0] - 2, tip[1] + 6, 100, 56, 1), rope);
-  S.part(S.ell(100, 57, 3, 3), iron[0], iron[1], iron[2]);
-  return S;
-}
-
-
-export type TeamName = 'blue' | 'red' | 'yellow' | 'black' | 'purple';
-/** One frame of the catapult: 180×130, ground at y≈114. */
-export function catapultCanvas(team: TeamName, fired: boolean, wheel = 0): HTMLCanvasElement {
-  // The picture-based catapult once it has loaded (`wheel` 0..1 rocks it a little, as the deck cards and the menu use it); else the old drawing.
-  return catapultFrame(team, { arm: fired ? FIRE_ARM[2] : 0, bob: Math.round(Math.abs(Math.sin(wheel * Math.PI * 2)) * 1.5) }) ?? toCanvas(catapult(team, fired, wheel));
-}
 function toCanvas(s) {
   const c = document.createElement('canvas');
   c.width = s.w; c.height = s.h;

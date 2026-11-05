@@ -5,6 +5,7 @@ import { COLORED_IMAGES, colorKey } from './assets';
 import { drawBuilding } from './BuildingArt';
 import { Chimneys } from './Chimneys';
 import { isKingdomLook } from './KingdomSprites';
+import { Lord } from './Lord';
 import { SITES, type Point } from './layout';
 import { buildingSign } from './parts';
 import { Soldiers } from './Soldiers';
@@ -18,6 +19,9 @@ export class RegionDisplay {
   private readonly workers: Workers;
   private readonly soldiers: Soldiers;
   private readonly chimneys: Chimneys;
+  /** The lord of this castle, standing at the gate (a spectator sees him topple when it falls). */
+  readonly lord: Lord;
+  private lordFallen: boolean | null = null;
   private look: string | null = null;
 
   private readonly buildingKey: (key: string) => string;
@@ -30,13 +34,14 @@ export class RegionDisplay {
     this.workers = new Workers(scene, labels, off, false, k);
     this.soldiers = new Soldiers(scene, labels, off, `${seat}:`, k);
     this.chimneys = new Chimneys(scene);
+    this.lord = new Lord(scene, off, k);
     for (const type of Object.keys(SITES) as BuildingType[]) {
       const dust = scene.add.sprite(SITES[type].center.x + off.x, SITES[type].center.y + off.y, 'dust').setScale(2).setDepth(9_000 + off.y).setVisible(false);
       this.slots.set(type, { level: 0, sprites: [], dust });
     }
   }
 
-  debugSprites(): Phaser.GameObjects.Sprite[] { return [...this.workers.debugSprites(), ...this.soldiers.debugSprites()]; }
+  debugSprites(): Phaser.GameObjects.Sprite[] { return [...this.workers.debugSprites(), ...this.soldiers.debugSprites(), this.lord.debugSprite()]; }
 
   /** The castle's kingdom (a spectator is told every one): its buildings are drawn in that kingdom's pictures. */
   setLook(look: string | null | undefined): void {
@@ -71,6 +76,8 @@ export class RegionDisplay {
     }
     this.workers.sync(castle.jobs);
     this.soldiers.sync(castle.units);
+    if (castle.eliminated) this.lord.setFallen(true, this.lordFallen === false);
+    this.lordFallen = castle.eliminated;
   }
 
   destroy(): void {
@@ -83,6 +90,7 @@ export class RegionDisplay {
     this.chimneys.clearAll();
     this.workers.destroy();
     this.soldiers.destroy();
+    this.lord.destroy();
   }
 
   update(dt: number): void {

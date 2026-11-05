@@ -7,7 +7,8 @@ import type { Anchor, Target } from '../ui/windows';
 import type { WorldLabels } from '../ui/world-labels';
 import { COLOR_CSS, esc } from '../format';
 import { t, tr } from '../i18n';
-import { makeCampfire, newUnitArtJobs } from './NewUnits';
+import { makeCampfire } from './NewUnits';
+import { Lord } from './Lord';
 import { createAnimations, playFrom, loadSpectatorAssets, preloadAssets } from './assets';
 import { CAMP, CASTLE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH } from './layout';
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
@@ -98,6 +99,7 @@ export class WorldScene extends Phaser.Scene {
   private buildings = new Map<BuildingType, BuildingSlot>();
   private workers!: Workers;
   private soldiers!: Soldiers;
+  private lord!: Lord;
   private movers!: Movers;
   private fog!: Fog;
   private terrain!: Terrain;
@@ -181,6 +183,7 @@ export class WorldScene extends Phaser.Scene {
     for (const type of Object.keys(SITES) as BuildingType[]) this.createSite(type);
     this.workers = new Workers(this, this.labels);
     this.soldiers = new Soldiers(this, this.labels);
+    this.lord = new Lord(this);
     this.movers = new Movers(this, this.color, this.labels);
     this.sites = new SiteLayer(this, this.labels, (id) => this.select({ kind: 'site', id }));
     this.movers.onSelect = (t) => this.select(t);
@@ -195,7 +198,7 @@ export class WorldScene extends Phaser.Scene {
     if (import.meta.env.DEV) {
       setTraceClock(() => this.gameNow().now);
       this.debug = new DebugLayer(this, this.movers, this.battles,
-        () => [...this.workers.debugSprites(), ...this.soldiers.debugSprites(), ...this.sites.debugSprites(), ...[...this.regions.values()].flatMap((r) => r.debugSprites())],
+        () => [...this.workers.debugSprites(), ...this.soldiers.debugSprites(), this.lord.debugSprite(), ...this.sites.debugSprites(), ...[...this.regions.values()].flatMap((r) => r.debugSprites())],
         () => this.clock.speed, () => this.gameNow().now);
       this.debug.setRoads(this.layout.roads.map((r) => r.points));
       this.debug.setForests(this.layout.features.map((f) => ({ center: f.center, radius: f.radius })));
@@ -204,22 +207,10 @@ export class WorldScene extends Phaser.Scene {
     this.pendingBattles = [];
     this.setupCamera();
     this.ready = true;
-    this.buildNewUnitArt();
     this.onReady?.(); // the clouds part and the camera is already on our castle
     if (this.state) this.apply(this.state);
     if (this.map) this.setMap(this.map);
     if (this.pendingSpectator) this.setSpectator(this.pendingSpectator);
-  }
-
-  /**
-   * The cavalry and catapult art takes a couple of seconds to draw. At the start of a match nobody has any, so it is drawn one strip per
-   * frame while the game begins; a map joined later (a reload mid-match) draws it at once, as soldiers may be using it already.
-   */
-  private buildNewUnitArt(): void {
-    const colors = [...this.otherColors].filter((c) => c !== 'black');
-    const jobs = newUnitArtJobs(this, this.color, colors);
-    if ((this.state?.elapsedSeconds ?? 0) > 20) { for (const job of jobs) job(); return; }
-    this.time.addEvent({ delay: 16, repeat: jobs.length - 1, callback: () => { jobs.shift()?.(); } });
   }
 
   /** What we see on the map this tick. */
@@ -338,6 +329,7 @@ export class WorldScene extends Phaser.Scene {
    * after). A castle that falls goes on smouldering. Cosmetic: it only follows the replay the players in that battle already watch.
    */
   private siegeFx(seat: number, progress: number, wins: boolean, done: boolean): void {
+    (seat === this.mySeat ? this.lord : this.regions.get(seat)?.lord)?.fight(!done); // the lord swings his mace at his own gate while it is besieged
     const img = seat === this.mySeat ? this.castleSprite : this.otherCastles.get(seat)?.image;
     if (!img) return;
     const id = `siege:${seat}`;
@@ -633,6 +625,7 @@ export class WorldScene extends Phaser.Scene {
     const rest = this.castleSprite.getData('rest') ?? CASTLE.scale;
     if (s.eliminated && this.ownFallen === false) { pulse('#8a1a12', 0.4, 500, 2400); this.fx.collapse(this.castleSprite, CASTLE.x, CASTLE.y, rest, true); this.time.delayedCall(1300, () => this.fx.damage(`siege:${this.mySeat}`, CASTLE.x, CASTLE.y, 0, true)); }
     else if (s.eliminated && this.ownFallen === null) { this.fx.ruin(this.castleSprite, rest); this.fx.damage(`siege:${this.mySeat}`, CASTLE.x, CASTLE.y, 0, true); }
+    if (s.eliminated) this.lord.setFallen(true, this.ownFallen === false);
     this.ownFallen = s.eliminated;
     this.castleSprite.setAlpha(s.eliminated ? 0.55 : 1);
   }

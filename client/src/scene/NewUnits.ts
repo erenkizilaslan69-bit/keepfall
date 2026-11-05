@@ -1,86 +1,19 @@
 import Phaser from 'phaser';
-import type { PlayerColor } from '../types';
-import { catapultCanvas, flameCanvas, type TeamName } from './PixelArt';
-import { horsemanFrame, type LancerSheets } from './HorseArt';
-import { catapultFrame, FIRE_ARM, RUN_POSE } from './CatapultArt';
+import { flameCanvas } from './PixelArt';
 
-// The textures and animations of the cavalry and the catapult, made at load time in every player colour that is on the map:
-//   suvari-run (4 gallop frames), suvari-idle (the horse stands, the Lancer idles), suvari-attack (the horse stands, the Lancer thrusts),
-//   mancinik-idle (loaded) and mancinik-fire (the throw).
-// A colour other than our own gets the usual "<colour>-" prefix. The Lancer riding the horse comes from the loaded Lancer sheet.
-
-export const HORSE_FRAME = { w: 240, h: 150 };
-export const CATAPULT_FRAME = { w: 180, h: 130 };
-
-const key = (color: PlayerColor, own: PlayerColor, name: string) => (color === own ? name : `${color}-${name}`);
-
-function addStrip(scene: Phaser.Scene, name: string, frames: HTMLCanvasElement[], w: number, h: number, rate: number, repeat: number): void {
-  if (scene.textures.exists(name)) return;
-  const strip = document.createElement('canvas');
-  strip.width = w * frames.length; strip.height = h;
-  const g = strip.getContext('2d')!;
-  frames.forEach((f, i) => g.drawImage(f, i * w, 0));
-  const tex = scene.textures.addCanvas(name, strip)!;
-  frames.forEach((_, i) => tex.add(i, 0, i * w, 0, w, h));
-  scene.anims.create({
-    key: name,
-    frames: frames.map((_, i) => ({ key: name, frame: i })),
-    frameRate: rate,
-    repeat,
-  });
-}
+// The camp fire's flame, drawn in code at load time. (The cavalry and the catapult are Tiny Swords Warfare sheets now: see assets.ts.)
 
 /** The camp fire's flame: six frames, 48×64, in a strip texture and an animation named "campfire". */
 export const FLAME_FRAME = { w: 48, h: 64 };
 export function makeCampfire(scene: Phaser.Scene): void {
-  addStrip(scene, 'campfire', [0, 1, 2, 3, 4, 5].map((f) => flameCanvas(f, 6)), FLAME_FRAME.w, FLAME_FRAME.h, 9, -1);
-}
-
-/** A small grey stone for the catapult's throw. */
-function makeStone(scene: Phaser.Scene): void {
-  if (scene.textures.exists('stone-shot')) return;
-  const c = document.createElement('canvas');
-  c.width = c.height = 14;
-  const g = c.getContext('2d')!;
-  g.fillStyle = '#1b2a3d'; g.beginPath(); g.arc(7, 7, 7, 0, Math.PI * 2); g.fill();
-  g.fillStyle = '#9aa3ac'; g.beginPath(); g.arc(7, 7, 5.5, 0, Math.PI * 2); g.fill();
-  g.fillStyle = '#c9d0d6'; g.beginPath(); g.arc(5, 5, 2, 0, Math.PI * 2); g.fill();
-  scene.textures.addCanvas('stone-shot', c);
-}
-
-/**
- * The art for each colour whose Lancer sheet is loaded, as small jobs (a strip each; a colour already done is skipped). Drawing it all takes
- * a couple of seconds, so the map runs the jobs one per frame after it is up instead of making the player wait.
- */
-export function newUnitArtJobs(scene: Phaser.Scene, own: PlayerColor, colors: PlayerColor[]): (() => void)[] {
-  const jobs: (() => void)[] = [() => makeStone(scene)];
-  for (const color of new Set([own, ...colors])) {
-    // (A spectator's late load passes a made-up own colour so that every real colour gets its prefix: it has no art of its own.)
-    if (!['blue', 'red', 'yellow', 'purple', 'black'].includes(color)) continue;
-    const lancer = key(color, own, 'lancer-attack');
-    if (!scene.textures.exists(lancer) || !scene.textures.exists(key(color, own, 'lancer-idle')) || !scene.textures.exists(key(color, own, 'lancer-run'))) continue;
-    const sheets: LancerSheets = {
-      idle: scene.textures.get(key(color, own, 'lancer-idle')).getSourceImage() as HTMLImageElement,
-      run: scene.textures.get(key(color, own, 'lancer-run')).getSourceImage() as HTMLImageElement,
-      attack: scene.textures.get(lancer).getSourceImage() as HTMLImageElement,
-    };
-    const team = color as TeamName;
-    const { w, h } = HORSE_FRAME;
-    jobs.push(
-      () => addStrip(scene, key(color, own, 'suvari-run'), [0, 1, 2, 3].map((p) => horsemanFrame(sheets, team, 'run', p)), w, h, 10, -1),
-      () => addStrip(scene, key(color, own, 'suvari-idle'), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((f) => horsemanFrame(sheets, team, 'idle', f)), w, h, 8, -1),
-      () => addStrip(scene, key(color, own, 'suvari-attack'), [0, 1, 2].map((f) => horsemanFrame(sheets, team, 'attack', f)), w, h, 8, 0),
-      () => addStrip(scene, key(color, own, 'mancinik-idle'), [catapultCanvas(team, false, 0)], CATAPULT_FRAME.w, CATAPULT_FRAME.h, 1, -1),
-      () => addStrip(scene, key(color, own, 'mancinik-fire'),
-        FIRE_ARM.map((arm, i) => catapultFrame(team, { arm }) ?? catapultCanvas(team, i > 0 && i < 3, 0.3 * i)), CATAPULT_FRAME.w, CATAPULT_FRAME.h, 6, 0),
-      () => addStrip(scene, key(color, own, 'mancinik-run'),
-        RUN_POSE.map((pose) => catapultFrame(team, pose) ?? catapultCanvas(team, false, 0)), CATAPULT_FRAME.w, CATAPULT_FRAME.h, 5, -1),
-    );
-  }
-  return jobs;
-}
-
-/** All of it at once (a spectator's late load, or a map that has to show cavalry right away). */
-export function makeNewUnitArt(scene: Phaser.Scene, own: PlayerColor, colors: PlayerColor[]): void {
-  for (const job of newUnitArtJobs(scene, own, colors)) job();
+  if (scene.textures.exists('campfire')) return;
+  const frames = [0, 1, 2, 3, 4, 5].map((f) => flameCanvas(f, 6));
+  const { w, h } = FLAME_FRAME;
+  const strip = document.createElement('canvas');
+  strip.width = w * frames.length; strip.height = h;
+  const g = strip.getContext('2d')!;
+  frames.forEach((f, i) => g.drawImage(f, i * w, 0));
+  const tex = scene.textures.addCanvas('campfire', strip)!;
+  frames.forEach((_, i) => tex.add(i, 0, i * w, 0, w, h));
+  scene.anims.create({ key: 'campfire', frames: frames.map((_, i) => ({ key: 'campfire', frame: i })), frameRate: 9, repeat: -1 });
 }
