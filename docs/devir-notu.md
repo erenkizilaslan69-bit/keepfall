@@ -93,6 +93,8 @@ Açık: 852x323'te (Safari çubuğu açık) rehber 17. adımda (orman) takılıy
 - İleride (bütçe/yayıncı olunca): piksel sanatçısıyla özgün set.
 - **KayKit 3D paketleri** (Dungeon Pack 1.1, Medieval Hexagon Pack 1.0, Skeletons 1.1, Adventurers 2.0 — hepsi CC0, ücretsiz): **Keepfall'da KULLANILMAYACAK** (3D model; Tiny Swords'un 2D piksel stiliyle tutarsız). Gelecekteki bir 3D proje için saklandı (Medieval Hexagon altıgen harita stratejisine uygun).
 
+- **8. birlik adayı: Berserker (hızlı, yüksek saldırı, düşük savunma) — görsel geçişten sonra ayrı denge turu.** Warfare'da görseli var (`Berserker/`), şimdilik kullanılmıyor. King birlik değil: her kalenin lordu (kapıda durur, savunma savaşında görünür, kale düşünce düşme animasyonu); yalnız istemci görseli, denge etkisi yok. Birlik eşlemesi ve envanter: `docs/gorsel-envanter.md`.
+
 **Tiny Swords Warfare (Eren SATIN ALDI, 2026-11-05):** renk varyantları VAR, lisans Free Pack ile aynı (sorun yok). İçerik (mağaza görselinden):
 - Sıra 1: taç/kalkanlı hafif zırhlı birlik → **Kalkanlı** adayı.
 - Sıra 2: hızlı hafif savaşçı (kısa bıçak/balta) → yedek/özel birlik adayı.
