@@ -3,6 +3,7 @@ import type { Corner, PlayerColor } from '../types';
 import { colorKey } from './assets';
 import { TILE, type Point } from './layout';
 import { GatePaving } from './Roads';
+import { CourtyardFloor } from './CourtyardFloor';
 import { stoneSheet, stoneTower } from './KingdomSprites';
 
 // The wall around a castle's region (16×12 tiles), on the region's edge so every building and worker is inside. It is only a picture of the
@@ -46,6 +47,7 @@ export class WallRing {
   private rt: Phaser.GameObjects.RenderTexture | null = null;
   private towers: Phaser.GameObjects.Image[] = [];
   private readonly paving: GatePaving;
+  private floor: CourtyardFloor | null = null;
 
   /**
    * `origin`: the region's top-left corner in scene pixels. `corner`: which corner of the map the region is in (decides which side the gate is on).
@@ -64,6 +66,7 @@ export class WallRing {
     if (look === this.look) return;
     this.look = look;
     this.paving.setLook(look);
+    this.floor?.setLook(look);
     if (this.level > 0) { const level = this.level; this.level = 0; this.setLevel(level); if (this.fallen) { this.fallen = false; this.ruin(); } }
   }
 
@@ -76,6 +79,8 @@ export class WallRing {
     this.destroy();
     cutWallFrames(this.scene);
     this.paving.setLevel(level); // a strong wall has a paved way to its gate
+    this.floor ??= new CourtyardFloor(this.scene, this.origin, this.gateOnEast, `${this.corner}-${this.color}`); // the yard inside (painted once)
+    if (this.look) this.floor.setLook(this.look);
     const rt = this.scene.add.renderTexture(this.origin.x, this.origin.y, REGION_W, REGION_H).setOrigin(0).setDepth(DEPTH_WALL);
     this.rt = rt;
     const g = this.scene.make.graphics({ x: 0, y: 0 }, false);
@@ -94,6 +99,7 @@ export class WallRing {
     if (this.fallen) return;
     this.fallen = true;
     this.rt?.setAlpha(0.45).setTint(0x888888);
+    this.floor?.ruin();
     for (const t of this.towers) { fx?.dust(t.x, t.y - 30, 1.6, 0x8a7a66); t.destroy(); }
     this.towers = [];
   }
