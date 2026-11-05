@@ -19,7 +19,8 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i >= 0 ? process.argv[i + 1] : d; };
 const URL_ = arg('url', 'http://localhost:5174').replace(/\/$/, '');
 const OUT_MD = resolve(ROOT, arg('out', 'docs/ui-audit.md'));
-const SHOTS = join(ROOT, 'art', 'shots', 'ui-audit');
+const SHOTS_REL = arg('shots', 'art/shots/ui-audit'); // (--shots art/shots/other: another picture folder, e.g. for a before/after pair)
+const SHOTS = join(ROOT, ...SHOTS_REL.split('/'));
 const QUICK = process.argv.includes('--quick');
 const JOBS = Number(arg('jobs', 3));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -69,7 +70,7 @@ const AUDIT_JS = `(opts) => {
     // outside the screen
     const outB = pageScrolls ? 0 : r.bottom - ih; // (a menu page that scrolls: the part below the fold is not hidden)
     if (r.left < -1 || r.top < -1 || r.right > iw + 1 || outB > 1) add('critical', 'outside-viewport', e, 'sticks out by ' + Math.round(Math.max(-r.left, -r.top, r.right - iw, outB)) + ' px');
-    else if (inset.l + inset.r + inset.t + inset.b > 0 && (r.left < inset.l - 1 || r.right > iw - inset.r + 1 || r.top < inset.t - 1 || r.bottom > ih - inset.b + 1) && !e.closest('.fab, .guide-fab, .settings-fab, .lang-fab'))
+    else if (inset.l + inset.r + inset.t + inset.b > 0 && (r.left < inset.l - 1 || r.right > iw - inset.r + 1 || r.top < inset.t - 1 || (!pageScrolls && r.bottom > ih - inset.b + 1)) && !e.closest('.fab, .guide-fab, .settings-fab, .lang-fab'))
       add('minor', 'outside-safe-area', e, 'inside the notch / home-bar band');
     // covered
     const cx = Math.min(Math.max(r.left + r.width / 2, vis.left + 1), vis.right - 1), cy = Math.min(Math.max(r.top + r.height / 2, vis.top + 1), vis.bottom - 1);
@@ -78,7 +79,7 @@ const AUDIT_JS = `(opts) => {
       if (e.matches('input[type=checkbox], input[type=radio]')) { /* custom-drawn: the label covers it on purpose */ } else if (top && top.closest('.guide-overlay, .modal-shade, .spec-wait, .win, .kingdom-panel, .scroll-pop, .decree, .settings, .guide, .screen.end, .screen.lobby') && !e.closest('.guide-overlay, .modal-shade, .spec-wait, .win, .kingdom-panel, .scroll-pop, .decree, .settings, .guide, .screen.end, .screen.lobby')) { /* a window lies over what is behind it on purpose: only its own things and what must stay reachable are counted */ } else if (top && !(top === e || e.contains(top) || top.contains(e) || (e.tagName === 'INPUT' && top.closest('label') === e.closest('label')))) add('critical', 'covered', e, 'covered by ' + desc(top));
     }
     // touch target
-    if (touch && (r.width < 43.5 || r.height < 43.5)) { const hit = getComputedStyle(e, '::after'); const grown = hit && hit.content !== 'none' && hit.position === 'absolute'; if (!grown) add(Math.min(r.width, r.height) < 28 ? 'important' : 'minor', 'small-target', e, Math.round(r.width) + 'x' + Math.round(r.height) + ' px'); }
+    if (touch && (r.width < 43.5 || r.height < 43.5)) { const hit = getComputedStyle(e, '::after'), hit2 = getComputedStyle(e, '::before'); const grown = (hit && hit.content !== 'none' && hit.position === 'absolute') || (hit2 && hit2.content !== 'none' && hit2.position === 'absolute'); if (!grown) add(Math.min(r.width, r.height) < 28 ? 'important' : 'minor', 'small-target', e, Math.round(r.width) + 'x' + Math.round(r.height) + ' px'); }
     // clipped text
     const cs = getComputedStyle(e);
     if (e.scrollWidth > e.clientWidth + 2 && /(hidden|clip)/.test(cs.overflowX) && (e.textContent || '').trim()) add('important', 'text-clipped', e, 'scrollWidth ' + e.scrollWidth + ' > ' + e.clientWidth);
@@ -91,9 +92,21 @@ const AUDIT_JS = `(opts) => {
     let own = false; for (const n of e.childNodes) if (n.nodeType === 3 && n.textContent.trim().length > 1) { own = true; break; }
     if (!own) continue;
     const fs = parseFloat(getComputedStyle(e).fontSize);
-    if (fs < 11.95) { const key = e.tagName + '.' + String(e.className).split(' ')[0]; if (!seen.has(key)) { seen.add(key); add(fs < 10 ? 'important' : 'minor', 'small-text', e, fs.toFixed(1) + ' px'); } }
+    if (fs > 0 && fs < 11.95) { const key = e.tagName + '.' + String(e.className).split(' ')[0]; if (!seen.has(key)) { seen.add(key); add(fs < 10 ? 'important' : 'minor', 'small-text', e, fs.toFixed(1) + ' px'); } }
     const cs = getComputedStyle(e);
     if (e.scrollWidth > e.clientWidth + 2 && /(hidden|clip)/.test(cs.overflowX) && !e.matches('button, .btn, [role=button]') && getComputedStyle(e).display !== 'inline') add('important', 'text-clipped', e, 'scrollWidth ' + e.scrollWidth + ' > ' + e.clientWidth);
+  }
+  // neighbouring pressable things on a touch screen: at least 8 px of air between them (neither one inside the other)
+  if (touch) {
+    const rs = els.filter((e) => !e.matches('input[type=hidden]')).map((e) => ({ e, r: e.getBoundingClientRect() }));
+    let tight = 0;
+    for (let a = 0; a < rs.length && tight < 40; a++) for (let b = a + 1; b < rs.length && tight < 40; b++) {
+      const A = rs[a].r, B = rs[b].r;
+      if (rs[a].e.contains(rs[b].e) || rs[b].e.contains(rs[a].e)) continue;
+      const hGap = Math.max(B.left - A.right, A.left - B.right), vGap = Math.max(B.top - A.bottom, A.top - B.bottom);
+      const overlapY = Math.min(A.bottom, B.bottom) - Math.max(A.top, B.top), overlapX = Math.min(A.right, B.right) - Math.max(A.left, B.left);
+      if ((overlapY > 4 && hGap >= 0 && hGap < 8) || (overlapX > 4 && vGap >= 0 && vGap < 8) || (overlapX > 4 && overlapY > 4)) { tight++; add('minor', 'tight-targets', rs[a].e, (overlapX > 4 && overlapY > 4 ? 'overlaps ' : Math.round(Math.max(hGap, vGap)) + ' px to ') + desc(rs[b].e)); }
+    }
   }
   // windows
   const WINS = '.win, .kingdom-panel, .scroll-pop, .decree, .settings, .guide, .tut-card, .modal-shade > *, .spec-wait .paper, .screen.end, .screen.lobby';
@@ -132,6 +145,8 @@ async function run(device, lang) {
     : device.touch ? 'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36' : undefined;
   const ctx = await browser.newContext({ viewport: { width: device.w, height: device.h }, deviceScaleFactor: device.dpr, isMobile: device.touch && device.id !== 'ipad', hasTouch: device.touch, userAgent: UA });
   const inset = device.inset;
+  // the dev server's speed buttons (x1/x5/x20) do not exist on a real (Production / CrazyGames) server: they would widen the top bar and spoil its layout
+  await ctx.addInitScript("document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '.tb-speed { display: none !important; }'; document.head.appendChild(s); })");
   await ctx.addInitScript(`try{localStorage.setItem('keepfall_tutorial_seen','true');localStorage.setItem('keepfall_tutorial_done','true');localStorage.setItem('keepfall_lang','${lang}');localStorage.setItem('keepfall.matches','5')}catch(e){}` +
     (inset ? `;document.addEventListener('DOMContentLoaded', () => document.documentElement.classList.add('sim-inset'))` : ''));
   const page = await ctx.newPage();
@@ -165,7 +180,7 @@ async function run(device, lang) {
   /** Tap every visible clickable thing inside `root`, one by one: what changed is audited and shot, then `reopen` puts the screen back. */
   const LIST = `(sel) => { const box = document.querySelector(sel); if (!box) return []; const vis = (e) => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
     return [...box.querySelectorAll('button, [data-act], [data-a], [data-tab], select, .tab, .btn, a[href]')].filter((e) => vis(e) && e.tagName !== 'SELECT' && !/^(−|-)$/.test((e.textContent || '').trim()) && !e.disabled && e.getAttribute('aria-disabled') !== 'true' && !/(^| )(disabled|inactive|off)( |$)/.test(e.className) && getComputedStyle(e).pointerEvents !== 'none' && !e.matches('.win-close, [data-close], .kd-x, [data-act=close], [data-a=close]'))
-      .map((e, i) => { const r = e.getBoundingClientRect(); return { i, x: r.left + r.width / 2, y: r.top + r.height / 2, label: (e.getAttribute('aria-label') || e.textContent || e.dataset.act || e.dataset.a || e.dataset.tab || e.tagName).trim().replace(/\s+/g, ' ').slice(0, 20) }; }); }`;
+      .map((e, i) => { e.setAttribute('data-audit-i', String(i)); const r = e.getBoundingClientRect(); return { i, x: r.left + r.width / 2, y: r.top + r.height / 2, label: (e.getAttribute('aria-label') || e.textContent || e.dataset.act || e.dataset.a || e.dataset.tab || e.tagName).trim().replace(/\s+/g, ' ').slice(0, 20) }; }); }`;
   /** Tap every visible clickable thing inside `root`, one by one: what changed is audited and shot, then `reopen` puts the screen back. */
   const exercise = async (state, root, reopen, cap = 14) => {
     const list = await page.evaluate(`(${LIST})(${JSON.stringify(root)})`);
@@ -175,7 +190,11 @@ async function run(device, lang) {
       if (NO_TAP.test(t.label) || t.label === 'TR' || t.label === 'EN') continue;
       n++;
       await reopen();
-      const els = await page.evaluate(`(${LIST})(${JSON.stringify(root)})`);
+      let els = await page.evaluate(`(${LIST})(${JSON.stringify(root)})`);
+      // a button below the fold of its (scrolling) window is scrolled into view first, like a finger would do: otherwise the tap lands outside the screen and looks dead
+      await page.evaluate(`(i) => { const e = document.querySelector('[data-audit-i="' + i + '"]'); if (e) e.scrollIntoView({ block: 'center', inline: 'center' }); }`, t.i).catch(() => {});
+      await sleep(120);
+      els = await page.evaluate(`(${LIST})(${JSON.stringify(root)})`);
       const at = els[t.i]; if (!at || at.label !== t.label) continue; // (the screen is not the same any more: nothing is tapped blindly)
       const before = await sig();
       try { await tap(at.x, at.y); } catch { continue; }
@@ -348,7 +367,7 @@ for (const r of all) for (const c of r.consoleErrors) issues.push({ sev: 'critic
 for (const r of all) for (const f of r.failed) issues.push({ sev: 'important', type: 'failed-request', el: f.url, note: f.why, rect: null, state: f.state, shot: null, device: r.device, lang: r.lang });
 // the same problem on the same element in the same state on many devices/languages is one line with a count
 const groups = new Map();
-for (const i of issues) { const wide = ['small-text', 'small-target', 'outside-safe-area', 'covered', 'dead-button'].includes(i.type); const k = [i.sev, i.type, wide ? '(several screens)' : i.state, i.el].join('|'); const g = groups.get(k) ?? { ...i, state: wide ? '(several screens)' : i.state, where: [], count: 0 }; g.count++; if (g.where.length < 4) g.where.push(`${i.device}/${i.lang}`); if (!g.shot && i.shot) g.shot = i.shot; groups.set(k, g); }
+for (const i of issues) { const wide = ['small-text', 'small-target', 'outside-safe-area', 'covered', 'dead-button', 'tight-targets'].includes(i.type); const k = [i.sev, i.type, wide ? '(several screens)' : i.state, i.el].join('|'); const g = groups.get(k) ?? { ...i, state: wide ? '(several screens)' : i.state, where: [], count: 0 }; g.count++; if (g.where.length < 4) g.where.push(`${i.device}/${i.lang}`); if (!g.shot && i.shot) g.shot = i.shot; groups.set(k, g); }
 const grouped = [...groups.values()].sort((a, b) => SEV_ORDER[a.sev] - SEV_ORDER[b.sev] || b.count - a.count);
 const byType = {};
 for (const i of issues) byType[i.type] = (byType[i.type] ?? 0) + 1;
@@ -374,7 +393,7 @@ async function sheet(name, rows, title) {
   await p.screenshot({ path: join(sheetDir, name + '.png'), fullPage: true });
   await b.close();
   rmSync(f);
-  return `art/shots/ui-audit/sheets/${name}.png`;
+  return `${SHOTS_REL}/sheets/${name}.png`;
 }
 const worstFirst = stateRows.filter((r) => r.bad > 0).sort((a, b) => SEV_ORDER[a.worst.sev] - SEV_ORDER[b.worst.sev] || b.bad - a.bad);
 // one picture per (state kind) first, so the sheets show different problems rather than the same one on every device
