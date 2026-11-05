@@ -7,7 +7,7 @@ import { UNIT_SCALE, playRandom, unitOriginY } from './assets';
 import { sign } from './parts';
 import { toWorld } from './world';
 import { reducedEffects } from '../prefs';
-import { FOREST_WIDTH, forestTexture } from './ForestSprites';
+import { makeChestTextures } from './ForestSprites';
 
 // The places of the forest we have found: a chest (a pile of gold), a village (black houses), a bandit camp (a
 // tower, a fire and the bandits) and the big camp in the middle, each with its trail from the forest road. What
@@ -157,32 +157,48 @@ export class SiteLayer {
       return sp;
     };
     const fire = (x: number, y: number, scale = 1): void => {
-      const f = add(x, y, 'fire', scale, 5, 0.85);
-      f.play({ key: 'fire', startFrame: Phaser.Math.Between(0, 5) });
+      const f = add(x, y, 'campfire', scale, 5, 0.97); // the same flame as the soldiers' camp fire at home
+      f.play({ key: 'campfire', startFrame: Phaser.Math.Between(0, 5) });
     };
 
-    const key = forestTexture(this.scene, s.kind, s.gone);
-    if (key) {
-      // The generated picture (full, or its emptied look); bandits stand inside a camp, a plundered village still smoulders.
-      const tex = this.scene.textures.get(key).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
-      const scale = FOREST_WIDTH[s.kind] / tex.width;
-      add(p.x, p.y + 10, key, scale, 0, 0.88);
-      if (s.kind === 'village' && s.gone) fire(p.x - 4, p.y + 6, 0.9);
-      if (s.kind === 'camp' || s.kind === 'bigCamp') {
-        if (!s.gone) {
-          const big = s.kind === 'bigCamp';
-          const list: string[] = [];
-          for (const b of s.bandits) for (let i = 0; i < b.count; i++) list.push(b.unitId);
-          const shown = list.slice(0, big ? 10 : 4);
-          shown.forEach((unit, i) => {
-            const a = (i / shown.length) * Math.PI * 2 + 0.4;
-            const r = (big ? 44 : 30) + (i % 2) * 6;
-            const bk = BANDIT_ANIM[unit] ?? 'black-warrior-idle';
-            const sp = add(p.x + Math.cos(a) * r, p.y + (big ? 30 : 22) + Math.sin(a) * r * 0.5, bk, UNIT_SCALE, 0, unitOriginY(bk));
-            sp.setFlipX(Math.cos(a) > 0);
-            if (this.scene.anims.exists(bk)) playRandom(sp, bk, 5);
-          });
-        }
+    // Built from the pack's black buildings (the bandits' colour); a place that is gone is the same picture, burnt out and grey.
+    const ruin = (sp: Phaser.GameObjects.Sprite): Phaser.GameObjects.Sprite => (s.gone ? sp.setTint(0x6b6870).setAlpha(0.92) : sp);
+    const bandits = (cx: number, radius: number, rise: number, count: number, spread = 0.5): void => {
+      const list: string[] = [];
+      for (const b of s.bandits) for (let i = 0; i < b.count; i++) list.push(b.unitId);
+      const shown = list.slice(0, count);
+      shown.forEach((unit, i) => {
+        const a = (i / shown.length) * Math.PI * 2 + 0.4;
+        const r = radius + (i % 2) * 6;
+        const bk = BANDIT_ANIM[unit] ?? 'black-warrior-idle';
+        const sp = add(cx + Math.cos(a) * r, p.y + rise + Math.sin(a) * r * spread, bk, UNIT_SCALE, 0, unitOriginY(bk));
+        sp.setFlipX(Math.cos(a) > 0);
+        if (this.scene.anims.exists(bk)) playRandom(sp, bk, 5);
+      });
+    };
+    if (s.kind === 'village') {
+      // three black houses; a plundered village stands burnt out, smouldering
+      ruin(add(p.x - 50, p.y + 22, 'black-house2', 0.62));
+      ruin(add(p.x + 48, p.y + 18, 'black-house1', 0.6));
+      ruin(add(p.x, p.y - 2, 'black-house3', 0.62));
+      if (s.gone) { fire(p.x - 20, p.y + 40, 1); fire(p.x + 26, p.y + 36, 0.8); }
+    } else if (s.kind === 'camp') {
+      // a watch tower and a camp fire with the bandits round it; cleared: the fire is out, the tower stands grey
+      ruin(add(p.x - 46, p.y + 10, 'black-tower', 0.62));
+      if (!s.gone) { fire(p.x + 22, p.y + 28, 1.1); bandits(p.x + 22, 34, 20, 4, 0.55); }
+      else add(p.x + 22, p.y + 26, 'rock3', 0.4, 0, 0.75).setTint(0x4a4a50);
+    } else if (s.kind === 'bigCamp') {
+      // the black castle with a fire at each side and a crowd of bandits in front
+      ruin(add(p.x, p.y + 6, 'castle-black', 0.8));
+      if (!s.gone) { fire(p.x - 132, p.y + 52, 1.3); fire(p.x + 132, p.y + 52, 1.3); bandits(p.x, 78, 48, 10, 0.34); }
+    } else {
+      // the pack has no chest: one drawn in code, shut with its gold beside it, or open and empty
+      makeChestTextures(this.scene);
+      if (s.gone) add(p.x, p.y + 12, 'kf-chest-open', 1, 0, 0.9);
+      else {
+        add(p.x - 6, p.y + 12, 'kf-chest', 1, 0, 0.9);
+        add(p.x + 34, p.y + 14, 'stone3', 0.5, 1, 0.55);
+        add(p.x - 40, p.y + 16, 'stone1', 0.42, 1, 0.55);
       }
     }
 

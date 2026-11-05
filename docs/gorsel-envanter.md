@@ -119,3 +119,5 @@ Yeni sürüm (`tiny-swords-new`) yok; şimdilik Free Pack + Warfare. Free Pack'i
 - AI at (`HorseArt.ts`, `art/horse`) ve AI mancınık (`CatapultArt.ts`, `art/mancinik.png`) ile kodla çizilen mancınık (`PixelArt.catapult`) silindi.
 - Lord (King): `scene/Lord.ts`; kendi kalenin kapısında ve izleyicinin gördüğü kalelerde (`RegionDisplay`) durur, kuşatmada gürzünü savurur, kale düşünce devrilir. Yalnız istemci.
 - Eski araçlar `tools/shot-horse.mjs`, `shot-catapult.mjs`, `shot-compare.mjs` kaldırılan dosyalara bakar: 6. adımda silinecek.
+- Adım 3 (kale içi zemin): `scene/CourtyardFloor.ts`, kodla boyanan toprak + taş döşeme + fıçı/sandık (kodla) + Free Pack kaya/odun yığını + çit.
+- Adım 4 (orman yerleri): `Sites.ts` artık siyah Free Pack binalarından kurar: köy = 3 siyah ev (yağmalanınca kararır, yanar), haydut kampı = siyah kule + kamp ateşi + haydutlar, büyük kamp = siyah kale + iki ateş + haydutlar, sandık = kodla çizilen sandık (Free Pack'te yok) + altın taşları (boşken açık ve boş). Kamp ateşi evdeki ateşle aynı (`campfire`). `ForestSprites.ts` yalnız sandık dokusunu üretir; `art/forest` kullanılmıyor (6. adımda silinecek).

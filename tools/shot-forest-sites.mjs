@@ -47,7 +47,7 @@ await send('Page.enable');
 await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
 await send('Page.navigate', { url: URL });
 await sleep(3500);
-await run('localStorage.clear(); localStorage.setItem('keepfall_tutorial_seen', 'true'); localStorage.setItem('keepfall_lang', 'tr'); sessionStorage.clear(); 1');
+await run(`localStorage.clear(); localStorage.setItem('keepfall_tutorial_seen', 'true'); localStorage.setItem('keepfall_lang', 'tr'); sessionStorage.clear(); 1`);
 await send('Page.navigate', { url: URL });
 await sleep(3500);
 await run(`(async () => { const n = window.keepfallNet; await n.createRoom('Eren'); for (const l of ['easy', 'medium', 'easy']) await n.addBot(l); await n.setReady(true); await n.startMatch(); return 1; })()`);
@@ -66,7 +66,7 @@ await run(`document.getElementById('kingdom-decree')?.remove(); document.querySe
 const sites = JSON.parse(await run(`JSON.stringify(window.keepfallUi.sites.map((s) => ({ kind: s.kind, x: s.position.x, y: s.position.y })))`));
 const pick = (kind) => sites.find((s) => s.kind === kind) ?? sites[0];
 const views = [];
-for (const kind of ['village', 'camp', 'bigCamp', 'chest']) for (const gone of [false, true]) views.push([`${kind}-${gone ? 'empty' : 'full'}`, pick(kind), 1.2, gone]);
+for (const kind of ['village', 'camp', 'bigCamp', 'chest']) for (const gone of [false, true]) views.push([`${kind}-${gone ? 'empty' : 'full'}`, pick(kind), Number(process.env.Z ?? 1.2), gone]);
 for (const [name, at, zoom, gone] of views) {
   await run(`(async () => { const s = window.keepfallScene, ui = window.keepfallUi; s.fog.setVisible(false); s.setMap = () => {};
     const list = ui.sites.map((x) => ({ ...x, gone: ${gone} && x.kind === ${JSON.stringify(name.split('-')[0])} ? true : x.gone })); s.sites.sync(list, s.state.elapsedSeconds + 1);

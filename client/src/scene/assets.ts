@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import type { PlayerColor } from '../types';
 import { preloadKingdomArt } from './KingdomSprites';
-import { preloadForestArt } from './ForestSprites';
 import { preloadPropsArt } from './MapProps';
 import { asset } from '../env';
 
@@ -193,7 +192,6 @@ export function preloadAssets(scene: Phaser.Scene, color: PlayerColor, others: P
   for (const [c, folder] of Object.entries(COLOR_FOLDER)) scene.load.image(`castle-${c}`, url(`Buildings/${folder} Buildings/Castle.png`));
   // The kingdoms' pictures: every client loads all of them, whoever holds which kingdom.
   preloadKingdomArt(scene);
-  preloadForestArt(scene);
   preloadPropsArt(scene);
 }
 
