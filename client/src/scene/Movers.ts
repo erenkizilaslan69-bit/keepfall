@@ -305,6 +305,7 @@ export class Movers {
       select: null, zone: null,
     };
     this.tracks.set(key, fresh);
+    if (!t && key.startsWith('own:') && this.fx) { const at = toWorld(position); this.fx.dust(at.x, at.y, scout ? 0.8 : 1.3, 0xd6c49a); } // it sets out: a puff of dust
     return fresh;
   }
 

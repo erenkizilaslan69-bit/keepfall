@@ -9,6 +9,7 @@ import type { BotLevel, RoomView, SummaryView } from './types';
 import { loadGuide, type GuideUnit } from './ui/guide';
 import { mountPortrait } from './ui/portraits';
 import { endArt } from './ui/tiny-ui';
+import { confetti } from './ui/juice';
 import type { PlayerColor } from './types';
 import { asset } from './env';
 import { FEATURE_PRIVATE_ROOM } from './features';
@@ -452,6 +453,7 @@ export class EndScreen {
       if (won) crazyVictory();
       // victory: the winner's colour (the ranking carries it); defeat: our own
       const winnerColor = r.ranking.find((x) => r.winners.includes(x.seat))?.color;
+      confetti(this.root.querySelector<HTMLElement>('.screen') ?? this.root, won);
       void this.showEndArt(won, (won ? winnerColor : undefined) ?? room.players.find((p) => p.seat === this.mySeat)?.color ?? r.ranking.find((x) => x.seat === this.mySeat)?.color ?? 'blue');
       const names = r.ranking.filter((x) => r.winners.includes(x.seat)).map((x) => `${dot(x.color)}${esc(tr(x.name))}`).join(', ');
       const title = this.root.querySelector<HTMLElement>('#end-title')!;

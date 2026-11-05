@@ -4,6 +4,7 @@ import { lang, t, toggleLang, tr } from '../i18n';
 import { botMark, clock, esc, fmt, rate } from '../format';
 import type { CastleView, PlayerView, RoomView } from '../types';
 import { asset } from '../env';
+import { floatNumber } from './juice';
 
 // The strip along the top that is always there: resources with their rates, population, the clock and
 // phase, the castle's health and who is playing. Built once and updated in place.
@@ -22,6 +23,7 @@ export interface TopBarEvents {
 export class TopBar {
   private readonly el: HTMLElement;
   private playersKey = '';
+  private lastRes: { food: number; wood: number; iron: number; gold: number } | null = null;
   private room: RoomView | null = null;
   private mySeat = 0;
 
@@ -98,6 +100,12 @@ export class TopBar {
       small.textContent = hint;
       small.className = cls;
     };
+    const now = { food: s.resources.food, wood: s.resources.wood, iron: s.resources.iron, gold: s.resources.gold };
+    if (this.lastRes) for (const k of ['food', 'wood', 'iron', 'gold'] as const) {
+      const gain = Math.floor(now[k] - this.lastRes[k]);
+      if (gain >= 4) floatNumber(this.q(`[data-r="${k}"]`), `+${gain}`, k); // a load came in (a chest, a village, a delivery): the number rises over the chip
+    }
+    this.lastRes = now;
     const foodNet = s.rates.foodIn - s.rates.foodOut;
     set('food', fmt(s.resources.food), `${rate(foodNet)}`, foodNet < 0 ? 'down' : 'up');
     set('wood', fmt(s.resources.wood), `${rate(s.rates.wood)}`, 'up');

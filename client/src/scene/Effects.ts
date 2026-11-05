@@ -22,6 +22,8 @@ export class Effects {
   private bucket = BURSTS_PER_SECOND;
   private lastRefill = 0;
   private shakeStrength = 0;
+  private lastStop = -10_000;
+  private slowed = false;
   private readonly enabled: boolean;
 
   constructor(private readonly scene: Phaser.Scene) {
@@ -120,6 +122,56 @@ export class Effects {
     s.play({ key, repeat: 0 }); // (the animation itself loops, for the building dust: this one plays once and is gone)
     // A puff that never got to finish (the animation was swapped, the sprite was restarted) must not stay on the map as a blotch.
     this.scene.time.delayedCall(2500, done);
+  }
+
+  /**
+   * A very short freeze of the animations when a heavy blow lands (the weight of a hit). At most one every 0.7 s, none for people who asked for less motion
+   * or on low graphics; the battle's own clock is the server's, so nothing is lost by it.
+   */
+  hitStop(ms = 50): void {
+    if (!this.enabled || this.still) return;
+    const now = this.scene.time.now;
+    if (now - this.lastStop < 700) return;
+    this.lastStop = now;
+    this.scene.anims.pauseAll();
+    window.setTimeout(() => { try { this.scene.anims.resumeAll(); } catch { /* the scene is gone */ } }, ms);
+  }
+
+  /** The picture slows for a moment (a castle falls): tweens and animations at <paramref name="factor"/> speed for <paramref name="ms"/> of real time. */
+  slowMo(ms = 1300, factor = 0.35): void {
+    if (!this.enabled || this.still || this.slowed) return;
+    this.slowed = true;
+    this.scene.tweens.timeScale = factor;
+    this.scene.anims.globalTimeScale = factor;
+    window.setTimeout(() => {
+      this.slowed = false;
+      try { this.scene.tweens.timeScale = 1; this.scene.anims.globalTimeScale = 1; } catch { /* the scene is gone */ }
+    }, ms);
+  }
+
+  /** A stone from a catapult lands: a ring of dust, a small fireball, a thump of the camera (only when it is in view). */
+  stoneLanding(x: number, y: number): void {
+    if (!this.enabled || this.still || !this.seen(x, y)) return;
+    this.dust(x - 10, y, 1.1, 0xb8a888);
+    this.dust(x + 12, y + 4, 0.9, 0xb8a888);
+    this.explosion(x, y - 6, 0.45);
+    this.sparks?.explode(6, x, y - 8);
+    this.shake(110, 0.0012);
+  }
+
+  /** Gold sparkles and a puff (a building has grown, a worker has become a soldier). */
+  sparkle(x: number, y: number, big = false): void {
+    if (!this.enabled || this.still || !this.seen(x, y)) return;
+    this.sparks?.explode(big ? 16 : 9, x, y);
+    this.flash(x, y, 0xffe27a);
+    if (big) this.dust(x, y + 8, 1.2, 0xe6d6a8);
+  }
+
+  /** One ring that swells and fades (an army is coming: the caller repeats it). */
+  pulse(x: number, y: number, tint = 0xe0392b, radius = 120): void {
+    if (!this.enabled || reducedEffects() || !this.seen(x, y, 300)) return;
+    const ring = this.scene.add.circle(x, y, 10).setStrokeStyle(5, tint, 0.9).setDepth(DEPTH_FX + 3).setScale(0.3);
+    this.scene.tweens.add({ targets: ring, scale: radius / 10, alpha: 0, duration: 1100, ease: 'Sine.out', onComplete: () => ring.destroy() });
   }
 
   /** Shake the picture; the stronger one wins while it lasts, and nothing moves for people who asked for less motion. */

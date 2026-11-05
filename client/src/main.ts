@@ -9,6 +9,8 @@ import { watchUiScale } from './ui/scale';
 import './ui/ui.css';
 import './ui/theme.css';
 import './ui/kf-art.css';
+import './ui/juice.css';
+import { applyCalm } from './ui/juice';
 import './ui/touch.css';
 import './ui/touch-text.css';
 import './ui/touch-targets.css';
@@ -504,6 +506,7 @@ async function connectOnSite(): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  applyCalm(); // "Efektleri azalt" / low graphics: the interface's small movements are off
   // CrazyGames build only: loading starts here, before anything is fetched: the site's SDK (nothing happens anywhere else); loadingStop comes when the lobby is up.
   const onSite = await initCrazy();
   if (onSite) {

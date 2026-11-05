@@ -10,7 +10,7 @@ import { makeCampfire } from './NewUnits';
 import { Lord } from './Lord';
 import { kingdomBanner } from './Banners';
 import { createAnimations, playFrom, loadSpectatorAssets, preloadAssets } from './assets';
-import { CAMP, CASTLE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH } from './layout';
+import { CAMP, CASTLE, GATE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH } from './layout';
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
 import { NO_OFFSET, buildingSign, setShadeHook, sign } from './parts';
 import { RegionDisplay } from './RegionDisplay';
@@ -131,6 +131,8 @@ export class WorldScene extends Phaser.Scene {
   private props: MapProps | null = null;
   private ownKingdom: string | null = null;
   private ownBanner: Phaser.GameObjects.Image | null = null;
+  private prevSoldiers: number | null = null;
+  private lastPulse = 0;
   private lastTremor = 0;
   /** The walls round the regions, by seat. */
   private walls = new Map<number, WallRing>();
@@ -329,7 +331,7 @@ export class WorldScene extends Phaser.Scene {
     c.image.setAlpha(fallen ? 0.45 : 1);
     if (fallen) this.walls.get(seat)?.ruin(this.fx);
     const rest = c.image.getData('rest') ?? CASTLE.scale;
-    if (fallen && was === false) { this.fx.collapse(c.image, c.image.x, c.image.y, rest, false); this.time.delayedCall(1300, () => this.fx.damage(`siege:${seat}`, c.image.x, c.image.y, 0, true)); }
+    if (fallen && was === false) { this.fx.hitStop(70); this.fx.slowMo(); this.fx.collapse(c.image, c.image.x, c.image.y, rest, false); this.time.delayedCall(1300, () => this.fx.damage(`siege:${seat}`, c.image.x, c.image.y, 0, true)); }
     else if (fallen && was === undefined) { this.fx.ruin(c.image, rest); this.fx.damage(`siege:${seat}`, c.image.x, c.image.y, 0, true); }
   }
 
@@ -580,7 +582,20 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
+  /** Our castle fell: the banner by its gate sinks, tilted, and greys out. */
+  private lowerBanner(): void {
+    const b = this.ownBanner;
+    if (!b) return;
+    this.tweens.add({ targets: b, y: b.y + 26, angle: 24, alpha: 0.55, duration: 900, ease: 'Bounce.easeOut' });
+    b.setTint(0x909090);
+  }
+
   private apply(s: CastleView): void {
+    // A worker becomes a soldier: sparks over the camp. An army is on its way to us: a red ring swells from the gate, again and again.
+    const soldiers = s.units.reduce((n, u) => n + u.soldiers, 0);
+    if (this.prevSoldiers !== null && soldiers > this.prevSoldiers) this.fx.sparkle(CAMP.x, CAMP.y - 12);
+    this.prevSoldiers = soldiers;
+    if (!s.eliminated && s.war.incoming.length > 0 && this.time.now - this.lastPulse > 1500) { this.lastPulse = this.time.now; this.fx.pulse(GATE.x, GATE.y, 0xe0392b, 150); }
     for (const b of s.buildings) this.updateBuilding(b, s);
     this.workers.sync(s.jobs);
     this.soldiers.sync(s.units);
@@ -598,7 +613,7 @@ export class WorldScene extends Phaser.Scene {
     });
     if (s.eliminated) this.walls.get(this.mySeat)?.ruin(this.fx);
     const rest = this.castleSprite.getData('rest') ?? CASTLE.scale;
-    if (s.eliminated && this.ownFallen === false) { pulse('#8a1a12', 0.4, 500, 2400); this.fx.collapse(this.castleSprite, CASTLE.x, CASTLE.y, rest, true); this.time.delayedCall(1300, () => this.fx.damage(`siege:${this.mySeat}`, CASTLE.x, CASTLE.y, 0, true)); }
+    if (s.eliminated && this.ownFallen === false) { pulse('#8a1a12', 0.4, 500, 2400); this.fx.hitStop(70); this.fx.slowMo(); this.lowerBanner(); this.fx.collapse(this.castleSprite, CASTLE.x, CASTLE.y, rest, true); this.time.delayedCall(1300, () => this.fx.damage(`siege:${this.mySeat}`, CASTLE.x, CASTLE.y, 0, true)); }
     else if (s.eliminated && this.ownFallen === null) { this.fx.ruin(this.castleSprite, rest); this.fx.damage(`siege:${this.mySeat}`, CASTLE.x, CASTLE.y, 0, true); }
     if (s.eliminated) this.lord.setFallen(true, this.ownFallen === false);
     this.ownFallen = s.eliminated;
@@ -855,6 +870,7 @@ export class WorldScene extends Phaser.Scene {
     const slot = this.buildings.get(b.type)!;
     const site = SITES[b.type];
     if (slot.level !== b.level) {
+      if (slot.level > 0 && b.level > slot.level) this.fx.sparkle(site.center.x, site.center.y, true); // it has grown
       for (const sprite of slot.sprites) sprite.destroy();
       this.chimneys.clear(b.type);
       const art = drawBuilding(this, b.type, b.level, this.color, NO_OFFSET, (k) => k, this.chimneys, b.type);

@@ -136,7 +136,9 @@ export class WindowManager {
     if (this.win && !silent) sfx.play('uiClose');
     this.watch?.disconnect();
     this.watch = null;
-    this.win?.el.remove();
+    const el = this.win?.el;
+    if (el && !silent && el.isConnected) { el.classList.add('win-out'); window.setTimeout(() => el.remove(), 150); } // it fades shut
+    else el?.remove();
     this.win = null;
     this.target = null;
     this.anchor = null;

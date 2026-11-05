@@ -1,0 +1,29 @@
+/* Small movements that make the interface feel alive: windows that pop open and fade shut, numbers that rise when resources arrive, confetti on the
+   end screen. All of it is off for "Efektleri azalt", on low graphics and when the system asks for less motion (html.kf-calm). */
+
+.win { animation: win-pop .16s ease-out; transform-origin: 50% 40%; }
+.win.win-out { animation: win-fade .14s ease-in forwards; pointer-events: none; }
+@keyframes win-pop { from { opacity: 0; transform: scale(.93); } to { opacity: 1; transform: scale(1); } }
+@keyframes win-fade { to { opacity: 0; transform: scale(.95); } }
+
+.res { position: relative; }
+.float-num {
+  position: absolute; left: 50%; top: -2px; transform: translateX(-50%); pointer-events: none; white-space: nowrap; z-index: 5;
+  font: 700 calc(15px * var(--u, 1)) / 1 var(--font-pixel, 'Pixelify Sans', sans-serif); color: #fff6c0;
+  text-shadow: 0 calc(2px * var(--u, 1)) 0 #3a2410, calc(1px * var(--u, 1)) 0 0 #3a2410, calc(-1px * var(--u, 1)) 0 0 #3a2410;
+  animation: float-up 1.2s ease-out forwards;
+}
+.float-num.food { color: #c8f09a; } .float-num.wood { color: #ffd9a0; } .float-num.iron { color: #d6e4f2; } .float-num.gold { color: #ffe36a; }
+@keyframes float-up { 0% { opacity: 0; margin-top: 0; } 15% { opacity: 1; } 100% { opacity: 0; margin-top: calc(-38px * var(--u, 1)); } }
+
+.confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 4; }
+.confetti i { position: absolute; top: -12px; width: calc(8px * var(--u, 1)); height: calc(12px * var(--u, 1)); opacity: 0; animation: confetti-fall linear forwards; }
+.confetti.ash i { width: calc(5px * var(--u, 1)); height: calc(5px * var(--u, 1)); background: #8a8f98 !important; border-radius: 50%; }
+@keyframes confetti-fall {
+  0% { opacity: 0; transform: translateY(0) rotate(0deg) translateX(0); }
+  10% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(105vh) rotate(720deg) translateX(var(--drift, 30px)); }
+}
+
+html.kf-calm .win, html.kf-calm .win.win-out { animation: none; }
+html.kf-calm .float-num, html.kf-calm .confetti { display: none; }

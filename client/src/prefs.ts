@@ -33,6 +33,7 @@ function save(next: Prefs): void {
 
 export function setReduceEffects(on: boolean): void {
   save({ ...prefs, reduceEffects: on });
+  document.documentElement.classList.toggle('kf-calm', reducedEffects() || lowGraphics());
 }
 
 /** "FPS göster": a small counter in the corner (frames a second and the round trip to the server). */

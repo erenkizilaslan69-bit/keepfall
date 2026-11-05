@@ -241,15 +241,22 @@ export class BattlePlayer {
       const lift = Math.min(70, 14 + Math.hypot(to.x - from.x, to.y - from.y) * (stone ? 0.45 : 0.18));
       const pos = (u: number) => ({ x: from.x + (to.x - from.x) * u, y: from.y + (to.y - from.y) * u - Math.sin(Math.PI * u) * lift });
       const flight = { u: 0 };
+      // A stone drifts over the ground in its own shadow (smaller and fainter the higher it is).
+      const shadow = stone && !reducedEffects() ? this.scene.add.ellipse(from.x, a.sprite.y, 22, 9, 0x000000, 0.3).setDepth(arrow.depth - 1) : null;
       this.scene.tweens.add({
         targets: flight, u: 1, duration: (stone ? 520 : 280) / speed,
         onUpdate: () => {
           const p = pos(flight.u), q = pos(Math.min(1, flight.u + 0.03));
           arrow.setPosition(p.x, p.y);
+          if (shadow) {
+            const gx = from.x + (to.x - from.x) * flight.u, gy = a.sprite.y + ((b.sprite.y) - a.sprite.y) * flight.u;
+            const high = Math.sin(Math.PI * flight.u);
+            shadow.setPosition(gx, gy).setScale(1 - high * 0.4).setAlpha(0.32 - high * 0.14);
+          }
           if (!stone) arrow.setRotation(Math.atan2(q.y - p.y, q.x - p.x));
           this.fx.trail(p.x, p.y);
         },
-        onComplete: () => { this.fx.stick(arrow, stone); },
+        onComplete: () => { shadow?.destroy(); this.fx.stick(arrow, stone); if (stone) this.fx.stoneLanding(to.x, to.y + 24); },
       });
     }
     // at a gate the attackers' blows raise wall dust (the catapult's stones every time, the others now and then)
@@ -257,6 +264,7 @@ export class BattlePlayer {
       this.fx.dust(r.gate.x + Phaser.Math.Between(-30, 30), r.gate.y + Phaser.Math.Between(-50, 20), a.unit === 'mancinik' ? 1.1 : 0.7, 0xb8a888);
     }
     if (b && b.sprite.active) this.fx.hit(b.sprite.x, b.sprite.y - 22, a.ranged ? 'arrow' : look.attack ? 'melee' : 'shield');
+    if (b && !a.ranged && this.loudness(a.sprite.x, a.sprite.y) === 1 && Math.random() < 0.3) this.fx.hitStop(45); // the weight of a blow
     if (b && !b.dead && b.sprite.active) {
       b.sprite.setTintFill(0xffffff);
       this.scene.time.delayedCall(70, () => { if (!b.dead && b.sprite.active) b.sprite.clearTint(); });
