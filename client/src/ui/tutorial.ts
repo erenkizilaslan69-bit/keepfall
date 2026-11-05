@@ -314,6 +314,9 @@ export class Tutorial {
     if ('dom' in aim) {
       const el = this.host.windowEl()?.querySelector<HTMLElement>(aim.dom);
       if (!el) return null;
+      // A part of a tabbed window (a rival's castle on a touch screen) that is not the open tab is opened first.
+      const sec = el.closest<HTMLElement>('[data-sec]');
+      if (sec && !sec.classList.contains('on') && sec.closest('.win.tabbed')) this.host.windowEl()?.querySelector<HTMLElement>(`[data-tab-sec="${sec.dataset.sec}"]`)?.click();
       let r = el.getBoundingClientRect();
       if (r.width === 0 && r.height === 0) return null;
       // A button that sits below the fold of a tall window is scrolled into view first (and a window that runs off the screen is already scrolled inside).

@@ -46,6 +46,7 @@ export abstract class Win {
   readonly el: HTMLElement;
   protected readonly body: HTMLElement;
   private readonly title: HTMLElement;
+  private readonly more: HTMLElement;
 
   protected constructor(protected readonly ctx: WinContext, ribbon: string) {
     this.el = document.createElement('div');
@@ -53,14 +54,32 @@ export abstract class Win {
     this.el.innerHTML = `
       <button class="btn-round btn-red win-close" data-close title="Kapat (Esc)"><i class="ico ico-close"></i></button>
       <div class="win-title ribbon ribbon-sm ribbon-${ribbon}"></div>
-      <div class="win-body"></div>`;
+      <div class="win-body"></div>
+      <div class="win-more" aria-hidden="true"><i class="up"></i><i class="down"></i></div>`;
     this.title = this.el.querySelector('.win-title')!;
     this.body = this.el.querySelector('.win-body')!;
+    this.more = this.el.querySelector('.win-more')!;
+    this.body.addEventListener('scroll', () => this.refreshMore(), { passive: true });
     this.el.querySelector('[data-close]')!.addEventListener('click', () => ctx.close());
   }
 
   protected setTitle(html: string): void {
     if (this.title.innerHTML !== html) this.title.innerHTML = html;
+  }
+
+  /** A body that scrolls says so (touch-windows.css draws a fade and a small arrow at the edge that has more): called every frame by the window manager. */
+  refreshMore(): void {
+    const b = this.body, below = b.scrollHeight - b.clientHeight - b.scrollTop > 6, above = b.scrollTop > 6;
+    this.el.classList.toggle('more-down', below);
+    this.el.classList.toggle('more-up', above);
+    if (!below && !above) return;
+    // (a main button that sticks to the foot is above the fade, so the fade stops where it begins)
+    const foot = b.querySelector<HTMLElement>('.upgrade-box, [data-f="attack"] > .row:last-child');
+    this.more.style.setProperty('--foot', `${foot && getComputedStyle(foot).position === 'sticky' ? foot.offsetHeight : 0}px`);
+    const head = b.querySelector<HTMLElement>('.win-tabs');
+    this.more.style.setProperty('--head', `${head && getComputedStyle(head).position === 'sticky' ? head.offsetHeight : 0}px`);
+    const wr = this.el.getBoundingClientRect(), br = b.getBoundingClientRect();
+    Object.assign(this.more.style, { left: `${Math.round(br.left - wr.left - this.el.clientLeft)}px`, top: `${Math.round(br.top - wr.top - this.el.clientTop)}px`, width: `${Math.round(br.width)}px`, height: `${Math.round(br.height)}px` });
   }
 
   /** New state from the server (about once a second). Update in place; never rebuild what the player is using. */
@@ -128,6 +147,7 @@ export class WindowManager {
     const win = this.win;
     if (!win) return;
     const el = win.el;
+    win.refreshMore();
     // The interface layer may be inset from the screen (a notch, rounded corners: touch.css), so everything is worked out inside its own box.
     const rr = this.root.getBoundingClientRect(), ox = rr.left, oy = rr.top;
     const vw = rr.width, vh = Math.min(rr.height, (window.visualViewport?.height ?? Infinity) - oy); // (above the on-screen keyboard)

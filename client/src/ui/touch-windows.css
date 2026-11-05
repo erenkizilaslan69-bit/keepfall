@@ -1,0 +1,28 @@
+/* ---- (round 8, windows on a phone: touch screens only, the desktop look is untouched) ---- */
+.win-tabs, .win-more { display: none; }
+@media (pointer: coarse) {
+  /* a rival's castle: scout / envoy / attack are tabs (one part at a time fits the screen) */
+  .win.tabbed .win-tabs { display: flex; }
+  .win.tabbed .win-sec:not(.on) { display: none; }
+  .win.tabbed .win-sec > h4 { display: none; }
+  .win.tabbed .win-tabs { position: sticky; top: 0; z-index: 3; margin-bottom: 6px; padding-bottom: 4px; background: rgba(238, 222, 180, .97); }
+  /* (on a phone held sideways the name and state line are already in the title; the room goes to the part that is open) */
+  @media (max-height: 520px) { .win.tabbed .who { display: none; } }
+
+  /* a body that scrolls says so: a fade and a small arrow at the edge that has more (ui/windows.ts refreshMore) */
+  .win-more { display: block; position: absolute; pointer-events: none; z-index: 1; }
+  .win-more i { position: absolute; left: 0; right: 0; height: 30px; opacity: 0; transition: opacity .15s; }
+  .win-more .up { top: var(--head, 0px); background: linear-gradient(to bottom, rgba(238, 222, 180, .95) 20%, rgba(238, 222, 180, 0)); }
+  .win-more .down { bottom: var(--foot, 0px); background: linear-gradient(to top, rgba(238, 222, 180, .95) 20%, rgba(238, 222, 180, 0)); }
+  .win-more i::after { content: ''; position: absolute; left: 50%; margin-left: -7px; border-left: 7px solid transparent; border-right: 7px solid transparent; }
+  .win-more .up::after { top: 4px; border-bottom: 9px solid #7a4a25; }
+  .win-more .down::after { bottom: 4px; border-top: 9px solid #7a4a25; animation: kf-bob 1.2s ease-in-out infinite; }
+  .win.more-up .win-more .up, .win.more-down .win-more .down { opacity: 1; }
+  @keyframes kf-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(3px); } }
+
+  /* the main button of a window (Upgrade, Attack) stays in sight at the foot of the body while the rest scrolls */
+  .win .upgrade-box, .win [data-f="attack"] > .row:last-child {
+    position: sticky; bottom: 0; z-index: 3; margin-top: 0; padding: calc(8px * var(--u, 1)) 0 calc(6px * var(--u, 1));
+    background: linear-gradient(to bottom, rgba(238, 222, 180, 0), rgba(238, 222, 180, .96) 30%);
+  }
+}

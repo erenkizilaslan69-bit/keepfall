@@ -33,12 +33,17 @@ export class EnemyWin extends Win {
     this.body.innerHTML = `
       <div class="who"><i class="avatar big" style="background-image:url('${AVATAR(seat)}')"></i><span data-f="emblem"></span>
         <div><b data-f="name"></b><div class="muted-ink small" data-f="state"></div></div></div>
+      <div class="tabs win-tabs" role="tablist">
+        <button class="tab" role="tab" data-tab-sec="scout">${tt('Gözcü')}</button><button class="tab" role="tab" data-tab-sec="envoy">${tt('Ulak')}</button><button class="tab" role="tab" data-tab-sec="attack">${tt('Saldır')}</button></div>
+      <div class="win-sec" data-sec="scout">
       <h4>${tt('Gözcü')}</h4>
       <div class="row"><select data-f="source" title="${tt('Gözcü hangi meslekten çıksın')}">${sources}</select>
         <button class="btn" data-act="scout" title="${tt('Görevdeki gözcü çalışmaz ama yemek yer; dönünce boşta olur')}">${tt('Gözcü gönder')}</button></div>
       <div class="row sub"><span data-f="scout-info"></span></div>
       <div class="gbar hidden" data-f="scout-bar"><div class="fill"></div></div>
       <div data-f="report"></div>
+      </div>
+      <div class="win-sec" data-sec="envoy">
       <h4>${tt('Ulak')}</h4>
       <p class="muted-ink small">${tt('Ulak yük ve mesaj taşır; bilgi toplamaz, yakalanamaz. Yükü ve mesajı yalnız sen ve alıcı görür. Gözcüyle aynı hakkı kullanır.')}</p>
       <div class="envoy-goods">
@@ -51,6 +56,8 @@ export class EnemyWin extends Win {
       <div class="row"><small class="muted-ink" data-f="env-total"></small>
         <button class="btn" data-act="envoy">${tt('Ulak gönder')}</button></div>
       <div class="row sub"><span data-f="env-info"></span></div>
+      </div>
+      <div class="win-sec" data-sec="attack">
       <h4>${tt('Saldır')}</h4>
       <p class="muted-ink small hidden" data-f="locked"></p>
       <div data-f="attack">
@@ -65,8 +72,17 @@ export class EnemyWin extends Win {
             <option value="attack">${tt('Saldır (kaleye)')}</option><option value="intercept">${tt('Önünü kes (yolda karşıla, dön)')}</option></select></div>
         <div class="row"><small class="muted-ink" data-f="total"></small>
           <button class="btn btn-red" data-act="send">${tt('Saldır')}</button></div>
+      </div>
       </div>`;
-    this.body.addEventListener('click', (e) => void this.click(e));
+    // On a touch screen the three parts (scout, envoy, attack) are tabs: one at a time fits the screen, and its main button is always in sight. On a desktop all three stay in a column.
+    this.tabbed = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+    this.el.classList.toggle('tabbed', this.tabbed);
+    this.showSection(s.phase === 'war' ? 'attack' : 'scout');
+    this.body.addEventListener('click', (e) => {
+      const tab = (e.target as HTMLElement).closest<HTMLElement>('[data-tab-sec]');
+      if (tab) { this.showSection(tab.dataset.tabSec!); return; }
+      void this.click(e);
+    });
     this.body.addEventListener('input', () => { this.refreshSend(); if (this.last) this.updateEnvoy(this.last.castle, !!this.player(this.last.room)?.eliminated); });
     this.last = { castle: s, room };
     this.update({ castle: s, room });
@@ -238,6 +254,13 @@ export class EnemyWin extends Win {
     for (const i of this.body.querySelectorAll<HTMLInputElement>('[data-count]')) i.value = '0';
     this.refreshSend();
     this.ctx.info(mode === 'intercept' ? tt('Ordu yola çıktı: önünü kesecek.') : tt('Ordu yola çıktı.'));
+  }
+
+  private tabbed = false;
+  /** Shows one of the parts of the window (tabs, touch screens); the others are hidden by touch-windows.css. */
+  private showSection(name: string): void {
+    for (const sec of this.body.querySelectorAll<HTMLElement>('[data-sec]')) sec.classList.toggle('on', sec.dataset.sec === name);
+    for (const tab of this.body.querySelectorAll<HTMLElement>('[data-tab-sec]')) { const on = tab.dataset.tabSec === name; tab.classList.toggle('on', on); tab.setAttribute('aria-selected', String(on)); }
   }
 
   private q<T extends HTMLElement = HTMLElement>(selector: string): T {
