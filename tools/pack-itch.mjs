@@ -37,7 +37,9 @@ if (crazy) {
   scrub(dist);
 }
 
-const zip = join(root, crazy ? 'keepfall-crazygames.zip' : 'keepfall-itchio.zip');
+// PACK_SUFFIX=-next writes keepfall-crazygames-next.zip and ../keepfall-crazygames-build-next (a candidate build next to the one already submitted)
+const suffix = process.env.PACK_SUFFIX ?? '';
+const zip = join(root, crazy ? `keepfall-crazygames${suffix}.zip` : 'keepfall-itchio.zip');
 rmSync(zip, { force: true });
 // (entries named without a leading './', which some zip readers keep)
 // Windows' own bsdtar writes a zip with forward-slash names and index.html at the root (Git Bash's GNU tar cannot; PowerShell's Compress-Archive writes backslashes)
@@ -47,10 +49,10 @@ let files = 0;
 (function count(d) { for (const f of readdirSync(d)) { const p = join(d, f); statSync(p).isDirectory() ? count(p) : files++; } })(dist);
 // CrazyGames' upload can take a folder as well as an archive: the same files, index.html at the folder's root, next to the repository (never inside it)
 if (crazy) {
-  const folder = join(root, '..', 'keepfall-crazygames-build');
+  const folder = join(root, '..', `keepfall-crazygames-build${suffix}`);
   rmSync(folder, { recursive: true, force: true });
   cpSync(dist, folder, { recursive: true });
   console.log(`folder: ${folder}`);
 }
-console.log(`${crazy ? 'keepfall-crazygames.zip' : 'keepfall-itchio.zip'}: ${files} files, ${(statSync(zip).size / 1048576).toFixed(1)} MB`);
+console.log(`${crazy ? `keepfall-crazygames${suffix}.zip` : 'keepfall-itchio.zip'}: ${files} files, ${(statSync(zip).size / 1048576).toFixed(1)} MB`);
 if (files > 1000) console.log('WARNING: itch.io accepts at most 1000 files in an HTML5 zip');
