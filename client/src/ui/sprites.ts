@@ -1,4 +1,5 @@
 import { asset } from '../env';
+import { buildTinyUi } from './tiny-ui';
 // The icons of the Tiny Swords pack (meat, wood, coin, hammer, sword, shield, close…) handed to CSS as custom properties (--ico-…).
 // Panels, buttons, ribbons and signs are drawn by theme.css and need no art. If the pack is missing (it is not in the repository, see the
 // README) the icons are simply empty.
@@ -13,6 +14,7 @@ export async function loadUiArt(): Promise<boolean> {
     for (const [name, file] of [['coin', '03'], ['wood', '02'], ['meat', '04'], ['hammer', '01'], ['sword', '05'], ['shield', '06'],
       ['back', '08'], ['close', '09'], ['gear', '10'], ['info', '11'], ['play', '07']] as const)
       root.setProperty(`--ico-${name}`, `url("${url(`Icons/Icon_${file}.png`)}")`);
+    await buildTinyUi(); // the 9-slice frames, drawn icons and emblems
     return true;
   } catch (e) {
     console.warn('Tiny Swords simgeleri yüklenemedi.', e);

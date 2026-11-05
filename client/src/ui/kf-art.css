@@ -1,5 +1,6 @@
-/* The generated interface art (client/public/art/ui, cleaned by tools/art-ui.mjs): icons, the 9-slice panel frame, the minimap ring and the unit cards.
-   Loaded after theme.css, it replaces the CSS-drawn frames and the pack's icons. Buttons stay the CSS ones. */
+/* The interface art from the Tiny Swords packs, cut and drawn at start-up by ui/tiny-ui.ts (nothing of it is stored in the repository): the paper and wooden
+   frames as 9-slice pictures (--kf-paper-9, --kf-special-9, --kf-wood-9), the pack's icons (--ico-…) and the icons and emblems drawn from grids (--kfi-…, --kfe-…).
+   Loaded after theme.css. The frames apply only once they are built (html.kf-tiny-frames); until then, or without the packs, theme.css's drawn frames stay. */
 
 /* ---- icons ---------------------------------------------------------------------------------------------------- */
 .ico-meat, .ico-wood, .ico-iron, .ico-coin, .ico-hammer, .ico-sword, .ico-shield, .ico-gear, .ico-people, .ico-hourglass, .ico-heart, .ico-scout,
@@ -7,98 +8,83 @@
   background-color: transparent; border-radius: 0; background-size: contain; background-position: center; background-repeat: no-repeat;
   image-rendering: pixelated; filter: none;
 }
-.ico-meat { background-image: url('/art/ui/icons/meat.png'); }
-.ico-wood { background-image: url('/art/ui/icons/wood.png'); }
-.ico-iron { background-image: url('/art/ui/icons/iron.png'); }
-.ico-coin { background-image: url('/art/ui/icons/gold.png'); }
-.ico-hammer { background-image: url('/art/ui/icons/hammer.png'); }
-.ico-sword { background-image: url('/art/ui/icons/swords.png'); }
-.ico-shield { background-image: url('/art/ui/icons/shield.png'); }
-.ico-gear { background-image: url('/art/ui/icons/gear.png'); }
-.ico-people { background-image: url('/art/ui/icons/people.png'); }
-.ico-hourglass { background-image: url('/art/ui/icons/hourglass.png'); }
-.ico-heart { background-image: url('/art/ui/icons/heart.png'); }
-.ico-scout { background-image: url('/art/ui/icons/scout.png'); }
-.ico-envoy { background-image: url('/art/ui/icons/envoy.png'); }
-.ico-skull { background-image: url('/art/ui/icons/skull.png'); }
-.ico-chest { background-image: url('/art/ui/icons/chest.png'); }
-.ico-crown { background-image: url('/art/ui/icons/crown.png'); }
+.ico-meat { background-image: var(--ico-meat); }
+.ico-wood { background-image: var(--ico-wood); }
+.ico-coin { background-image: var(--ico-coin); }
+.ico-hammer { background-image: var(--ico-hammer); }
+.ico-sword { background-image: var(--ico-sword); }
+.ico-shield { background-image: var(--ico-shield); }
+.ico-gear { background-image: var(--ico-gear); }
+.ico-iron { background-image: var(--kfi-iron); }
+.ico-people { background-image: var(--kfi-people); }
+.ico-hourglass { background-image: var(--kfi-hourglass); }
+.ico-heart { background-image: var(--kfi-heart); }
+.ico-scout { background-image: var(--kfi-scout); }
+.ico-envoy { background-image: var(--kfi-envoy); }
+.ico-skull { background-image: var(--kfi-skull); }
+.ico-chest { background-image: var(--kfi-chest); }
+.ico-crown { background-image: var(--kfi-crown); }
 .btn-round .ico-gear { width: calc(20px * var(--u, 1)); height: calc(20px * var(--u, 1)); }
-.tb-clock::before { background: no-repeat center / contain url('/art/ui/icons/hourglass.png'); image-rendering: pixelated; }
+.tb-clock::before { background: no-repeat center / contain var(--kfi-hourglass); image-rendering: pixelated; }
 .tb-pop .ico-people { width: calc(22px * var(--u, 1)); height: calc(22px * var(--u, 1)); }
 
-/* ---- the panel frame (9-slice: the corners keep their size, the edges stretch) ----------------------------------- */
-.kf-panel, .paper {
-  --frame: calc(18px * var(--u, 1));
-  border: var(--frame) solid transparent; border-radius: 0; padding: calc(4px * var(--u, 1));
-  border-image: url('/art/ui/panel-frame-half.png') 12 / var(--frame) / 0 stretch;
-  background: var(--face) padding-box; box-shadow: none; image-rendering: pixelated;
+/* ---- the frames (9-slice: the corners keep their size, the edges stretch) ----------------------------------------- */
+html.kf-tiny-frames .kf-panel, html.kf-tiny-frames .paper {
+  --frame: calc(30px * var(--u, 1));
+  border: var(--frame) solid transparent; border-radius: 0; padding: calc(2px * var(--u, 1));
+  border-image: var(--kf-paper-9) 64 fill / var(--frame) / 0 stretch;
+  background: none; box-shadow: none; image-rendering: pixelated;
   filter: drop-shadow(0 calc(6px * var(--u, 1)) calc(8px * var(--u, 1)) rgba(0, 0, 0, .35));
 }
-.kf-panel--dark, .paper-dark {
-  --frame: calc(18px * var(--u, 1));
-  border: var(--frame) solid transparent; border-radius: 0; padding: calc(4px * var(--u, 1));
-  border-image: url('/art/ui/panel-frame-half.png') 12 / var(--frame) / 0 stretch;
-  background: var(--face) padding-box; box-shadow: none; image-rendering: pixelated;
-  filter: drop-shadow(0 calc(6px * var(--u, 1)) calc(8px * var(--u, 1)) rgba(0, 0, 0, .35));
+html.kf-tiny-frames .kf-panel--dark, html.kf-tiny-frames .paper-dark {
+  border-image: var(--kf-special-9) 64 fill / var(--frame) / 0 stretch;
 }
-.win.paper { border-radius: 0; }
-/* the top bar's boxes hang from the top edge: the same frame without the top side */
-.strip:not(.tb-pop) {
-  border: 0; border-style: solid; border-color: transparent; border-width: 0 calc(12px * var(--u, 1)) calc(12px * var(--u, 1)); border-radius: 0;
-  border-image: url('/art/ui/panel-frame-half.png') 12 / 0 calc(12px * var(--u, 1)) calc(12px * var(--u, 1)) / 0 stretch;
-  background: radial-gradient(ellipse at 50% 20%, var(--kf-parch-hi), var(--kf-parch) 60%, var(--kf-parch-lo)) padding-box; box-shadow: none; image-rendering: pixelated;
+html.kf-tiny-frames .win.paper { border-radius: 0; }
+/* the top bar's boxes: a lighter frame */
+html.kf-tiny-frames .strip:not(.tb-pop) {
+  border: calc(16px * var(--u, 1)) solid transparent; border-radius: 0;
+  border-image: var(--kf-paper-9) 64 fill / calc(16px * var(--u, 1)) / 0 stretch;
+  background: none; box-shadow: none; image-rendering: pixelated;
   filter: drop-shadow(0 calc(4px * var(--u, 1)) calc(5px * var(--u, 1)) rgba(0, 0, 0, .3));
 }
 
-/* ---- the minimap in the panel frame (square: the whole map fits, nothing is cut off) -------------------------------- */
-.kf-minimap {
-  --frame: calc(16px * var(--u, 1));
+/* ---- the minimap in a wooden frame (square: the whole map fits, nothing is cut off) --------------------------------- */
+html.kf-tiny-frames .kf-minimap {
+  --frame: calc(26px * var(--u, 1));
   display: block; border-radius: 0; padding: 0; overflow: visible; aspect-ratio: 1;
-  border: var(--frame) solid transparent; border-image: url('/art/ui/panel-frame-half.png') 12 / var(--frame) / 0 stretch;
+  border: var(--frame) solid transparent; border-image: var(--kf-wood-9) 128 / var(--frame) / 0 stretch;
   background: #12354a padding-box; box-shadow: none; image-rendering: pixelated;
   filter: drop-shadow(0 calc(5px * var(--u, 1)) calc(7px * var(--u, 1)) rgba(0, 0, 0, .4));
 }
-.kf-minimap::before, .kf-minimap::after { content: none; display: none; }
-.kf-minimap > .minimap { position: static; display: block; width: 100%; height: 100%; border: 0; border-radius: 0; box-shadow: none; background: #12354a; }
+html.kf-tiny-frames .kf-minimap::before, html.kf-tiny-frames .kf-minimap::after { content: none; display: none; }
+html.kf-tiny-frames .kf-minimap > .minimap { position: static; display: block; width: 100%; height: 100%; border: 0; border-radius: 0; box-shadow: none; background: #12354a; }
 
-/* ---- the unit cards ------------------------------------------------------------------------------------------------- */
-.ucard { aspect-ratio: 137 / 186; }
-.ucard-face {
-  padding: 0; border: 0; border-radius: 0; box-shadow: none; background: url('/art/ui/card-front-half.png') center / 100% 100% no-repeat; image-rendering: pixelated;
-  display: block; color: var(--ink); overflow: visible;
+/* ---- the unit cards: paper in front, the dark special paper behind --------------------------------------------------- */
+html.kf-tiny-frames .ucard-face {
+  --frame: calc(14px * var(--u, 1));
+  border: var(--frame) solid transparent; border-radius: 0; box-shadow: none; background: none; image-rendering: pixelated;
+  border-image: var(--kf-paper-9) 64 fill / var(--frame) / 0 stretch;
 }
-.ucard-face.back { background: url('/art/ui/card-back-half.png') center / 100% 100% no-repeat; color: var(--ink); border: 0; }
-.ucard-face > * { position: absolute; }
-.ucard-art { left: 17%; top: 12.6%; width: 66%; height: 36%; border: 0; border-radius: 0; flex: none; }
-.ucard-face.front .ucard-name { left: 19%; width: 62%; top: 53%; height: 8%; display: grid; place-items: center; font-size: max(var(--fs-xs, 0px), .78em); color: #3a2a18; text-shadow: none; }
-.ucard-face.front .ucard-tag { left: 22%; right: 22%; top: 70.5%; text-align: center; white-space: nowrap; font-size: max(var(--fs-xs, 0px), .56em); padding: 0; }
-.ucard-face.front .ucard-btns, .ucard-face.back .ucard-btns { left: 15%; right: 15%; top: 81%; bottom: auto; margin: 0; width: auto; height: 11%; align-items: stretch; }
-.ucard-btns .btn { min-height: 0; height: 100%; font-size: max(var(--fs-xs, 0px), .66em); }
-.ucard-face.back .ucard-name { left: 25%; width: 50%; top: 10.5%; height: 6.5%; display: grid; place-items: center; font-size: max(var(--fs-xs, 0px), .78em); color: #3a2a18; }
-.ucard-face.back { display: flex; flex-direction: column; gap: 1.5%; padding: 24% 15% 22% 17%; overflow: hidden; }
-.ucard-face.back > * { position: static; }
-.ucard-face.back .ucard-btns { position: absolute; }
-.ucard-face.back .ucard-name { position: absolute; }
-.ucard-face.back dl { margin: 0; font-family: var(--font-text); font-size: max(var(--fs-xs, 0px), .68em); }
-.ucard-face.back dt { color: #6b4a22; font-family: var(--font-pixel); }
-.ucard-face.back dd { font-family: var(--font-text); font-weight: 700; }
-.ucard-face.back .ucard-role { color: #3a2a18; font-size: max(var(--fs-xs, 0px), .58em); line-height: 1.2; }
-.ucard-face.back .ucard-vs { color: #3a2a18; font-size: max(var(--fs-xs, 0px), .58em); line-height: 1.2; }
-.ucard-check { top: 1%; right: 1%; }
+html.kf-tiny-frames .ucard-face.back { border-image: var(--kf-special-9) 64 fill / var(--frame) / 0 stretch; color: #f1ead6; }
 .ranking li .ico-crown { width: calc(24px * var(--u, 1)); height: calc(24px * var(--u, 1)); margin-right: calc(4px * var(--u, 1)); }
-.ucard.on .ucard-face { border: 0; box-shadow: none; animation: none; filter: drop-shadow(0 0 calc(7px * var(--u, 1)) rgba(255, 214, 80, .95)) drop-shadow(0 0 calc(2px * var(--u, 1)) #fff2a8); }
+.ucard.on .ucard-face { animation: none; filter: drop-shadow(0 0 calc(7px * var(--u, 1)) rgba(255, 214, 80, .95)) drop-shadow(0 0 calc(2px * var(--u, 1)) #fff2a8); }
 
-/* ---- the logo picture ---------------------------------------------------------------------------------------------- */
-.kf-logo-img { display: block; width: calc(300px * var(--u, 1)); max-width: 80%; height: auto; image-rendering: pixelated; filter: drop-shadow(0 calc(4px * var(--u, 1)) 0 rgba(30, 16, 6, .5)); }
-.screen.lobby .kf-logo-img { width: calc(230px * var(--u, 1)); }
+/* ---- the logo: a castle of the pack over the name (A), or the name on a wooden plate between two swords (B) ---------------------- */
+.kf-logo-castle { display: block; width: calc(120px * var(--u, 1)); height: auto; image-rendering: pixelated; margin-bottom: calc(-10px * var(--u, 1)); filter: drop-shadow(0 calc(4px * var(--u, 1)) 0 rgba(30, 16, 6, .5)); }
+.kf-logo-plate {
+  display: flex; align-items: center; justify-content: center; gap: calc(10px * var(--u, 1)); padding: calc(4px * var(--u, 1)) calc(14px * var(--u, 1));
+  border: calc(24px * var(--u, 1)) solid transparent; border-image: var(--kf-wood-9) 128 fill / calc(24px * var(--u, 1)) / 0 stretch; image-rendering: pixelated;
+}
+.kf-logo-plate .ico { width: calc(34px * var(--u, 1)); height: calc(34px * var(--u, 1)); background-color: transparent; border-radius: 0; image-rendering: pixelated; }
+.kf-logo-plate .kf-logo-word { font-size: calc(44px * var(--u, 1)); }
+.screen.lobby .kf-logo-castle { width: calc(88px * var(--u, 1)); }
 
 /* ---- the kingdom emblems ----------------------------------------------------------------------------------------------- */
 .emblem { display: inline-block; flex: none; width: calc(22px * var(--u, 1)); height: calc(26px * var(--u, 1)); vertical-align: middle; background: center / contain no-repeat; image-rendering: pixelated; }
-.emblem-golge { background-image: url('/art/ui/emblems/golge.png'); }
-.emblem-tuccar { background-image: url('/art/ui/emblems/tuccar.png'); }
-.emblem-kahin { background-image: url('/art/ui/emblems/kahin.png'); }
-.emblem-entrikaci { background-image: url('/art/ui/emblems/entrikaci.png'); }
+.emblem-golge { background-image: var(--kfe-golge); }
+.emblem-tuccar { background-image: var(--kfe-tuccar); }
+.emblem-kahin { background-image: var(--kfe-kahin); }
+.emblem-entrikaci { background-image: var(--kfe-entrikaci); }
 .emblem-fab { width: calc(26px * var(--u, 1)); height: calc(30px * var(--u, 1)); }
 .emblem-decree { width: calc(84px * var(--u, 1)); height: calc(100px * var(--u, 1)); }
 .emblem-inline, .emblem-who { margin-right: calc(6px * var(--u, 1)); }

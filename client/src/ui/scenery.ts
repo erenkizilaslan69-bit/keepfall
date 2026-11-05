@@ -1,15 +1,16 @@
 import { assetUrl } from '../scene/assets';
 import { flameCanvas } from '../scene/PixelArt';
 import type { PlayerColor } from '../types';
-import { asset } from '../env';
 
-// The living picture behind the home, lobby and end screens: the generated lobby picture (public/art/ui/lobby-bg.jpg, scaled to cover the window with
-// nearest-neighbour, it carries the four castles, the forest, the meadow and the river) with a few small animated groups in the free strips left and
-// left of the panel, placed by the picture's own coordinates so it never stands on a castle: a camp fire with four soldiers of four colours.
+// The living picture behind the home, lobby and end screens: a meadow of the game's own pieces (the grass tile, trees, bushes, rocks, a dirt road and the four
+// castles, built once from the Tiny Swords sheets and scaled to cover the window with nearest-neighbour) with a small animated group in the free strip left
+// of the panel, placed by the picture's own coordinates so it never stands on a castle: a camp fire with four soldiers of four colours.
 // The panel of the screen is measured; a strip that is too narrow stays empty. Drawn on one transparent canvas at a low frame rate; it only draws while a menu screen is up.
 
 /** The picture's size (px) and the places in it the groups stand at (fractions of its height). */
 const BG = { w: 2752, h: 1536 };
+/** The meadow is built at half of that, so one of its pixels is two of the picture's. */
+const MEADOW = { w: 1376, h: 768 };
 const FPS = 12;
 /** A strip narrower than this stays empty. */
 const MIN_STRIP = 76;
@@ -49,11 +50,12 @@ class Scenery {
   private last = 0;
   private measuredAt = -1000;
   private panel = { l: 0, r: 0 };
+  private meadow: HTMLCanvasElement | null = null;
 
   constructor() {
     this.canvas.id = 'scenery';
     this.canvas.setAttribute('aria-hidden', 'true');
-    this.canvas.style.background = `#3d6b3a url('${asset('/art/ui/lobby-bg.jpg')}') center / cover no-repeat`;
+    this.canvas.style.background = '#5a9a3c';
     window.addEventListener('resize', () => this.resize());
     this.resize();
     requestAnimationFrame((t) => this.loop(t));
@@ -77,6 +79,53 @@ class Scenery {
     this.draw();
   }
 
+  /** The meadow, once every sheet it needs has loaded (null until then, tried again on the next frame). */
+  private buildMeadow(): HTMLCanvasElement | null {
+    const tiles = image('Terrain/Tilemap_color1.png'.replace('Terrain/', 'Terrain/Tileset/'));
+    const trees = [1, 2, 3, 4].map((i) => image(`Terrain/Resources/Wood/Trees/Tree${i}.png`));
+    const bushes = [1, 2, 3, 4].map((i) => image(`Terrain/Decorations/Bushes/Bushe${i}.png`));
+    const rocks = [1, 2, 3, 4].map((i) => image(`Terrain/Decorations/Rocks/Rock${i}.png`));
+    const castles = ['Blue', 'Red', 'Yellow', 'Purple'].map((c) => image(`Buildings/${c} Buildings/Castle.png`));
+    if (!tiles || [...trees, ...bushes, ...rocks, ...castles].some((i) => !i)) return null;
+    const c = document.createElement('canvas');
+    c.width = MEADOW.w; c.height = MEADOW.h;
+    const g = c.getContext('2d')!;
+    g.imageSmoothingEnabled = false;
+    for (let y = 0; y < MEADOW.h; y += 64) for (let x = 0; x < MEADOW.w; x += 64) g.drawImage(tiles, 64, 64, 64, 64, x, y, 64, 64);
+    // a dirt road across the meadow, under everything else
+    const road = (width: number, color: string) => {
+      g.strokeStyle = color; g.lineWidth = width; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(-40, MEADOW.h * 0.62); g.bezierCurveTo(MEADOW.w * 0.3, MEADOW.h * 0.78, MEADOW.w * 0.6, MEADOW.h * 0.5, MEADOW.w + 40, MEADOW.h * 0.66); g.stroke();
+    };
+    road(58, '#a98b57'); road(46, '#d8b779');
+    // deterministic scatter
+    let seed = 20_261_105;
+    const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    type Piece = { y: number; draw: () => void };
+    const pieces: Piece[] = [];
+    const put = (img: HTMLImageElement, fw: number, fh: number, x: number, y: number, scale: number) =>
+      pieces.push({ y, draw: () => g.drawImage(img, 0, 0, fw, fh, x - (fw * scale) / 2, y - fh * scale * 0.85, fw * scale, fh * scale) });
+    // castles in the four corners (their lower edges are the sorting line)
+    [[0.1, 0.24], [0.9, 0.24], [0.1, 0.9], [0.9, 0.9]].forEach(([fx, fy], i) => {
+      const img = castles[i]!; put(img, 320, 256, fx * MEADOW.w, fy * MEADOW.h, 0.8);
+    });
+    for (let i = 0; i < 46; i++) {
+      const left = rnd() < 0.5;
+      const x = (left ? rnd() * 0.24 : 0.76 + rnd() * 0.24) * MEADOW.w, y = (0.06 + rnd() * 0.9) * MEADOW.h;
+      const corner = (x < 0.2 * MEADOW.w || x > 0.8 * MEADOW.w) && (y < 0.4 * MEADOW.h || y > 0.74 * MEADOW.h);
+      if (corner) continue; // the castles stand there
+      const t = Math.floor(rnd() * 4);
+      put(trees[t]!, 192, t < 2 ? 256 : 192, x, y, 0.7 + rnd() * 0.3);
+    }
+    for (let i = 0; i < 26; i++) {
+      const x = rnd() * MEADOW.w, y = (0.05 + rnd() * 0.92) * MEADOW.h;
+      if (rnd() < 0.6) put(bushes[Math.floor(rnd() * 4)]!, 128, 128, x, y, 0.6);
+      else put(rocks[Math.floor(rnd() * 4)]!, 64, 64, x, y, 0.7);
+    }
+    pieces.sort((p, q) => p.y - q.y).forEach((p) => p.draw());
+    return c;
+  }
+
   /** Where a fraction of the picture's height lands on the screen (the picture covers the window, centred). */
   private yAt(f: number): number { return this.cover.oy + f * BG.h * this.cover.k; }
 
@@ -98,6 +147,8 @@ class Scenery {
     g.clearRect(0, 0, w, h);
     const k = Math.max(w / BG.w, h / BG.h);
     this.cover = { k, ox: (w - BG.w * k) / 2, oy: (h - BG.h * k) / 2 };
+    this.meadow ??= this.buildMeadow();
+    if (this.meadow) g.drawImage(this.meadow, this.cover.ox, this.cover.oy, BG.w * k, BG.h * k);
 
     const anim = Math.floor(this.tick / 2); // 6 frames a second
     const st = this.strips();

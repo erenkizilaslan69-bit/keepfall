@@ -8,7 +8,7 @@ import type { GameConnection } from './net';
 import type { BotLevel, RoomView, SummaryView } from './types';
 import { loadGuide, type GuideUnit } from './ui/guide';
 import { mountPortrait } from './ui/portraits';
-import { recolor } from './scene/KingdomSprites';
+import { endArt } from './ui/tiny-ui';
 import type { PlayerColor } from './types';
 import { asset } from './env';
 import { FEATURE_PRIVATE_ROOM } from './features';
@@ -50,9 +50,17 @@ const avatar = (seat: number) =>
 
 // ---- home ----------------------------------------------------------------------------------
 
-/** The Keepfall logo (the generated picture, public/art/ui/logo-half.png). */
-export const logoHtml = (): string => `
-  <div class="kf-logo" role="img" aria-label="Keepfall"><img class="kf-logo-img" src="${asset('/art/ui/logo-half.png')}" alt="" draggable="false"></div>`;
+/**
+ * The Keepfall logo. A: the pack's blue castle over the name; B: the name on a wooden plate between two swords (`?logo=b`, or `keepfall_logo` = "b" in
+ * the browser's storage). Both use Pixelify Sans for the name, in gold and red.
+ */
+export function logoHtml(): string {
+  let variant = new URLSearchParams(location.search).get('logo') ?? '';
+  try { variant ||= localStorage.getItem('keepfall_logo') ?? ''; } catch { /* storage may be blocked */ }
+  const word = `<div class="kf-logo-word"><span class="keep" data-t="Keep">Keep</span><span class="fall" data-t="fall">fall</span></div>`;
+  if (variant === 'b') return `<div class="kf-logo" role="img" aria-label="Keepfall"><div class="kf-logo-plate"><i class="ico ico-sword"></i>${word}<i class="ico ico-shield"></i></div></div>`;
+  return `<div class="kf-logo" role="img" aria-label="Keepfall"><img class="kf-logo-castle" src="${ART}Buildings/Blue%20Buildings/Castle.png" alt="" draggable="false">${word}</div>`;
+}
 
 export class HomeScreen {
   constructor(
@@ -415,17 +423,13 @@ export class EndScreen {
     const box = this.root.querySelector<HTMLElement>('#end-art');
     if (!box) return;
     try {
-      const img = new Image();
-      img.src = asset(`/art/ui/${won ? 'victory' : 'defeat'}-half.png`);
-      await img.decode();
-      const base = document.createElement('canvas');
-      base.width = img.naturalWidth; base.height = img.naturalHeight;
-      base.getContext('2d')!.drawImage(img, 0, 0);
+      const src = await endArt(won, color);
+      if (!src) { box.replaceChildren(); return; }
       const out = new Image();
-      out.src = recolor(base, color).toDataURL('image/png');
+      out.src = src;
       out.alt = won ? t('Zafer') : t('Yenilgi');
       out.className = won ? 'end-victory' : 'end-defeat';
-      out.style.width = `calc(${base.width * 4}px * var(--u, 1))`;
+      out.style.width = 'calc(300px * var(--u, 1))';
       box.replaceChildren(out);
     } catch { box.replaceChildren(); /* the picture is a decoration: the result stands without it */ }
   }
