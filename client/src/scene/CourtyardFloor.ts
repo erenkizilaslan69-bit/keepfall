@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import { TILE, type Point } from './layout';
-import { stoneColor } from './KingdomSprites';
 
 // The ground inside a castle's wall: packed earth with a flagstone walk along the wall and a stone square before the castle, so the castle
 // reads as a yard and not as a meadow with a fence round it. Painted in code (nothing of the Tiny Swords art is copied), once per region, into a
@@ -69,21 +68,12 @@ const RAILS: [number, number, number][] = [[512, 596, 82], [440, 520, 714]];
 export class CourtyardFloor {
   private image: Phaser.GameObjects.Image | null = null;
   private things: Phaser.GameObjects.GameObject[] = [];
-  private look: string | null = null;
   private fallen = false;
 
   /** `origin`: the region's top-left corner in scene pixels; `onEast`: the gate is in the east wall (the wall on the gate side stands further in). */
   constructor(private readonly scene: Phaser.Scene, private readonly origin: Point, private readonly onEast: boolean, private readonly key: string) {
     this.paint();
     this.furnish();
-  }
-
-  /** The flagstones in a kingdom's stone (null: the neutral grey); painted again when it changes. */
-  setLook(look: string | null): void {
-    if (look === this.look) return;
-    this.look = look;
-    this.paint();
-    if (this.fallen) this.image?.setAlpha(0.6).setTint(0x888888);
   }
 
   /** The castle has fallen: the yard greys out. */
@@ -132,7 +122,6 @@ export class CourtyardFloor {
           c = FLAG[Math.floor(hash(col, row, seed + 3) * FLAG.length)];
           if (inRow < CELL || inCol < CELL) c = MORTAR;
           else if (inRow < CELL * 2 && inCol < bw - CELL && hash(col, row, seed + 4) > 0.55) c = SHINE;
-          if (this.look) c = stoneColor(this.look, c);
           // a missing stone here and there: bare earth shows through
           if (hash(col, row, seed + 6) > 0.96 && c !== MORTAR) c = EARTH[1];
         } else {

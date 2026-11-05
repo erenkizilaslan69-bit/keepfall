@@ -2,61 +2,68 @@ import Phaser from 'phaser';
 import type { MapLayoutView, Vec } from '../types';
 import { distanceToSegment, seeded, toWorld } from './world';
 import { DEPTH } from './Terrain';
-import { asset } from '../env';
 import { lowGraphics } from '../prefs';
 
-// The still ornaments of the map from the generated sheet (public/art/props, cleaned by tools/art-ui.mjs): oaks, pines, dark pines, berry bushes, small
-// rocks, mossy boulders, flower clumps and stumps, each with a soft translucent shadow instead of the sheet's purple one. They are scattered from the
-// room's seed (everyone in the match sees the same ones) over the meadows between the castles, along the edges of the map and through the forest next to
-// the pack's trees. Cost: all the pictures are packed into ONE atlas texture and the ornaments are Blitter bobs in square chunks (one draw call per
-// square the camera sees), so they are painted once and never touch a sprite or a tween. They sit on the ground layer, under everything that stands
-// or walks, and they keep off the roads, the castle regions, the map's edge and each other.
+// The still ornaments of the map from the pack's own pieces (Tiny Swords bushes, rocks and stumps, loaded for the scene): scattered from the room's seed
+// (everyone in the match sees the same ones) over the meadows between the castles, along the edges of the map and through the forest next to the pack's
+// trees. Each gets a soft translucent shadow. Cost: all the pictures are packed into ONE atlas texture and the ornaments are Blitter bobs in square
+// chunks (one draw call per square the camera sees), so they are painted once and never touch a sprite or a tween. They sit on the ground layer,
+// under everything that stands or walks, and they keep off the roads, the castle regions, the map's edge and each other.
 
-export const PROP_NAMES = ['oak', 'pine', 'darkpine', 'berry', 'rocks', 'mossrock', 'flowers', 'stump', 'sign'] as const;
-/** The rarer, bigger details (a broken cart, a pond, a ruined tower ...): one or two in each quarter of the map, only on the meadows. */
-export const DETAIL_NAMES = ['d-cart', 'd-pond', 'd-tower', 'd-stones', 'd-field', 'd-well', 'd-mushlog', 'd-campfire'] as const; // (d-bridge.png is cleaned and waiting: it needs water, for a map with a river)
-/** The details that stand on the meadows: a pond, a well, standing stones and a scarecrow (the cart, tower, mushroom log and camp fire are not used there). */
-const MEADOW_DETAILS = ['d-pond', 'd-well', 'd-stones', 'd-field'] as const;
-const ALL_NAMES: readonly string[] = [...PROP_NAMES, ...DETAIL_NAMES];
-const SCALE = 2;
-const srcKey = (name: string) => `prop:${name}`;
+/** The ornaments: name, the loaded texture it is cut from (and the frame size when that is a sheet) and the scale it is drawn at. */
+const SOURCES: Record<string, { key: string; frame?: number; scale: number }> = {
+  rock1: { key: 'rock1', scale: 0.8 }, rock2: { key: 'rock2', scale: 0.8 }, rock3: { key: 'rock3', scale: 0.8 }, rock4: { key: 'rock4', scale: 0.8 },
+  bush1: { key: 'bush1', frame: 128, scale: 0.8 }, bush2: { key: 'bush2', frame: 128, scale: 0.8 }, bush3: { key: 'bush3', frame: 128, scale: 0.8 }, bush4: { key: 'bush4', frame: 128, scale: 0.8 },
+  stump1: { key: 'stump1', scale: 0.7 }, stump2: { key: 'stump2', scale: 0.7 },
+};
+const ALL_NAMES: readonly string[] = Object.keys(SOURCES);
 const ATLAS = 'kf-props';
 const CHUNK = 640;
 
-export function preloadPropsArt(scene: Phaser.Scene): void {
-  for (const n of ALL_NAMES) scene.load.image(srcKey(n), asset(`/art/props/${n}.png`));
-}
-
-/** The atlas: every ornament drawn at SCALE with its shadow beneath; frame names are the ornament names. */
+/** The atlas: every ornament cut to its picture's opaque part with a shadow beneath; frame names are the ornament names. */
 function makeAtlas(scene: Phaser.Scene): Map<string, { w: number; h: number }> {
   const frames = new Map<string, { w: number; h: number }>();
   if (scene.textures.exists(ATLAS)) {
     for (const n of ALL_NAMES) { const f = scene.textures.get(ATLAS).get(n); if (f && f.name === n) frames.set(n, { w: f.width, h: f.height }); }
     return frames;
   }
-  const items: { name: string; img: HTMLImageElement; w: number; h: number }[] = [];
+  const items: { name: string; crop: HTMLCanvasElement; w: number; h: number }[] = [];
   for (const name of ALL_NAMES) {
-    if (name === 'sign' || !scene.textures.exists(srcKey(name))) continue;
-    const img = scene.textures.get(srcKey(name)).getSourceImage() as HTMLImageElement;
-    items.push({ name, img, w: img.width * SCALE + 16, h: img.height * SCALE + 14 });
+    const src = SOURCES[name];
+    if (!scene.textures.exists(src.key)) continue;
+    const img = scene.textures.get(src.key).getSourceImage() as HTMLImageElement;
+    const fw = src.frame ?? img.width, fh = src.frame ?? img.height;
+    const tmp = document.createElement('canvas');
+    tmp.width = fw; tmp.height = fh;
+    const tg = tmp.getContext('2d', { willReadFrequently: true })!;
+    tg.drawImage(img, 0, 0, fw, fh, 0, 0, fw, fh);
+    const d = tg.getImageData(0, 0, fw, fh).data;
+    let x0 = fw, y0 = fh, x1 = -1, y1 = -1;
+    for (let y = 0; y < fh; y++) for (let x = 0; x < fw; x++) if (d[(y * fw + x) * 4 + 3] > 40) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    if (x1 < 0) continue;
+    const crop = document.createElement('canvas');
+    crop.width = x1 - x0 + 1; crop.height = y1 - y0 + 1;
+    crop.getContext('2d')!.drawImage(tmp, x0, y0, crop.width, crop.height, 0, 0, crop.width, crop.height);
+    items.push({ name, crop, w: Math.round(crop.width * src.scale) + 16, h: Math.round(crop.height * src.scale) + 14 });
   }
   const W = 512;
   let x = 0, y = 0, rowH = 0;
-  const placed: { name: string; x: number; y: number; w: number; h: number; img: HTMLImageElement }[] = [];
+  const placed: { name: string; x: number; y: number; w: number; h: number; crop: HTMLCanvasElement }[] = [];
   for (const it of items) {
     if (x + it.w > W) { x = 0; y += rowH; rowH = 0; }
     placed.push({ ...it, x, y });
     x += it.w; rowH = Math.max(rowH, it.h);
   }
+  if (placed.length === 0) return frames;
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = y + rowH;
   const g = canvas.getContext('2d')!;
   g.imageSmoothingEnabled = false;
   for (const p of placed) {
-    // the soft shadow: a flat dark ellipse under the foot, translucent
-    g.fillStyle = 'rgba(22, 14, 34, 0.30)';
-    g.beginPath(); g.ellipse(p.x + p.w / 2, p.y + p.h - 11, Math.min(p.img.width * SCALE * 0.46, 44), 7, 0, 0, Math.PI * 2); g.fill();
-    g.drawImage(p.img, p.x + 8, p.y + 2, p.img.width * SCALE, p.img.height * SCALE);
+    const sc = SOURCES[p.name].scale;
+    g.fillStyle = 'rgba(22, 14, 34, 0.28)';
+    g.beginPath(); g.ellipse(p.x + p.w / 2, p.y + p.h - 9, Math.min(p.crop.width * sc * 0.46, 40), 6, 0, 0, Math.PI * 2); g.fill();
+    g.drawImage(p.crop, p.x + 8, p.y + 2, Math.round(p.crop.width * sc), Math.round(p.crop.height * sc));
   }
   const tex = scene.textures.addCanvas(ATLAS, canvas)!;
   for (const p of placed) { tex.add(p.name, 0, p.x, p.y, p.w, p.h); frames.set(p.name, { w: p.w, h: p.h }); }
@@ -122,10 +129,7 @@ export class MapProps {
       return forests.some((f) => Math.hypot(t.x - f.center.x, t.y - f.center.y) < f.radius * 0.96);
     };
     const placed: { x: number; y: number; r: number }[] = [];
-    const radiusOf: Record<string, number> = {
-      oak: 46, pine: 36, darkpine: 40, berry: 34, rocks: 34, mossrock: 40, flowers: 34, stump: 28,
-      'd-cart': 62, 'd-pond': 70, 'd-tower': 66, 'd-stones': 70, 'd-field': 66, 'd-well': 44, 'd-mushlog': 62, 'd-campfire': 62,
-    };
+    const radiusOf: Record<string, number> = { rock1: 28, rock2: 28, rock3: 28, rock4: 28, bush1: 36, bush2: 36, bush3: 36, bush4: 36, stump1: 26, stump2: 26 };
     const tryPlace = (name: string, x: number, y: number, roadMargin: number): boolean => {
       const r = radiusOf[name] ?? 34;
       if (x < a.x + 150 || x > b.x - 150 || y < a.y + 150 || y > b.y - 150) return false;
@@ -140,25 +144,12 @@ export class MapProps {
       for (const [n, w] of table) { t -= w; if (t <= 0) return n; }
       return table[0][0];
     };
-    const wood: [string, number][] = [['darkpine', 32], ['pine', 22], ['berry', 22], ['mossrock', 4], ['rocks', 8], ['stump', 12]];
+    const wood: [string, number][] = [['bush1', 14], ['bush2', 14], ['bush3', 14], ['bush4', 14], ['rock1', 5], ['rock2', 5], ['rock3', 5], ['rock4', 5], ['stump1', 12], ['stump2', 12]];
     const w = b.x - a.x, h = b.y - a.y;
-    // the details first, so the small ornaments make room for them: one or two in each quarter, each kind used once; away from the roads, the castle
-    // regions, the forests (their places and trails are in there) and the edge of the map
-    const kinds: string[] = [...MEADOW_DETAILS];
-    for (let i = kinds.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [kinds[i], kinds[j]] = [kinds[j], kinds[i]]; }
-    let next = 0;
-    for (let quarter = 0; quarter < 4; quarter++) {
-      const x0 = a.x + (quarter % 2) * (w / 2), y0 = a.y + Math.floor(quarter / 2) * (h / 2), want = 1 + (rnd() < 0.5 ? 1 : 0);
-      for (let got = 0, tries = 0; got < want && tries < 400; tries++) {
-        const x = x0 + (0.1 + rnd() * 0.8) * (w / 2), y = y0 + (0.1 + rnd() * 0.8) * (h / 2), name = kinds[next % kinds.length];
-        if (inForest(x, y) || !awayFromRoads(x, y, 210) || !tryPlace(name, x, y, 210)) continue;
-        next++; got++; this.details++; this.detailSpots.push({ name, x, y });
-      }
-    }
     // The roads keep a wide verge (about three tiles each side) clear of everything.
     const VERGE = 200;
-    // the meadows between the castles: only flower clumps, bushes and small stones (no trees, stumps or big rocks outside the forests)
-    const small: [string, number][] = [['flowers', 46], ['rocks', 24], ['berry', 24]];
+    // the meadows between the castles: only bushes and small stones (no stumps outside the forests)
+    const small: [string, number][] = [['bush1', 16], ['bush2', 16], ['bush3', 12], ['bush4', 12], ['rock1', 11], ['rock2', 11], ['rock3', 11], ['rock4', 11]];
     for (let i = 0, n = 0; i < 2000 && n < 90; i++) {
       const x = a.x + rnd() * w, y = a.y + rnd() * h;
       if (inForest(x, y)) continue;

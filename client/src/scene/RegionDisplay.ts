@@ -4,7 +4,6 @@ import type { WorldLabels } from '../ui/world-labels';
 import { COLORED_IMAGES, colorKey } from './assets';
 import { drawBuilding } from './BuildingArt';
 import { Chimneys } from './Chimneys';
-import { isKingdomLook } from './KingdomSprites';
 import { Lord } from './Lord';
 import { SITES, type Point } from './layout';
 import { buildingSign } from './parts';
@@ -22,7 +21,6 @@ export class RegionDisplay {
   /** The lord of this castle, standing at the gate (a spectator sees him topple when it falls). */
   readonly lord: Lord;
   private lordFallen: boolean | null = null;
-  private look: string | null = null;
 
   private readonly buildingKey: (key: string) => string;
 
@@ -43,16 +41,7 @@ export class RegionDisplay {
 
   debugSprites(): Phaser.GameObjects.Sprite[] { return [...this.workers.debugSprites(), ...this.soldiers.debugSprites(), this.lord.debugSprite()]; }
 
-  /** The castle's kingdom (a spectator is told every one): its buildings are drawn in that kingdom's pictures. */
-  setLook(look: string | null | undefined): void {
-    const next = isKingdomLook(look) ? look : null;
-    if (next === this.look) return;
-    this.look = next;
-    for (const slot of this.slots.values()) slot.level = 0; // drawn again in the new style
-  }
-
   sync(castle: SpectatorCastleView): void {
-    this.setLook(castle.kingdom);
     for (const b of castle.buildings) {
       const slot = this.slots.get(b.type);
       if (!slot) continue;
@@ -60,7 +49,7 @@ export class RegionDisplay {
       if (slot.level !== b.level) {
         slot.sprites.forEach((s) => s.destroy());
         this.chimneys.clear(b.type);
-        const art = drawBuilding(this.scene, b.type, b.level, this.look, this.color, this.off, this.buildingKey, this.chimneys, b.type);
+        const art = drawBuilding(this.scene, b.type, b.level, this.color, this.off, this.buildingKey, this.chimneys, b.type);
         slot.sprites = art.sprites;
         this.workers.setBlocks(b.type, art.feet);
         slot.level = b.level;

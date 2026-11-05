@@ -1,6 +1,6 @@
 import type { ScoutReportView } from '../types';
 
-// The emblems of the four kingdoms (public/art/ui/emblems, cleaned by tools/art-ui.mjs). Ours shows on the kingdom button, the decree and the guide;
+// The emblems of the four kingdoms (drawn in code by ui/tiny-ui.ts). Ours shows on the kingdom button, the decree and the guide;
 // a rival's only where its kingdom is known: while its castle is in live sight, in a scout report, and on the end screen (the match is over by then).
 
 const IDS = ['golge', 'tuccar', 'kahin', 'entrikaci'] as const;

@@ -4,7 +4,6 @@ import { colorKey } from './assets';
 import { TILE, type Point } from './layout';
 import { GatePaving } from './Roads';
 import { CourtyardFloor } from './CourtyardFloor';
-import { stoneSheet, stoneTower } from './KingdomSprites';
 
 // The wall around a castle's region (16×12 tiles), on the region's edge so every building and worker is inside. It is only a picture of the
 // castle's wall level (the server decides the level): 1 a wooden fence, 2 a stone wall, 3 a thick stone wall with towers. The road leaves
@@ -42,7 +41,6 @@ const STONE = { 2: { scale: 0.42, tower: 0.5 }, 3: { scale: 0.55, tower: 0.62 } 
 
 export class WallRing {
   private level = 0;
-  private look: string | null = null;
   private fallen = false;
   private rt: Phaser.GameObjects.RenderTexture | null = null;
   private towers: Phaser.GameObjects.Image[] = [];
@@ -61,16 +59,7 @@ export class WallRing {
   /** The gate is on the east side for the western regions, on the west side for the eastern ones. */
   private get gateOnEast(): boolean { return this.corner === 'northWest' || this.corner === 'southWest'; }
 
-  /** The wall and its towers in a kingdom's stone (null: the pack's own teal stone); drawn again when it changes. */
-  setLook(look: string | null): void {
-    if (look === this.look) return;
-    this.look = look;
-    this.paving.setLook(look);
-    this.floor?.setLook(look);
-    if (this.level > 0) { const level = this.level; this.level = 0; this.setLevel(level); if (this.fallen) { this.fallen = false; this.ruin(); } }
-  }
-
-  private get sheet(): string { return this.look ? stoneSheet(this.scene, this.look, WALL_SHEET, FRAMES) : WALL_SHEET; }
+  private get sheet(): string { return WALL_SHEET; }
 
   setLevel(level: number): void {
     level = Math.max(1, Math.min(3, Math.floor(level)));
@@ -80,7 +69,6 @@ export class WallRing {
     cutWallFrames(this.scene);
     this.paving.setLevel(level); // a strong wall has a paved way to its gate
     this.floor ??= new CourtyardFloor(this.scene, this.origin, this.gateOnEast, `${this.corner}-${this.color}`); // the yard inside (painted once)
-    if (this.look) this.floor.setLook(this.look);
     const rt = this.scene.add.renderTexture(this.origin.x, this.origin.y, REGION_W, REGION_H).setOrigin(0).setDepth(DEPTH_WALL);
     this.rt = rt;
     const g = this.scene.make.graphics({ x: 0, y: 0 }, false);
@@ -184,7 +172,7 @@ export class WallRing {
     // towers: the corners, and (level 3) either side of the gate; level 2 has two stone posts at the gate
     const gx = east ? R - side : L + side;
     const plainKey = colorKey(this.color, this.own, 'tower');
-    const key = this.look && this.scene.textures.exists(plainKey) ? stoneTower(this.scene, this.look, plainKey) : plainKey;
+    const key = plainKey;
     const put = (x: number, baseY: number, towerScale: number = tower) => {
       if (!this.scene.textures.exists(key)) return;
       const img = this.scene.add.image(this.origin.x + x, this.origin.y + baseY, key).setOrigin(0.5, 0.92).setScale(towerScale).setDepth(this.origin.y + baseY);

@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import type { RoadView } from '../types';
 import { TILE, type Point } from './layout';
-import { stoneColor } from './KingdomSprites';
 import { distanceToSegment, seeded, toWorld } from './world';
 
 // The dirt roads, drawn once. The geometry is the server's (the roads' points are not touched); only how the ground looks changes:
@@ -140,7 +139,7 @@ export function bakeRoads(scene: Phaser.Scene, roads: RoadView[], mapSize: numbe
  * Small wooden signposts where roads meet (the pack's own, CC0): one by every junction, a little off the road, none on top of another.
  */
 export function placeSignposts(scene: Phaser.Scene, roads: RoadView[], seed: number): Phaser.GameObjects.Image[] {
-  const key = scene.textures.exists('prop:sign') ? 'prop:sign' : 'signpost';
+  const key = 'signpost';
   if (!scene.textures.exists(key)) return [];
   const rnd = seeded(seed ^ 0x51a9);
   const ends = new Map<string, { p: { x: number; y: number }; n: number }>();
@@ -157,7 +156,7 @@ export function placeSignposts(scene: Phaser.Scene, roads: RoadView[], seed: num
     const w = toWorld(p);
     const side = rnd() < 0.5 ? -1 : 1;
     const x = w.x + side * 44, y = w.y - 30;
-    out.push(scene.add.image(x, y, key).setOrigin(0.5, 0.9).setScale(key === 'prop:sign' ? 1.7 : 0.8).setFlipX(side < 0).setDepth(y));
+    out.push(scene.add.image(x, y, key).setOrigin(0.5, 0.9).setScale(0.8).setFlipX(side < 0).setDepth(y));
   }
   return out;
 }
@@ -175,18 +174,10 @@ const SHINE = rgb(0xcfe3cf);
 export class GatePaving {
   private image: Phaser.GameObjects.Image | null = null;
   private level = 0;
-  private look: string | null = null;
 
   /** `origin`: the region's corner in scene pixels; the road runs from x = 512 (the castle gate) to the side wall at height `gateY`. */
   constructor(private readonly scene: Phaser.Scene, private readonly origin: Point, private readonly onEast: boolean,
     private readonly key: string, private readonly gateY: number, private readonly castleX: number, private readonly regionW: number) {}
-
-  /** The paving in a kingdom's stone (null: the pack's teal); painted again when it changes. */
-  setLook(look: string | null): void {
-    if (look === this.look) return;
-    this.look = look;
-    if (this.image) { this.image.destroy(); this.image = null; const level = this.level; this.level = 0; this.setLevel(level); }
-  }
 
   setLevel(level: number): void {
     if (level === this.level) return;
@@ -223,7 +214,6 @@ export class GatePaving {
         let c = COBBLE[Math.floor(hash(col, row, seed + 3) * COBBLE.length)];
         if (inRow < CELL || inCol < CELL) c = MORTAR;
         else if (inRow < CELL * 2 && inCol < brickW - CELL && hash(col, row, seed + 4) > 0.5) c = SHINE;
-        if (this.look) c = stoneColor(this.look, c);
         const rgba = (255 << 24) | (c[2] << 16) | (c[1] << 8) | c[0];
         for (let v = 0; v < CELL; v++) for (let u = 0; u < CELL; u++) px[(j * CELL + v) * w + i * CELL + u] = rgba;
       }

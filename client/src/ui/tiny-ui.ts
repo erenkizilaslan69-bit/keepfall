@@ -111,6 +111,15 @@ function emblemGrid(id: string): Grid {
   return { rows: rows.map((r) => r.join('')), palette: { o: O, s: c.s, d: c.d, l: c.l, w: '#f6efd6', k: '#241a14' } };
 }
 
+/** A kingdom's emblem shield as a canvas (`cell` px per grid pixel), or null for an unknown kingdom. */
+export function emblemCanvas(id: string, cell = 2): HTMLCanvasElement | null {
+  if (!SYMBOLS[id]) return null;
+  const { rows, palette } = emblemGrid(id);
+  const [c, g] = canvas(12 * cell, rows.length * cell);
+  rows.forEach((row, j) => [...row].forEach((ch, i) => { const color = palette[ch]; if (color) { g.fillStyle = color; g.fillRect(i * cell, j * cell, cell, cell); } }));
+  return c;
+}
+
 let ready: Promise<void> | null = null;
 
 /** Builds the 9-slices, icons and emblems and hands them to CSS; resolves when done (also when the packs are missing). */
