@@ -150,3 +150,33 @@ Parti/sosyal strateji yönü için konuşulacaklar:
 4. Yeni görsellerle fragman/Shorts yeniden çekimi.
 5. Steam yol haritası: masaüstü sarmalayıcı, Steamworks lobi, ücretli sunucu, Steam sayfası + wishlist.
 6. İsteğe bağlı: CrazyGames'e iyileştirilmiş sürümle yeniden başvuru.
+
+---
+
+## Claude Code'un notları (2026-11-05 oturumu)
+
+**Dal durumu.** CrazyGames incelemesi sürerken `main` ve Render DONDU (main `7b47402`, Render `/version` aynı). Bugünkü tüm iş `dev` dalında, ayrı commit'lerle, hepsi push edildi; main'e merge edilmedi, Render'a deploy edilmedi. `dev` başı: `git log --oneline -1` (bu not dahil). Sunucu kodu dev'de DEĞİŞMEDİ (yalnız istemci, araçlar, belgeler).
+
+**Çalışan sunucular.**
+- **5080 Production** (main kodu): `publish/` + repo `client/dist` (4 Kasım derlemesi). Dokunulmadı; dev istemcisi ASLA `client/dist`'e derlenmez (Production oradan sunuyor).
+- **5090 dev LAN** (dev dalı, telefon testi): repo dışı `..\keepfall-dev-lan\`, `http://192.168.1.3:5090/?debug=1`, ortam Production (dev hız düğmeleri yok = gerçek yerleşim). Yenileme: `cd client && npx vite build --outDir ../../keepfall-dev-lan/client/dist --emptyOutDir`, sonra `keepfall-dev-lan\server\Keepfall.Server.dll`'i `Keepfall__BalancePath=<keepfall-dev-lan>\config\balance.json` ve `--urls http://0.0.0.0:5090` ile yeniden başlat (ayrıntı: bellekteki `dev-lan-server.md`). Sunucu dll'leri `publish/`'ten kopya (sunucu kodu aynı). Wi-Fi profili Public, dotnet için Public izin var.
+- Test sunucuları (5081, Vite 5174/5175) KAPALI.
+
+**Bugün yapılanlar (dev).**
+1. CrazyGames: depolama engelli iframe'de rehber yedeği (`ui/safe-storage.ts`), Ayarlar'da Gizlilik bölümü (EN/TR), zaferde `game.happytime()`; `muteAudio` elle doğrulandı (`sonraki-plan.md` §7). Aday paket `..\keepfall-crazygames-build-next` + `keepfall-crazygames-next.zip` (portala YÜKLENMEDİ; bu paket Tur C/D'den ÖNCE üretildi, yeniden başvuruda yeniden üret: `PACK_SUFFIX=-next node tools/pack-itch.mjs <sunucu> --crazy`).
+2. **Tur C** (dokunmatik cila, yalnız `pointer: coarse`): 12 px yazı tabanı (`--fs-xs`), 44 px dokunma alanı + 8 px boşluk, ui-audit kritikleri, touch-check flaky testi düzeltildi. Dosyalar: `ui/touch-text.css`, `touch-targets.css`, `touch-fixes.css`. Rapor: `docs/ui-audit-turc.md` (+ önce/sonra ham raporlar).
+3. **Tur D** (iPhone 16 Safari bulguları): +/− zoom düğmeleri kaldırıldı; iOS çift dokunma sayfa zoom'u kökten çözüldü (`ui/no-page-zoom.ts`); pencerelerde kaydırma ipucu, yapışkan ana düğme, rakip pencere sekmeleri (`ui/touch-windows.css`, `windows.ts`, `enemy-window.ts`); rakip avatar paneli minimap'e binmiyor. Bölüm 3'teki iPhone düzeltmelerinin KODU hazır (dev'de); **gerçek iPhone'da denenmedi** (kullanıcı 5090 adresinden deneyecek).
+4. Araçlar: `tools/ui-audit.mjs` (JSON çıktısı `docs/ui-audit*.json` git'e girmez, `--shots`, yakın hedef denetimi, ölü düğme için kaydırıp bas, yapışkan/sabit başlık altındaki öğeler 'örtülü' sayılmaz), `tools/double-tap-check.mjs`, `tools/touch-check.mjs` (test hatası düzeldi).
+
+**Açık kalan testler / bilinen sorunlar.**
+- Gerçek iPhone/Android'de Tur C + D denenmedi.
+- `touch-offset-check`: "canvas moved 70 px: the touch is at canvas (426,146), expected (300,180)" Tur C'den ÖNCE de düşüyordu; asıl denetim ("tap still lands on the castle") geçiyor. Test beklentisi gözden geçirilmeli.
+- 852x323 (Safari çubuğu açık) mobil rehber (`MOBILE=1 SIZE=852,323 tools/tutorial-check.mjs`) 17. adımda (orman tıklaması, "no frame") takılıyor; Tur D'den önceki kodda da aynı. 852x393'te ve masaüstünde rehber baştan sona geçiyor.
+- ui-audit kalanları: ~140 "ölü düğme" (elle denendi, çalışıyor; denetim sınırı), `small` (640x360) cihazda bildirim kale penceresi sekmesinin üstüne biniyor, 8 px'lik yan kaydırma uyarıları (kingdom panel), 2 px rapor etiketi taşması (masaüstü kritik 0–1 arasında oynar), yapışkan çubuğa kayan öğeler 'yakın/örtülü' sayılıyor. Yapışkan çubuk eşiği `windows.ts` `refreshMore` içinde (2,5; gerçek telefonda kısa pencerede alt çubuk yapışmıyorsa orayı ayarla).
+- Hızlı Maç x1 rehberli gerçek zamanlı test bugün koşulmadı (rehber x20'de, mobil ve masaüstü, geçti).
+
+**Bilmen gereken başka.**
+- Dev'de `docs/ui-audit-turc-before.md`, `...-after.md`, `ui-audit-turd.md` üretilmiş raporlar (büyük); özet `ui-audit-turc.md`.
+- Oturum bellek dosyaları: `crazygames-review-freeze.md` (main/Render donmuş, iş dev'de), `dev-lan-server.md`.
+- Git çıktısındaki "LF will be replaced by CRLF" uyarıları zararsız (autocrlf); dosyaların biçimine dokunulmadı.
+- Production'ı yeniden başlatma kuralı aynı: yalnız kullanıcı söyleyince / iş bitince (CLAUDE.md #5). Bugün 5080'i bir kez yeniden başlattım (kapalı bulunmuştu, mevcut `publish/` ile, main kodu).
