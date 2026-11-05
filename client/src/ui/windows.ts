@@ -70,14 +70,20 @@ export abstract class Win {
   /** A body that scrolls says so (touch-windows.css draws a fade and a small arrow at the edge that has more): called every frame by the window manager. */
   refreshMore(): void {
     const b = this.body, below = b.scrollHeight - b.clientHeight - b.scrollTop > 6, above = b.scrollTop > 6;
+    // The main button / the tabs stick to the edge only when the body is tall enough to show real content as well; in a short window they stay in the flow (they would cover it).
+    const stuck = b.querySelector<HTMLElement>('.upgrade-box, [data-f="attack"] > .row:last-child');
+    const tabs = b.querySelector<HTMLElement>('.win-tabs');
+    const stickFoot = !!stuck && b.clientHeight >= stuck.offsetHeight * 2, stickHead = !!tabs && b.clientHeight >= tabs.offsetHeight * 2.5;
+    this.el.classList.toggle('no-stick-foot', !!stuck && !stickFoot);
+    this.el.classList.toggle('no-stick-head', !!tabs && !stickHead);
+    b.style.scrollPaddingBottom = stickFoot ? `${stuck!.offsetHeight}px` : '';
+    b.style.scrollPaddingTop = stickHead ? `${tabs!.offsetHeight}px` : '';
     this.el.classList.toggle('more-down', below);
     this.el.classList.toggle('more-up', above);
     if (!below && !above) return;
     // (a main button that sticks to the foot is above the fade, so the fade stops where it begins)
-    const foot = b.querySelector<HTMLElement>('.upgrade-box, [data-f="attack"] > .row:last-child');
-    this.more.style.setProperty('--foot', `${foot && getComputedStyle(foot).position === 'sticky' ? foot.offsetHeight : 0}px`);
-    const head = b.querySelector<HTMLElement>('.win-tabs');
-    this.more.style.setProperty('--head', `${head && getComputedStyle(head).position === 'sticky' ? head.offsetHeight : 0}px`);
+    this.more.style.setProperty('--foot', `${stickFoot ? stuck!.offsetHeight : 0}px`);
+    this.more.style.setProperty('--head', `${stickHead ? tabs!.offsetHeight : 0}px`);
     const wr = this.el.getBoundingClientRect(), br = b.getBoundingClientRect();
     Object.assign(this.more.style, { left: `${Math.round(br.left - wr.left - this.el.clientLeft)}px`, top: `${Math.round(br.top - wr.top - this.el.clientTop)}px`, width: `${Math.round(br.width)}px`, height: `${Math.round(br.height)}px` });
   }

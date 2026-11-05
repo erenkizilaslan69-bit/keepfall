@@ -320,9 +320,15 @@ export class Tutorial {
       let r = el.getBoundingClientRect();
       if (r.width === 0 && r.height === 0) return null;
       // A button that sits below the fold of a tall window is scrolled into view first (and a window that runs off the screen is already scrolled inside).
-      const box = el.closest<HTMLElement>('.win-body')?.getBoundingClientRect();
+      const bodyEl = el.closest<HTMLElement>('.win-body');
+      const box = bodyEl?.getBoundingClientRect();
       const top = this.host.topBottom();
-      if (r.top < Math.max(top, box?.top ?? 0) || r.bottom > Math.min(window.innerHeight, box?.bottom ?? window.innerHeight)) {
+      // (what sticks to the edges of a tall window - the tabs above, the main button below - hides what is behind it: the pointed-at thing must be clear of them too)
+      const stuckBelow = bodyEl && !el.closest('.upgrade-box, [data-f="attack"] > .row:last-child') ? bodyEl.querySelector<HTMLElement>('.upgrade-box, [data-f="attack"] > .row:last-child') : null;
+      const below = stuckBelow && getComputedStyle(stuckBelow).position === 'sticky' ? stuckBelow.offsetHeight : 0;
+      const tabsEl = bodyEl && !el.closest('.win-tabs') ? bodyEl.querySelector<HTMLElement>('.win-tabs') : null;
+      const above = tabsEl && getComputedStyle(tabsEl).position === 'sticky' ? tabsEl.offsetHeight : 0;
+      if (r.top < Math.max(top, (box?.top ?? 0) + above) || r.bottom > Math.min(window.innerHeight, (box?.bottom ?? window.innerHeight) - below)) {
         el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         r = el.getBoundingClientRect();
       }
