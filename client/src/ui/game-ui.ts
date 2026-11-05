@@ -335,8 +335,19 @@ export class GameUi {
       const rr = this.root.getBoundingClientRect();
       const w = this.scroll.offsetWidth, h = this.scroll.offsetHeight;
       const vh = Math.min(rr.height, (window.visualViewport?.height ?? Infinity) - rr.top);
-      this.scroll.style.top = `${Math.max(4, Math.min(vh - h - 4, at.bottom + 6 - rr.top))}px`;
-      this.scroll.style.left = `${Math.max(8, Math.min(rr.width - w - 8, at.left + at.width / 2 - w / 2 - rr.left))}px`;
+      let top = Math.max(4, Math.min(vh - h - 4, at.bottom + 6 - rr.top));
+      let left = Math.max(8, Math.min(rr.width - w - 8, at.left + at.width / 2 - w / 2 - rr.left));
+      // Never over the minimap: beside it (to its left) if it would cover it, else above it.
+      const mm = document.querySelector('.kf-minimap')?.getBoundingClientRect();
+      if (mm && mm.width > 0) {
+        const mL = mm.left - rr.left, mT = mm.top - rr.top;
+        if (left < mL + mm.width && left + w > mL && top < mT + mm.height && top + h > mT) {
+          if (mL - 8 - w >= 8) left = mL - 8 - w;
+          else if (mT - 8 - h >= 4) top = mT - 8 - h;
+        }
+      }
+      this.scroll.style.top = `${top}px`;
+      this.scroll.style.left = `${left}px`;
     }
   }
 
