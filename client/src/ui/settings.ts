@@ -88,10 +88,18 @@ export function toggleSettings(): void {
         <section class="set-links">
           <button class="btn" data-act="guide">${t('Nasıl oynanır?')}</button>
           <button class="btn" data-act="about">${t('Oyun hakkında')}</button>
+          <button class="btn" data-act="privacy">${t('Gizlilik')}</button>
           <button class="btn" data-act="tutorial">${t('Rehberi tekrar başlat')}</button>
         </section>
         <p class="muted small hidden" data-f="tut-note"></p>
         ${leaveAction ? `<section class="set-links"><button class="btn btn-red" data-act="leave">${t('Ana menüye dön')}</button></section>` : ''}
+        <section class="set-about hidden" data-f="privacy">
+          <h3>${t('Gizlilik')}</h3>
+          <p>${t('Oyun hesap ya da e-posta adresi toplamaz.')}</p>
+          <p>${t('Oyuncu adın ve maç verisi yalnızca maç sürdüğü kadar sunucuda tutulur.')}</p>
+          <p>${t('Hata kayıtları anonim cihaz bilgisi (tarayıcı ve ekran gibi) içerir.')}</p>
+          <p>${t('Tarayıcında yalnızca ayarların ve rehber durumun saklanır.')}</p>
+        </section>
         <section class="set-about hidden" data-f="about">
           <h3>${t('Oyun hakkında')}</h3>
           <p><b>Keepfall</b> — ${t('sürüm')} ${VERSION} (${typeof __BUILD_DATE__ === 'string' ? __BUILD_DATE__ : ''})</p>
@@ -136,6 +144,7 @@ export function toggleSettings(): void {
     else if (act === 'guide') { closeSettings(); toggleGuide(); }
     else if (act === 'leave') { closeSettings(); confirmLeave(); }
     else if (act === 'about') q('[data-f="about"]').classList.toggle('hidden');
+    else if (act === 'privacy') q('[data-f="privacy"]').classList.toggle('hidden');
     else if (act === 'tutorial') {
       const now = restartTutorial();
       const note = q('[data-f="tut-note"]');
