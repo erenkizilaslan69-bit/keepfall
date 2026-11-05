@@ -1,3 +1,5 @@
+Yeni oturumda önce docs/devir-notu.md ve docs/sonraki-plan.md'yi oku.
+
 # Keepfall — Claude için proje notları
 
 Kullanıcıyla **Türkçe** konuş. Kısa ve öz raporla. Kod, yorum ve commit mesajı bağlamı: kod yorumları İngilizce, oyun metinleri ve commit başlıkları Türkçe.
