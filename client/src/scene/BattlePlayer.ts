@@ -6,6 +6,7 @@ import type { Effects } from './Effects';
 import { reducedEffects } from '../prefs';
 import type { BattleStartedView, PlayerColor, Vec } from '../types';
 import { UNIT_SCALE, colorKey, playRandom, unitOriginY, unitScale } from './assets';
+import { hearing } from './hearing';
 import type { Point } from './layout';
 import { toWorld } from './world';
 
@@ -201,10 +202,9 @@ export class BattlePlayer {
     if (now >= v.startedAt + v.fightSeconds) this.end(id, r);
   }
 
-  /** Only fights the player can see are heard: full volume in view, nothing outside it (a battle elsewhere would just be noise). */
+  /** How loud a fight at this place is: louder towards the middle of the view, faint beyond it, nothing far away (a battle elsewhere would just be noise). */
   private loudness(x: number, y: number): number {
-    const view = this.scene.cameras.main.worldView;
-    return view.contains(x, y) ? 1 : 0;
+    return hearing(this.scene, x, y);
   }
 
   /** Remove a replay whose code failed: its sprites go, it is not drawn or counted as active again. */
@@ -221,7 +221,7 @@ export class BattlePlayer {
     if (!a || a.dead || !a.sprite.active) return;
     if (b) a.sprite.setFlipX(b.sprite.x < a.sprite.x);
     const look = LOOK[a.unit] ?? LOOK.kilicli;
-    sfx.play(a.unit === 'mancinik' ? 'castleHit' : a.ranged ? 'arrow' : look.attack ? 'sword' : 'shield', this.loudness(a.sprite.x, a.sprite.y));
+    sfx.play(a.unit === 'mancinik' ? 'catapult' : a.ranged ? 'arrow' : look.attack ? 'sword' : 'shield', this.loudness(a.sprite.x, a.sprite.y));
     if (look.attack) {
       const key = colorKey(r.view.sides[a.side].color, this.ownColor, look.attack);
       if (this.scene.anims.exists(key)) {
@@ -256,7 +256,10 @@ export class BattlePlayer {
           if (!stone) arrow.setRotation(Math.atan2(q.y - p.y, q.x - p.x));
           this.fx.trail(p.x, p.y);
         },
-        onComplete: () => { shadow?.destroy(); this.fx.stick(arrow, stone); if (stone) this.fx.stoneLanding(to.x, to.y + 24); },
+        onComplete: () => {
+          shadow?.destroy(); this.fx.stick(arrow, stone);
+          if (stone) { this.fx.stoneLanding(to.x, to.y + 24); sfx.play(r.view.kind === 'siege' && a.side === 0 ? 'castleHit' : 'stone', this.loudness(to.x, to.y)); } // a stone at the gate is a blow on the gate
+        },
       });
     }
     // at a gate the attackers' blows raise wall dust (the catapult's stones every time, the others now and then)
@@ -264,7 +267,7 @@ export class BattlePlayer {
       this.fx.dust(r.gate.x + Phaser.Math.Between(-30, 30), r.gate.y + Phaser.Math.Between(-50, 20), a.unit === 'mancinik' ? 1.1 : 0.7, 0xb8a888);
     }
     if (b && b.sprite.active) this.fx.hit(b.sprite.x, b.sprite.y - 22, a.ranged ? 'arrow' : look.attack ? 'melee' : 'shield');
-    if (b && !a.ranged && this.loudness(a.sprite.x, a.sprite.y) === 1 && Math.random() < 0.3) this.fx.hitStop(45); // the weight of a blow
+    if (b && !a.ranged && this.loudness(a.sprite.x, a.sprite.y) > 0.75 && Math.random() < 0.3) this.fx.hitStop(45); // the weight of a blow
     if (b && !b.dead && b.sprite.active) {
       b.sprite.setTintFill(0xffffff);
       this.scene.time.delayedCall(70, () => { if (!b.dead && b.sprite.active) b.sprite.clearTint(); });

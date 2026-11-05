@@ -8,6 +8,8 @@ import { COLOR_CSS, esc } from '../format';
 import { t, tr } from '../i18n';
 import { makeCampfire } from './NewUnits';
 import { Lord } from './Lord';
+import { sfx } from '../audio';
+import { hearing } from './hearing';
 import { kingdomBanner } from './Banners';
 import { createAnimations, playFrom, loadSpectatorAssets, preloadAssets } from './assets';
 import { CAMP, CASTLE, GATE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH } from './layout';
@@ -556,6 +558,7 @@ export class WorldScene extends Phaser.Scene {
     guarded('scene-update', () => this.terrain.update(dt, this.cameras.main.worldView), 'terrain');
     guarded('scene-update', () => this.props?.cull(this.cameras.main.worldView), 'props');
     guarded('scene-update', () => this.chimneys.update(), 'chimneys');
+    guarded('scene-update', () => sfx.setFire(document.documentElement.classList.contains('in-menu') ? 0 : hearing(this, CAMP.x, CAMP.y) ** 1.5), 'fire-sound'); // the camp fire crackles louder the nearer the camera is
     guarded('scene-update', () => this.workers.update(dt), 'workers');
     guarded('scene-update', () => { for (const r of this.regions.values()) r.update(dt); }, 'regions');
     guarded('scene-update', () => this.movers.update(dt), 'movers');
@@ -870,7 +873,7 @@ export class WorldScene extends Phaser.Scene {
     const slot = this.buildings.get(b.type)!;
     const site = SITES[b.type];
     if (slot.level !== b.level) {
-      if (slot.level > 0 && b.level > slot.level) this.fx.sparkle(site.center.x, site.center.y, true); // it has grown
+      if (slot.level > 0 && b.level > slot.level) { this.fx.sparkle(site.center.x, site.center.y, true); sfx.play('upgrade', hearing(this, site.center.x, site.center.y)); } // it has grown
       for (const sprite of slot.sprites) sprite.destroy();
       this.chimneys.clear(b.type);
       const art = drawBuilding(this, b.type, b.level, this.color, NO_OFFSET, (k) => k, this.chimneys, b.type);

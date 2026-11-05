@@ -1,5 +1,5 @@
 import { asset } from './env';
-// Sound: real recordings (CC0, public/audio: Kenney's interface, impact and RPG packs, RandomMind's music; see the README) played through
+// Sound: real recordings (CC0, public/audio: Kenney's interface and impact packs, OpenGameArt's CC0 recordings, RandomMind's music; sources in docs/ses-lisanslari.md) played through
 // the Web Audio API, with the sounds made on the spot (a few oscillators and a burst of filtered noise) as the fallback for any sound without a
 // recording (arrows, the win and lose jingles) or whose file did not load. Ogg Vorbis where the browser plays it, MP3 otherwise (Safari).
 // Music and effects have their own volumes. The player's choice (on/off, volumes) is kept in localStorage; reading or writing it may fail
@@ -8,7 +8,8 @@ import { asset } from './env';
 export type SoundName =
   | 'click' | 'sword' | 'arrow' | 'death' | 'castleHit' | 'castleFall'
   | 'warning' | 'scoutBack' | 'envoy' | 'battleStart' | 'win' | 'lose'
-  | 'shield' | 'uiConfirm' | 'uiError' | 'uiOpen' | 'uiClose';
+  | 'shield' | 'uiConfirm' | 'uiError' | 'uiOpen' | 'uiClose'
+  | 'catapult' | 'stone' | 'upgrade' | 'march' | 'gallop';
 
 interface Prefs { muted: boolean; volume: number; music: number }
 
@@ -31,23 +32,33 @@ const SAMPLES: Partial<Record<SoundName, Bank>> = {
   uiError: { files: ['ui-error'], gain: 0.6 },
   uiOpen: { files: ['ui-open'], gain: 0.5 },
   uiClose: { files: ['ui-close'], gain: 0.5 },
-  sword: { files: ['sword-1', 'sword-2', 'sword-3'], gain: 0.8 },
+  sword: { files: ['sword-1', 'sword-2', 'sword-3', 'clash-1', 'clash-2', 'clash-3', 'clash-4'], gain: 0.8 },
+  arrow: { files: ['arrow-1', 'arrow-2', 'arrow-3'], gain: 0.7 },
+  catapult: { files: ['catapult-1'], gain: 0.9 },
+  stone: { files: ['stone-1', 'stone-2', 'stone-3'], gain: 0.9 },
+  upgrade: { files: ['upgrade-1', 'upgrade-2'], gain: 0.8 },
+  march: { files: ['march-1', 'march-2', 'march-3'], gain: 0.5 },
+  gallop: { files: ['gallop-1'], gain: 0.55 },
   shield: { files: ['shield-1', 'shield-2'], gain: 0.8 },
   death: { files: ['death-1', 'death-2'], gain: 0.7 },
-  castleHit: { files: ['castleHit-1', 'castleHit-2'], gain: 1 },
-  castleFall: { files: ['castleFall-1', 'castleFall-2', 'castleFall-3'], gain: 1, layers: true },
+  castleHit: { files: ['castleHit-1', 'castleHit-2', 'gate-1', 'gate-2', 'gate-3'], gain: 1 },
+  castleFall: { files: ['castleFall-1', 'castleFall-2', 'castleFall-3', 'fall-4', 'fall-5'], gain: 1, layers: true },
+  win: { files: ['win-1', 'win-2'], gain: 0.8, layers: true },
   battleStart: { files: ['battleStart'], gain: 0.9 },
   warning: { files: ['warning'], gain: 0.9 },
   // An envoy's arrival: a bell (Kenney Interface Sounds, bong_001), not the scout's chime.
   envoy: { files: ['envoy'], gain: 0.9 },
 };
 /** At most this many sounds at once; a crowded battle plays the first few and drops the rest. */
-const MAX_VOICES = 8;
+const MAX_VOICES = 10;
+/** Looping recordings (not sounds that are played once): the camp fire. */
+const AMBIENT_FILES = ['fire-loop'];
 /** The same sound is not played again within this many ms (hundreds of hits in a big battle would be a roar of clicks). */
 const MIN_GAP_MS: Record<SoundName, number> = {
   click: 25, sword: 70, arrow: 110, death: 120, castleHit: 300, castleFall: 1500,
   warning: 2500, scoutBack: 800, envoy: 1500, battleStart: 2000, win: 3000, lose: 3000,
   shield: 90, uiConfirm: 80, uiError: 150, uiOpen: 60, uiClose: 60,
+  catapult: 400, stone: 250, upgrade: 300, march: 450, gallop: 2400,
 };
 
 /** Ogg Vorbis is the small one, but Safari (older ones: all) cannot play it. */
@@ -135,7 +146,7 @@ class Sfx {
     const ctx = this.ctx;
     if (!ctx || this.loading) return;
     this.loading = true;
-    const names = [...new Set(Object.values(SAMPLES).flatMap((b) => b?.files ?? []))];
+    const names = [...new Set([...Object.values(SAMPLES).flatMap((b) => b?.files ?? []), ...AMBIENT_FILES])];
     await Promise.all(names.map(async (name) => {
       try {
         const res = await fetch(asset(`/audio/sfx/${name}.${EXT}`));
@@ -154,9 +165,9 @@ class Sfx {
       const buf = this.buffers.get(file)!;
       const src = ctx.createBufferSource();
       src.buffer = buf;
-      src.playbackRate.value = 0.94 + Math.random() * 0.12;
+      src.playbackRate.value = 0.9 + Math.random() * 0.2; // a little pitch variation, so the same recording never sounds the same twice
       const amp = ctx.createGain();
-      amp.gain.value = bank.gain * v;
+      amp.gain.value = bank.gain * v * (0.88 + Math.random() * 0.24);
       src.connect(amp).connect(this.master!);
       const delay = i * 0.14;
       src.start(ctx.currentTime + delay);
@@ -176,6 +187,7 @@ class Sfx {
     this.lastAt.set(name, now);
     try {
       const seconds = this.make(name, ctx, Math.min(1, loudness));
+      if (name === 'castleFall' || name === 'win' || name === 'lose') this.duckMusic(name === 'castleFall' ? 1.6 : 2.4);
       this.voices++;
       window.setTimeout(() => { this.voices = Math.max(0, this.voices - 1); }, seconds * 1000 + 60);
     } catch {
@@ -247,6 +259,22 @@ class Sfx {
         [523, 659, 784, 1047].forEach((f, i) => this.tone(ctx, f, f, 0.22, 'triangle', 0.26 * v, i * 0.14));
         this.tone(ctx, 1047, 1047, 0.7, 'triangle', 0.22 * v, 0.56);
         return 1.4;
+      case 'catapult':
+        this.noise_(ctx, 0.3, 'bandpass', 400, 1400, 0.35 * v, 1);
+        return 0.3;
+      case 'stone':
+        this.tone(ctx, 140, 50, 0.3, 'sine', 0.4 * v);
+        this.noise_(ctx, 0.25, 'lowpass', 900, 200, 0.3 * v);
+        return 0.3;
+      case 'upgrade':
+        this.tone(ctx, 600, 520, 0.08, 'square', 0.12 * v);
+        return 0.1;
+      case 'march':
+        this.noise_(ctx, 0.08, 'lowpass', 600, 250, 0.16 * v);
+        return 0.1;
+      case 'gallop':
+        this.noise_(ctx, 0.07, 'lowpass', 500, 200, 0.14 * v);
+        return 0.2;
       case 'lose':
         [392, 349, 311, 262].forEach((f, i) => this.tone(ctx, f, f * 0.97, 0.3, 'triangle', 0.26 * v, i * 0.2));
         this.tone(ctx, 196, 150, 0.9, 'sine', 0.3 * v, 0.8);
@@ -315,6 +343,37 @@ class Sfx {
       this.ctx = null;
     }
     return this.ctx;
+  }
+
+  /** The music steps back for a moment (a castle falls, the match ends) and comes up again. */
+  private duckMusic(seconds: number): void {
+    const ctx = this.ctx, bus = this.musicBus;
+    if (!ctx || !bus || this.silent) return;
+    const full = this.prefs.music * MUSIC_SCALE, t = ctx.currentTime;
+    bus.gain.cancelScheduledValues(t);
+    bus.gain.setValueAtTime(bus.gain.value, t);
+    bus.gain.linearRampToValueAtTime(full * 0.3, t + 0.15);
+    bus.gain.linearRampToValueAtTime(full, t + seconds);
+  }
+
+  private fire: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
+  /** The crackle of the camp fire, as loud as the camera is close to it (0 = none): a loop that starts when first wanted and fades with distance. */
+  setFire(level: number): void {
+    const ctx = this.ctx;
+    if (!ctx || ctx.state !== 'running') return;
+    const want = this.silent || this.prefs.volume <= 0 ? 0 : Math.max(0, Math.min(1, level));
+    if (!this.fire) {
+      const buf = this.buffers.get('fire-loop');
+      if (!buf || want < 0.02) return;
+      const src = ctx.createBufferSource();
+      src.buffer = buf; src.loop = true;
+      const gain = ctx.createGain();
+      gain.gain.value = 0;
+      src.connect(gain).connect(this.master!);
+      src.start();
+      this.fire = { src, gain };
+    }
+    this.fire.gain.gain.setTargetAtTime(want * 0.8, ctx.currentTime, 0.3);
   }
 
   private applyLevel(): void {

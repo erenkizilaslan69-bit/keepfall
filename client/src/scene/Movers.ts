@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import type { MapStateView, MoverUnit, PlayerColor, Vec } from '../types';
 import { UNIT_SCALE, colorKey, playRandom, unitOriginY, unitScale } from './assets';
+import { hearing } from './hearing';
+import { sfx } from '../audio';
 import type { Target } from '../ui/windows';
 import type { WorldLabels } from '../ui/world-labels';
 import { COLOR_CSS } from '../format';
@@ -58,6 +60,8 @@ interface Track {
   receivedAt: number;
   /** When the column kicks up its next puff of dust (performance.now ms). */
   dustAt?: number;
+  /** When it is next heard (a tramp of feet, hooves). */
+  stepAt?: number;
   // What is drawn:
   shown: Vec;
   /** Our own armies: how far along the route (tiles) the column is drawn; the position is always read off the route, so a bend is never cut. */
@@ -272,6 +276,12 @@ export class Movers {
         t.dustAt = now + (horses ? 170 : 380) / Math.max(1, Math.min(this.gameSpeed, 3));
         const at = toWorld(t.shown);
         this.fx.march(at.x - t.heading.x * 34, at.y - t.heading.y * 34 + 8, horses);
+      }
+      if (!hidden && !t.scout && !t.envoy && now >= (t.stepAt ?? 0) && Math.hypot(t.velocity.x, t.velocity.y) > 0.2) {
+        const horses = t.units.some((u) => u.unitId === 'suvari');
+        t.stepAt = now + (horses ? 2600 : 520) / Math.max(1, Math.min(this.gameSpeed, 3));
+        const at = toWorld(t.shown), l = hearing(this.scene, at.x, at.y);
+        if (l > 0.06) sfx.play(horses ? 'gallop' : 'march', l * (t.key.startsWith('own:') ? 1 : 0.8));
       }
     }
   }
