@@ -180,7 +180,7 @@ async function run(device, lang) {
   const NO_TAP = /quick|hızlı oyna|private room|oda kur|join room|odaya katıl|leave|ayrıl|ana menü|main menu|reload|yenile|retry|finish|bitir|rehberi tekrar|restart|restart tutorial|new match|yeni maç|again|tekrar/i;
   /** Tap every visible clickable thing inside `root`, one by one: what changed is audited and shot, then `reopen` puts the screen back. */
   const LIST = `(sel) => { const box = document.querySelector(sel); if (!box) return []; const vis = (e) => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
-    return [...box.querySelectorAll('button, [data-act], [data-a], [data-tab], select, .tab, .btn, a[href]')].filter((e) => vis(e) && e.tagName !== 'SELECT' && !/^(−|-)$/.test((e.textContent || '').trim()) && !e.disabled && e.getAttribute('aria-disabled') !== 'true' && !/(^| )(disabled|inactive|off)( |$)/.test(e.className) && getComputedStyle(e).pointerEvents !== 'none' && !e.matches('.win-close, [data-close], .kd-x, [data-act=close], [data-a=close]'))
+    return [...box.querySelectorAll('button, [data-act], [data-a], [data-tab], select, .tab, .btn, a[href]')].filter((e) => vis(e) && e.tagName !== 'SELECT' && !/^(−|-)$/.test((e.textContent || '').trim()) && !e.disabled && e.getAttribute('aria-disabled') !== 'true' && !/(^| )(disabled|inactive|off|on)( |$)/.test(e.className) && getComputedStyle(e).pointerEvents !== 'none' && !e.matches('.win-close, [data-close], .kd-x, [data-act=close], [data-a=close]'))
       .map((e, i) => { e.setAttribute('data-audit-i', String(i)); const r = e.getBoundingClientRect(); return { i, x: r.left + r.width / 2, y: r.top + r.height / 2, label: (e.getAttribute('aria-label') || e.textContent || e.dataset.act || e.dataset.a || e.dataset.tab || e.tagName).trim().replace(/\s+/g, ' ').slice(0, 20) }; }); }`;
   /** Tap every visible clickable thing inside `root`, one by one: what changed is audited and shot, then `reopen` puts the screen back. */
   const exercise = async (state, root, reopen, cap = 14) => {
@@ -200,7 +200,8 @@ async function run(device, lang) {
       const before = await sig();
       try { await tap(at.x, at.y); } catch { continue; }
       await sleep(450);
-      const after = await sig();
+      let after = await sig();
+      if (before === after) { await sleep(1100); after = await sig(); } // (an action that goes to the server shows its result with the next picture of the game)
       const tapState = `${state}-tap-${t.label.replace(/[^a-z0-9]+/gi, '_')}`;
       if (before === after) { results.issues.push({ sev: 'critical', type: 'dead-button', el: t.label, note: 'an active button; the tap changed nothing', rect: null, state: tapState, shot: null }); continue; }
       await audit(tapState, 'after tapping "' + t.label + '"');
