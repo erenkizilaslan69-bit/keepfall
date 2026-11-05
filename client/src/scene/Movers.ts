@@ -60,6 +60,8 @@ interface Track {
   dustAt?: number;
   // What is drawn:
   shown: Vec;
+  /** Our own armies: how far along the route (tiles) the column is drawn; the position is always read off the route, so a bend is never cut. */
+  shownDist?: number;
   heading: Vec;
   sprites: Phaser.GameObjects.Sprite[];
   /** Ours only: what a click on it opens, and the invisible area that catches the click. */
@@ -122,6 +124,7 @@ export class Movers {
         || t.route[last].x !== o.route[last].x || t.route[last].y !== o.route[last].y) { // a new order changes where the road ends
         t.route = o.route;
         t.cumulative = cumulative(o.route);
+        t.shownDist = undefined; // the drawn distance is found again on the new road
       }
       t.travelled = o.travelled;
       t.speed = o.speed;
@@ -221,9 +224,23 @@ export class Movers {
       const ahead = Math.min((now - t.receivedAt) / 1000, MAX_AHEAD_TICKS) * this.gameSpeed;
       let target: Vec, heading: Vec;
       if (t.route) {
+        // Ours: the column is a distance along the road. The server's news moves the distance it should be at (travelled + speed × the time since the news);
+        // the drawn distance follows it (a glide when close, a fast run when far, a jump when very far), and the place is read off the road with its bends
+        // rounded a little, so the column never leaves the road, whatever the news does.
         const length = t.cumulative[t.cumulative.length - 1];
-        const d = Math.min(length, t.travelled + t.speed * ahead);
-        ({ point: target, direction: heading } = along(t.route, t.cumulative, d));
+        const want = Math.min(length, t.travelled + t.speed * ahead);
+        if (t.shownDist === undefined) {
+          const p = projectOnRoute(t.route, t.cumulative, t.shown);
+          t.shownDist = p.off > 0.6 ? want : p.d;
+        }
+        const diff = want - t.shownDist;
+        if (Math.abs(diff) > 30) t.shownDist = want;
+        else if (diff > 3) t.shownDist += Math.min(diff, CATCH_UP_TILES_PER_SECOND * Math.max(dt, 0.016));
+        else t.shownDist += diff * Math.min(1, dt * 12);
+        t.shownDist = Math.min(length, Math.max(0, t.shownDist));
+        const here = alongSmooth(t.route, t.cumulative, t.shownDist);
+        t.shown = here.point;
+        target = here.point; heading = here.direction;
       } else {
         // Somebody else's: only where they are and which way they go. They keep to the roads, so go on along the road (round its corners),
         // not straight on: a straight guess would run past a bend and then jump back onto the road.
@@ -237,7 +254,13 @@ export class Movers {
       // Glide onto the new estimate rather than jumping when a tick corrects it.
       const k = Math.min(1, dt * 12);
       const gap = Math.hypot(target.x - t.shown.x, target.y - t.shown.y);
-      if (gap > 30) t.shown = target; // (a recall or a new order from far away: not a correction)
+      // Somebody else's column that is behind its estimate catches up ALONG the road it is on (a straight glide cut the corner of a bend), as long as the
+      // estimate lies ahead of it the way it is going; otherwise (ahead of the estimate, or off the roads) the straight glide below.
+      const ahead2 = !t.route && gap > 1e-4 && gap <= 30 && (target.x - t.shown.x) * t.heading.x + (target.y - t.shown.y) * t.heading.y > 0;
+      const stepLen = gap > 3 ? CATCH_UP_TILES_PER_SECOND * Math.max(dt, 0.016) : gap * k;
+      const walked = ahead2 ? followRoads(this.roads, t.shown, t.heading, Math.min(gap, stepLen)) : null;
+      if (walked) t.shown = walked.point;
+      else if (gap > 30) t.shown = target; // (a recall or a new order from far away: not a correction)
       else if (gap > 3) { const step = Math.min(gap, CATCH_UP_TILES_PER_SECOND * Math.max(dt, 0.016)) / gap; t.shown = { x: t.shown.x + (target.x - t.shown.x) * step, y: t.shown.y + (target.y - t.shown.y) * step }; }
       else t.shown = { x: t.shown.x + (target.x - t.shown.x) * k, y: t.shown.y + (target.y - t.shown.y) * k };
       if (heading.x !== 0 || heading.y !== 0) t.heading = heading;
@@ -294,6 +317,14 @@ export class Movers {
       const row = Math.floor(i / PER_ROW);
       const inRow = Math.min(PER_ROW, t.sprites.length - row * PER_ROW);
       const col = (i % PER_ROW) - (inRow - 1) / 2;
+      // Our own column bends with its road: a row stands where the road was a row's length back. Others' columns trail straight behind the leader.
+      if (t.route && t.shownDist !== undefined && row > 0) {
+        const back = alongSmooth(t.route, t.cumulative, Math.max(0, t.shownDist - (row * ROW_GAP) / 64));
+        const bp = toWorld(back.point), bn = { x: -back.direction.y, y: back.direction.x };
+        const bx = bp.x + bn.x * col * COL_GAP, by = bp.y + bn.y * col * COL_GAP;
+        s.setPosition(bx, by).setDepth(by).setFlipX(faceLeft);
+        return;
+      }
       const x = lead.x - h.x * row * ROW_GAP + p.x * col * COL_GAP;
       const y = lead.y - h.y * row * ROW_GAP + p.y * col * COL_GAP;
       s.setPosition(x, y).setDepth(y).setFlipX(faceLeft);
@@ -413,6 +444,40 @@ function along(points: Vec[], cum: number[], d: number): { point: Vec; direction
   const seg = cum[i + 1] - cum[i];
   const t = seg > 0 ? Math.min(1, Math.max(0, (d - cum[i]) / seg)) : 0;
   return { point: { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }, direction: normalise({ x: b.x - a.x, y: b.y - a.y }) ?? { x: 1, y: 0 } };
+}
+
+/** The distance along a road of the point of it nearest to <paramref name="p"/>, and how far p is from the road. */
+function projectOnRoute(points: Vec[], cum: number[], p: Vec): { d: number; off: number } {
+  let best = { d: 0, off: Infinity };
+  for (let i = 0; i + 1 < points.length; i++) {
+    const a = points[i], b = points[i + 1], dx = b.x - a.x, dy = b.y - a.y, len2 = dx * dx + dy * dy;
+    const t = len2 > 1e-9 ? Math.min(1, Math.max(0, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2)) : 0;
+    const off = Math.hypot(p.x - (a.x + dx * t), p.y - (a.y + dy * t));
+    if (off < best.off) best = { d: cum[i] + t * (cum[i + 1] - cum[i]), off };
+  }
+  return best;
+}
+
+/** How far a bend is rounded off (tiles each side of the corner). The rounding stays inside the road: at most a tenth of a tile away from the corner. */
+export const CORNER_RADIUS = 0.3;
+
+/** `along`, with every corner of the road rounded by a small curve (a quadratic one through the two points <see cref="CORNER_RADIUS"/> before and after it). */
+export function alongSmooth(points: Vec[], cum: number[], d: number): { point: Vec; direction: Vec } {
+  const plain = along(points, cum, d);
+  for (let v = 1; v + 1 < points.length; v++) {
+    const into = cum[v] - cum[v - 1], out = cum[v + 1] - cum[v];
+    const r = Math.min(CORNER_RADIUS, into / 2, out / 2);
+    if (r <= 1e-6 || d < cum[v] - r || d > cum[v] + r) continue;
+    const a = points[v - 1], c = points[v], b = points[v + 1];
+    const din = normalise({ x: c.x - a.x, y: c.y - a.y }), dout = normalise({ x: b.x - c.x, y: b.y - c.y });
+    if (!din || !dout) break;
+    const p0 = { x: c.x - din.x * r, y: c.y - din.y * r }, p2 = { x: c.x + dout.x * r, y: c.y + dout.y * r };
+    const s = (d - (cum[v] - r)) / (2 * r), u = 1 - s;
+    const point = { x: u * u * p0.x + 2 * u * s * c.x + s * s * p2.x, y: u * u * p0.y + 2 * u * s * c.y + s * s * p2.y };
+    const tan = normalise({ x: 2 * u * (c.x - p0.x) + 2 * s * (p2.x - c.x), y: 2 * u * (c.y - p0.y) + 2 * s * (p2.y - c.y) });
+    return { point, direction: tan ?? plain.direction };
+  }
+  return plain;
 }
 
 function normalise(v: Vec): Vec | null {
