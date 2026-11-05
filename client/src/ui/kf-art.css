@@ -42,8 +42,8 @@ html.kf-tiny-frames .kf-panel--dark, html.kf-tiny-frames .paper-dark {
 html.kf-tiny-frames .win.paper { border-radius: 0; }
 /* the top bar's boxes: a lighter frame */
 html.kf-tiny-frames .strip:not(.tb-pop) {
-  border: calc(16px * var(--u, 1)) solid transparent; border-radius: 0;
-  border-image: var(--kf-paper-9) 64 fill / calc(16px * var(--u, 1)) / 0 stretch;
+  border: calc(5px * var(--u, 1)) calc(14px * var(--u, 1)) calc(12px * var(--u, 1)) solid transparent; border-radius: 0;
+  border-image: var(--kf-paper-9) 64 fill / calc(5px * var(--u, 1)) calc(14px * var(--u, 1)) calc(12px * var(--u, 1)) / 0 stretch;
   background: none; box-shadow: none; image-rendering: pixelated;
   filter: drop-shadow(0 calc(4px * var(--u, 1)) calc(5px * var(--u, 1)) rgba(0, 0, 0, .3));
 }

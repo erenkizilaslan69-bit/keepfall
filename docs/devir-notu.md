@@ -75,7 +75,11 @@ Açık: 852x323'te (Safari çubuğu açık) rehber 17. adımda (orman) takılıy
 
 ---
 
-## 4. Büyük görsel geçiş (KARAR VERİLDİ, sıradaki ana iş)
+## 4. Büyük görsel geçiş (YAPILDI 2026-11-05/06, dev dalında; ayrıntı `docs/gorsel-envanter.md`)
+
+**Durum:** adımlar 0–7 tamam (envanter, birlikler, kale içi zemin, orman, arayüz+logo, AI görsellerinin silinmesi, test). Oyunda yapay zekâ görseli yüklenmiyor; dosyaları silindi (git geçmişinde duruyor). Renk = oyuncu; krallık yalnız kendi kapındaki sancakta; King her kalenin lordu (yalnız görsel). Logo A (kale + yazı) seçildi, B (`?logo=b`) durur. Testler: dotnet test değişmedi (sunucuya dokunulmadı), smoke 221 denetim geçti, ui-audit masaüstü (`docs/ui-audit-gorsel-gecis.md`) yeni kategori çıkarmadı (bilinen küçük yazı/8 px kaydırma/2–4 px rapor etiketi), rehber x20 masaüstü ve mobil 852x393 tam geçti, gerçek hız rehber koşusu ayrıca denendi. Bu turda bulunan gerileme: yeni üst şerit çerçevesi 16 px taştığı için mobil rehberin orman çerçevesi görünmüyordu; şerit çerçevesi inceltildi (`kf-art.css`). Bilinen kalanlar: çayırlar eskisine göre seyrek (çiçek kümeleri/kuyu/gölet yapay zekâ setindeydi), çerçeve rengi/kalınlığı ince ayar bekliyor, `tools/promo/kingdoms.mjs` eski krallık görsellerine bağlıydı, fragman/Shorts yeni görsellerle yeniden çekilmeli.
+
+**(Eski karar notu, bağlam için:)**
 
 **Karar:** Tüm yapay zekâ görselleri çıkacak; oyun yalnız Pixel Frog **Tiny Swords** varlıklarıyla (Free Pack güncel sürüm + Eren'in alacağı **Tiny Swords Warfare** + gerekirse 15 $ Enemy Pack) tutarlı hale gelecek. Eren Tiny Swords'un küçük/tatlı stilini seviyor; AI eklemeler "videoya resim yapıştırılmış gibi" duruyor.
 
@@ -146,7 +150,7 @@ Parti/sosyal strateji yönü için konuşulacaklar:
 
 **2026-11-05 kararı: mobil tarafı DURDURULDU, odak Steam (masaüstü).** Mobil kodu dev'de duruyor; bölüm 3'teki iPhone düzeltmeleri bekliyor.
 
-1. **Görsel geçiş** (bölüm 4) — Eren Warfare'ı alıp yollarını verecek; renk kuralını Eren'le netleştir.
+1. ~~Görsel geçiş~~ YAPILDI (bölüm 4). Sırada: Eren'in görsel onayı/ince ayarı.
 2. **Hazırlık sıkıştırma** (bölüm 5, karar verildi: 5 dk varsayılan, 4 dk denenecek).
 3. Oyun mantığı tasarım konuşması (bölüm 5) → kısa maç modu.
 4. Yeni görsellerle fragman/Shorts yeniden çekimi.
