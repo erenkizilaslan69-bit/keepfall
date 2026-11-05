@@ -12,7 +12,7 @@ import { recolor } from './scene/KingdomSprites';
 import type { PlayerColor } from './types';
 import { asset } from './env';
 import { FEATURE_PRIVATE_ROOM } from './features';
-import { crazyActive, crazyInviteLink } from './crazy';
+import { crazyActive, crazyInviteLink, crazyVictory } from './crazy';
 
 // Plain-HTML screens around the game: home, lobby and the end screen, in the same parchment-and-ribbon
 // look as the in-game UI (ui/ui.css).
@@ -445,6 +445,7 @@ export class EndScreen {
       this.resultShown = true;
       const won = r.winners.includes(this.mySeat);
       sfx.play(won ? 'win' : 'lose');
+      if (won) crazyVictory();
       // victory: the winner's colour (the ranking carries it); defeat: our own
       const winnerColor = r.ranking.find((x) => r.winners.includes(x.seat))?.color;
       void this.showEndArt(won, (won ? winnerColor : undefined) ?? room.players.find((p) => p.seat === this.mySeat)?.color ?? r.ranking.find((x) => x.seat === this.mySeat)?.color ?? 'blue');

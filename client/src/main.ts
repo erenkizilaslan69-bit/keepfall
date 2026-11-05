@@ -35,7 +35,7 @@ import { startFpsMeter } from './ui/fps-meter';
 import { armTutorial, disarmTutorial, tutorialDone } from './ui/tutorial';
 import { CRAZY } from './crazy';
 import { FEATURE_PRIVATE_ROOM } from './features';
-import { crazyGameplay, crazyInstant, crazyInviteRoom, crazyLoaded, crazyRoom, crazyUsername, initCrazy, onCrazyJoin, watchCrazySettings } from './crazy';
+import { crazyGameplay, crazyInstant, crazyInviteRoom, crazyLoaded, crazyRoom, crazyUsername, crazyVictory, initCrazy, onCrazyJoin, watchCrazySettings } from './crazy';
 import { countMatch, newPlayer, setSiteChatOff } from './prefs';
 import { guarded, installErrorReporting } from './error-report';
 import type { BattleStartedView, BotLevel, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
@@ -158,6 +158,7 @@ startDiagnostics({ game: () => game, scene: () => scene, net });
 // Dev only: lets the console (and browser tests) send commands as this tab's player.
 if (import.meta.env.DEV) (window as unknown as { keepfallNet: GameConnection }).keepfallNet = net;
 if (import.meta.env.DEV) (window as unknown as { keepfallAudio: unknown }).keepfallAudio = { sfx, music };
+if (import.meta.env.DEV) (window as unknown as { keepfallCrazy: unknown }).keepfallCrazy = { victory: crazyVictory };
 
 // ---- room events ---------------------------------------------------------------------------
 

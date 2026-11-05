@@ -9,7 +9,7 @@ const OFF = process.env.FLAGS === 'off';
 let bad = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) bad++; };
 const MOCK = (invite, instant) => `window.__cg = []; window.CrazyGames = { SDK: { environment: 'local', init: async () => { __cg.push('init'); },
   user: { getUser: async () => ({ username: 'CrazyPlayer' }) },
-  game: { loadingStart: () => __cg.push('loadingStart'), loadingStop: () => __cg.push('loadingStop'), gameplayStart: () => __cg.push('gameplayStart'), gameplayStop: () => __cg.push('gameplayStop'),
+  game: { loadingStart: () => __cg.push('loadingStart'), loadingStop: () => __cg.push('loadingStop'), gameplayStart: () => __cg.push('gameplayStart'), gameplayStop: () => __cg.push('gameplayStop'), happytime: () => __cg.push('happytime'),
     updateRoom: (d) => __cg.push('updateRoom:' + JSON.stringify(d)), leftRoom: () => __cg.push('leftRoom'), inviteLink: (p) => 'https://www.crazygames.com/game/keepfall?room=' + p.room,
     showInviteButton: (p) => { __cg.push('showInviteButton:' + p.room); return 'link'; }, hideInviteButton: () => __cg.push('hideInviteButton'),
     getInviteParam: (n) => ${invite ? `'${invite}'` : 'null'}, inviteParams: ${invite ? `{ room: '${invite}' }` : 'null'}, isInstantMultiplayer: ${instant},
@@ -35,6 +35,10 @@ if (OFF) {
   await a.js("window.CrazyGames.SDK.game.settings.muteAudio = true; window.__settingsCb(); 1");
   await sleep(300);
   ok(await a.js("keepfallAudio.sfx.silent === true && keepfallAudio.sfx.muted === false"), "site mute silences the game without overwriting the player's own setting");
+  // a won match: gameplayStop (the end of play) and the site's happytime; a lost match sends no happytime (the end screen only calls crazyVictory for a winner)
+  await a.js("window.__cg.length = 0; keepfallCrazy.victory(); 1"); await sleep(200);
+  c = await calls(a);
+  ok(c.includes('gameplayStop') && c.includes('happytime'), 'victory: gameplayStop + happytime reached the SDK');
   a.close();
   const n = await launch({ init: '' });
   await n.goto(URL + '/?room=ABCDEF');
@@ -42,6 +46,7 @@ if (OFF) {
   await n.js("document.querySelector('#name').value='NoSdk'; document.querySelector('#quick').click(); 1");
   ok(await n.waitFor("document.documentElement.classList.contains('in-game')", 60), 'no SDK: Quick Match works');
   ok((await calls(n)) === '(no sdk)', 'no SDK: nothing was called');
+  ok(await n.js("keepfallCrazy.victory(); true"), 'no SDK: victory is a silent no-op');
   n.close();
   process.exit(bad ? 1 : 0);
 }

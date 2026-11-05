@@ -8,7 +8,7 @@ export const CRAZY: boolean = import.meta.env.VITE_PLATFORM === 'crazygames';
 if (CRAZY) document.documentElement.classList.add('crazy');
 
 interface GameApi {
-  gameplayStart(): void; gameplayStop(): void; loadingStart(): void; loadingStop(): void;
+  gameplayStart(): void; gameplayStop(): void; loadingStart(): void; loadingStop(): void; happytime?(): void;
   updateRoom(data: { roomId?: string; isJoinable?: boolean; inviteParams?: Record<string, string | number> }): void;
   leftRoom(): void;
   inviteLink(params: Record<string, string | number>): string;
@@ -109,6 +109,12 @@ export function crazyGameplay(on: boolean): void {
 if (CRAZY) {
   document.addEventListener('visibilitychange', syncGameplay);
   window.addEventListener('pagehide', () => { wanted = false; syncGameplay(); });
+}
+
+/** The player won the match: the site celebrates (game.happytime). The end of a match (won or lost) itself is already told by gameplayStop (crazyGameplay(false)); the SDK has no separate completion call. */
+export function crazyVictory(): void {
+  crazyGameplay(false);
+  guard(() => sdk?.game.happytime?.());
 }
 
 /** The loading screen is over (the home screen or a joined room is up). */
