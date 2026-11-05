@@ -1,6 +1,8 @@
 /* Touch devices: no pull-to-refresh or page zoom, buttons a finger can hit, a "rotate" screen in portrait, tips for long presses. */
 html, body { overscroll-behavior: none; }
 body { -webkit-tap-highlight-color: transparent; }
+/* a touch screen never zooms the page by a double tap (iOS Safari ignores user-scalable=no): everything but the map is `manipulation` (ui/no-page-zoom.ts does the rest) */
+@media (pointer: coarse) { *, *::before, *::after { touch-action: manipulation; } }
 #stage, #stage canvas { touch-action: none; }
 
 #rotate-screen { display: none; position: fixed; inset: 0; z-index: 100000; align-items: center; justify-content: center; text-align: center;

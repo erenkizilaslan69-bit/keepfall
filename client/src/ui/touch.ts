@@ -1,4 +1,5 @@
 import { t } from '../i18n';
+import { installNoPageZoom } from './no-page-zoom';
 
 // Touch devices (phones, tablets): a "rotate your device" screen in portrait, long press for the tips that a mouse shows on hover, and a window that
 // stays above the on-screen keyboard. Nothing here changes how a mouse and keyboard behave.
@@ -42,6 +43,7 @@ export function installTouch(): void {
     }, { passive: true });
   }
 
+  if (isTouch()) installNoPageZoom();
   installLongPress();
   // The keyboard goes away when a button is pressed (sending a message from an envoy form, for instance): the form is what the player wants to see.
   document.addEventListener('click', (e) => {
