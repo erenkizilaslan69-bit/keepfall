@@ -455,6 +455,7 @@ export class WorldScene extends Phaser.Scene {
 
   /** The screen position (and rough half-width) of what a window is about; null if it has no place. */
   anchorOf(target: Target): Anchor | null {
+    if (!this.cameras?.main) return null; // the scene is shut down (a fallen player's picture is being rebuilt)
     const zoom = this.cameras.main.zoom;
     const at = (x: number, y: number, reach: number): Anchor => ({ ...this.screenOf({ x, y }), reach: reach * zoom });
     switch (target.kind) {
