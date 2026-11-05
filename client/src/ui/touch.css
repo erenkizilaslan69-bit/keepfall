@@ -112,10 +112,7 @@ html.in-game body { position: fixed; inset: 0; width: 100%; }
 
 
 /* ---- (round 4) ---- */
-.zoom-btns { display: none; }
 @media (pointer: coarse) {
-  .zoom-btns { display: flex; flex-direction: column; gap: 6px; position: absolute; left: calc(10px * var(--u, 1)); bottom: calc(76px * var(--u, 1)); z-index: 5; pointer-events: none; }
-  .zoom-btns .btn-round { font-size: 22px; line-height: 1; }
   /* no text selection, no long-press menu, no highlight: except in the places where text is typed */
   html, body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   input, textarea, select, [contenteditable] { -webkit-user-select: text; user-select: text; }
@@ -174,7 +171,7 @@ html.in-game body { position: fixed; inset: 0; width: 100%; }
 .tb-r .btn-round.kf-pulse, .tb-l .btn-round.kf-pulse { margin: 2px; }
 /* A window is open on a phone: the camera buttons and the zoom buttons step aside (they come back when it closes). */
 @media (pointer: coarse) and (max-height: 520px) {
-  .ui-root:has(.win, .scroll-pop:not(.hidden), .kingdom-panel:not(.hidden)) :is(.cam-btns, .zoom-btns) { display: none !important; }
+  .ui-root:has(.win, .scroll-pop:not(.hidden), .kingdom-panel:not(.hidden)) .cam-btns { display: none !important; }
   /* the notes then stand in the free strip at the left, narrow, and never over a window */
   .ui-root:has(.win, .scroll-pop:not(.hidden), .kingdom-panel:not(.hidden)) .notes { left: calc(var(--sa-l, 0px) + 8px); transform: none; width: min(34vw, 300px); max-width: 34vw; align-items: flex-start; z-index: 5; }
   .ui-root:has(.win, .scroll-pop:not(.hidden), .kingdom-panel:not(.hidden)) .notes .ribbon { max-width: 100%; font-size: max(var(--fs-xs, 0px), .85em); }
@@ -183,6 +180,6 @@ html.in-game body { position: fixed; inset: 0; width: 100%; }
 .win-foot-sticky { pointer-events: none; }
 .win-foot-sticky > * { pointer-events: auto; }
 /* The "all humans are out" box (the host's choice at the end) hides the camera buttons it would lie over. */
-.ui-root:has(.bot-end:not(.hidden)) .cam-btns, .ui-root:has(.bot-end:not(.hidden)) .zoom-btns { display: none !important; }
+.ui-root:has(.bot-end:not(.hidden)) .cam-btns { display: none !important; }
 /* the flip icon of a deck card sits at the card's foot, away from the round buttons that float at the top right of the screen */
 .ucard-flip { top: auto !important; bottom: 3%; left: 3% !important; }

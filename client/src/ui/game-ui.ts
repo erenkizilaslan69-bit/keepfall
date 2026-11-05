@@ -154,12 +154,7 @@ export class GameUi {
       else if (b.dataset.cam === 'rival') this.scene?.focus({ kind: 'enemy', seat: Number(b.dataset.seat) });
     });
     root.appendChild(this.cam);
-    // Touch: small + / − buttons for the zoom (the pinch has no mouse wheel to stand in for it)
-    const zoom = document.createElement('div');
-    zoom.className = 'zoom-btns';
-    zoom.innerHTML = `<button class="btn-round hit" data-z="1" aria-label="${t('Yaklaştır')}">+</button><button class="btn-round hit" data-z="-1" aria-label="${t('Uzaklaştır')}">−</button>`;
-    zoom.addEventListener('click', (e) => { const z = (e.target as HTMLElement).closest<HTMLElement>('[data-z]'); if (z) this.scene?.zoomStep(Number(z.dataset.z)); });
-    root.appendChild(zoom);
+    // (No zoom buttons on a touch screen: two fingers zoom the map, like the mouse wheel on a desktop.)
     // The column of camera buttons stays under the top bar (its height is a variable the stylesheet uses).
     const syncTop = () => root.style.setProperty('--top-h', `${Math.max(0, Math.round(this.top.getBoundingClientRect().bottom - root.getBoundingClientRect().top))}px`);
     syncTop();

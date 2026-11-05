@@ -12,7 +12,6 @@
   /* room between pressable neighbours */
   .stepper, .atk-row .stepper, .kd-step, .set-links, .row.quick > span, .ucard-btns, .win-foot, .kd-row { gap: var(--tap-gap) !important; }
   .cam-btns { gap: var(--tap-gap) !important; }
-  .zoom-btns { gap: var(--tap-gap); }
 }
 
 @media (pointer: coarse) {
