@@ -31,3 +31,12 @@ Dokunmatikte türe göre (7 cihaz toplamı): küçük yazı 8189 → **0**, kü�
 
 ## Araç değişiklikleri
 `tools/ui-audit.mjs`: JSON çıktısı (`--out x.md` → `x.json`, git'e girmez), `--shots`, yakın hedef (<8 px) denetimi, `::before` dokunma alanı, ölü düğme için görünmeyen düğmeyi kaydırıp bas + sunucu cevabı için ikinci bekleme + giriş değerlerini imzaya kat, dev hız düğmeleri gizli (Production'da yok), alt güvenli bant sayfa kayarken yok sayılır, kendi kaydırıcısında kesilen öğe 'dışarıda' sayılmaz, düğme adlarında 's' harfi kayboluyordu (düzeltildi).
+
+# Tur D: iPhone 16 Safari gerçek cihaz bulguları (2026-11-05, `dev`)
+1. **+/− zoom düğmeleri kaldırıldı** (yalnız dokunmatik; yakınlaştırma iki parmakla, masaüstünde tekerlek aynen).
+2. **iOS çift dokunma sayfa zoom'u** (`ui/no-page-zoom.ts`, `touch.css`): `touch-action: manipulation` (harita `none`), gesture/dblclick iptali, 300 ms içindeki ikinci `touchend` iptali ve basış elle iletilir (hızlı +1/+1 iki sayılır), `visualViewport.scale≠1` ise viewport sıfırlanır. Test: `tools/double-tap-check.mjs` (WebKit; sayfa ölçeği 1, ikinci touchend iptal, iki dokunuş = iki silah, sekme/çip/ayarlar).
+3. **Pencereler** (`ui/touch-windows.css`, `windows.ts`, `enemy-window.ts`): kaydırılabilirlik kenarda solma + ok ile belli; Yükselt / Saldır yapışkan alt çubukta (gövde yeterince yüksekse; kısa pencerede akışta kalır, içeriği örtmez); rakip kale penceresi Gözcü / Ulak / Saldırı sekmeleri (rehber doğru sekmeyi kendisi açar).
+4. **Rakip avatar paneli** minimap'in soluna/üstüne kayar, üstüne binmez.
+
+Testler: touch-check 15/15, rotate-check 3/3, double-tap-check geçti, rehber 852x393 mobil ve 1280x720 masaüstü baştan sona (32/34 adım). ui-audit (Tur C sonrasına göre): dokunmatikte kritik aynı seviyede (small 38→28), masaüstü kritik 0–1 (yalnız 2 px'lik rapor etiketi taşması, önceden de vardı). Kalanlar: yapışkan çubuğun altına kaydırılmış öğeler (denetim 'örtülü/yakın' sayıyor), `small` cihazda bildirim sekmenin üstünde, touch-offset-check'in eski düşen denetimi.
+**Bilinen:** 852x323 (Safari çubuğu açık, en kısa) mobil rehber 17. adımda (orman tıklaması) takılıyor; Tur D'den önceki kodda da aynı.
