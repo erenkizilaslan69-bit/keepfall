@@ -32,12 +32,17 @@ try {
   ok(Math.abs(c1.x - c0.x) > 40 && Math.abs(c1.y - c0.y) > 20, `one finger drags the map (scroll ${Math.round(c0.x)},${Math.round(c0.y)} -> ${Math.round(c1.x)},${Math.round(c1.y)})`);
   ok(!(await b.js("!!document.querySelector('.ui-root .win')")), 'a drag does not open a window');
   // a small wobble is a tap, not a drag
+  // (the camera of a drag glides to a stop: the starting point of the wobble is taken once it stands still)
+  for (let i = 0; i < 30; i++) { const p0 = await cam(); await sleep(120); const p1 = await cam(); if (Math.abs(p1.x - p0.x) < 0.2 && Math.abs(p1.y - p0.y) < 0.2) break; }
   const c2 = await cam();
-  await touch('touchStart', [[W / 2, H / 2]]); await touch('touchMove', [[W / 2 + 4, H / 2 + 3]]); await touch('touchEnd', []); await sleep(600);
+  // (the castle is found again: after the drag it is no longer at the centre of the screen, and what lies at the centre is a different thing every match)
+  const castle2 = await b.js("(() => { const s = keepfallScene.castleSprite, c = keepfallScene.cameras.main; return { x: (s.x - c.midPoint.x) * c.zoom + c.width / 2, y: (s.y - s.displayHeight / 2 - c.midPoint.y) * c.zoom + c.height / 2 }; })()");
+  await touch('touchStart', [[castle2.x, castle2.y]]); await touch('touchMove', [[castle2.x + 4, castle2.y + 3]]);
+  const cWobble = await cam(); // (read while the finger is still down: what the wobble itself did to the map, not what opening the window does afterwards)
+  await touch('touchEnd', []); await sleep(600);
   ok(await b.js("!!document.querySelector('.ui-root .win')"), 'a tap (with a small wobble) opens the castle window');
   await b.js('keepfallUi.windows.close(true); 1');
-  const c3 = await cam();
-  ok(Math.abs(c3.x - c2.x) < 1 && Math.abs(c3.y - c2.y) < 1, 'a 5 px wobble does not move the map');
+  ok(Math.abs(cWobble.x - c2.x) < 1 && Math.abs(cWobble.y - c2.y) < 1, 'a 5 px wobble does not move the map');
   // pinch out: zoom in, pinch in: zoom out
   const z0 = (await cam()).z;
   await touch('touchStart', [[W / 2 - 30, H / 2], [W / 2 + 30, H / 2]]);
