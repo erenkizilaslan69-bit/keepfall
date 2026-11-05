@@ -1,0 +1,20 @@
+/* ---- (round 7, "Tur C": text scale and touch targets: touch screens only, the desktop look is untouched) ---- */
+/* Tokens. --fs-xs is the smallest text size: every font-size in the style sheets is written max(var(--fs-xs, 0px), ...), so it has no effect where the token is not defined (a desktop). */
+@media (pointer: coarse) {
+  :root { --fs-xs: 12px; --fs-sm: 13px; --tap: 44px; --tap-gap: 8px; }
+}
+@media (pointer: coarse) {
+  small { font-size: max(var(--fs-xs), .83em); }
+}
+
+@media (pointer: coarse) and (max-width: 1000px) {
+  /* the clock of the top bar: the phase word goes under the time (the icon row is 44 px buttons with room between, and the bar must still fit a phone) */
+  .tb-clock { flex-wrap: wrap; align-content: center; justify-content: center; column-gap: 0; row-gap: 0; padding-right: calc(14px * var(--u, 1)); }
+  .tb-clock b { flex: 0 0 auto; line-height: 1.05; }
+  .tb-clock small { flex: 1 0 100%; text-align: center; line-height: 1; margin: -2px 0 0 calc(-30px * var(--u, 1)); }
+}
+
+@media (pointer: coarse) {
+  /* the 12 px floor made the rate figures of the resource bar wider: their reserved width follows, so that the top bar still fits between the notches of a phone */
+  .res small { min-width: 2.2em; }
+}

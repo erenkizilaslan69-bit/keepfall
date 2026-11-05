@@ -26,8 +26,8 @@ body { -webkit-tap-highlight-color: transparent; }
 @media (pointer: coarse) {
   /* The three round buttons of the menus (language, settings, help): 44 px each with room between them, clear of the notch. */
   .guide-fab.btn-round { top: calc(8px + var(--sa-t)); right: calc(8px + var(--sa-r)); width: 44px; height: 44px; }
-  .settings-fab.btn-round { top: calc(8px + var(--sa-t)); right: calc(60px + var(--sa-r)); }
-  .lang-fab.btn-round { top: calc(8px + var(--sa-t)); right: calc(112px + var(--sa-r)); }
+  .settings-fab.btn-round { top: calc(8px + var(--sa-t)); right: calc(64px + var(--sa-r)); width: 44px; height: 44px; }
+  .lang-fab.btn-round { top: calc(8px + var(--sa-t)); right: calc(120px + var(--sa-r)); width: 44px; height: 44px; }
 }
 /* A notch or a rounded corner: the game's interface layer stays inside the safe area (the map still fills the whole screen). */
 :root { --sa-t: env(safe-area-inset-top, 0px); --sa-r: env(safe-area-inset-right, 0px); --sa-b: env(safe-area-inset-bottom, 0px); --sa-l: env(safe-area-inset-left, 0px); }
@@ -77,7 +77,7 @@ html.in-game body { position: fixed; inset: 0; width: 100%; }
   .cam-btns .btn { min-width: 54px !important; width: auto; height: 46px; padding: 0 6px !important; font-size: 0 !important; flex-direction: column; gap: 0 !important; justify-content: center !important; }
   .cam-btns .btn .ico { margin: 0; width: 20px; height: 20px; }
   .cam-btns .cam-rival .dot { width: 14px; height: 14px; margin: 0; }
-  .cam-btns .cam-short { display: block; font-size: 11px; line-height: 1.1; font-weight: 700; margin-top: 1px; }
+  .cam-btns .cam-short { display: block; font-size: max(var(--fs-xs, 0px), 11px); line-height: 1.1; font-weight: 700; margin-top: 1px; }
   .cam-btns [data-cam="forest"]::before { display: none; }
 }
 
@@ -147,9 +147,9 @@ html.in-game body { position: fixed; inset: 0; width: 100%; }
 /* the attack form of a rival's castle: a compact row: name and numbers on the first line, the row choice under it */
 .atk-head, .atk-row { grid-template-columns: 1fr auto; }
 .atk-head > :nth-child(3) { display: none; }
-.atk-row select { grid-column: 1 / -1; justify-self: end; min-height: 30px; font-size: .9em; }
+.atk-row select { grid-column: 1 / -1; justify-self: end; min-height: 30px; font-size: max(var(--fs-xs, 0px), .9em); }
 .atk-row .stepper { gap: 4px; }
-.atk-row .stepper .btn-round { width: calc(26px * var(--u, 1)); height: calc(26px * var(--u, 1)); min-width: 0; min-height: 0; font-size: .95em; padding: 0; position: relative; }
+.atk-row .stepper .btn-round { width: calc(26px * var(--u, 1)); height: calc(26px * var(--u, 1)); min-width: 0; min-height: 0; font-size: max(var(--fs-xs, 0px), .95em); padding: 0; position: relative; }
 .atk-row .stepper input { width: 2.6em; height: calc(26px * var(--u, 1)); min-height: 0; text-align: center; padding: 0; }
 @media (pointer: coarse) {
   /* a small picture, a 44 px hit area: the button is drawn small and its touch area is larger than what is seen */
@@ -177,7 +177,7 @@ html.in-game body { position: fixed; inset: 0; width: 100%; }
   .ui-root:has(.win, .scroll-pop:not(.hidden), .kingdom-panel:not(.hidden)) :is(.cam-btns, .zoom-btns) { display: none !important; }
   /* the notes then stand in the free strip at the left, narrow, and never over a window */
   .ui-root:has(.win, .scroll-pop:not(.hidden), .kingdom-panel:not(.hidden)) .notes { left: calc(var(--sa-l, 0px) + 8px); transform: none; width: min(34vw, 300px); max-width: 34vw; align-items: flex-start; z-index: 5; }
-  .ui-root:has(.win, .scroll-pop:not(.hidden), .kingdom-panel:not(.hidden)) .notes .ribbon { max-width: 100%; font-size: .85em; }
+  .ui-root:has(.win, .scroll-pop:not(.hidden), .kingdom-panel:not(.hidden)) .notes .ribbon { max-width: 100%; font-size: max(var(--fs-xs, 0px), .85em); }
 }
 /* The foot of a window (Save): the strip does not catch taps meant for what is under it, only the button does. */
 .win-foot-sticky { pointer-events: none; }

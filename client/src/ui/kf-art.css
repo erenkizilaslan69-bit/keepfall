@@ -71,20 +71,20 @@
 .ucard-face.back { background: url('/art/ui/card-back-half.png') center / 100% 100% no-repeat; color: var(--ink); border: 0; }
 .ucard-face > * { position: absolute; }
 .ucard-art { left: 17%; top: 12.6%; width: 66%; height: 36%; border: 0; border-radius: 0; flex: none; }
-.ucard-face.front .ucard-name { left: 19%; width: 62%; top: 53%; height: 8%; display: grid; place-items: center; font-size: .78em; color: #3a2a18; text-shadow: none; }
-.ucard-face.front .ucard-tag { left: 22%; right: 22%; top: 70.5%; text-align: center; white-space: nowrap; font-size: .56em; padding: 0; }
+.ucard-face.front .ucard-name { left: 19%; width: 62%; top: 53%; height: 8%; display: grid; place-items: center; font-size: max(var(--fs-xs, 0px), .78em); color: #3a2a18; text-shadow: none; }
+.ucard-face.front .ucard-tag { left: 22%; right: 22%; top: 70.5%; text-align: center; white-space: nowrap; font-size: max(var(--fs-xs, 0px), .56em); padding: 0; }
 .ucard-face.front .ucard-btns, .ucard-face.back .ucard-btns { left: 15%; right: 15%; top: 81%; bottom: auto; margin: 0; width: auto; height: 11%; align-items: stretch; }
-.ucard-btns .btn { min-height: 0; height: 100%; font-size: .66em; }
-.ucard-face.back .ucard-name { left: 25%; width: 50%; top: 10.5%; height: 6.5%; display: grid; place-items: center; font-size: .78em; color: #3a2a18; }
+.ucard-btns .btn { min-height: 0; height: 100%; font-size: max(var(--fs-xs, 0px), .66em); }
+.ucard-face.back .ucard-name { left: 25%; width: 50%; top: 10.5%; height: 6.5%; display: grid; place-items: center; font-size: max(var(--fs-xs, 0px), .78em); color: #3a2a18; }
 .ucard-face.back { display: flex; flex-direction: column; gap: 1.5%; padding: 24% 15% 22% 17%; overflow: hidden; }
 .ucard-face.back > * { position: static; }
 .ucard-face.back .ucard-btns { position: absolute; }
 .ucard-face.back .ucard-name { position: absolute; }
-.ucard-face.back dl { margin: 0; font-family: var(--font-text); font-size: .68em; }
+.ucard-face.back dl { margin: 0; font-family: var(--font-text); font-size: max(var(--fs-xs, 0px), .68em); }
 .ucard-face.back dt { color: #6b4a22; font-family: var(--font-pixel); }
 .ucard-face.back dd { font-family: var(--font-text); font-weight: 700; }
-.ucard-face.back .ucard-role { color: #3a2a18; font-size: .58em; line-height: 1.2; }
-.ucard-face.back .ucard-vs { color: #3a2a18; font-size: .58em; line-height: 1.2; }
+.ucard-face.back .ucard-role { color: #3a2a18; font-size: max(var(--fs-xs, 0px), .58em); line-height: 1.2; }
+.ucard-face.back .ucard-vs { color: #3a2a18; font-size: max(var(--fs-xs, 0px), .58em); line-height: 1.2; }
 .ucard-check { top: 1%; right: 1%; }
 .ranking li .ico-crown { width: calc(24px * var(--u, 1)); height: calc(24px * var(--u, 1)); margin-right: calc(4px * var(--u, 1)); }
 .ucard.on .ucard-face { border: 0; box-shadow: none; animation: none; filter: drop-shadow(0 0 calc(7px * var(--u, 1)) rgba(255, 214, 80, .95)) drop-shadow(0 0 calc(2px * var(--u, 1)) #fff2a8); }
