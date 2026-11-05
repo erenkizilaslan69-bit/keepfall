@@ -1,3 +1,4 @@
+import { syncStepButtons } from './step-buttons';
 import { BACK_LINE, SHOOTERS, botMark, clock, colorNote, esc } from '../format';
 import { t as tt, tr } from '../i18n';
 import { messagesOn } from '../prefs';
@@ -179,7 +180,7 @@ export class EnemyWin extends Win {
     button.textContent = intercept ? tt('Önünü kes') : tt('Saldır');
     const out = !!this.player(this.last.room)?.eliminated;
     button.disabled = total === 0 || !t || out || s.eliminated || s.phase !== 'war';
-    for (const b of this.body.querySelectorAll<HTMLButtonElement>('[data-act="less"],[data-act="more"],[data-act="all"],[data-act="half"]')) b.disabled = s.phase !== 'war' || out || s.eliminated;
+    syncStepButtons(this.body, s.phase !== 'war' || out || s.eliminated);
   }
 
   private renderReport(r: ScoutReportView | undefined, now: number): void {

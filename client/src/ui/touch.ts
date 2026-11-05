@@ -31,6 +31,17 @@ export function installTouch(): void {
     setTimeout(() => el.scrollIntoView({ block: 'center', behavior: 'smooth' }), 350);
   });
 
+  // A menu page that scrolls: the three round buttons (fixed at the top right) step aside while the page is scrolled down, so that a card or button passing under them is
+  // never covered by one; they come back as soon as the page scrolls up (or is at the top).
+  if (isTouch()) {
+    let lastY = window.scrollY;
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY;
+      if (y > 40 && y > lastY) root.classList.add('fab-away'); else if (y < lastY || y <= 40) root.classList.remove('fab-away');
+      lastY = y;
+    }, { passive: true });
+  }
+
   installLongPress();
   // The keyboard goes away when a button is pressed (sending a message from an envoy form, for instance): the form is what the player wants to see.
   document.addEventListener('click', (e) => {

@@ -1,3 +1,4 @@
+import { syncStepButtons } from './step-buttons';
 import { BACK_LINE, SHOOTERS, colorNote, esc } from '../format';
 import { t as tt, tr } from '../i18n';
 import type { CastleView, Corner, Job, QuarterView, Row, SiteView } from '../types';
@@ -215,7 +216,7 @@ export class SiteWin extends Win {
     why.textContent = reason;
     why.classList.toggle('hidden', reason === '');
     this.q<HTMLButtonElement>('[data-act="send"]').disabled = total === 0 || !enough || !!reason;
-    for (const b of this.body.querySelectorAll<HTMLButtonElement>('[data-act="less"],[data-act="more"],[data-act="all"],[data-act="half"]')) b.disabled = !!reason;
+    syncStepButtons(this.body, !!reason);
   }
 
   private async click(e: Event): Promise<void> {

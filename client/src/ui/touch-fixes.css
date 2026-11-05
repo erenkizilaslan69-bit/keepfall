@@ -1,0 +1,20 @@
+/* ---- (round 7, "Tur C", step 3: what the interface audit still found: covered buttons, sideways scroll) ---- */
+@media (pointer: coarse) {
+  /* the sticky head of the kingdom panel: what is scrolled or focused into view stops below it, not under it */
+  .kingdom-panel, .win-body, .scroll-pop { scroll-padding-top: 64px; }
+  /* the round buttons of the menus step aside while the page is scrolled down (ui/touch.ts) */
+  .guide-fab, .settings-fab, .lang-fab { transition: opacity .15s; }
+  html.fab-away .guide-fab, html.fab-away .settings-fab, html.fab-away .lang-fab { opacity: 0; pointer-events: none; }
+}
+
+@media (pointer: coarse) {
+  /* the guide / settings close button sits inside the window's corner (hanging out of it, it made the window scroll sideways) */
+  .btn-round.guide-close { top: 4px; right: 4px; width: var(--tap); height: var(--tap); }
+  /* a stepper next to its label wraps under it when the panel is narrow, instead of pushing the panel wider */
+  .kd-unit { flex-wrap: wrap; row-gap: 4px; }
+}
+
+@media (pointer: coarse) {
+  /* the sticky head of the kingdom panel did not span more than the panel (its side margins were wider than the panel's padding: a phantom sideways scroll) */
+  .kd-head { margin-left: 0; margin-right: 0; padding-left: 0; padding-right: 0; }
+}

@@ -12,6 +12,7 @@ import './ui/kf-art.css';
 import './ui/touch.css';
 import './ui/touch-text.css';
 import './ui/touch-targets.css';
+import './ui/touch-fixes.css';
 import '@fontsource/pixelify-sans/latin-400.css';
 import '@fontsource/pixelify-sans/latin-ext-400.css';
 import '@fontsource/atkinson-hyperlegible-next/latin-400.css';
