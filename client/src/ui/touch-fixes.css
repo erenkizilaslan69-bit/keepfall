@@ -18,3 +18,10 @@
   /* the sticky head of the kingdom panel did not span more than the panel (its side margins were wider than the panel's padding: a phantom sideways scroll) */
   .kd-head { margin-left: 0; margin-right: 0; padding-left: 0; padding-right: 0; }
 }
+
+@media (pointer: coarse) {
+  /* a window's body starts below its close button (the button hangs 20 px into it): scrolled rows slide under the window's edge, not under the button */
+  .win-body { border-top: 32px solid transparent; padding-top: 4px; } /* (a border, not a margin: a margin would have collapsed through the window and moved it down) */
+  /* the pulse of the help button no longer grows it: at the very top of the screen the grown button stuck out by a pixel */
+  @keyframes kf-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(246, 210, 120, .0), 0 0 4px rgba(246, 210, 120, .5); } 50% { box-shadow: 0 0 0 3px rgba(246, 210, 120, .35), 0 0 12px 2px rgba(246, 210, 120, .9); } }
+}
