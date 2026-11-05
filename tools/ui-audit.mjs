@@ -411,3 +411,9 @@ console.log(`\n${screens} screens, ${issues.length} issues: critical ${bySev.cri
 console.log('by type:', JSON.stringify(byType));
 console.log('top 10:'); grouped.slice(0, 10).forEach((g, i) => console.log(` ${i + 1}. ${g.sev} ${g.type} [${g.state}] ${g.el} ${g.note} x${g.count}`));
 console.log('report:', OUT_MD); console.log('sheets:', sheets.join(', '));
+// machine-readable counts (device x severity x type) next to the report, for before/after comparisons
+{
+  const counts = {};
+  for (const i of issues) { const k = `${i.device}|${i.sev}|${i.type}`; counts[k] = (counts[k] ?? 0) + 1; }
+  writeFileSync(OUT_MD.replace(/\.md$/, '.json'), JSON.stringify({ counts, issues }, null, 1));
+}
