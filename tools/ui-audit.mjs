@@ -99,7 +99,9 @@ const AUDIT_JS = `(opts) => {
   }
   // neighbouring pressable things on a touch screen: at least 8 px of air between them (neither one inside the other)
   if (touch) {
-    const rs = els.filter((e) => !e.matches('input[type=hidden]')).map((e) => ({ e, r: e.getBoundingClientRect() }));
+    // (only what a finger can actually reach: something behind a window, or scrolled under a fixed head, is not a neighbour)
+    const reach = (e) => { const q = e.getBoundingClientRect(); const x = Math.min(Math.max(q.left + q.width / 2, 1), iw - 1), y = Math.min(Math.max(q.top + q.height / 2, 1), ih - 1); const t = document.elementFromPoint(x, y); return !!t && (t === e || e.contains(t) || t.contains(e) || (e.tagName === 'INPUT' && t.closest('label') === e.closest('label'))); };
+    const rs = els.filter((e) => !e.matches('input[type=hidden]') && reach(e)).map((e) => ({ e, r: e.getBoundingClientRect() }));
     let tight = 0;
     for (let a = 0; a < rs.length && tight < 40; a++) for (let b = a + 1; b < rs.length && tight < 40; b++) {
       const A = rs[a].r, B = rs[b].r;
