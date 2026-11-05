@@ -73,7 +73,7 @@ export abstract class Win {
     // The main button / the tabs stick to the edge only when the body is tall enough to show real content as well; in a short window they stay in the flow (they would cover it).
     const stuck = b.querySelector<HTMLElement>('.upgrade-box, [data-f="attack"] > .row:last-child');
     const tabs = b.querySelector<HTMLElement>('.win-tabs');
-    const stickFoot = !!stuck && b.clientHeight >= stuck.offsetHeight * 2, stickHead = !!tabs && b.clientHeight >= tabs.offsetHeight * 2.5;
+    const stickFoot = !!stuck && b.clientHeight >= stuck.offsetHeight * 2.5, stickHead = !!tabs && b.clientHeight >= tabs.offsetHeight * 2.5;
     this.el.classList.toggle('no-stick-foot', !!stuck && !stickFoot);
     this.el.classList.toggle('no-stick-head', !!tabs && !stickHead);
     b.style.scrollPaddingBottom = stickFoot ? `${stuck!.offsetHeight}px` : '';
