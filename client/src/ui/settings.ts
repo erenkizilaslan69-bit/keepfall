@@ -1,7 +1,7 @@
 import { sfx } from '../audio';
 import { restartTutorial } from './tutorial';
 import { CRAZY } from '../crazy';
-import { lowGraphics, setLowGraphics, setShowHints, showsHints, setReduceEffects, setShowFps, setShowMessages, showsFps, userReducesEffects, userShowsMessages } from '../prefs';
+import { playsFullRules, setFullRules, lowGraphics, setLowGraphics, setShowHints, showsHints, setReduceEffects, setShowFps, setShowMessages, showsFps, userReducesEffects, userShowsMessages } from '../prefs';
 import { toggleGuide } from './guide';
 import { lang, t, toggleLang } from '../i18n';
 
@@ -84,6 +84,7 @@ export function toggleSettings(): void {
           <div class="set-row"><label for="set-fps">${t('FPS göster')} <small>${t('(köşede kare hızı ve sunucu gecikmesi)')}</small></label><input id="set-fps" type="checkbox" class="set-check"></div>
           <div class="set-row"><label for="set-msg">${t('Ulak mesajlarını göster')} <small>${t('(kapalıyken gelen mesajlar gizlenir ve mesaj kutusu çıkmaz)')}</small></label><input id="set-msg" type="checkbox" class="set-check"></div>
           <div class="set-row"><label for="set-hints">${t('İpuçlarını göster')} <small>${t('(boşta işçi, yemek azalması, yaklaşan ordu gibi anlarda kısa uyarılar)')}</small></label><input id="set-hints" type="checkbox" class="set-check"></div>
+          <div class="set-row"><label for="set-full">${t('Tam kurallarla oyna')} <small>${t('(ilk maçlarda ve ilk meydan okumalarda da krallık yetenekleri ve savaş sırası seçimi açık olur)')}</small></label><input id="set-full" type="checkbox" class="set-check"></div>
         </section>
         <section class="set-links">
           <button class="btn" data-act="guide">${t('Nasıl oynanır?')}</button>
@@ -110,7 +111,7 @@ export function toggleSettings(): void {
       </div>
     </div>`;
   const q = <T extends HTMLElement>(sel: string) => overlay.querySelector<T>(sel)!;
-  const music_ = q<HTMLInputElement>('#set-music'), sfx_ = q<HTMLInputElement>('#set-sfx'), mute = q<HTMLInputElement>('#set-mute'), fx = q<HTMLInputElement>('#set-fx'), low = q<HTMLInputElement>('#set-low'), fps = q<HTMLInputElement>('#set-fps'), msg = q<HTMLInputElement>('#set-msg'), hintsBox = q<HTMLInputElement>('#set-hints');
+  const music_ = q<HTMLInputElement>('#set-music'), sfx_ = q<HTMLInputElement>('#set-sfx'), mute = q<HTMLInputElement>('#set-mute'), fx = q<HTMLInputElement>('#set-fx'), low = q<HTMLInputElement>('#set-low'), fps = q<HTMLInputElement>('#set-fps'), msg = q<HTMLInputElement>('#set-msg'), hintsBox = q<HTMLInputElement>('#set-hints'), fullBox = q<HTMLInputElement>('#set-full');
   const show = () => {
     music_.value = String(Math.round(sfx.musicVolume * 100));
     sfx_.value = String(Math.round(sfx.volume * 100));
@@ -132,6 +133,8 @@ export function toggleSettings(): void {
   fps.addEventListener('change', () => setShowFps(fps.checked));
   msg.addEventListener('change', () => setShowMessages(msg.checked));
   hintsBox.addEventListener('change', () => setShowHints(hintsBox.checked));
+  fullBox.checked = playsFullRules();
+  fullBox.addEventListener('change', () => setFullRules(fullBox.checked));
   // The map's ornaments and fog are built with the map: in a running match the page loads again (the same seat comes back), in the menus it just applies to the next map.
   low.addEventListener('change', () => {
     setLowGraphics(low.checked);

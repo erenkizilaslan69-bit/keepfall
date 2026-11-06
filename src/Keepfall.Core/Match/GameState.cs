@@ -154,6 +154,9 @@ public sealed partial class GameState
     /// <summary>Castles that nobody attacks for the first <see cref="GameRules.MatchRules"/> shield seconds of the war (the human of a guided match).</summary>
     public HashSet<string> ShieldedKeys { get; } = [];
 
+    /// <summary>Starter mode (first matches): the players' row choices are ignored, units stand in their default rows. Set by the room; bots never choose rows anyway.</summary>
+    public bool RowsLocked { get; set; }
+
     /// <summary>True while the castle is under the guided match's shield: no army, phantom or hired camp may be sent at it.</summary>
     public bool IsShielded(string key) => ShieldedKeys.Contains(key) && Phase == MatchPhase.War && WarElapsedSeconds < Rules.Match.GuidedShieldSeconds;
 
@@ -521,6 +524,7 @@ public sealed partial class GameState
             HireCamp camp => RentCamp(playerKey, player, camp),
             RecallArmy recall => Recall(playerKey, recall.ArmyId),
             RedirectArmy redirect => Redirect(playerKey, redirect),
+            SetDefense defense when RowsLocked => player.Castle.Execute(defense with { Rows = null }),
             _ => player.Castle.Execute(command),
         };
     }
@@ -861,7 +865,7 @@ public sealed partial class GameState
             if (Rules.FindUnit(id) is not { } type) return CommandResult.Fail($"Bilinmeyen birlik \"{id}\".");
             if (n > 0) units[type] = units.GetValueOrDefault(type) + n;
         }
-        foreach (var (id, row) in rowIds ?? new Dictionary<string, Row>())
+        foreach (var (id, row) in RowsLocked ? new Dictionary<string, Row>() : rowIds ?? new Dictionary<string, Row>())
         {
             if (Rules.FindUnit(id) is not { } type) return CommandResult.Fail($"Bilinmeyen birlik \"{id}\".");
             rows[type] = row;

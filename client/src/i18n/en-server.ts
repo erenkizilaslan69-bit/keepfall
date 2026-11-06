@@ -109,6 +109,7 @@ export const EN_SERVER: Record<string, string> = {
   "Oda dolu.": "The room is full.",
   "Çok fazla deneme. Bir dakika bekle.": "Too many tries. Wait a minute and try again.",
   "Yalnız oda sahibi rehberli maç isteyebilir.": "Only the host can ask for the guided match.",
+  "Yalnız oda sahibi başlangıç kipi isteyebilir.": "Only the host can ask for starter rules.",
   "Bu rehberli maçta savaşın ilk dakikalarında rakipler saldırmaz.": "In this guided match nobody attacks you in the first minutes of the war.",
   "Sunucu dolu, birazdan tekrar dene.": "The servers are full right now. Try again in a minute.",
   "Önce bir odaya katılmalısın.": "You must join a room first.",

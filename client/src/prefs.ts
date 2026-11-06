@@ -2,16 +2,16 @@
 
 const KEY = 'keepfall.prefs';
 
-interface Prefs { reduceEffects: boolean; showFps: boolean; lowGraphics: boolean; showMessages: boolean; showHints: boolean }
+interface Prefs { reduceEffects: boolean; showFps: boolean; lowGraphics: boolean; showMessages: boolean; showHints: boolean; fullRules: boolean }
 
 function load(): Prefs {
   try {
     const p = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<Prefs>;
     // A touch device (a phone) starts with low graphics until the player chooses otherwise.
     const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
-    return { reduceEffects: p.reduceEffects === true, showFps: p.showFps === true, lowGraphics: typeof p.lowGraphics === 'boolean' ? p.lowGraphics : touch, showMessages: p.showMessages !== false, showHints: p.showHints !== false };
+    return { reduceEffects: p.reduceEffects === true, showFps: p.showFps === true, lowGraphics: typeof p.lowGraphics === 'boolean' ? p.lowGraphics : touch, showMessages: p.showMessages !== false, showHints: p.showHints !== false, fullRules: p.fullRules === true };
   } catch {
-    return { reduceEffects: false, showFps: false, lowGraphics: false, showMessages: true, showHints: true };
+    return { reduceEffects: false, showFps: false, lowGraphics: false, showMessages: true, showHints: true, fullRules: false };
   }
 }
 
@@ -71,6 +71,9 @@ export function setShowMessages(on: boolean): void { save({ ...prefs, showMessag
 /** "İpuçlarını göster": the short contextual tips (idle workers, low food, an army on its way ...). On by default. */
 export function showsHints(): boolean { return prefs.showHints; }
 export function setShowHints(on: boolean): void { save({ ...prefs, showHints: on }); }
+/** "Tam kurallarla oyna": the first matches and the first challenge cards play by the starter rules (no kingdom abilities, fixed rows) unless this is on. */
+export function playsFullRules(): boolean { return prefs.fullRules; }
+export function setFullRules(on: boolean): void { save({ ...prefs, fullRules: on }); }
 
 // ---- how many matches this browser has started (a new player's first three matches have easy bots) ------------------------------------------------------
 const MATCHES_KEY = 'keepfall.matches';

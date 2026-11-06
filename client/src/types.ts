@@ -72,6 +72,8 @@ export interface RoomView {
   result: ResultView | null;
   /** The solo challenge this room plays (null in an ordinary room). */
   challengeId?: string | null;
+  /** This match plays by the starter rules (no kingdom abilities, battle rows fixed). Public: it only names the rules. */
+  starter?: boolean;
 }
 
 // ---- challenge mode (one player against computer players) ----

@@ -20,6 +20,7 @@
       "seed": 7101,
       "kingdom": "tuccar",
       "playerDeck": ["okcu", "kilicli", "mizrakci", "kalkanli"],
+      "starter": true,
       "bots": [ { "difficulty": "easy" } ],
       "warSeconds": 480,
       "goals": [
@@ -43,6 +44,7 @@
       "seed": 7102,
       "kingdom": "tuccar",
       "playerDeck": ["okcu", "kilicli", "kalkanli", "kesis"],
+      "starter": true,
       "bots": [ { "difficulty": "easy" }, { "difficulty": "easy" } ],
       "warSeconds": 480,
       "goals": [

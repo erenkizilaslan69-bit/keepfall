@@ -298,6 +298,8 @@ export const EN_GUIDE: Record<string, string> = {
   "{0} işçin boşta: yemek yerler ama üretmezler. Bir binaya + ile işçi ata.": "{0} idle {0:worker|workers}: they eat but produce nothing. Assign them with + in a building.",
   "Yemek azalıyor: tarlaya işçi ekle, yoksa açlık başlar.": "Food is running low — add workers to the farm or hunger will hit.",
   "İpuçlarını göster": "Show hints",
+  "Tam kurallarla oyna": "Play with full rules",
+  "(ilk maçlarda ve ilk meydan okumalarda da krallık yetenekleri ve savaş sırası seçimi açık olur)": "(kingdom abilities and battle-row choice are on in the first matches and challenges too)",
   "(boşta işçi, yemek azalması, yaklaşan ordu gibi anlarda kısa uyarılar)": "(short tips when workers sit idle, food runs low, an army approaches…)",
   "Rehberi tekrar başlat": "Restart Tutorial",
   "Rehber yeniden başladı.": "Tutorial restarted.",

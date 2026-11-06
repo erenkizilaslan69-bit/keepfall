@@ -46,6 +46,8 @@ public sealed class ChallengeDef
     /// <summary>The player's kingdom (a kingdom id, see <see cref="Factions"/>).</summary>
     public string Kingdom { get; init; } = "";
     public List<string>? PlayerDeck { get; init; }
+    /// <summary>Plays by the starter rules (no kingdom abilities, rows fixed) unless the player chose full rules. The first cards use it.</summary>
+    public bool Starter { get; init; }
     public List<ChallengeBot> Bots { get; init; } = [];
     /// <summary>Null = the game's usual preparation (with its faster economy); a number plays that many seconds at plain speed.</summary>
     public double? PrepSeconds { get; init; }

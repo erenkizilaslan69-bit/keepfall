@@ -555,3 +555,6 @@ html.crazy input, html.crazy textarea { -webkit-user-select: text; user-select: 
 .screen.lobby .fill.hidden { display: none; }
 .screen.lobby .fill .check { display: inline-flex; align-items: center; gap: calc(6px * var(--u, 1)); white-space: nowrap; }
 .screen.lobby .lob-bottom #start-hint { order: 99; flex: 1 1 100%; width: 100%; }
+
+/* Starter rules (first matches): the battle-row pickers are hidden, units stand in their default rows. */
+html.kf-starter select[data-row], html.kf-starter select[data-d-row] { display: none; }

@@ -157,12 +157,14 @@ export class GameConnection {
   setReady = (ready: boolean) => this.call('SetReady', ready);
   /** The guided first match: computer players leave this (single human) player alone for the first minutes of the war. */
   setGuided = (on: boolean) => this.call('SetGuided', on);
+  /** Starter rules for this (single human) room: no kingdom abilities, fixed rows, the classic deck unless one was picked. */
+  setStarter = (on: boolean) => this.call('SetStarter', on);
   setDeck = (units: string[]) => this.call('SetDeck', units);
   startMatch = () => this.call('StartMatch');
   /** The challenges and today's daily one (the same for everybody; nothing of any match). */
   getChallenges = () => this.hub.invoke<ChallengeList>('GetChallenges');
   /** The only human of the room starts a challenge ("daily" = today's): the server sets up the bots, seed and kingdoms. */
-  startChallenge = (id: string) => this.call('StartChallenge', id);
+  startChallenge = (id: string, fullRules = false) => this.call(fullRules ? 'StartChallengeFullRules' : 'StartChallenge', id);
   addBot = (level: BotLevel) => this.call('AddBot', level);
   removeBot = (seat: number) => this.call('RemoveBot', seat);
   finishMatch = () => this.call('FinishMatch');

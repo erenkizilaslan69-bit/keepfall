@@ -328,6 +328,21 @@ public sealed class Room
         return CommandResult.Success;
     });
 
+    /// <summary>
+    /// Starter mode (the first matches): no kingdom abilities, the classic four-unit deck unless the player picked one, battle rows fixed to the defaults.
+    /// Honoured only when one human plays, so a multiplayer room is never touched. Public: it only says which rules the room plays by.
+    /// </summary>
+    public bool Starter { get; private set; }
+    /// <summary>True while a match of this room runs in starter mode (the single human asked for it or the challenge is a starter one).</summary>
+    public bool StarterActive { get; private set; }
+
+    public CommandResult SetStarter(string token, bool on) => InLobby(token, p =>
+    {
+        if (p.Seat != HostSeat) return CommandResult.Fail("Yalnız oda sahibi başlangıç kipi isteyebilir.");
+        Starter = on;
+        return CommandResult.Success;
+    });
+
     /// <summary>The solo challenge this room plays (null in an ordinary room). Set only by <see cref="StartChallenge"/>.</summary>
     public ChallengeDef? Challenge { get; private set; }
 
@@ -335,7 +350,7 @@ public sealed class Room
     /// The single human of the room starts a challenge: the room's computer players, seed, kingdoms, decks and times come from the definition
     /// and the match begins at once. Refused if anyone else is in the room (a challenge is for one player; the multiplayer rules are untouched).
     /// </summary>
-    public CommandResult StartChallenge(string token, ChallengeDef def) => InLobby(token, p =>
+    public CommandResult StartChallenge(string token, ChallengeDef def, bool fullRules = false) => InLobby(token, p =>
     {
         if (p.Seat != HostSeat) return CommandResult.Fail("Meydan okumayı yalnız oda sahibi başlatabilir.");
         if (_players.Any(x => !x.IsBot && x.Seat != p.Seat)) return CommandResult.Fail("Meydan okuma tek kişiliktir.");
@@ -353,6 +368,7 @@ public sealed class Room
         p.Deck = def.PlayerDeck is null ? null : def.PlayerDeck.Select(id => _rules.FindUnit(id)!.Id).ToList();
         p.Ready = true;
         Challenge = def;
+        Starter = def.Starter && !fullRules;
         StartGame();
         return CommandResult.Success;
     });
@@ -387,14 +403,16 @@ public sealed class Room
         // A challenge brings its own seed and times; everything below that used Options.* then reads these.
         int? seedOpt = Challenge?.Seed ?? Options.Seed;
         var deckRng = seedOpt is { } ds ? new Random(ds + 53) : new Random();
+        bool starter = Starter && _players.Count(x => !x.IsBot) == 1 && _rules.Deck.Enabled;
+        StarterActive = starter;
         IReadOnlyDictionary<string, IReadOnlyList<string>>? decks = null;
         if (_rules.Deck.Enabled)
         {
-            foreach (var p in _players) p.Deck ??= p.IsBot ? BotDeck(p.Bot!.Value, deckRng) : _rules.RandomDeck(deckRng);
+            foreach (var p in _players) p.Deck ??= starter && !p.IsBot ? RoomOptions.ClassicDeck.ToList() : p.IsBot ? BotDeck(p.Bot!.Value, deckRng) : _rules.RandomDeck(deckRng);
             decks = _players.ToDictionary(p => p.CastleKey, p => p.Deck!);
         }
         Dictionary<string, string>? factions = null;
-        if (_rules.Kingdoms.Enabled && Options.Kingdoms) factions = Factions.Assign(keys, seedOpt is { } ks ? new Random(ks + 71) : new Random());
+        if (_rules.Kingdoms.Enabled && Options.Kingdoms && !starter) factions = Factions.Assign(keys, seedOpt is { } ks ? new Random(ks + 71) : new Random());
         if (Challenge is { } ch && factions is not null)
         {
             // The player's kingdom is fixed, and so are the bots' where the definition says; the rest keep the seeded draw (and stay different from the fixed ones).
@@ -417,6 +435,7 @@ public sealed class Room
                 GameState.AssignCorners(keys, new Random(seed + 17)), Options.ForestSeed ?? new Random(seed + 31).Next(), decks, factions);
         else
             Game = new GameState(_rules, keys, prep, war, forestSeed: Options.ForestSeed, decks: decks, factions: factions);
+        if (starter) Game.RowsLocked = true;
         if (guidedSolo)
             foreach (var human in _players.Where(p => !p.IsBot)) Game.ShieldedKeys.Add(human.CastleKey);
         Phase = RoomPhase.Preparation;
@@ -479,6 +498,8 @@ public sealed class Room
         if (player.Seat != HostSeat) return CommandResult.Fail("Lobiye dönüşü sadece odayı kuran başlatabilir.");
         Phase = RoomPhase.Lobby;
         Game = null;
+        if (Challenge is not null) Starter = false;
+        StarterActive = false;
         Challenge = null;
         Speed = 1;
         foreach (var p in _players) p.Ready = false;

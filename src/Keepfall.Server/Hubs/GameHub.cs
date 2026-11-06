@@ -141,6 +141,7 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     public Task<CommandResultView> SetName(string? name) => RoomCommand((room, token) => room.SetName(token, name));
     public Task<CommandResultView> SetReady(bool ready) => RoomCommand((room, token) => room.SetReady(token, ready));
     public Task<CommandResultView> SetGuided(bool on) => RoomCommand((room, token) => room.SetGuided(token, on));
+    public Task<CommandResultView> SetStarter(bool on) => RoomCommand((room, token) => room.SetStarter(token, on));
     public Task<CommandResultView> SetDeck(string[]? units) => RoomCommand((room, token) => room.SetDeck(token, units));
     /// <summary>The challenges and today's daily one: the same for everybody, nothing of any match.</summary>
     public ChallengeListView GetChallenges() => ChallengeMapper.ListOf(challenges, Keepfall.Core.Challenges.ChallengeCatalog.Daily(DateTime.UtcNow, rules));
@@ -149,7 +150,11 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     /// The room's only human starts a challenge ("daily" = today's): the computer players, seed, kingdoms and times come from the definition
     /// on the server; the client names nothing but the challenge.
     /// </summary>
-    public async Task<CommandResultView> StartChallenge(string? id)
+    public Task<CommandResultView> StartChallenge(string? id) => StartChallengeCore(id, false);
+    /// <summary>The same, with the full rules even for a starter card (the player turned "play with full rules" on).</summary>
+    public Task<CommandResultView> StartChallengeFullRules(string? id) => StartChallengeCore(id, true);
+
+    private async Task<CommandResultView> StartChallengeCore(string? id, bool fullRules)
     {
         if (Bound() is not { } bound) return NotJoined;
         var def = id == "daily" ? Keepfall.Core.Challenges.ChallengeCatalog.Daily(DateTime.UtcNow, rules) : challenges.Find(id);
@@ -157,7 +162,7 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
         CommandResult result;
         lock (bound.Session.Lock)
         {
-            result = bound.Session.Room.StartChallenge(bound.Token, def);
+            result = bound.Session.Room.StartChallenge(bound.Token, def, fullRules);
             if (result.Ok) bound.Session.SeedBots(def.Seed);
         }
         if (result.Ok)

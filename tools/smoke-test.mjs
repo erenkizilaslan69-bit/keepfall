@@ -663,8 +663,11 @@ K.ws.close();
   check('the room is in the preparation, plays this challenge, with the bots of the definition seated',
     room0.phase === 'preparation' && room0.challengeId === first.id && room0.players.filter((x) => x.isBot).length === first.botLevels.length
     && room0.players.filter((x) => x.isBot).every((x, i) => x.botLevel === first.botLevels[i]));
-  check('the player got only their own castle, in their definition kingdom', S.of('CastleState').length > 0 && S.of('CastleState').every((c) => c.color === 'blue')
-    && S.of('CastleState').at(-1).kingdom?.id === first.kingdom);
+  // The first cards play by the starter rules: no kingdom for anyone, nothing about kingdoms in any view, the classic deck, the room says "starter".
+  check('the player got only their own castle', S.of('CastleState').length > 0 && S.of('CastleState').every((c) => c.color === 'blue'));
+  check('starter rules: the room says so, and the player has no kingdom (castle, map, room views carry no kingdom data)',
+    room0.starter === true && S.of('CastleState').every((c) => !c.kingdom && !c.rivals?.length)
+    && S.of('MapState').every((m) => !m.kingdoms?.length) && !JSON.stringify(S.of('CastleState').at(-1)).includes('"kingdom":{'));
   check('no rival kingdom or deck anywhere while the match runs (castle rivals, room views)',
     S.of('CastleState').every((c) => !c.rivals?.length) && S.of('RoomState').filter((r) => r.phase !== 'ended').every((r) => !JSON.stringify(r).includes('kingdom')));
   check('the challenge cannot be started again while it is on', !(await S.call('StartChallenge', first.id)).ok);
@@ -697,9 +700,10 @@ K.ws.close();
   check('the result names no rival kingdom beyond the ranking the end of every match shows', !/kingdom|rivals/i.test(JSON.stringify(res)) && endRoom.phase === 'ended');
 
   // Try again in the same room: back to the lobby and start it once more
-  check('back to the lobby, and the same challenge starts again from scratch', (await S.call('BackToLobby')).ok && (await S.call('StartChallenge', first.id)).ok);
+  check('back to the lobby, and the same challenge starts again from scratch', (await S.call('BackToLobby')).ok && (await S.call('StartChallengeFullRules', first.id)).ok);
   await sleep(800);
   const again = S.of('RoomState').at(-1);
+  check('with "full rules" the same card has its kingdom and no starter flag', again.starter !== true && S.of('CastleState').at(-1).kingdom?.id === first.kingdom);
   check('the second try is a fresh preparation with the same bots (not more of them)', again.phase === 'preparation' && again.players.filter((x) => x.isBot).length === first.botLevels.length
     && S.of('CastleState').at(-1).phase === 'preparation');
   S.ws.close();

@@ -42,7 +42,7 @@ import { armTutorial, disarmTutorial, tutorialDone } from './ui/tutorial';
 import { CRAZY } from './crazy';
 import { FEATURE_PRIVATE_ROOM } from './features';
 import { crazyGameplay, crazyInstant, crazyInviteRoom, crazyLoaded, crazyRoom, crazyUsername, crazyVictory, initCrazy, onCrazyJoin, watchCrazySettings } from './crazy';
-import { countMatch, newPlayer, setSiteChatOff } from './prefs';
+import { countMatch, newPlayer, playsFullRules, setSiteChatOff } from './prefs';
 import { guarded, installErrorReporting } from './error-report';
 import { ChallengeScreen, nextOf, resultHtml, saveStars } from './ui/challenges';
 import type { BattleStartedView, BotLevel, CastleView, ChallengeList, ChallengeResult, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
@@ -174,6 +174,8 @@ if (import.meta.env.DEV) (window as unknown as { keepfallCrazy: unknown }).keepf
 // ---- room events ---------------------------------------------------------------------------
 
 function onRoom(r: RoomView): void {
+  // Starter rules hide the row pickers (the server ignores them anyway).
+  document.documentElement.classList.toggle('kf-starter', r.starter === true);
   setBotSeats(r.players);
   mountScenery().setColors(r.players.map((p) => p.color));
   // In the lobby the browser already fetches what the map will need.
@@ -322,7 +324,7 @@ async function playChallenge(id: string): Promise<string | null> {
   const r = await net.createRoom(loadName() || siteName);
   if (!r.ok) { soloRoom = false; return r.error ?? null; }
   setRoute(`/oda/${r.code}${location.search}`);
-  const go = await net.startChallenge(id);
+  const go = await net.startChallenge(id, playsFullRules());
   if (!go.ok) {
     await leaveToMenu();
     void showChallenges(go.error ?? '');
@@ -366,6 +368,7 @@ async function quickMatch(name: string): Promise<string | null> {
     const a = await net.addBot(level);
     if (!a.ok) return fail(a.error);
   }
+  if ((guided || newPlayer()) && !playsFullRules()) { const st = await net.setStarter(true); if (!st.ok) return fail(st.error); }
   if (guided) { const g = await net.setGuided(true); if (!g.ok) return fail(g.error); }
   const ready = await net.setReady(true);
   if (!ready.ok) return fail(ready.error);
