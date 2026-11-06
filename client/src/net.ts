@@ -1,7 +1,7 @@
 import * as signalR from '@microsoft/signalr';
 import { loadIdentity, markActiveRoom, saveIdentity } from './identity';
 import { trace } from './debug-trace';
-import type { ArmyMode, BattleStartedView, BotLevel, BuildingType, CastleView, CommandResult, Job, JoinView, MapLayoutView, MapStateView, RoomView, Row, SpectatorStateView, SpectatorWaitView, SummaryView } from './types';
+import type { ChallengeList, ChallengeResult, ArmyMode, BattleStartedView, BotLevel, BuildingType, CastleView, CommandResult, Job, JoinView, MapLayoutView, MapStateView, RoomView, Row, SpectatorStateView, SpectatorWaitView, SummaryView } from './types';
 import { serverUrl } from './env';
 
 /** The version of the conversation with the server; Hello on the hub answers with the server's (GameHub.Protocol). */
@@ -23,6 +23,8 @@ export interface ConnectionEvents {
   /** Our castle has fallen and the view has not started yet. */
   spectatorWait: (wait: SpectatorWaitView) => void;
   matchEnded: (summary: SummaryView) => void;
+  /** Only in a challenge: the goals and the stars, to the one player. */
+  challengeResult: (result: ChallengeResult) => void;
   /** Something that happened to us, e.g. "Kırmızı'nın gözcüsü kaleni gözetledi." */
   notification: (text: string) => void;
   status: (status: ConnectionStatus) => void;
@@ -55,6 +57,7 @@ export class GameConnection {
     this.hub.on('SpectatorState', (state: SpectatorStateView) => this.on.spectatorState(state));
     this.hub.on('SpectatorWait', (wait: SpectatorWaitView) => this.on.spectatorWait(wait));
     this.hub.on('MatchEnded', (summary: SummaryView) => this.on.matchEnded(summary));
+    this.hub.on('ChallengeResult', (result: ChallengeResult) => this.on.challengeResult(result));
     this.hub.on('Notification', (text: string) => this.on.notification(text));
     this.hub.onreconnecting(() => this.on.status('reconnecting'));
     // A reconnect is a new connection on the server: rejoin the same seat with our token.
@@ -156,6 +159,10 @@ export class GameConnection {
   setGuided = (on: boolean) => this.call('SetGuided', on);
   setDeck = (units: string[]) => this.call('SetDeck', units);
   startMatch = () => this.call('StartMatch');
+  /** The challenges and today's daily one (the same for everybody; nothing of any match). */
+  getChallenges = () => this.hub.invoke<ChallengeList>('GetChallenges');
+  /** The only human of the room starts a challenge ("daily" = today's): the server sets up the bots, seed and kingdoms. */
+  startChallenge = (id: string) => this.call('StartChallenge', id);
   addBot = (level: BotLevel) => this.call('AddBot', level);
   removeBot = (seat: number) => this.call('RemoveBot', seat);
   finishMatch = () => this.call('FinishMatch');

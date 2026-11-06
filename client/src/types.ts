@@ -70,7 +70,30 @@ export interface RoomView {
   allHumansOut: boolean;
   /** Only once the match is over; then everyone sees everyone's summary. */
   result: ResultView | null;
+  /** The solo challenge this room plays (null in an ordinary room). */
+  challengeId?: string | null;
 }
+
+// ---- challenge mode (one player against computer players) ----
+export interface ChallengeText { tr: string; en: string }
+export interface ChallengeGoal { id: string; type: string; value: number; star: number }
+/** A challenge as the list shows it: nothing of the rivals' kingdoms or decks. */
+export interface ChallengeCard {
+  id: string;
+  order: number;
+  daily: boolean;
+  name: ChallengeText;
+  description: ChallengeText;
+  tip: ChallengeText;
+  kingdom: string;
+  deck: string[] | null;
+  botLevels: string[];
+  warSeconds: number | null;
+  goals: ChallengeGoal[];
+}
+export interface ChallengeList { challenges: ChallengeCard[]; daily: ChallengeCard }
+export interface GoalResult { id: string; type: string; target: number; actual: number; passed: boolean; star: number }
+export interface ChallengeResult { id: string; won: boolean; stars: number; goals: GoalResult[] }
 
 export interface RankView { seat: number; name: string; color: PlayerColor; place: number; population: number; eliminated: boolean; kingdom?: string | null }
 export interface ResultView {

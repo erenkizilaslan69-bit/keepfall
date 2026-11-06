@@ -67,7 +67,7 @@ export class HomeScreen {
   constructor(
     parent: HTMLElement,
     defaults: { name: string; code: string; error?: string },
-    actions: { create: (name: string) => Promise<string | null>; join: (name: string, code: string) => Promise<string | null>; quick: (name: string) => Promise<string | null> },
+    actions: { create: (name: string) => Promise<string | null>; join: (name: string, code: string) => Promise<string | null>; quick: (name: string) => Promise<string | null>; challenges: () => void },
   ) {
     const root = mount(parent, `
       <div class="screen menu paper home">
@@ -75,6 +75,7 @@ export class HomeScreen {
         <p class="muted center kf-logo-sub">${t('2–4 kişilik kale savunma ve fetih oyunu')}</p>
         <label class="field">${t('Adın')} <input id="name" maxlength="16" autocomplete="nickname" value="${esc(defaults.name)}" placeholder="${t('Oyuncu')}"></label>
         <button id="quick" class="btn wide kf-btn--green">${t('Hızlı oyna')} <small>${t('(3 bota karşı, hemen)')}</small></button>
+        <button id="challenges" class="btn wide">${t('Meydan Okuma')} <small>${t('(tek kişilik, hedefli maçlar)')}</small></button>
         ${FEATURE_PRIVATE_ROOM ? `<div class="or">${t('ya da arkadaşlarınla')}</div>
         <button id="create" class="btn wide">${t('Oda kur')}</button>
         <div class="or">${t('ya da')}</div>
@@ -94,6 +95,7 @@ export class HomeScreen {
       buttons.forEach((b) => (b.disabled = false));
     };
     root.querySelector('#quick')!.addEventListener('click', () => run(() => actions.quick(name.value)));
+    root.querySelector('#challenges')!.addEventListener('click', () => actions.challenges());
     root.querySelector('#create')?.addEventListener('click', () => run(() => actions.create(name.value)));
     root.querySelector('#join')?.addEventListener('click', () => run(() => actions.join(name.value, code.value)));
     code.addEventListener('keydown', (e) => { if (e.key === 'Enter') void run(() => actions.join(name.value, code.value)); });
@@ -388,6 +390,7 @@ export class EndScreen {
         <div class="end-scroll">
           <div class="end-art" id="end-art"></div>
           <p class="muted center" id="end-reason"></p>
+          <div id="challenge"></div>
           <div id="ranking"></div>
           <div id="summary"><p class="muted">${t('Özet hazırlanıyor…')}</p></div>
           <div id="others"></div>
@@ -396,10 +399,24 @@ export class EndScreen {
           <button data-a="again" id="again" class="btn wide kf-btn--green hidden">${t('Aynı oyuncularla yeni maç')}</button>
           <button data-a="lobby" id="lobby" class="btn wide hidden">${t('Lobiye dön')}</button>
           <p class="muted small center" id="lobby-hint"></p>
+          <div class="ch-foot hidden" id="ch-foot">
+            <button data-a="ch-retry" class="btn wide kf-btn--green">${t('Tekrar dene')}</button>
+            <button data-a="ch-next" class="btn wide hidden">${t('Sonraki meydan okuma')}</button>
+            <button data-a="ch-list" class="btn wide">${t('Meydan okumalar')}</button>
+          </div>
         </div>
         <p class="error" id="error"></p>
       </div>`);
     root.addEventListener('click', async (e) => {
+      const act = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-a^="ch-"]')?.dataset.a;
+      if (act && this.challenge) {
+        const error = this.root.querySelector('#error');
+        root.querySelectorAll<HTMLButtonElement>('.ch-foot button').forEach((b) => (b.disabled = true));
+        const message = act === 'ch-retry' ? await this.challenge.retry() : act === 'ch-next' ? await this.challenge.next() : (this.challenge.list(), null);
+        root.querySelectorAll<HTMLButtonElement>('.ch-foot button').forEach((b) => (b.disabled = false));
+        if (error) error.textContent = tr(message ?? '');
+        return;
+      }
       if ((e.target as HTMLElement).closest('button[data-a="again"]')) {
         // Back to the lobby with the same players (bots stay), everybody ready, and straight into the next match.
         const error = this.root.querySelector('#error');
@@ -443,6 +460,15 @@ export class EndScreen {
 
   private endRoom: RoomView | null = null;
 
+  /** Set by the page when the room plays a challenge: what the foot buttons do (each returns an error text, or null). */
+  challenge: { retry: () => Promise<string | null>; next: () => Promise<string | null>; list: () => void } | null = null;
+
+  /** The goals and stars of the finished challenge (HTML built by ui/challenges.ts); `hasNext` shows the "next" button. */
+  setChallengeResult(html: string, hasNext: boolean): void {
+    this.root.querySelector('#challenge')!.innerHTML = html;
+    this.root.querySelector('[data-a="ch-next"]')!.classList.toggle('hidden', !hasNext);
+  }
+
   update(room: RoomView): void {
     this.endRoom = room;
     const r = room.result;
@@ -478,9 +504,11 @@ export class EndScreen {
         <details class="other-summary"><summary>${dot(x.color)}${esc(tr(x.name))} · ${t('özet')}</summary>${summaryHtml(x.summary)}</details>`).join('');
     }
     const isHost = !!room.players.find((p) => p.seat === this.mySeat)?.isHost;
-    this.root.querySelector('#lobby')!.classList.toggle('hidden', !isHost || !FEATURE_PRIVATE_ROOM);
-    this.root.querySelector('#again')!.classList.toggle('hidden', !isHost);
-    this.root.querySelector('#lobby-hint')!.textContent = isHost
+    const solo = !!room.challengeId && !!this.challenge;
+    this.root.querySelector('#ch-foot')!.classList.toggle('hidden', !solo);
+    this.root.querySelector('#lobby')!.classList.toggle('hidden', solo || !isHost || !FEATURE_PRIVATE_ROOM);
+    this.root.querySelector('#again')!.classList.toggle('hidden', solo || !isHost);
+    this.root.querySelector('#lobby-hint')!.textContent = solo ? '' : isHost
       ? t('Aynı oyuncularla yeni bir hazırlık için lobiye dön.')
       : t('Oda sahibi lobiye dönünce yeni maç kurulabilir.');
   }

@@ -19,6 +19,9 @@ writeFileSync(configPath, text.replace(/("shortModeMinutes":\s*)15\b/, '$127').r
   // the start stores are doubled too: weapons cost twice what they did when the test was written
   .replace(/("startingResources":\s*\{\s*"food":\s*30,\s*"wood":\s*)40(,\s*"iron":\s*)20/, '$180$240'), 'utf8'); // 12 minutes of preparation (the last minute has no scouting) + 15 of war
 
+// the challenge definitions sit beside the balance file (the server looks there), so the temporary copy needs them too
+writeFileSync(join(dir, 'challenges.json'), readFileSync(join(root, 'config', 'challenges.json')));
+
 const server = spawn('dotnet', ['run', '--project', join(root, 'src', 'Keepfall.Server'), '--no-launch-profile', '--urls', `http://localhost:${port}`], {
   cwd: root, stdio: 'ignore', env: { ...process.env, ASPNETCORE_ENVIRONMENT: 'Development', Keepfall__BalancePath: configPath },
 });

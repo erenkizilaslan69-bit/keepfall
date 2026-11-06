@@ -7,7 +7,8 @@ Eleştirinin ana bulguları: (1) çok oyunculu oyun boş lobiyle çıkarsa ölü
 
 ## Aşamalar
 
-### A. Tek kişilik mod: "Meydan Okuma" (demonun omurgası)
+### A. Tek kişilik mod: "Meydan Okuma" (demonun omurgası) — YAPILDI 2026-11-06 (dev; ayrıntı `docs/meydan-okuma.md`)
+- Durum: 8 meydan okuma + günlük, sunucu akışı, hedef/yıldız hesabı, istemci ekranları, testler hazır. Açık: yıldız eşikleri insanla ölçülmedi; kısa süreli bot vekil ölçümü ve Eren denemesi sonrası `config/challenges.json` ayarlanır.
 - Sabit tohumlu maçlar: her biri tek bir fikri öğretir ve bir hedefi vardır (ör. "Gölge ile sahte orduyla rakibi oyalayıp kazan", "ilk 6 dakikada köy yağmala", "kıtlıktan önce kazan").
 - Her meydan okumada 3 yıldız hedefi (kazan / süre / kayıp sınırı). İlerleme yerelde saklanır.
 - Günlük meydan okuma: tarihten türeyen tohum, aynı rakip herkeste.

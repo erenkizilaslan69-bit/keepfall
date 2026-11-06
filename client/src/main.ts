@@ -10,6 +10,7 @@ import './ui/ui.css';
 import './ui/theme.css';
 import './ui/kf-art.css';
 import './ui/juice.css';
+import './ui/challenges.css';
 import { applyCalm } from './ui/juice';
 import './ui/touch.css';
 import './ui/touch-text.css';
@@ -43,7 +44,8 @@ import { FEATURE_PRIVATE_ROOM } from './features';
 import { crazyGameplay, crazyInstant, crazyInviteRoom, crazyLoaded, crazyRoom, crazyUsername, crazyVictory, initCrazy, onCrazyJoin, watchCrazySettings } from './crazy';
 import { countMatch, newPlayer, setSiteChatOff } from './prefs';
 import { guarded, installErrorReporting } from './error-report';
-import type { BattleStartedView, BotLevel, CastleView, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
+import { ChallengeScreen, nextOf, resultHtml, saveStars } from './ui/challenges';
+import type { BattleStartedView, BotLevel, CastleView, ChallengeList, ChallengeResult, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 import { currentRoute, embedded, setRoute } from './env';
 
 // Routes: "/" is the home screen, "/oda/ABCD" is a room. Inside a room the screen follows the
@@ -63,7 +65,7 @@ const statusText: Record<ConnectionStatus, string> = {
   roomLost: t('Oda kapandı'),
 };
 
-type Screen = 'none' | 'home' | 'lobby' | 'game' | 'end';
+type Screen = 'none' | 'home' | 'challenges' | 'lobby' | 'game' | 'end';
 let screen: Screen = 'none';
 let lastCastle: CastleView | null = null;
 let lastLayout: MapLayoutView | null = null;
@@ -72,6 +74,9 @@ let pendingBattles: BattleStartedView[] = [];
 let lastSpectator: SpectatorStateView | null = null;
 let summary: SummaryView | null = null;
 let status = '';
+/** Challenge mode: the list from the server (once), and the result of the match that just ended until the end screen has shown it. */
+let challengeList: ChallengeList | null = null;
+let lastChallengeResult: ChallengeResult | null = null;
 
 installTouch();
 mountGuideButton(); // the "?" for the menus (in the game it is in the top bar)
@@ -95,6 +100,7 @@ installErrorReporting(() => ({
 const curtain = new CloudCurtain();
 mountScenery(); // the living picture behind the menus
 let lobby: LobbyScreen | null = null;
+let lastEndRoom: RoomView | null = null;
 let end: EndScreen | null = null;
 let ui: GameUi | null = null;
 let game: Phaser.Game | null = null;
@@ -128,6 +134,7 @@ const net = new GameConnection({
   },
   spectatorWait: (wait) => ui?.setSpectatorWait(wait.startsIn),
   matchEnded: (s) => { summary = s; end?.setSummary(s); },
+  challengeResult: (r) => { lastChallengeResult = r; applyChallengeResult(); },
   notification: (text) => ui?.notify(text),
   status: (s) => {
     // A blip shorter than a second and a half is not worth a red ribbon: "reconnecting" is only shown if it lasts.
@@ -183,7 +190,7 @@ function onRoom(r: RoomView): void {
     ui?.setRoom(r);
     scene?.setRoom(r);
   }
-  else if (screen === 'end') end!.update(r);
+  else if (screen === 'end') { lastEndRoom = r; end!.update(r); }
   // The site (CrazyGames) learns which room we are in, and that friends may join only while it is a lobby.
   crazyRoom(r.code, r.phase === 'lobby' && !soloRoom);
   crazyGameplay(screen === 'game' && !lastCastle?.eliminated);
@@ -275,6 +282,7 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
       setRoute(`/oda/${r.code}${location.search}`);
       return null;
     },
+    challenges: () => void showChallenges(),
     quick: async (name) => {
       saveName(name);
       return quickMatch(name);
@@ -289,6 +297,57 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
       return null;
     },
   });
+}
+
+// ---- challenge mode ------------------------------------------------------------------------
+
+/** The list of challenges (and today's). An older server that does not know them answers with an error. */
+async function showChallenges(error = ''): Promise<void> {
+  try { challengeList = await net.getChallenges(); } catch { challengeList = null; }
+  if (!challengeList) { showHome({ error: t('Bu sunucuda meydan okuma yok.') }); return; }
+  musicInGame = false;
+  music.scene('lobby');
+  setLeaveAction(null);
+  clear();
+  document.documentElement.classList.add('in-menu');
+  screen = 'challenges';
+  new ChallengeScreen(app, challengeList, { play: (id) => playChallenge(id), back: () => showHome() });
+  if (error) { const el = document.getElementById('ch-error'); if (el) el.textContent = tr(error); }
+}
+
+/** A room of our own, then the server sets the challenge up (bots, seed, kingdoms) and the match begins. Null when it worked. */
+async function playChallenge(id: string): Promise<string | null> {
+  soloRoom = true;
+  lastChallengeResult = null;
+  const r = await net.createRoom(loadName() || siteName);
+  if (!r.ok) { soloRoom = false; return r.error ?? null; }
+  setRoute(`/oda/${r.code}${location.search}`);
+  const go = await net.startChallenge(id);
+  if (!go.ok) {
+    await leaveToMenu();
+    void showChallenges(go.error ?? '');
+    return null;
+  }
+  countMatch();
+  return null;
+}
+
+/** Saves the stars and shows the goals on the end screen, once both the result and the screen are there. */
+function applyChallengeResult(): void {
+  if (!end || !lastChallengeResult) return;
+  const r = lastChallengeResult;
+  lastChallengeResult = null;
+  const before = saveStars(r.id, r.stars);
+  const list = challengeList;
+  const card = list ? (r.id.startsWith('daily-') ? list.daily : list.challenges.find((c) => c.id === r.id) ?? null) : null;
+  const next = card && list && r.stars >= 1 ? nextOf(card, list) : null;
+  end.challenge = {
+    retry: async () => { const b = await net.backToLobby(); return b.ok ? ((await net.startChallenge(card && card.daily ? 'daily' : r.id)).error ?? null) : b.error ?? null; },
+    next: async () => { if (!next) return null; const b = await net.backToLobby(); return b.ok ? ((await net.startChallenge(next.id)).error ?? null) : b.error ?? null; },
+    list: () => void leaveToMenu().then(() => showChallenges()),
+  };
+  end.setChallengeResult(resultHtml(card, r, before), !!next);
+  end.update(lastEndRoom!);
 }
 
 /** "Hızlı oyna": a room of our own with three bots (a mix of Easy and Medium), everybody ready, and off it goes; deck and kingdom are drawn by lot. Null when it worked. */
@@ -418,7 +477,9 @@ function showEnd(r: RoomView): void {
   end = new EndScreen(app, net, net.seat);
   fadeFrom('#0b0a14', 900);
   if (summary) end.setSummary(summary);
+  lastEndRoom = r;
   end.update(r);
+  applyChallengeResult(); // (the result may have come before the screen)
 }
 
 function hideBanner(): void { document.getElementById('banner')?.remove(); }

@@ -143,6 +143,12 @@ Bu iş için hazır prompt sohbette verildi (adımlar 0–7: envanter, renk=oyun
 - **map.scale 1,3 varsayılan** (`?mapscale=1` eski). **Kol** yol şeridine göre (ormanda 1, yolda 2, kavşakta/açıkta 4). **Ordunun geçtiği yer açık kalır** (`MapStateView.Explored`, kalıcı, savaş başında kapanır) + geçtiği orman yerleri keşfedilir + görüşten çıkan rakip ordu **son görülme** (`LastSeen`, 120 sn). **Müzik**: `Music` yeniden yazıldı, `audio-check` tüm geçişleri doğrular. **Debug paneli** sol altta, katlanabilir.
 - Smoke notu: kuşanma denetimi artık ×1'de (×20'de pencere 0,75 sn'ydi).
 
+## 4g. Meydan Okuma — tek kişilik mod (2026-11-06; `docs/meydan-okuma.md`)
+
+- `config/challenges.json` (8 meydan okuma, denge sayısı değil) + `Keepfall.Core/Challenges/Challenges.cs` (yükleme/doğrulama, günlük tohum, hedef/yıldız hesabı); `Room.StartChallenge`, hub `GetChallenges/StartChallenge`, `ChallengeResult` olayı (yalnız oyuncuya). Çok oyunculu kurallar değişmedi. İstemci: `ui/challenges.ts|css`, ana menü düğmesi, maç sonu özeti. İlerleme `localStorage.keepfall_challenges`.
+- Sunucu `challenges.json`'ı balance.json'ın yanında arar: **5090 dev LAN klasörüne de kopyala** (`keepfall-dev-lan\config\`), `run-smoke.mjs` geçici klasöre kopyalar. Eşikler insanla ölçülmedi.
+- Not: bu işte `client/dist` dev derlemesiyle yeniden yazıldı (Production 5080 kapalıydı; main'i yeniden yayınlarken `client/dist` main kodundan derlenmeli).
+
 ## 5. Oyun mantığı (sonraki tasarım konuşması — henüz karar yok)
 
 Parti/sosyal strateji yönü için konuşulacaklar:

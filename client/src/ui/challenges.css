@@ -1,0 +1,41 @@
+/* Challenge mode: the list of challenges and the result on the end screen. Loaded after theme.css. */
+.screen.challenges { max-width: min(calc(980px * var(--u, 1)), calc(100vw - 24px)); display: flex; flex-direction: column; max-height: calc(100dvh - 40px * var(--u, 1)); }
+.screen.challenges .kf-logo { transform: scale(.7); transform-origin: top center; margin-bottom: calc(-30px * var(--u, 1)); }
+.screen.challenges .ch-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(300px * var(--u, 1)), 1fr)); gap: calc(10px * var(--u, 1)); padding: calc(4px * var(--u, 1)); }
+.screen.challenges .error { flex: none; margin: 0; min-height: 0; }
+.screen.challenges .start { flex: none; margin-top: calc(8px * var(--u, 1)); }
+.ch-card { display: flex; flex-direction: column; gap: calc(6px * var(--u, 1)); padding: calc(10px * var(--u, 1)) calc(12px * var(--u, 1)); background: rgba(255, 248, 224, .6); border: 2px solid rgba(90, 66, 34, .45); border-radius: 8px; }
+.ch-card.daily { border-color: var(--kf-gold-lo); background: rgba(255, 236, 170, .7); }
+.ch-card.locked { opacity: .6; }
+.ch-card header { display: flex; align-items: center; gap: calc(8px * var(--u, 1)); }
+.ch-card h3 { margin: 0; flex: 1 1 auto; font-size: 1.05em; }
+.ch-num { flex: none; min-width: 1.6em; padding: 0 .4em; text-align: center; border-radius: 999px; background: var(--kf-navy); color: var(--kf-cream); font-size: .85em; }
+.ch-desc { margin: 0; font-size: .92em; }
+.ch-facts { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: .25em .4em; }
+.ch-goals { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: calc(3px * var(--u, 1)); font-size: .9em; }
+.ch-goals li { display: flex; align-items: center; gap: .5em; }
+.ch-goal-star { flex: none; }
+.ch-card .btn { align-self: flex-start; margin-top: auto; }
+.ch-lock .ico { width: 1.3em; height: 1.3em; display: inline-block; opacity: .7; }
+.ch-locked { margin: 0; }
+.ch-stars { display: inline-flex; gap: .1em; vertical-align: middle; }
+.ch-star { display: inline-block; width: 1em; height: 1em; background: rgba(75, 46, 23, .3); clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.ch-star.on { background: var(--kf-gold); }
+.ch-stars.big { font-size: 2.4em; }
+.ch-result { text-align: center; }
+.ch-verdict { margin: .2em 0 .5em; font-size: 1.1em; }
+.ch-goal-results { list-style: none; margin: 0 auto; padding: 0; max-width: 34em; text-align: left; display: flex; flex-direction: column; gap: calc(4px * var(--u, 1)); }
+.ch-goal-results li { display: flex; align-items: center; gap: .5em; padding: .2em .5em; border-radius: 6px; background: rgba(255, 255, 255, .25); }
+.ch-goal-results li.fail { opacity: .75; }
+.ch-goal-text { flex: 1 1 auto; }
+.ch-tick { flex: none; width: 1em; height: 1em; border-radius: 50%; background: var(--kf-red-hi); }
+.ch-goal-results li.pass .ch-tick { background: #4f9a3a; }
+.ch-foot { display: flex; flex-direction: column; gap: calc(6px * var(--u, 1)); }
+.ch-foot .hidden, #challenge:empty { display: none; }
+#challenge { background: rgba(255, 248, 224, .55); border: 2px solid rgba(90, 66, 34, .45); border-radius: 8px; padding: 10px 14px; margin: 14px 0; }
+@media (max-height: 560px) {
+  .screen.challenges .kf-logo { display: none; }
+  .screen.challenges .ch-list { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .ch-card { padding: 6px 8px; }
+  .ch-desc { font-size: .85em; }
+}

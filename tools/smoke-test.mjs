@@ -627,6 +627,86 @@ check('the humans only ever got their own castles, never a bot castle', H.of('Ca
 H.ws.close();
 K.ws.close();
 
+// ---- challenge mode (one player against computer players) ---------------------------------------------------------
+{
+  const S = client(), T = client(), U = client();
+  await Promise.all([S.ready, T.ready, U.ready]);
+  const list = await S.call('GetChallenges');
+  check('the challenge list has at least six challenges and today\'s daily one', list.challenges?.length >= 6 && /^daily-\d{8}$/.test(list.daily?.id ?? ''));
+  const CARD_KEYS = ['botLevels', 'daily', 'deck', 'description', 'goals', 'id', 'kingdom', 'name', 'order', 'tip', 'warSeconds'];
+  check('a card carries only the public facts (no rival kingdom, no rival deck, no seed)',
+    [...list.challenges, list.daily].every((c) => JSON.stringify(Object.keys(c).sort()) === JSON.stringify(CARD_KEYS))
+    && !/seed|bots"|token/i.test(JSON.stringify(list)));
+  check('the list is the same for everybody', JSON.stringify(await T.call('GetChallenges')) === JSON.stringify(list));
+  check('a challenge cannot be started before joining a room', !(await S.call('StartChallenge', 'ilk-zafer')).ok);
+
+  const js = await S.call('CreateRoom', 'Selim');
+  check('the room is made', js.ok);
+  check('an unknown challenge is refused', !(await S.call('StartChallenge', 'yok-boyle-bir-sey')).ok && !(await S.call('StartChallenge', null)).ok);
+  const jt = await T.call('CreateRoom', 'Tarik');
+  const ju = await U.call('JoinRoom', jt.code, 'Umut', null, false);
+  check('a challenge is for one player: a room of two humans refuses it', ju.ok && !(await T.call('StartChallenge', 'ilk-zafer')).ok);
+  check('a guest cannot start it either', !(await U.call('StartChallenge', 'ilk-zafer')).ok);
+  T.ws.close(); U.ws.close();
+
+  const first = list.challenges.find((c) => c.order === 1);
+  check('the first challenge starts', (await S.call('StartChallenge', first.id)).ok);
+  await sleep(800);
+  const room0 = S.of('RoomState').at(-1);
+  check('the room is in the preparation, plays this challenge, with the bots of the definition seated',
+    room0.phase === 'preparation' && room0.challengeId === first.id && room0.players.filter((x) => x.isBot).length === first.botLevels.length
+    && room0.players.filter((x) => x.isBot).every((x, i) => x.botLevel === first.botLevels[i]));
+  check('the player got only their own castle, in their definition kingdom', S.of('CastleState').length > 0 && S.of('CastleState').every((c) => c.color === 'blue')
+    && S.of('CastleState').at(-1).kingdom?.id === first.kingdom);
+  check('no rival kingdom or deck anywhere while the match runs (castle rivals, room views)',
+    S.of('CastleState').every((c) => !c.rivals?.length) && S.of('RoomState').filter((r) => r.phase !== 'ended').every((r) => !JSON.stringify(r).includes('kingdom')));
+  check('the challenge cannot be started again while it is on', !(await S.call('StartChallenge', first.id)).ok);
+  check('no result before the match is over', S.of('ChallengeResult').length === 0);
+
+  check('the player sets ×20', (await S.call('SetSpeed', 20)).ok);
+  // The player does nothing: the bots come for the castle, or the time runs out.
+  const over = await (async () => {
+    for (let i = 0; i < 400; i++) {
+      const r = S.of('RoomState').at(-1);
+      if (r?.allHumansOut || r?.phase === 'ended') return r;
+      await sleep(500);
+    }
+    return null;
+  })();
+  check('the match came to its end (or to the point where the player may end it)', !!over);
+  if (over?.allHumansOut) check('the player ends the match', (await S.call('FinishMatch')).ok);
+  await sleep(1200);
+  const res = S.of('ChallengeResult').at(-1);
+  check('the player got exactly one result: stars 0-3, every goal of the definition, the win goal first among them',
+    S.of('ChallengeResult').length === 1 && res.id === first.id && res.stars >= 0 && res.stars <= 3
+    && res.goals.length === first.goals.length && res.goals.every((g, i) => g.id === first.goals[i].id && g.star === first.goals[i].star)
+    && res.won === res.goals.find((g) => g.type === 'win').passed);
+  check('a match that was not won has no stars', res.won || res.stars === 0);
+  const endRoom = S.of('RoomState').at(-1);
+  check('the result names no rival kingdom beyond the ranking the end of every match shows', !/kingdom|rivals/i.test(JSON.stringify(res)) && endRoom.phase === 'ended');
+
+  // Try again in the same room: back to the lobby and start it once more
+  check('back to the lobby, and the same challenge starts again from scratch', (await S.call('BackToLobby')).ok && (await S.call('StartChallenge', first.id)).ok);
+  await sleep(800);
+  const again = S.of('RoomState').at(-1);
+  check('the second try is a fresh preparation with the same bots (not more of them)', again.phase === 'preparation' && again.players.filter((x) => x.isBot).length === first.botLevels.length
+    && S.of('CastleState').at(-1).phase === 'preparation');
+  S.ws.close();
+
+  // The daily challenge: the server turns "daily" into today's
+  const D = client();
+  await D.ready;
+  await D.call('CreateRoom', 'Deniz');
+  check('"daily" starts today\'s challenge', (await D.call('StartChallenge', 'daily')).ok);
+  await sleep(600);
+  check('and the room says which day\'s it is', D.of('RoomState').at(-1).challengeId === list.daily.id);
+  D.ws.close();
+
+  // A match made the usual way is no challenge: no challenge id, no result
+  check('an ordinary match has no challenge id and was never sent a challenge result',
+    H.of('RoomState').every((r) => !r.challengeId) && H.of('ChallengeResult').length === 0 && K.of('ChallengeResult').length === 0);
+}
+
 X.ws.close();
 Y.ws.close();
 Z.ws.close();
