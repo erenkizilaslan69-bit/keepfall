@@ -25,6 +25,14 @@ import { Hints } from './hints';
 // Everything drawn over the map: the top bar, ribbons, report tags (and, step by step, the windows).
 // One instance per game screen; `update` takes every castle state the server sends.
 
+/** What the buttons of the fall card do; each returns an error text, or null when it worked. */
+export interface FallActions {
+  /** To the main menu; true when the match should be played out first (only bots are left). */
+  menu: (finishFirst: boolean) => Promise<string | null>;
+  newMatch: () => Promise<string | null>;
+  newRoom: () => Promise<string | null>;
+}
+
 export class GameUi {
   private readonly top: HTMLElement;
   private readonly labels: WorldLabels;
@@ -66,6 +74,8 @@ export class GameUi {
   private fallNote = -1e9;
   private camKey = '';
   private finishDismissed = false;
+  /** What the buttons of the fall card do (set by the page: leaving the room is the page's business). Each returns an error text or null. */
+  fall: FallActions | null = null;
   private readonly mySeat: number;
   private readonly labelRoot: HTMLElement;
 
@@ -96,23 +106,26 @@ export class GameUi {
     this.finish.style.pointerEvents = 'none'; // the strip around the box lets clicks through to the map; the box itself is `hit`
     this.finish.innerHTML = `
       <div class="paper hit">
-        <div class="ribbon ribbon-black">${t('Tüm insanlar elendi')}</div>
+        <div class="ribbon ribbon-red">${t('Kalen düştü')}</div>
         <div class="spec-body">
-          <p>${t('Maçta sadece botlar kaldı.')}</p>
-          <p class="muted-ink small">${t('İzlemeye devam edebilir ya da kalan süreyi hızlıca oynatıp maç sonu ekranına geçebilirsin.')}</p>
-          <div class="bot-end-btns">
-            <button class="btn" data-a="watch">${t('İzlemeye devam')}</button>
-            <button class="btn btn-red" data-a="finish">${t('Maçı bitir')}</button>
-          </div>
+          <p class="fall-text"></p>
+          <div class="bot-end-btns"></div>
         </div>
       </div>`;
     this.finish.addEventListener('click', async (e) => {
-      const a = (e.target as HTMLElement).closest<HTMLElement>('[data-a]')?.dataset.a;
-      if (a === 'watch') { this.finishDismissed = true; this.updateFinish(); }
-      else if (a === 'finish') {
-        const r = await net.finishMatch();
-        if (!r.ok) this.error(r.error ?? t('Maç bitirilemedi.'));
-      }
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-a]');
+      const a = btn?.dataset.a;
+      if (!btn || !a) return;
+      if (a === 'watch') { this.finishDismissed = true; this.updateFinish(); return; }
+      btn.disabled = true;
+      let error: string | null | undefined = null;
+      if (a === 'menu') error = await this.fall?.menu(!!this.room?.allHumansOut && this.isHost());
+      else if (a === 'newMatch') error = await this.fall?.newMatch();
+      else if (a === 'newRoom') error = await this.fall?.newRoom();
+      else if (a === 'leave') error = await this.fall?.menu(false);
+      else if (a === 'finish') { const r = await net.finishMatch(); if (!r.ok) error = r.error ?? t('Maç bitirilemedi.'); }
+      btn.disabled = false;
+      if (error) this.error(error);
     });
     root.appendChild(this.finish);
     const seat0 = seat;
@@ -287,7 +300,9 @@ export class GameUi {
     if (this.phase === 'preparation' && s.phase === 'war') { sfx.play('battleStart'); this.notes.push(t('Savaş başladı! Orduların yola çıkabilir.'), 'battle', 6000); }
     if (!this.eliminated && s.eliminated) { sfx.play('castleFall'); }
     this.phase = s.phase;
+    const changed = this.eliminated !== s.eliminated;
     this.eliminated = s.eliminated;
+    if (changed) this.updateFinish();
   }
 
   private toggleScroll(seat: number, at: DOMRect): void {
@@ -412,11 +427,37 @@ export class GameUi {
     this.updateFinish();
   }
 
-  /** Once the last human has fallen the host chooses: keep watching, or have the server play the rest out. */
+  private isHost(): boolean {
+    return !!this.room?.players.find((p) => p.seat === this.mySeat)?.isHost;
+  }
+
+  /**
+   * The card for a player whose castle has fallen, at once (the countdown to the spectator view runs beside it). What it offers:
+   * only bots left, and we are the host: watch / new match (or finish, with other people in the room) / menu;
+   * people still playing: watch / leave the room / new room. A challenge needs no card (it ends by itself and the result screen comes).
+   */
   private updateFinish(): void {
-    const host = !!this.room?.players.find((p) => p.seat === this.mySeat)?.isHost;
-    const show = !!this.room?.allHumansOut && host && !this.finishDismissed && (this.spectating || this.wait.classList.contains('hidden'));
+    const room = this.room;
+    const show = this.eliminated && !!room && room.phase !== 'ended' && !room.challengeId && !this.finishDismissed;
     this.finish.classList.toggle('hidden', !show);
+    if (!show || !room) return;
+    const host = this.isHost();
+    const humans = room.players.filter((p) => !p.isBot).length;
+    const buttons: [string, string, string][] = [['watch', t('Maçı izle'), '']];
+    let text: string;
+    if (room.allHumansOut && host) {
+      text = humans <= 1 ? t('Maçta sadece botlar kaldı. İzleyebilir ya da hemen yeni bir maça geçebilirsin.') : t('Tüm insanlar elendi, maçta sadece botlar kaldı.');
+      buttons.push(humans <= 1 ? ['newMatch', t('Yeni maç'), 'btn-red'] : ['finish', t('Maçı bitir'), 'btn-red'], ['menu', t('Menü'), '']);
+    } else {
+      text = room.allHumansOut ? t('Tüm insanlar elendi. Maçı oda sahibi bitirir ya da izlemeye devam edersin.') : t('Maç diğer oyuncular için sürüyor. Haritayı izleyebilir ya da odadan çıkabilirsin.');
+      buttons.push(['leave', t('Odadan çık'), ''], ['newRoom', t('Yeni oda'), '']);
+    }
+    const key = `${text}|${buttons.map((b) => b[0]).join(',')}`;
+    if (this.finish.dataset.key !== key) {
+      this.finish.dataset.key = key;
+      this.finish.querySelector('.fall-text')!.textContent = text;
+      this.finish.querySelector('.bot-end-btns')!.innerHTML = buttons.map(([a, label, cls]) => `<button class="btn ${cls}" data-a="${a}">${esc(label)}</button>`).join('');
+    }
   }
 
   private lettersSeen: Set<number> | null = null;

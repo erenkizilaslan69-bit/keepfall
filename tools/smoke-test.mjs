@@ -614,13 +614,20 @@ if (allOut?.allHumansOut) {
   check('both fallen humans were shown the whole world, and only them', H.of('SpectatorState').length > 0 && K.of('SpectatorState').length > 0
     && H.of('SpectatorState').every((f) => f.castles.length === 4),
     `H ${H.of('SpectatorState').length} frames, K ${K.of('SpectatorState').length}, castles per frame ${[...new Set(H.of('SpectatorState').map((f) => f.castles.length))]}`);
+  // A fallen guest may leave: the seat stays theirs (no bot takes it) and the match goes on for the rest.
+  check('a fallen guest leaves the room', (await K.call('LeaveRoom')).ok);
+  await sleep(600);
+  const afterLeave = H.of('RoomState').at(-1);
+  const guestSeat = afterLeave.players.find((x) => x.seat === jk.seat);
+  check('their seat is still a human seat (not given to a bot) and the match is still on', !!guestSeat && !guestSeat.isBot && !guestSeat.connected && afterLeave.phase !== 'ended',
+    JSON.stringify(guestSeat));
   check('the host ends it: the bots play the rest at once', (await H.call('FinishMatch')).ok);
   await sleep(500);
   const end = H.of('RoomState').at(-1);
   check('the room is over with a result, won by a bot', end.phase === 'ended' && !!end.result && end.result.winners.every((w) => end.players.find((x) => x.seat === w)?.isBot));
   check('only now (the match is over) the ranking names every player kingdom, and they are real ones', end.result.ranking.every((x) => ['golge', 'tuccar', 'kahin', 'entrikaci'].includes(x.kingdom)));;
   check('while the match runs no room view carries a kingdom for anybody', H.of('RoomState').filter((r) => r.phase !== 'ended').every((r) => !JSON.stringify(r).includes('kingdom')));
-  check('both humans got their summary, and the bots got no connection', H.of('MatchEnded').length === 1 && K.of('MatchEnded').length === 1);
+  check('the host got the summary, and the guest who left got nothing more', H.of('MatchEnded').length === 1 && K.of('MatchEnded').length === 0);
   check('it cannot be ended twice', !(await H.call('FinishMatch')).ok);
 }
 check('the humans only ever got their own castles, never a bot castle', H.of('CastleState').every((c) => c.color === 'blue') && K.of('CastleState').every((c) => c.color === 'red'));
@@ -674,7 +681,11 @@ K.ws.close();
     return null;
   })();
   check('the match came to its end (or to the point where the player may end it)', !!over);
-  if (over?.allHumansOut) check('the player ends the match', (await S.call('FinishMatch')).ok);
+  // A lost challenge needs no "finish" button: a few seconds after the fall the server plays the rest out and the result comes by itself.
+  let ended = over?.phase === 'ended';
+  for (let i = 0; i < 60 && !ended; i++) { await sleep(500); ended = S.of('RoomState').at(-1)?.phase === 'ended'; }
+  check('the challenge ended by itself (the clock, or a few seconds after its player fell)', ended);
+  check('nobody can "finish" a challenge by hand (and it is over anyway)', !(await S.call('FinishMatch')).ok);
   await sleep(1200);
   const res = S.of('ChallengeResult').at(-1);
   check('the player got exactly one result: stars 0-3, every goal of the definition, the win goal first among them',

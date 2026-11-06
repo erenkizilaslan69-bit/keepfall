@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import './style.css';
-import { GameUi } from './ui/game-ui';
+import { GameUi, type FallActions } from './ui/game-ui';
 import { loadActiveRoom, loadName, markActiveRoom, saveName } from './identity';
 import { GameConnection, type ConnectionStatus } from './net';
 import { WorldScene } from './scene/WorldScene';
@@ -409,10 +409,41 @@ function showGame(): void {
   armBack();
   ui = new GameUi(document.getElementById('ui')!, net, net.seat, () => scene?.centerOnCastle());
   ui.setStatus(status, status === statusText.connected);
+  ui.fall = fallActions;
   if (import.meta.env.DEV) (window as unknown as { keepfallUi: GameUi }).keepfallUi = ui;
   showFirstTimeGuide(); // only in the very first match of this browser (before the first castle state: the kingdom decree waits for it)
   if (lastCastle) onCastle(lastCastle);
 }
+
+/** The buttons of the card a fallen player gets (ui/game-ui.ts): out of a match that is still going, or straight into the next one. */
+const fallActions: FallActions = {
+  // Only bots are left in the match: it is played out on the server first, so the room does not keep ticking for nobody.
+  menu: async (finishFirst) => {
+    if (finishFirst) await net.finishMatch();
+    await leaveToMenu();
+    return null;
+  },
+  // Alone with bots: the rest of the match is played out on the server, and the same group starts again.
+  newMatch: async () => {
+    const f = await net.finishMatch();
+    if (!f.ok) return f.error ?? null;
+    let r = await net.backToLobby();
+    if (r.ok) r = await net.setReady(true);
+    if (r.ok) r = await net.startMatch();
+    if (r.ok) countMatch();
+    return r.ok ? null : r.error ?? null;
+  },
+  // Out of the room (the match goes on for the others, the seat does not turn into a bot) and into a room of our own.
+  newRoom: async () => {
+    const name = loadName() || siteName;
+    await leaveToMenu();
+    soloRoom = false;
+    const r = await net.createRoom(name);
+    if (!r.ok) return r.error ?? null;
+    setRoute(`/oda/${r.code}${location.search}`);
+    return null;
+  },
+};
 
 /** A number from the room code: the same for everybody in the room, so the decorations of the map come out the same. */
 function seedOf(code: string): number {
