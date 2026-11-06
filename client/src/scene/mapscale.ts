@@ -16,4 +16,5 @@ function read(): number {
   return Number.isFinite(n) && n >= 0.8 && n <= 2 ? n : DEFAULT_SCALE;
 }
 
-export const MAP_SCALE: number = read();
+/** The tile is a whole number of pixels (83 at 1.3): a fractional tile size left hairline seams between the ground tiles. */
+export const MAP_SCALE: number = Math.round(read() * 64) / 64;

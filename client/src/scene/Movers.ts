@@ -32,7 +32,8 @@ const RUN: Record<string, { anim: string; scale: number }> = {
 };
 /** Marching order, front to back. */
 const ORDER = ['kalkanli', 'kilicli', 'mizrakci', 'okcu', 'mancinik', 'kesis', 'suvari']; // shields and blades lead, the catapults march in the middle, the cavalry guards the rear
-const MAX_DRAWN = 30;
+/** Only a part of a big army is drawn (the sign over it says how many there are): up to 10 as they are, then one more for every 8, never more than 14. */
+const drawnOf = (total: number): number => Math.min(14, Math.max(Math.min(total, 10), 10 + Math.floor((total - 10) / 8)));
 const ROW_GAP = 34; // px: the base distance between two rows (the zone that catches a click sits one row behind the leader)
 /** How much room each kind needs: across the road (px) and along it (px). The catapult is big and the cavalry long; nobody stands on anybody. */
 const FOOT: Record<string, { w: number; d: number }> = {
@@ -570,17 +571,17 @@ export class Movers {
 
 const hexOf = (css: string | undefined): number => (css ? parseInt(css.replace('#', ''), 16) : 0xffffff);
 
-/** One entry per soldier drawn (at most MAX_DRAWN), in marching order; types keep their share. */
+/** One entry per soldier drawn (a part of a big army, see drawnOf), in marching order; types keep their share and none disappears. */
 function formation(units: MoverUnit[]): string[] {
   const total = units.reduce((n, u) => n + u.count, 0);
   const sorted = [...units].sort((a, b) => rank(a.unitId) - rank(b.unitId));
-  if (total <= MAX_DRAWN) return sorted.flatMap((u) => Array<string>(u.count).fill(u.unitId));
-  // Too many: every type keeps its share of the 30, and at least one, so no type disappears.
-  const share = sorted.map((u) => (u.count / total) * MAX_DRAWN);
+  const cap = Math.max(drawnOf(total), sorted.length);
+  if (total <= cap) return sorted.flatMap((u) => Array<string>(u.count).fill(u.unitId));
+  const share = sorted.map((u) => (u.count / total) * cap);
   const drawn = share.map((x) => Math.max(1, Math.floor(x)));
   const sum = () => drawn.reduce((a, b) => a + b, 0);
-  while (sum() > MAX_DRAWN) drawn[drawn.indexOf(Math.max(...drawn))]--;
-  while (sum() < MAX_DRAWN) {
+  while (sum() > cap) drawn[drawn.indexOf(Math.max(...drawn))]--;
+  while (sum() < cap) {
     const gaps = share.map((x, i) => x - drawn[i]);
     drawn[gaps.indexOf(Math.max(...gaps))]++;
   }

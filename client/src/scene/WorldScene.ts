@@ -14,6 +14,7 @@ import { kingdomBanner } from './Banners';
 import { createAnimations, playFrom, loadSpectatorAssets, preloadAssets } from './assets';
 import { CAMP, CASTLE, GATE, SITES, TILE, TILE_ART, WORLD_HEIGHT, WORLD_WIDTH, signSpot } from './layout';
 import { MAP_SCALE } from './mapscale';
+import { reducedEffects } from '../prefs';
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
 import { NO_OFFSET, buildingSign, setShadeHook, sign } from './parts';
 import { RegionDisplay } from './RegionDisplay';
@@ -133,6 +134,7 @@ export class WorldScene extends Phaser.Scene {
   private props: MapProps | null = null;
   private ownKingdom: string | null = null;
   private ownBanner: Phaser.GameObjects.Image | null = null;
+  private ownCloth: Phaser.GameObjects.Image | null = null;
   private prevSoldiers: number | null = null;
   private lastPulse = 0;
   private lastTremor = 0;
@@ -237,11 +239,15 @@ export class WorldScene extends Phaser.Scene {
   setOwnKingdom(id: string | null): void {
     if (id === this.ownKingdom && this.ownBanner) return;
     this.ownKingdom = id;
-    this.ownBanner?.destroy();
-    this.ownBanner = null;
-    const key = id ? kingdomBanner(this, id) : null;
-    if (!key) return;
-    this.ownBanner = this.add.image(CASTLE.x - 92, CASTLE.y - 8, key).setOrigin(0.5, 1).setScale(1.5).setDepth(CASTLE.y + 1);
+    this.ownBanner?.destroy(); this.ownCloth?.destroy();
+    this.ownBanner = null; this.ownCloth = null;
+    const keys = id ? kingdomBanner(this, id) : null;
+    if (!keys) return;
+    const x = CASTLE.x - 92, base = CASTLE.y - 8, scale = 1.35, poleH = 120 * scale;
+    this.ownBanner = this.add.image(x, base, keys.pole).setOrigin(0.5, 1).setScale(scale).setDepth(CASTLE.y + 1);
+    // the cloth hangs from the crossbar and sways a little in the wind (still when effects are reduced)
+    this.ownCloth = this.add.image(x, base - poleH + 18 * scale, keys.cloth).setOrigin(0.5, 0).setScale(scale).setDepth(CASTLE.y + 2);
+    if (!reducedEffects()) this.tweens.add({ targets: this.ownCloth, angle: { from: -2.2, to: 2.2 }, scaleX: { from: scale, to: scale * 0.94 }, duration: 1700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
   }
 
   private syncMarkers(state: MapStateView): void {
@@ -593,8 +599,9 @@ export class WorldScene extends Phaser.Scene {
 
   /** Our castle fell: the banner by its gate sinks, tilted, and greys out. */
   private lowerBanner(): void {
-    const b = this.ownBanner;
+    const b = this.ownBanner, cloth = this.ownCloth;
     if (!b) return;
+    if (cloth) { this.tweens.killTweensOf(cloth); this.tweens.add({ targets: cloth, y: cloth.y + 26, angle: 24, alpha: 0.55, duration: 900, ease: 'Bounce.easeOut' }); cloth.setTint(0x909090); }
     this.tweens.add({ targets: b, y: b.y + 26, angle: 24, alpha: 0.55, duration: 900, ease: 'Bounce.easeOut' });
     b.setTint(0x909090);
   }
@@ -645,6 +652,8 @@ export class WorldScene extends Phaser.Scene {
     // with a texture of its own size: 15104 x 15104 px, 870 MB of GPU memory, which is what killed iOS Safari. A plain rectangle costs nothing.
     this.add.rectangle(topLeft.x - WATER_FAR * TILE, topLeft.y - WATER_FAR * TILE, (cols + 2 * WATER_FAR) * TILE, (rows + 2 * WATER_FAR) * TILE, this.waterColor())
       .setOrigin(0).setDepth(DEPTH_WATER);
+    // grass-green under the island (inside its coast): whatever hairline might open between ground tiles shows grass, never the sea
+    this.add.rectangle(topLeft.x + 2 * TILE, topLeft.y + 2 * TILE, (cols - 4) * TILE, (rows - 4) * TILE, 0x79a03a).setOrigin(0).setDepth(DEPTH_GROUND - 0.5);
     const data = Array.from({ length: rows }, (_, y) => Array.from({ length: cols }, (_, x) => {
       if (x === 0 || y === 0 || x === cols - 1 || y === rows - 1) return -1;
       const top = y === 1, bottom = y === rows - 2, left = x === 1, right = x === cols - 2;

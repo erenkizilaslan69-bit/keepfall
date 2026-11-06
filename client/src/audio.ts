@@ -423,6 +423,8 @@ class Sfx {
 export const sfx = new Sfx();
 
 export type Track = 'lobby' | 'prep' | 'war' | 'start';
+/** The files (a new name when a recording is replaced: a browser keeps the old file under the old name; the preparation loop was `prep.mp3` first). */
+const MUSIC_FILE: Record<Track, string> = { lobby: 'lobby', prep: 'prep-bg', war: 'war', start: 'start' };
 const FADE = 2.5; // seconds of crossfade between the tracks
 
 /**
@@ -528,7 +530,7 @@ class Music {
     if (!ctx || this.loading.has(track)) return;
     this.loading.add(track);
     try {
-      const res = await fetch(asset(`/audio/music/${track}.mp3`));
+      const res = await fetch(asset(`/audio/music/${MUSIC_FILE[track]}.mp3`));
       if (!res.ok) throw new Error(String(res.status));
       this.buffers.set(track, await ctx.decodeAudioData(await res.arrayBuffer()));
       this.loading.delete(track);
