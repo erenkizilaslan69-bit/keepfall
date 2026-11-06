@@ -30,8 +30,36 @@ const RUN: Record<string, { anim: string; scale: number }> = {
 /** Marching order, front to back. */
 const ORDER = ['suvari', 'kalkanli', 'kilicli', 'mizrakci', 'okcu', 'mancinik', 'kesis'];
 const MAX_DRAWN = 30;
-const PER_ROW = 3;
-const ROW_GAP = 34, COL_GAP = 38; // px: far enough apart to tell the types from each other
+const ROW_GAP = 34; // px: the base distance between two rows (the zone that catches a click sits one row behind the leader)
+/** How much room each kind needs: across the road (px) and along it (px). The catapult is big and the cavalry long; nobody stands on anybody. */
+const FOOT: Record<string, { w: number; d: number }> = {
+  mancinik: { w: 84, d: 92 }, suvari: { w: 54, d: 66 }, kilicli: { w: 44, d: 42 }, kalkanli: { w: 42, d: 42 }, mizrakci: { w: 42, d: 42 }, okcu: { w: 40, d: 40 }, kesis: { w: 38, d: 40 },
+};
+const FOOT_DEFAULT = { w: 40, d: 40 };
+const ROW_WIDTH = 132; // px: a row is full when its units together would be wider than this
+
+/** Where each drawn unit stands in the column, in marching order: `back` px behind the leader along the road, `side` px across it. */
+function columnLayout(kinds: string[]): { back: number; side: number }[] {
+  const rows: string[][] = [];
+  let used = 0;
+  for (const k of kinds) {
+    const w = (FOOT[k] ?? FOOT_DEFAULT).w + 6;
+    if (!rows.length || (used + w > ROW_WIDTH && rows[rows.length - 1].length)) { rows.push([]); used = 0; }
+    rows[rows.length - 1].push(k); used += w;
+  }
+  const out: { back: number; side: number }[] = [];
+  let back = 0;
+  rows.forEach((row, r) => {
+    const widths = row.map((k) => (FOOT[k] ?? FOOT_DEFAULT).w + 6);
+    const total = widths.reduce((a, b) => a + b, 0);
+    let at = -total / 2;
+    row.forEach((_k, i) => { out.push({ back, side: at + widths[i] / 2 }); at += widths[i]; });
+    const depth = Math.max(...row.map((k) => (FOOT[k] ?? FOOT_DEFAULT).d));
+    const nextDepth = r + 1 < rows.length ? Math.max(...rows[r + 1].map((k) => (FOOT[k] ?? FOOT_DEFAULT).d)) : depth;
+    back += (depth + nextDepth) / 2;
+  });
+  return out;
+}
 /** Never extrapolate further than this many ticks without news (stops runaways if ticks stop). */
 // How far the picture walks on by itself when no news arrives (a phone's network stalling, a throttled tab). A cap of 1.5 ticks made the column stand still
 // during a gap of four seconds and then jump seven tiles when the news came: a wrong place to the player. The armies keep to known roads, so walking on is safe.
@@ -68,6 +96,8 @@ interface Track {
   shownDist?: number;
   heading: Vec;
   sprites: Phaser.GameObjects.Sprite[];
+  /** Where each sprite stands in the column (see columnLayout). */
+  layout: { back: number; side: number }[];
   /** Ours only: what a click on it opens, and the invisible area that catches the click. */
   select: Target | null;
   zone: Phaser.GameObjects.Zone | null;
@@ -150,7 +180,7 @@ export class Movers {
       if (t.receivedAt > 0 && performance.now() - t.receivedAt < 5000) this.corrections.push({ key: t.key, tiles: Math.hypot(t.shown.x - s.position.x, t.shown.y - s.position.y), speed: this.gameSpeed, ageMs: now - t.receivedAt, shown: { ...t.shown }, position: { ...s.position }, velocity: { ...s.velocity }, before: { ...t.position }, beforeVelocity: { ...t.velocity }, onRoad: followRoads(this.roads, t.position, t.velocity, 1) !== null, fighting: false });
       t.position = s.position;
       t.velocity = s.velocity;
-      t.route = null;
+      this.followRoadOf(t, s.position, s.velocity);
       t.receivedAt = now;
       alive.add(t.key);
     }
@@ -163,6 +193,32 @@ export class Movers {
       t.zone?.destroy();
       this.tracks.delete(key);
     }
+  }
+
+  /**
+   * Somebody else's walker: all we know is where it is and which way it goes, so the road it walks is worked out from the public roads (as far as it
+   * can get before the next picture is due) and it is then drawn the way ours are: a distance along that road, corners rounded, rows following the bend.
+   * The road is kept while the news keeps agreeing with it (the walker is on it, going the same way, with road enough left); otherwise it is worked out again.
+   */
+  private followRoadOf(t: Track, position: Vec, velocity: Vec): void {
+    const speed = Math.hypot(velocity.x, velocity.y);
+    const v = normalise(velocity);
+    const reach = speed * MAX_AHEAD_TICKS * this.gameSpeed * 2 + 4;
+    if (t.route && v && t.route.length > 1) {
+      const length = t.cumulative[t.cumulative.length - 1];
+      const p = projectOnRoute(t.route, t.cumulative, position);
+      const dir = along(t.route, t.cumulative, p.d).direction;
+      if (p.off < 0.5 && dir.x * v.x + dir.y * v.y > 0.3 && p.d + speed * MAX_AHEAD_TICKS * this.gameSpeed < length) {
+        t.travelled = p.d; t.speed = speed;
+        return;
+      }
+    }
+    const ahead = v ? roadAhead(this.roads, position, velocity, reach) : null;
+    if (!ahead || ahead.length < 2) { t.route = null; t.cumulative = []; t.shownDist = undefined; return; }
+    t.route = ahead;
+    t.cumulative = cumulative(ahead);
+    t.travelled = 0; t.speed = speed;
+    t.shownDist = undefined; // the drawn distance is found again on the new road
   }
 
   /**
@@ -311,7 +367,7 @@ export class Movers {
     trace('track-created', key, `${kinds.length} drawn of ${units.reduce((n, u) => n + u.count, 0)}${t ? ' (rebuilt: its soldiers changed)' : ''}`);
     const fresh: Track = {
       key, color, scout, envoy, units, position, velocity: { x: 0, y: 0 }, route: null, cumulative: [], travelled: 0, speed: 0, vision: 0, fighting: false,
-      receivedAt: performance.now(), shown: t?.shown ?? position, heading: t?.heading ?? { x: 1, y: 0 }, sprites,
+      receivedAt: performance.now(), shown: t?.shown ?? position, heading: t?.heading ?? { x: 1, y: 0 }, sprites, layout: columnLayout(kinds),
       select: null, zone: null,
     };
     this.tracks.set(key, fresh);
@@ -325,19 +381,20 @@ export class Movers {
     const h = t.heading, p = { x: -h.y, y: h.x };
     const faceLeft = h.x < -0.1;
     t.sprites.forEach((s, i) => {
-      const row = Math.floor(i / PER_ROW);
-      const inRow = Math.min(PER_ROW, t.sprites.length - row * PER_ROW);
-      const col = (i % PER_ROW) - (inRow - 1) / 2;
-      // Our own column bends with its road: a row stands where the road was a row's length back. Others' columns trail straight behind the leader.
-      if (t.route && t.shownDist !== undefined && row > 0) {
-        const back = alongSmooth(t.route, t.cumulative, Math.max(0, t.shownDist - (row * ROW_GAP) / 64));
+      const at = t.layout[i] ?? { back: 0, side: 0 };
+      // The column bends with its road: a row stands where the road was its distance back (ours, and now everybody's: the others' walk a road we work out).
+      if (t.route && t.shownDist !== undefined && at.back > 0) {
+        const want = t.shownDist - at.back / 64;
+        // Behind the road's start (the column has not yet walked its own length): the row stands on the line the road starts along, not piled up on its first point.
+        const first = alongSmooth(t.route, t.cumulative, 0);
+        const back = want >= 0 ? alongSmooth(t.route, t.cumulative, want) : { point: { x: first.point.x + first.direction.x * want, y: first.point.y + first.direction.y * want }, direction: first.direction };
         const bp = toWorld(back.point), bn = { x: -back.direction.y, y: back.direction.x };
-        const bx = bp.x + bn.x * col * COL_GAP, by = bp.y + bn.y * col * COL_GAP;
+        const bx = bp.x + bn.x * at.side, by = bp.y + bn.y * at.side;
         s.setPosition(bx, by).setDepth(by).setFlipX(faceLeft);
         return;
       }
-      const x = lead.x - h.x * row * ROW_GAP + p.x * col * COL_GAP;
-      const y = lead.y - h.y * row * ROW_GAP + p.y * col * COL_GAP;
+      const x = lead.x - h.x * at.back + p.x * at.side;
+      const y = lead.y - h.y * at.back + p.y * at.side;
       s.setPosition(x, y).setDepth(y).setFlipX(faceLeft);
     });
     // A sign with the number of soldiers over the column (scouts have none); hidden while the fight is replayed.
@@ -384,6 +441,16 @@ const rank = (id: string) => { const i = ORDER.indexOf(id); return i < 0 ? ORDER
  * round bends and on to the next road at a junction (the one that bends least). Null when no road is there (the forest paths, open ground).
  */
 export function followRoads(roads: Vec[][], pos: Vec, vel: Vec, distance: number): { point: Vec; direction: Vec } | null {
+  const way = walkRoads(roads, pos, vel, distance);
+  return way ? { point: way.point, direction: way.direction } : null;
+}
+
+/** The corners of the road from <paramref name="pos"/> on for <paramref name="distance"/> tiles (the position first, the end last); null when no road is there. */
+export function roadAhead(roads: Vec[][], pos: Vec, vel: Vec, distance: number): Vec[] | null {
+  return walkRoads(roads, pos, vel, distance)?.corners ?? null;
+}
+
+function walkRoads(roads: Vec[][], pos: Vec, vel: Vec, distance: number): { point: Vec; direction: Vec; corners: Vec[] } | null {
   const v = normalise(vel);
   if (!v || roads.length === 0) return null;
   // The road segment under the position that points the same way (either way along it).
@@ -405,6 +472,7 @@ export function followRoads(roads: Vec[][], pos: Vec, vel: Vec, distance: number
   let remaining = distance;
   let x = roads[road][seg].x + (roads[road][seg + 1].x - roads[road][seg].x) * t, y = roads[road][seg].y + (roads[road][seg + 1].y - roads[road][seg].y) * t;
   let dir = { x: v.x, y: v.y };
+  const corners: Vec[] = [{ x, y }];
   for (let guard = 0; guard < 64 && remaining > 1e-6; guard++) {
     const pts = roads[road];
     const from = sign > 0 ? pts[seg] : pts[seg + 1], to = sign > 0 ? pts[seg + 1] : pts[seg];
@@ -412,8 +480,9 @@ export function followRoads(roads: Vec[][], pos: Vec, vel: Vec, distance: number
     if (!segDir) break;
     dir = segDir;
     const left = Math.hypot(to.x - x, to.y - y);
-    if (remaining <= left) { x += dir.x * remaining; y += dir.y * remaining; remaining = 0; break; }
+    if (remaining <= left) { x += dir.x * remaining; y += dir.y * remaining; remaining = 0; corners.push({ x, y }); break; }
     x = to.x; y = to.y; remaining -= left;
+    corners.push({ x, y });
     const next = sign > 0 ? seg + 1 : seg - 1;
     if (next >= 0 && next + 1 < pts.length) { seg = next; continue; }
     // The end of this road: a road that starts or ends right here and bends least from where we were going.
@@ -433,7 +502,8 @@ export function followRoads(roads: Vec[][], pos: Vec, vel: Vec, distance: number
     if (!pick || (pick as { dot: number }).dot < -0.2) break; // a dead end (or only a turn-back): wait here for the next picture
     ({ road, seg, sign } = pick as { road: number; seg: number; sign: 1 | -1 });
   }
-  return { point: { x, y }, direction: dir };
+  if (corners[corners.length - 1].x !== x || corners[corners.length - 1].y !== y) corners.push({ x, y });
+  return { point: { x, y }, direction: dir, corners };
 }
 
 function distanceToSegment(p: Vec, a: Vec, b: Vec): number {
