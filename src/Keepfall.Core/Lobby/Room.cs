@@ -502,6 +502,12 @@ public sealed class Room
                 _humansOutSeen = true;
                 Game.EnsureWarRemaining(_rules.Match.SpectatorMinSeconds);
             }
+            // A challenge is lost the moment its player falls: after a short look at the fall nothing is left to wait for, the rest is played out at once.
+            if (Challenge is not null && Game.Phase != MatchPhase.Ended && AllHumansOut && FallGraceOver())
+            {
+                PlayOut(dt, beforeTick);
+                break;
+            }
         }
         Phase = Game!.Phase switch
         {
@@ -529,13 +535,27 @@ public sealed class Room
         if (Find(token) is not { } player) return NotInRoom;
         if (player.Seat != HostSeat) return CommandResult.Fail("Maçı sadece odayı kuran bitirebilir.");
         if (!AllHumansOut) return CommandResult.Fail("Maç, sadece tüm insan oyuncular elendikten sonra bitirilebilir.");
-        while (Game!.Phase != MatchPhase.Ended)
-        {
-            beforeTick(dt);
-            Game.Tick(dt);
-        }
+        PlayOut(dt, beforeTick);
         Phase = RoomPhase.Ended;
         return CommandResult.Success;
+    }
+
+    private void PlayOut(double dt, Action<double>? beforeTick)
+    {
+        while (Game!.Phase != MatchPhase.Ended)
+        {
+            beforeTick?.Invoke(dt);
+            Game.Tick(dt);
+        }
+    }
+
+    /// <summary>Game seconds the last fallen human gets to see their castle go before a lost challenge is ended.</summary>
+    public const double FallGraceSeconds = 5;
+
+    private bool FallGraceOver()
+    {
+        double last = _players.Where(p => !p.IsBot).Select(p => Game!.Eliminated.TryGetValue(p.CastleKey, out var at) ? at : 0).DefaultIfEmpty(0).Max();
+        return Game!.ElapsedSeconds >= last + FallGraceSeconds;
     }
 
     // ---- helpers -----------------------------------------------------------------------------
