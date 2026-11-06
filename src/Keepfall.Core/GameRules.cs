@@ -9,7 +9,9 @@ public sealed record CombatSettings(
     double TickSeconds,
     double MaxBattleSeconds,
     bool RandomizeFirstAttack,
-    double ApproachTime);
+    double ApproachTime,
+    int MeleeActiveRows = 1,
+    int RangedReachRows = 1);
 
 public sealed record ProductionRates(double FoodPerMinute, double WoodPerMinute, double IronPerMinute);
 

@@ -70,15 +70,19 @@ public sealed class BattleSimulator
                 var aim = new Aim(
                     enemyFront,
                     setups[s].Targeting.PreferredType is { } p && HasAliveOfType(enemies, p) ? p : null,
-                    RearRow(enemies), HasAliveSupportBehind(enemies, enemyFront));
+                    RearRow(enemies), HasAliveSupportBehind(enemies, enemyFront),
+                    _rules.Combat.RangedReachRows > 1 ? ActiveLimit(enemies, _rules.Combat.RangedReachRows) : enemyFront);
                 var ownFront = FrontRow(sides[s]);
+                int activeRows = _rules.Combat.MeleeActiveRows;
+                Row lastActiveRow = ownFront;
+                if (activeRows > 1) lastActiveRow = ActiveLimit(sides[s], activeRows);
                 foreach (var soldier in sides[s])
                 {
                     if (!soldier.Alive) continue;
                     soldier.Cooldown -= dt;
                     if (soldier.Cooldown > 1e-9) continue;
 
-                    if (soldier.Type.Range == AttackRange.Melee && soldier.Row != ownFront)
+                    if (soldier.Type.Range == AttackRange.Melee && soldier.Row > lastActiveRow)
                     {
                         soldier.Cooldown = 0; // reserve: ready to strike as soon as it steps forward
                         continue;
@@ -197,6 +201,17 @@ public sealed class BattleSimulator
         return front;
     }
 
+    /// <summary>The last row whose melee soldiers may strike: the n-th row (from the front) that still has a living soldier.</summary>
+    private static Row ActiveLimit(List<Soldier> army, int n)
+    {
+        var alive = new bool[4];
+        foreach (var s in army) if (s.Alive) alive[(int)s.Row] = true;
+        Row limit = Row.First;
+        for (int i = 0, seen = 0; i < 4; i++)
+            if (alive[i] && ++seen <= n) limit = (Row)i;
+        return limit;
+    }
+
     /// <summary>The first row (front to back) that still has a living soldier; the last row when none is left.</summary>
     private static Row FrontRow(List<Soldier> army)
     {
@@ -214,7 +229,7 @@ public sealed class BattleSimulator
     }
 
     /// <summary>What one side may hit this tick: the frontmost enemy row, and the preferred type if any is alive.</summary>
-    private readonly record struct Aim(Row FrontmostRow, UnitType? PreferredAlive, Row RearRow, bool SupportAlive);
+    private readonly record struct Aim(Row FrontmostRow, UnitType? PreferredAlive, Row RearRow, bool SupportAlive, Row ShooterLimit);
 
     private static bool IsValidTarget(Soldier attacker, Soldier target, Aim aim)
     {
@@ -224,6 +239,7 @@ public sealed class BattleSimulator
         if (attacker.Type.Flank && aim.SupportAlive) return target.Row > aim.FrontmostRow && target.Type.IsSupport;
         if (attacker.Type.Range == AttackRange.Ranged && aim.PreferredAlive is { } preferred)
             return target.Type == preferred;
+        if (attacker.Type.Range == AttackRange.Ranged) return target.Row <= aim.ShooterLimit;
         return target.Row == aim.FrontmostRow;
     }
 

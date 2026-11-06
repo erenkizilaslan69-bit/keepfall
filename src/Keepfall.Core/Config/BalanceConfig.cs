@@ -281,6 +281,10 @@ public sealed class CombatConfig
     public double MaxBattleSeconds { get; set; } = 600;
     public bool RandomizeFirstAttack { get; set; } = true;
     public double ApproachTime { get; set; }
+    /// <summary>How many of the living rows (from the front) their melee soldiers strike from. 1 = only the front living row (the rule of the 1st–4th row formation); 2 = the second row strikes too.</summary>
+    public int MeleeActiveRows { get; set; } = 1;
+    /// <summary>How many of the enemy's living rows (from the front) its shooters may hit when no target type is set. 1 = only the front living row (arrows do not reach past it); 2 = the second row is exposed too.</summary>
+    public int RangedReachRows { get; set; } = 1;
     public double AdvantageMultiplier { get; set; } = 1.5;
     public double DisadvantageMultiplier { get; set; } = 0.75;
     public double NeutralMultiplier { get; set; } = 1.0;
@@ -542,7 +546,7 @@ public static class BalanceConfigLoader
         return new GameRules(
             units,
             new CounterMatrix(matrix),
-            new CombatSettings(c.TickSeconds, c.MaxBattleSeconds, c.RandomizeFirstAttack, c.ApproachTime),
+            new CombatSettings(c.TickSeconds, c.MaxBattleSeconds, c.RandomizeFirstAttack, c.ApproachTime, Math.Clamp(c.MeleeActiveRows, 1, 4), Math.Clamp(c.RangedReachRows, 1, 4)),
             new ProductionRates(p.Food, p.Wood, p.Iron),
             new MatchRules(
                 mc.ShortModePrepMinutes * 60, mc.LongModePrepMinutes * 60,
