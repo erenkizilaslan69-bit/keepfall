@@ -80,6 +80,33 @@ await sleep(2500);
 const intro = JSON.parse(await run(`(() => { const c = window.keepfallAudio.music.current; return JSON.stringify({ track: c.track, loop: c.src.loop, buffers: [...window.keepfallAudio.music.buffers.keys()] }); })()`));
 check('the opening piece plays once (no loop)', intro.track === 'start' && intro.loop === false, JSON.stringify(intro));
 check('the ambient loops are loaded', (await run(`['campfire-loop', 'horse-gallop-loop'].every((n) => window.keepfallAudio.sfx.buffers.has(n))`)) === true);
+// ---- the whole music flow in a real match (a bot match at ×20): which track plays in which state ----
+await send('Page.navigate', { url: URL });
+await sleep(3500);
+await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: 640, y: 360, button: 'left', clickCount: 1 });
+await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: 640, y: 360, button: 'left', clickCount: 1 });
+await sleep(2000);
+const seq = [];
+const note = async () => {
+  const t = await run(`(() => { const c = window.keepfallAudio.music.current; return c ? c.track + (c.src.loop ? '' : '(once)') : 'silence'; })()`);
+  if (seq.at(-1) !== t) seq.push(t);
+};
+await note();
+check('main menu: the menu loop plays', seq[0] === 'lobby', seq.join(' > '));
+await run(`(async () => { const n = window.keepfallNet; await n.createRoom('Eren'); await n.addBot('easy'); await n.setReady(true); await n.startMatch(); return 1; })()`);
+for (let i = 0; i < 100 && !seq.includes('prep'); i++) { await sleep(400); await note(); }
+check('a match: the opening piece plays once, then the preparation loop (never the other way round)', seq.join(' > ') === 'lobby > start(once) > prep', seq.join(' > '));
+await sleep(4500); await note();
+check('the preparation loop is full and looping a few seconds later', JSON.parse(await run(`(() => { const c = window.keepfallAudio.music.current; return JSON.stringify({ t: c.track, g: c.gain.gain.value, l: c.src.loop }); })()`)).g > 0.95);
+await run(`window.keepfallNet.setSpeed(20)`);
+for (let i = 0; i < 120 && !seq.includes('war'); i++) { await sleep(400); await note(); }
+check('the war begins: the war loop takes over', seq.at(-1) === 'war', seq.join(' > '));
+for (let i = 0; i < 200 && !seq.includes('silence'); i++) { await sleep(400); await note(); }
+check('the match ends: the music steps back for the victory or defeat sound', seq.at(-1) === 'silence', seq.join(' > '));
+const hushed = Date.now();
+for (let i = 0; i < 60 && seq.at(-1) !== 'lobby'; i++) { await sleep(400); await note(); }
+check('and then the menu loop returns (not at once)', seq.at(-1) === 'lobby' && Date.now() - hushed > 4000, seq.join(' > ') + ' after ' + Math.round((Date.now() - hushed) / 100) / 10 + ' s');
+check('the music slider and the mute switch reach the music', JSON.parse(await run(`(() => { const s = window.keepfallAudio.sfx; s.setMusicVolume(0.5); const a = s.musicBus.gain.value; s.setMuted(true); const b = s.musicBus.gain.value; s.setMuted(false); s.setMusicVolume(0.2); return JSON.stringify({ a, b }); })()`)).b === 0);
 check('no failed requests or exceptions', failed.length === 0, failed.join(' | '));
 ws.close();
 chrome.kill();

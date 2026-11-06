@@ -426,40 +426,76 @@ export type Track = 'lobby' | 'prep' | 'war' | 'start';
 const FADE = 2.5; // seconds of crossfade between the tracks
 
 /**
- * The music: a menu/lobby loop, a calm loop for the preparation, a lively one for the war, and a short opening piece that plays ONCE when the clouds part on
- * a match (the preparation loop comes in softly under its end). A change fades one out as the other comes in. Nothing plays before the first click (the
- * browser would refuse); the track asked for by then starts at that click.
+ * The music, as a flow: the menu/lobby loop (`lobby`) in the menus, the lobby and after a match; when the clouds part on a match the opening piece (`start`)
+ * plays ONCE and the preparation loop (`prep`) comes in softly under its end; the war loop (`war`) takes over when the war begins; at the end of a match
+ * the music steps back for the victory/defeat sound and the menu loop returns after it. A change fades one out as the other comes in. Nothing plays
+ * before the first click (the browser would refuse); the track asked for by then starts at that click.
+ *
+ * `base` is the track that SHOULD be playing; `blocked` is true while the opening piece is pending or playing (then `scene()` only changes `base`, and
+ * the piece hands over to it). `target` is what is being played now.
  */
 class Music {
-  private want: Track | null = null;
-  /** The track that follows the opening piece (the phase may change meanwhile). */
-  private after: Track = 'prep';
+  private base: Track = 'lobby';
+  private blocked = false;
+  private target: Track | null = null;
   private current: { track: Track; gain: GainNode; src: AudioBufferSourceNode } | null = null;
   private readonly buffers = new Map<Track, AudioBuffer>();
   private readonly loading = new Set<Track>();
   private fade = FADE;
-  private introTimer = 0;
+  private timer = 0;
+  private quietTimer = 0;
 
-  /** Which track should be playing now. While the opening piece plays, the track is only remembered: it comes in after the piece. */
-  scene(track: Track): void {
-    if (track === 'start') { this.intro(); return; }
-    if (this.want === 'start' && this.current?.track === 'start') { this.after = track; return; }
-    this.fade = FADE;
-    this.want = track;
-    sfx.whenUnlocked(() => this.apply());
+  /** Which track should be playing now (not `start`: use `intro`). */
+  scene(track: Exclude<Track, 'start'>): void {
+    window.clearTimeout(this.quietTimer);
+    this.base = track;
+    if (this.blocked) return;
+    this.go(track, FADE);
   }
 
-  /** The clouds have parted on a match: the opening piece plays once (the menu music fades out under it), then the preparation music comes in softly. */
-  intro(after: Track = 'prep'): void {
-    window.clearTimeout(this.introTimer);
-    this.after = after;
-    this.fade = 1.2;
-    this.want = 'start';
+  /** The clouds have parted on a match: the opening piece plays once (whatever plays fades out under it), then `after` comes in softly. */
+  intro(after: Exclude<Track, 'start'> = 'prep'): void {
+    window.clearTimeout(this.quietTimer);
+    this.base = after;
+    this.blocked = true;
+    window.clearTimeout(this.timer);
+    this.timer = window.setTimeout(() => this.endIntro(), 4000); // if the piece cannot start (not loaded, no sound yet), the music is not held up for good
+    this.go('start', 1.2);
+  }
+
+  /** The match is over: the music fades out for the victory/defeat sound, and `track` returns `afterSeconds` later. */
+  hushThen(track: Exclude<Track, 'start'>, afterSeconds: number): void {
+    window.clearTimeout(this.timer);
+    window.clearTimeout(this.quietTimer);
+    this.blocked = false;
+    this.base = track;
+    this.target = null;
+    const ctx = sfx.audioContext, old = this.current;
+    if (ctx && old) {
+      const t = ctx.currentTime;
+      old.gain.gain.cancelScheduledValues(t);
+      old.gain.gain.setValueAtTime(old.gain.gain.value, t);
+      old.gain.gain.linearRampToValueAtTime(0, t + 1.2);
+      old.src.stop(t + 1.3);
+      this.current = null;
+    }
+    this.quietTimer = window.setTimeout(() => this.scene(this.base as Exclude<Track, 'start'>), afterSeconds * 1000);
+  }
+
+  private endIntro(): void {
+    window.clearTimeout(this.timer);
+    this.blocked = false;
+    this.go(this.base, 3);
+  }
+
+  private go(track: Track, fade: number): void {
+    this.target = track;
+    this.fade = fade;
     sfx.whenUnlocked(() => this.apply());
   }
 
   private apply(): void {
-    const ctx = sfx.audioContext, bus = sfx.musicBus, want = this.want;
+    const ctx = sfx.audioContext, bus = sfx.musicBus, want = this.target;
     if (!ctx || !bus || !want || ctx.state !== 'running' || this.current?.track === want) return;
     const buffer = this.buffers.get(want);
     if (!buffer) { void this.fetch(want); return; }
@@ -482,21 +518,25 @@ class Music {
     this.current = { track: want, gain, src };
     if (want === 'start') {
       // the next track comes in softly while the piece is dying away
-      window.clearTimeout(this.introTimer);
-      this.introTimer = window.setTimeout(() => { this.fade = 3; this.want = this.after; this.apply(); }, Math.max(0, buffer.duration - 2.5) * 1000);
+      window.clearTimeout(this.timer);
+      this.timer = window.setTimeout(() => this.endIntro(), Math.max(0, buffer.duration - 2.5) * 1000);
     }
   }
 
-  private async fetch(track: Track): Promise<void> {
+  private async fetch(track: Track, tries = 0): Promise<void> {
     const ctx = sfx.audioContext;
     if (!ctx || this.loading.has(track)) return;
     this.loading.add(track);
     try {
       const res = await fetch(asset(`/audio/music/${track}.mp3`));
-      if (!res.ok) return;
+      if (!res.ok) throw new Error(String(res.status));
       this.buffers.set(track, await ctx.decodeAudioData(await res.arrayBuffer()));
-      this.apply();
-    } catch { /* no music then */ } finally { this.loading.delete(track); }
+      this.loading.delete(track);
+      this.apply(); // (only if it is still the one wanted: apply reads the target)
+    } catch {
+      this.loading.delete(track);
+      if (tries < 2) window.setTimeout(() => void this.fetch(track, tries + 1), 1500); // a flaky connection: try again
+    }
   }
 }
 

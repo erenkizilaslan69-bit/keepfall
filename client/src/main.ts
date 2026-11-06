@@ -410,7 +410,7 @@ function startScene(color: CastleView['color'], layout: MapLayoutView): void {
 function showEnd(r: RoomView): void {
   disarmTutorial();
   musicInGame = false;
-  music.scene('lobby');
+  music.hushThen('lobby', 6.5); // the victory or defeat sound has the room first, then the menu music returns
   setLeaveAction(null);
   clear();
   document.documentElement.classList.add('in-menu');
