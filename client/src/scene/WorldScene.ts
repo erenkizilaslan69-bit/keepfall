@@ -878,6 +878,7 @@ export class WorldScene extends Phaser.Scene {
       const art = drawBuilding(this, b.type, b.level, this.color, NO_OFFSET, (k) => k, this.chimneys, b.type);
       slot.sprites = art.sprites;
       this.workers.setBlocks(b.type, art.feet);
+      this.workers.setLevel(b.type, b.level);
       slot.level = b.level;
     }
 

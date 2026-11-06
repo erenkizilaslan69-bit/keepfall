@@ -4,7 +4,7 @@ import { t } from '../i18n';
 import type { BuildingType, Job, JobView } from '../types';
 import type { WorldLabels } from '../ui/world-labels';
 import { UNIT_SCALE, playRandom, unitOriginY } from './assets';
-import { GATE, IDLE_AREA, JOB_LOOK, SITES, type Point } from './layout';
+import { GATE, IDLE_AREA, JOB_LOOK, SITES, workSpotsOf, type Point } from './layout';
 import { NO_OFFSET } from './parts';
 import { pathAround, resolveOut, type Foot } from './Blocks';
 
@@ -56,6 +56,10 @@ export class Workers {
   private allBlocks(): Foot[] { return [...this.blocks.values()].flat(); }
 
   /** A building's feet changed (it was built, grew, or took another look): the people who stand in it move out, the paths go round it. */
+  private readonly levels = new Map<BuildingType, number>();
+  /** A building's level decides where its workers stand (level 4 is the old, crowded layout). */
+  setLevel(type: BuildingType, level: number): void { this.levels.set(type, level); }
+
   setBlocks(type: BuildingType, rects: Foot[]): void {
     this.blocks.set(type, rects);
     for (const pawn of this.pawns) {
@@ -260,7 +264,7 @@ export class Workers {
   private spotOf(job: Job, slot: number): Point {
     const building = JOB_LOOK[job].building;
     if (building) {
-      const spots = SITES[building].workSpots;
+      const spots = workSpotsOf(building, this.levels.get(building) ?? 1);
       const base = spots[slot % spots.length];
       // More people than spots (shouldn't happen with capacity ≤ 8): nudge them aside.
       return resolveOut(slot < spots.length ? base : { x: base.x + 14, y: base.y + 10 }, this.allBlocks());

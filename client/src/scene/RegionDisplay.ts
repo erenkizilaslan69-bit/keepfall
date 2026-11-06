@@ -51,6 +51,7 @@ export class RegionDisplay {
         const art = drawBuilding(this.scene, b.type, b.level, this.color, this.off, this.buildingKey, this.chimneys, b.type);
         slot.sprites = art.sprites;
         this.workers.setBlocks(b.type, art.feet);
+        this.workers.setLevel(b.type, b.level);
         slot.level = b.level;
       }
       const upgrading = b.upgradeRemaining !== null;
