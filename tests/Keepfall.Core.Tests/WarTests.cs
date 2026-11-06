@@ -91,6 +91,23 @@ public class WarTests
     }
 
     [Fact]
+    public void Whoever_is_on_the_road_when_the_war_begins_walks_at_the_normal_speed_from_then_on()
+    {
+        // an envoy may leave in the last seconds of the preparation (no scouting ban): it walks at the preparation's pace until the war starts, then at the normal one
+        var game = new GameState(Rules, [A, B]);
+        Run(game, 295);
+        Ok(game.Execute(A, new SendEnvoy(B, 0, 0, 0, 0, "hi")));
+        var m = Assert.Single(game.MissionsOf(A));
+        Assert.Equal(Rules.Map.ScoutSpeed * Rules.Match.PrepSpeed, m.Leg.Speed, 9);
+        Run(game, 5);
+        Assert.Equal(MatchPhase.War, game.Phase);
+        Assert.False(m.Arrived);
+        Assert.Equal(Rules.Map.ScoutSpeed, m.Leg.Speed, 9);
+        Assert.Equal((m.Out.Route.Length - m.Out.Travelled) / Rules.Map.ScoutSpeed + m.Out.Route.Length / Rules.Map.ScoutSpeed, m.SecondsLeft, 6); // the way there and back, at the normal speed
+        Assert.Equal(0, game.ContinuityViolations);
+    }
+
+    [Fact]
     public void Famine_halves_food_production_from_four_minutes_into_the_war_to_its_end()
     {
         var game = War(war: 600);

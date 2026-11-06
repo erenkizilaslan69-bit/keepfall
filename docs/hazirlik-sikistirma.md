@@ -64,3 +64,6 @@ Ham çıktı: `docs/gece/hazirlik-bot-*.txt`.
 
 Zor'un "Asker" sütunu hâlâ −%19: Zor silahı bilerek savaş başına kadar depoda tutar (`holdWeapons`); asker+silah toplamı eski hazırlıkla aynı (+%3).
 **Bot kazanma (200 maç, `docs/gece/hazirlik-duzelt-*.txt`)**: Zor vs Orta Zor payı **%65,5** (8 dk ×1: %58,8 [80 maç], düzeltmeden önce %48,8); Orta vs Kolay Orta payı %86,8 (öncesi 82–83, Kolay'a göre 6,5×). Işınlanma ihlali 0. Zor'un hedefin (%75–85) altında olduğu eskisi gibi; şimdi 8 dk'dan biraz üstünde (hata payı ±3,4 puan).
+
+## Kontrol: savaş başlayınca yoldakiler (2026-11-06)
+Açık vardı: hazırlıkta yola çıkan gözcü/ulak/ordu hızı yola çıkarken sabitlendiği için savaş başladıktan sonra da `prepSpeed` hızında yürümeye devam ediyordu (ör. hazırlığın son saniyelerinde çıkan ulak, ya da kampa giden ordu). Düzeltme: hazırlık→savaş geçişinde (`GameState.SlowToWarPace`) yoldaki her gözcü/ulak ve ordunun (gidiş ve dönüş ayağı) hızı normale döner; kalan süre (`SecondsLeft`/ETA) buna göre yeniden hesaplanır. Kat edilen yol aynı kalır. Test: `Whoever_is_on_the_road_when_the_war_begins_walks_at_the_normal_speed_from_then_on` (WarTests; ulak hazırlığın 295. sn'sinde çıkar, 300'de savaş başlar: hız ×1,6 → ×1, ETA normal hızdan, süreklilik ihlali 0). 283/283 test.

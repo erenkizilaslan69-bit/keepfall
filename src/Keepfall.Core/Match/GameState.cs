@@ -188,6 +188,14 @@ public sealed partial class GameState
     /// <summary>The army speed now: in the (standard) preparation armies (to forest camps) walk match.prepSpeed times as fast too, so a raid started late still gets home before the war; fixed when the army leaves.</summary>
     private double ArmySpeedNow => Rules.Map.ArmySpeed * (Phase == MatchPhase.Preparation ? _prepSpeed : 1);
 
+    /// <summary>The war begins: every scout and army still on the road (they left at the preparation's faster pace) walks at the normal speed from now on; their arrival times follow from it.</summary>
+    private void SlowToWarPace()
+    {
+        if (Math.Abs(_prepSpeed - 1) < 1e-9) return;
+        foreach (var m in _missions) { m.Out.Rescale(1 / _prepSpeed); m.Back?.Rescale(1 / _prepSpeed); }
+        foreach (var a in _armies) { a.Out.Rescale(1 / _prepSpeed); a.Back?.Rescale(1 / _prepSpeed); }
+    }
+
     /// <summary>A scout's speed now: in the (standard) preparation it walks match.prepSpeed times as fast, like the economy it brings gold to (forest chests, villages); the speed is fixed when it leaves.</summary>
     private double ScoutSpeedNow => Rules.Map.ScoutSpeed * (Phase == MatchPhase.Preparation ? _prepSpeed : 1);
     public bool IsEliminated(string playerKey) => _eliminated.ContainsKey(playerKey);
@@ -373,6 +381,7 @@ public sealed partial class GameState
             if (Phase == MatchPhase.Preparation)
             {
                 Phase = MatchPhase.War;
+                SlowToWarPace();
                 _trail.Clear(); // everybody starts the war in the same dark: the ground scouted in the preparation closes (scouts still out go on)
             }
             else

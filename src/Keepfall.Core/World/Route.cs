@@ -121,7 +121,9 @@ public sealed class Traveller
 
     public Route Route { get; }
     /// <summary>Tiles per second.</summary>
-    public double Speed { get; }
+    public double Speed { get; private set; }
+    /// <summary>Walks at another pace from here on (the war begins: whoever left in the faster preparation slows down); the way already walked stays.</summary>
+    internal void Rescale(double factor) => Speed *= factor;
     public double Travelled { get; private set; }
     public bool Arrived => Travelled >= Route.Length - 1e-9;
     public Vec Position => Route.PointAt(Travelled);
