@@ -4,6 +4,7 @@ import { t } from '../i18n';
 import type { BuildingType, Job, JobView } from '../types';
 import type { WorldLabels } from '../ui/world-labels';
 import { UNIT_SCALE, playRandom, unitOriginY } from './assets';
+import { MAP_SCALE } from './mapscale';
 import { GATE, IDLE_AREA, JOB_LOOK, SITES, workSpotsOf, type Point } from './layout';
 import { NO_OFFSET } from './parts';
 import { pathAround, resolveOut, type Foot } from './Blocks';
@@ -16,10 +17,10 @@ const JOBS: Job[] = ['farmer', 'lumberjack', 'miner', 'blacksmith', 'idle'];
 
 /** Leave the castle sideways so nobody walks behind the castle sprite. */
 const ROAD: Record<BuildingType, Point> = {
-  farm: { x: 296, y: 452 },
-  mine: { x: 312, y: 488 },
-  lumberCamp: { x: 728, y: 452 },
-  forge: { x: 712, y: 488 },
+  farm: { x: 296 * MAP_SCALE, y: 452 * MAP_SCALE },
+  mine: { x: 312 * MAP_SCALE, y: 488 * MAP_SCALE },
+  lumberCamp: { x: 728 * MAP_SCALE, y: 452 * MAP_SCALE },
+  forge: { x: 712 * MAP_SCALE, y: 488 * MAP_SCALE },
 };
 
 type State = 'walking' | 'working' | 'dropping' | 'waiting' | 'leaving';

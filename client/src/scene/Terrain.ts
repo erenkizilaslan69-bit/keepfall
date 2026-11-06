@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { MapLayoutView, RoadView, Vec } from '../types';
 import { TILE } from './layout';
+import { MAP_SCALE } from './mapscale';
 import { distanceToSegment, seeded, toWorld } from './world';
 
 // The look of the ground: sea with moving ripples and foam, a sandy beach with rocks along the coast, grass in a few tones, dirt patches,
@@ -145,7 +146,7 @@ export class Terrain {
     strips.push({ x: o.x, y: o.y + TILE, w: TILE, h: size - 2 * TILE, tiles: range(2, last - 1).map((i) => [1, i]) });
     strips.push({ x: o.x + size - TILE, y: o.y + TILE, w: TILE, h: size - 2 * TILE, tiles: range(2, last - 1).map((i) => [last, i]) });
     for (const frame of [2, 10]) {
-      const tmp = this.scene.make.sprite({ key: 'foam', frame, add: false });
+      const tmp = this.scene.make.sprite({ key: 'foam', frame, add: false }).setScale(MAP_SCALE); // (the coast's tile is as big as the map's)
       const layer: Phaser.GameObjects.RenderTexture[] = [];
       for (const st of strips) {
         const rt = this.scene.add.renderTexture(st.x, st.y, st.w, st.h).setOrigin(0).setDepth(DEPTH.foam);

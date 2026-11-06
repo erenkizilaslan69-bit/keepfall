@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { Corner, PlayerColor } from '../types';
 import { colorKey } from './assets';
 import { TILE, type Point } from './layout';
+import { MAP_SCALE } from './mapscale';
 import { GatePaving } from './Roads';
 import { CourtyardFloor } from './CourtyardFloor';
 
@@ -16,7 +17,7 @@ import { CourtyardFloor } from './CourtyardFloor';
 
 export const REGION_W = 16 * TILE, REGION_H = 12 * TILE;
 /** Height (px, region-local) of the gate in the side wall: where the road leaves the castle. */
-export const GATE_Y = 452;
+export const GATE_Y = 452 * MAP_SCALE;
 const GATE_HALF = 40;
 const DEPTH_WALL = -60_000;
 /** The side wall with the gate stands this far inside the region's edge: the north-south road runs along that edge and the wall must not lie on it. */
@@ -53,7 +54,7 @@ export class WallRing {
    */
   constructor(private readonly scene: Phaser.Scene, private readonly origin: Point, private readonly corner: Corner,
     private readonly color: PlayerColor, private readonly own: PlayerColor) {
-    this.paving = new GatePaving(scene, origin, this.gateOnEast, `${corner}-${color}`, GATE_Y, 512, REGION_W);
+    this.paving = new GatePaving(scene, origin, this.gateOnEast, `${corner}-${color}`, GATE_Y, 512 * MAP_SCALE, REGION_W);
   }
 
   /** The gate is on the east side for the western regions, on the west side for the eastern ones. */

@@ -139,4 +139,4 @@ public sealed class Traveller
 /// radii in tiles around the castle gate, one's own armies and one's own scouts.
 /// </summary>
 /// <param name="ScoutTrailSeconds">How long the ground a scout walked over stays in view after it passed (0 = to the end of the match).</param>
-public sealed record MapRules(double ArmySpeed, double ScoutSpeed, double CastleVision, double ArmyVision, double ScoutVision, double ScoutTrailSeconds);
+public sealed record MapRules(double ArmySpeed, double ScoutSpeed, double CastleVision, double ArmyVision, double ScoutVision, double ScoutTrailSeconds, double VisualScale = 1);

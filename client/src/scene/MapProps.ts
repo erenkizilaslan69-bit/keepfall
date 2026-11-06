@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { MapLayoutView, Vec } from '../types';
+import { TILE } from './layout';
 import { distanceToSegment, seeded, toWorld } from './world';
 import { DEPTH } from './Terrain';
 import { lowGraphics } from '../prefs';
@@ -114,10 +115,10 @@ export class MapProps {
     const L = this.layout;
     const rnd = seeded(seed ^ 0x9e37);
     const a = toWorld({ x: 0, y: 0 }), b = toWorld({ x: L.size, y: L.size });
-    const toTiles = (x: number, y: number): Vec => ({ x: (x - a.x) / 64, y: (y - a.y) / 64 });
+    const toTiles = (x: number, y: number): Vec => ({ x: (x - a.x) / TILE, y: (y - a.y) / TILE });
     const awayFromRoads = (x: number, y: number, margin: number) => {
       const t = toTiles(x, y);
-      return L.roads.every((r) => r.points.slice(1).every((q, j) => distanceToSegment(t, r.points[j], q) > margin / 64));
+      return L.roads.every((r) => r.points.slice(1).every((q, j) => distanceToSegment(t, r.points[j], q) > margin / TILE));
     };
     const inRegion = (x: number, y: number, pad: number) => {
       const t = toTiles(x, y);
@@ -157,7 +158,7 @@ export class MapProps {
     }
     // through the forest, between the pack's trees (half of what there was)
     for (const f of forests) {
-      const c = toWorld(f.center), r = f.radius * 64;
+      const c = toWorld(f.center), r = f.radius * TILE;
       for (let i = 0, n = 0; i < 900 && n < 40; i++) {
         const ang = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * r * 0.95;
         if (tryPlace(pick(wood), c.x + Math.cos(ang) * d, c.y + Math.sin(ang) * d * 0.9, VERGE - 40)) n++;

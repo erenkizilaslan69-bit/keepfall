@@ -50,6 +50,9 @@
   // Ortak harita: ordular ve gözcüler yollarda bu hızla yürür (karo/sn). Yolculuk süresi = yol uzunluğu / hız.
   // Standart haritada komşu kaleye yol 56 karo, çapraz kaleye (ormanın içinden) yaklaşık 64 karo.
   "map": {
+    // Harita deneyi (varsayılan 1 = kapalı): istemci haritadaki tüm mesafeleri bu kadar uzun çizer (kale içi, yollar, görüş), kurallar karo cinsinden kalır:
+    // yolculuk süreleri (ETA) değişmez. Sunucu yalnız sayıyı taşır; istemci VITE_MAP_SCALE ya da ?mapscale= ile okur.
+    "scale": 1,
     "armySpeed": 1.5,
     "scoutSpeed": 2.5,
     // Gözcünün yürüdüğü yolun çevresi (görüş yarıçapı kadar) geçtikten sonra bu kadar saniye canlı görüşte kalır

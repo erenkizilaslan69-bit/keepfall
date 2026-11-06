@@ -3,18 +3,24 @@ import type { BuildingType, Job } from '../types';
 // World layout in pixels. The island is 16×12 tiles of 64 px; the castle sits in the middle and each
 // building has its own corner, so walking paths never cross the castle.
 
-export const TILE = 64;
+import { MAP_SCALE } from './mapscale';
+
+/** Pixels of art in one tile (the pack's tiles); the map's own tile is TILE px, MAP_SCALE times as many (see mapscale.ts). */
+export const TILE_ART = 64;
+export const TILE = TILE_ART * MAP_SCALE;
 export const WORLD_WIDTH = 16 * TILE;
 export const WORLD_HEIGHT = 12 * TILE;
+/** Region-local pixel positions below are designed for scale 1; this is how they are turned into the map's pixels. */
+const S = MAP_SCALE;
 
-export const CASTLE = { x: 512, y: 430, scale: 1.25 };
+export const CASTLE = { x: 512 * S, y: 430 * S, scale: 1.25 };
 /** The wooden courtyard on top of the castle sprite, in world pixels: soldiers stand here. */
-export const COURTYARD = { left: 356, right: 668, top: 216, bottom: 268 };
+export const COURTYARD = { left: 356 * S, right: 668 * S, top: 216 * S, bottom: 268 * S };
 /** The camp fire in front of the castle, below the gate: the soldiers wait around it, a group for each type. */
-export const CAMP = { x: 640, y: 656, rx: 98, ry: 36 };
+export const CAMP = { x: 640 * S, y: 656 * S, rx: 98 * S, ry: 36 * S };
 /** Idle people wait in their own pen (a patch of dirt with a low fence), off the road and the paving; carriers drop their load at the gate. */
-export const GATE = { x: 512, y: 452 };
-export const IDLE_AREA = { left: 360, right: 484, top: 604, bottom: 676 };
+export const GATE = { x: 512 * S, y: 452 * S };
+export const IDLE_AREA = { left: 360 * S, right: 484 * S, top: 604 * S, bottom: 676 * S };
 
 export interface Point { x: number; y: number }
 
@@ -257,14 +263,20 @@ function fitLegacy(parts: Part[]): Part[] {
 }
 
 const TYPES: BuildingType[] = ['farm', 'lumberCamp', 'mine', 'forge'];
+const at = (q: Point): Point => ({ x: q.x * S, y: q.y * S });
+const scaleParts = (parts: Part[]): Part[] => (S === 1 ? parts : parts.map((p) => ({ ...p, x: p.x * S, y: p.y * S }))); // places move apart, the sprites keep their size
 export const SITES = Object.fromEntries(TYPES.map((t) => [t, {
   ...NEW_SITES[t],
-  parts: (level: number) => (level >= 4 ? fitLegacy(LEGACY_SITES[t].parts(4)) : NEW_SITES[t].parts(level)),
+  center: at(NEW_SITES[t].center),
+  signX: NEW_SITES[t].signX * S,
+  area: { w: NEW_SITES[t].area.w * S, h: NEW_SITES[t].area.h * S },
+  workSpots: NEW_SITES[t].workSpots.map(at),
+  parts: (level: number) => scaleParts(level >= 4 ? fitLegacy(LEGACY_SITES[t].parts(4)) : NEW_SITES[t].parts(level)),
 }])) as Record<BuildingType, Site>;
 
 /** Where the workers of a building stand at its level (level 4: where they always stood, kept off the wall strip). */
 export function workSpotsOf(type: BuildingType, level: number): Point[] {
-  return level >= 4 ? LEGACY_SITES[type].workSpots.map((q) => ({ x: q.x, y: Math.min(q.y, 676) })) : NEW_SITES[type].workSpots;
+  return level >= 4 ? LEGACY_SITES[type].workSpots.map((q) => at({ x: q.x, y: Math.min(q.y, 676) })) : SITES[type].workSpots;
 }
 
 /** Where a building's sign goes: just in front of (below) its lowest house at this level, so it never covers the building. */
@@ -272,7 +284,7 @@ export function signSpot(type: BuildingType, level: number): Point {
   const all = SITES[type].parts(Math.max(1, level));
   const houses = all.filter((p) => /^(house|tower|barracks|archery)/.test(p.key));
   const base = Math.max(...(houses.length ? houses : all).map((p) => p.y));
-  return { x: level >= 4 ? LEGACY_SITES[type].signX : SITES[type].signX, y: base + 8 };
+  return { x: level >= 4 ? LEGACY_SITES[type].signX * S : SITES[type].signX, y: base + 8 };
 }
 
 /** Per job: which building, which pawn sheets, and what (if anything) is carried home. */

@@ -12,7 +12,8 @@ import { sfx } from '../audio';
 import { hearing } from './hearing';
 import { kingdomBanner } from './Banners';
 import { createAnimations, playFrom, loadSpectatorAssets, preloadAssets } from './assets';
-import { CAMP, CASTLE, GATE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH, signSpot } from './layout';
+import { CAMP, CASTLE, GATE, SITES, TILE, TILE_ART, WORLD_HEIGHT, WORLD_WIDTH, signSpot } from './layout';
+import { MAP_SCALE } from './mapscale';
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
 import { NO_OFFSET, buildingSign, setShadeHook, sign } from './parts';
 import { RegionDisplay } from './RegionDisplay';
@@ -53,7 +54,7 @@ const GRASS = { tl: 0, t: 1, tr: 2, l: 9, c: 10, r: 11, bl: 18, b: 19, br: 20 };
 /** Building signs stay above the bottom wall (which begins a little below this). */
 
 /** Where the castle's health sign hangs: just inside the top edge of the world. */
-const WALL_SIGN_Y = 66;
+const WALL_SIGN_Y = 66 * MAP_SCALE;
 
 const LABEL_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
   fontFamily: 'system-ui, sans-serif',
@@ -443,7 +444,7 @@ export class WorldScene extends Phaser.Scene {
     const region = this.layout.regions.find((r) => r.seat === target.seat);
     if (!region) return;
     const cam = this.cameras.main;
-    cam.setZoom(Phaser.Math.Clamp(Math.min(cam.width / (1100 * this.farView()), cam.height / (830 * this.farView())), this.minZoom(), MAX_ZOOM));
+    cam.setZoom(Phaser.Math.Clamp(Math.min(cam.width / (1100 * MAP_SCALE * this.farView()), cam.height / (830 * MAP_SCALE * this.farView())), this.minZoom(), MAX_ZOOM));
     this.lookAt({ x: region.origin.x + CASTLE.x / TILE, y: region.origin.y + (CASTLE.y - 120) / TILE });
   }
 
@@ -525,7 +526,7 @@ export class WorldScene extends Phaser.Scene {
   centerOnCastle(): void {
     const cam = this.cameras.main;
     // The whole castle (a region and a little margin) fits on screen.
-    cam.setZoom(Phaser.Math.Clamp(Math.min(cam.width / (1100 * this.farView()), cam.height / (830 * this.farView())), this.minZoom(), MAX_ZOOM));
+    cam.setZoom(Phaser.Math.Clamp(Math.min(cam.width / (1100 * MAP_SCALE * this.farView()), cam.height / (830 * MAP_SCALE * this.farView())), this.minZoom(), MAX_ZOOM));
     cam.centerOn(CASTLE.x, CASTLE.y - 120);
   }
 
@@ -649,9 +650,9 @@ export class WorldScene extends Phaser.Scene {
       if (bottom) return left ? GRASS.bl : right ? GRASS.br : GRASS.b;
       return left ? GRASS.l : right ? GRASS.r : GRASS.c;
     }));
-    const map = this.make.tilemap({ data, tileWidth: TILE, tileHeight: TILE });
-    const tiles = map.addTilesetImage('tiles', 'tiles', TILE, TILE, 0, 0)!;
-    return map.createLayer(0, tiles, topLeft.x, topLeft.y)!.setDepth(DEPTH_GROUND);
+    const map = this.make.tilemap({ data, tileWidth: TILE_ART, tileHeight: TILE_ART });
+    const tiles = map.addTilesetImage('tiles', 'tiles', TILE_ART, TILE_ART, 0, 0)!;
+    return map.createLayer(0, tiles, topLeft.x, topLeft.y)!.setScale(MAP_SCALE).setDepth(DEPTH_GROUND); // the map's tile is MAP_SCALE times the art's
   }
 
   /**

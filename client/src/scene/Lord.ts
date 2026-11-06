@@ -3,24 +3,26 @@ import { unitOriginY, unitScale } from './assets';
 import { GATE, type Point } from './layout';
 import { NO_OFFSET } from './parts';
 import { reducedEffects } from '../prefs';
+import { MAP_SCALE as S } from './mapscale';
 
 // The lord of a castle: Tiny Swords Warfare's King, in the owner's colour. He is only a picture (no rule, no server data). While the castle is quiet he
 // makes his rounds: slowly from building to building (farm, mine, forge, woodcutter), stopping a while by the workers as if looking over their work, and
 // then back to the gate. Under siege he hurries back to the gate and swings his mace; when the castle falls he topples over where he stands and stays
 // down. With "reduce effects" he just stands at the gate.
 
-const SPOT = { x: GATE.x + 52, y: GATE.y + 16 };
+const SPOT = { x: GATE.x + 52 * S, y: GATE.y + 16 * S };
 const WALK = 24; // px/s: a slow stroll
 const HURRY = 70;
 
 /** The rounds: each stop is a way (waypoints on free ground, from the square before the gate) and where he stands to look over the work. */
-const ROUNDS: { way: Point[]; look: Point }[] = [
+const ROUNDS_1: { way: Point[]; look: Point }[] = [
   { way: [{ x: 420, y: 504 }, { x: 292, y: 490 }, { x: 270, y: 424 }], look: { x: 270, y: 352 } },       // farm
   { way: [{ x: 420, y: 504 }, { x: 350, y: 548 }], look: { x: 318, y: 598 } },                           // mine
   { way: [{ x: 620, y: 506 }, { x: 716, y: 540 }], look: { x: 770, y: 626 } },                           // forge
   { way: [{ x: 624, y: 504 }, { x: 736, y: 488 }, { x: 764, y: 420 }], look: { x: 772, y: 350 } },       // woodcutter
 ];
-const HOME: Point = { x: GATE.x + 20, y: GATE.y + 28 };
+const ROUNDS = ROUNDS_1.map((r) => ({ way: r.way.map((p) => ({ x: p.x * S, y: p.y * S })), look: { x: r.look.x * S, y: r.look.y * S } }));
+const HOME: Point = { x: GATE.x + 20 * S, y: GATE.y + 28 * S };
 
 type Mode = 'stand' | 'walk' | 'hurry' | 'fight';
 

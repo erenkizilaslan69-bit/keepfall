@@ -176,6 +176,8 @@ public sealed class CampConfig
 
 public sealed class MapConfig
 {
+    /// <summary>The map experiment (default 1 = off): the client draws every distance of the map this many times longer (castle yards, roads, vision) while the rules stay in tiles, so every journey takes as long as before. The server only carries the number; the client reads it from VITE_MAP_SCALE or ?mapscale=.</summary>
+    public double Scale { get; set; } = 1;
     public double ArmySpeed { get; set; } = 1.5;
     public double ScoutSpeed { get; set; } = 2.5;
     /// <summary>The ground a scout walked over stays in view this long (s) after it passed; 0 = until the match ends.</summary>
@@ -457,6 +459,7 @@ public static class BalanceConfigLoader
         var sc = config.Scouting;
         var mp = config.Map;
         if (mp.ArmySpeed <= 0 || mp.ScoutSpeed <= 0) errors.Add("map: hızlar sıfırdan büyük olmalı.");
+        if (mp.Scale < 0.8 || mp.Scale > 2) errors.Add("map.scale 0,8 ile 2 arasında olmalı.");
         if (mp.ScoutTrailSeconds < 0) errors.Add("map.scoutTrailSeconds negatif olamaz.");
         if (mp.Vision.Castle < 0 || mp.Vision.Army < 0 || mp.Vision.Scout < 0) errors.Add("map.vision: görüş yarıçapları negatif olamaz.");
         if (sc.ReportError < 0 || sc.ReportError >= 1) errors.Add("scouting.reportError 0 ile 1 arasında olmalı.");
@@ -552,7 +555,7 @@ public static class BalanceConfigLoader
             new ScoutingRules(sc.ReportError, sc.MaxScouts, sc.NoScoutLastPrepSeconds),
             new WarRules(w.FamineStart, w.FamineFoodMultiplier,
                 w.BattlePlayback, w.EncounterRadius, w.FallLootShare, w.FallWorkerShare, w.FamineStartSeconds, w.PrisonerShare, w.RaidBurnSeconds, w.RaidBurnFactor, w.MinBattleSeconds),
-            new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout, mp.ScoutTrailSeconds),
+            new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout, mp.ScoutTrailSeconds, mp.Scale),
             config.Mercenary,
             new ForestRules(fo.ChestsPerCorner, fo.VillagesPerCorner, fo.CampsPerCorner, fo.MinSpacing, fo.HubClearing, fo.FootMin, fo.FootMax,
                 fo.SpurMin, fo.SpurMax, fo.EdgeMargin, fo.DiscoverRadius,

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { TILE, type Point } from './layout';
+import { MAP_SCALE as S } from './mapscale';
 
 // The ground inside a castle's wall: meadow grass with dirt tracks from the gate to every building and a small worn patch of earth in front of each
 // (soft, ragged edges, not squares), a flagstone walk along the wall and a stone square before the castle gate. Painted in code (nothing of the Tiny Swords
@@ -35,16 +36,19 @@ function noise(x: number, y: number, size: number, salt: number): number {
 // ---- dirt: tracks (polylines from the gate square) and worn patches (ellipses before the buildings), region-local px --------------------
 
 const TRACK_HALF = 17;
-const TRACKS: [number, number][][] = [
+const TRACKS_1: [number, number][][] = [
   [[512, 482], [400, 504], [288, 486], [262, 400], [258, 300]],  // farm
   [[512, 482], [624, 504], [736, 486], [764, 400], [770, 300]],  // woodcutter
   [[400, 504], [340, 548], [300, 596]],                           // mine
   [[624, 504], [712, 536], [790, 596]],                           // forge
 ];
 /** [x, y, rx, ry]: the worn earth in front of each building. */
-const PATCHES: [number, number, number, number][] = [
+const PATCHES_1: [number, number, number, number][] = [
   [246, 304, 48, 118], [778, 316, 44, 118], [284, 624, 88, 28], [806, 656, 76, 28],
 ];
+
+const TRACKS = TRACKS_1.map((line) => line.map(([x, y]) => [x * S, y * S] as [number, number]));
+const PATCHES = PATCHES_1.map(([x, y, rx, ry]) => [x * S, y * S, rx * S, ry * S] as [number, number, number, number]);
 
 /** 1 on the middle of a track or patch, falling to 0 at its edge (negative outside). */
 function dirtCover(x: number, y: number): number {
@@ -85,7 +89,7 @@ export class CourtyardFloor {
   private paint(): void {
     const tex = `kf-floor-${this.key}`;
     if (this.scene.textures.exists(tex)) this.scene.textures.remove(tex);
-    const w = REGION_W / CELL, h = REGION_H / CELL;
+    const w = Math.ceil(REGION_W / CELL), h = Math.ceil(REGION_H / CELL);
     const canvas = this.scene.textures.createCanvas(tex, w, h)!;
     const ctx = canvas.getContext();
     const image = ctx.createImageData(w, h);
@@ -105,8 +109,8 @@ export class CourtyardFloor {
         const dN = j - north, dS = south - j, dSide = (this.onEast ? i - x0 : x1 - i) - 3;
         const inWalk = (dN < WALK + rag && dN > -2) || (dS < WALK + rag && dS > -2) || (dSide < WALK + rag && dSide > -3);
         // the stone square in front of the castle gate
-        const plazaX = (i * CELL - 512) / 150, plazaY = (j * CELL - 478) / 38;
-        const inPlaza = plazaX * plazaX + plazaY * plazaY < 1 + (noise(i, j, 5, seed + 5) - 0.5) * 0.25 && j * CELL > 430;
+        const plazaX = (i * CELL - 512 * S) / (150 * S), plazaY = (j * CELL - 478 * S) / (38 * S);
+        const inPlaza = plazaX * plazaX + plazaY * plazaY < 1 + (noise(i, j, 5, seed + 5) - 0.5) * 0.25 && j * CELL > 430 * S;
         if (inWalk || inPlaza) {
           const wx = i * CELL, wy = j * CELL;
           const row = Math.floor(wy / 12), inRow = wy % 12;

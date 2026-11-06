@@ -8,6 +8,7 @@ import type { WorldLabels } from '../ui/world-labels';
 import { COLOR_CSS } from '../format';
 import { reportError } from '../error-report';
 import { toWorld } from './world';
+import { TILE } from './layout';
 import { trace } from '../debug-trace';
 import type { Effects } from './Effects';
 
@@ -390,7 +391,7 @@ export class Movers {
       let at = raw;
       // The column bends with its road: a row stands where the road was its distance back (ours, and now everybody's: the others' walk a road we work out).
       if (t.route && t.shownDist !== undefined && at.back > 0) {
-        const want = t.shownDist - at.back / 64;
+        const want = t.shownDist - at.back / TILE;
         // Behind the road's start (the column has not yet walked its own length): the row stands on the line the road starts along, not piled up on its first point.
         const first = alongSmooth(t.route, t.cumulative, 0);
         const back = want >= 0 ? alongSmooth(t.route, t.cumulative, want) : { point: { x: first.point.x + first.direction.x * want, y: first.point.y + first.direction.y * want }, direction: first.direction };
