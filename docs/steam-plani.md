@@ -25,7 +25,7 @@ Eleştirinin ana bulguları: (1) çok oyunculu oyun boş lobiyle çıkarsa ölü
 - Kozmetik: kale/flama/avatar açılımları (denge etkisi yok). Başarımlar (Steam Achievements için liste hazırlanır).
 - Krallık ustalığı: her krallıkla N maç → flama/kale süsü.
 
-### D. Anlatı: maç sonu özeti ve tekrar
+### D. Anlatı: maç sonu özeti ve tekrar — YAPILDI 2026-11-07 (dev; ayrıntı `docs/kandirma-ozeti.md`)
 - Maç sonunda "kim kimi kandırdı" zaman çizelgesi: sahte rapor, hayalet ordu, rüşvet, kılık değiştirme (gizli bilgi artık açık, maç bitti).
 - Savaş oynatmasından kısa paylaşılabilir klip.
 
