@@ -9,7 +9,7 @@ export type SoundName =
   | 'click' | 'sword' | 'arrow' | 'death' | 'castleHit' | 'castleFall'
   | 'warning' | 'scoutBack' | 'envoy' | 'battleStart' | 'win' | 'lose'
   | 'shield' | 'uiConfirm' | 'uiError' | 'uiOpen' | 'uiClose'
-  | 'catapult' | 'stone' | 'upgrade' | 'march' | 'gallop';
+  | 'catapult' | 'stone' | 'upgrade' | 'march' | 'gallop' | 'arrowHit';
 
 interface Prefs { muted: boolean; volume: number; music: number }
 
@@ -33,7 +33,9 @@ const SAMPLES: Partial<Record<SoundName, Bank>> = {
   uiOpen: { files: ['ui-open'], gain: 0.5 },
   uiClose: { files: ['ui-close'], gain: 0.5 },
   sword: { files: ['sword-1', 'sword-2', 'sword-3', 'clash-1', 'clash-2', 'clash-3', 'clash-4'], gain: 0.8 },
-  arrow: { files: ['arrow-1', 'arrow-2', 'arrow-3'], gain: 0.7 },
+  // An archer's shot: the string's release and the arrow in flight (a real longbow and recurve, CC0). The arrow sticking in is a dull thud.
+  arrow: { files: ['bow-1', 'bow-2', 'bow-3', 'bow-4'], gain: 0.85 },
+  arrowHit: { files: ['arrow-hit'], gain: 0.7 },
   catapult: { files: ['catapult-1'], gain: 0.9 },
   stone: { files: ['stone-1', 'stone-2', 'stone-3'], gain: 0.9 },
   upgrade: { files: ['upgrade-2'], gain: 0.8 }, // (upgrade-1 rang like an anvil bell: not used)
@@ -60,8 +62,10 @@ const MIN_GAP_MS: Record<SoundName, number> = {
   click: 25, sword: 70, arrow: 110, death: 120, castleHit: 300, castleFall: 1500,
   warning: 2500, scoutBack: 800, envoy: 1500, battleStart: 2000, win: 3000, lose: 3000,
   shield: 90, uiConfirm: 80, uiError: 150, uiOpen: 60, uiClose: 60,
-  catapult: 400, stone: 250, upgrade: 300, march: 450, gallop: 2400,
+  catapult: 400, stone: 250, upgrade: 300, march: 450, gallop: 2400, arrowHit: 70,
 };
+/** At most this many of one sound at the same time: a hundred archers are one full volley, not a hundred bow strings. */
+const MAX_SAME: Partial<Record<SoundName, number>> = { arrow: 3, arrowHit: 3, sword: 4, shield: 3, death: 3 };
 
 /** Ogg Vorbis is the small one, but Safari (older ones: all) cannot play it. */
 const EXT = ((): 'ogg' | 'mp3' => {
@@ -179,11 +183,15 @@ class Sfx {
   }
 
   /** <paramref name="loudness"/> 0–1: how loud this one is (e.g. far from the camera = quieter). */
+  private readonly same = new Map<SoundName, number>();
+
   play(name: SoundName, loudness = 1): void {
     if (this.silent || this.prefs.volume <= 0 || loudness <= 0.02) return;
     const now = performance.now();
     if (now - (this.lastAt.get(name) ?? -1e9) < MIN_GAP_MS[name]) return;
     if (this.voices >= MAX_VOICES) return;
+    const cap = MAX_SAME[name];
+    if (cap !== undefined && (this.same.get(name) ?? 0) >= cap) return;
     const ctx = this.context();
     if (!ctx || ctx.state !== 'running') { if (ctx?.state === 'suspended') void ctx.resume().catch(() => {}); return; }
     this.lastAt.set(name, now);
@@ -191,7 +199,8 @@ class Sfx {
       const seconds = this.make(name, ctx, Math.min(1, loudness));
       if (name === 'castleFall' || name === 'win' || name === 'lose') this.duckMusic(name === 'castleFall' ? 1.6 : 2.4);
       this.voices++;
-      window.setTimeout(() => { this.voices = Math.max(0, this.voices - 1); }, seconds * 1000 + 60);
+      this.same.set(name, (this.same.get(name) ?? 0) + 1);
+      window.setTimeout(() => { this.voices = Math.max(0, this.voices - 1); this.same.set(name, Math.max(0, (this.same.get(name) ?? 1) - 1)); }, seconds * 1000 + 60);
     } catch {
       /* a sound that cannot be made is just not heard */
     }
@@ -224,6 +233,9 @@ class Sfx {
         this.noise_(ctx, 0.07, 'bandpass', 2600, 1400, 0.4 * v, 1.5);
         this.tone(ctx, 1500 + Math.random() * 500, 900, 0.09, 'triangle', 0.14 * v);
         return 0.1;
+      case 'arrowHit':
+        this.noise_(ctx, 0.05, 'lowpass', 900, 300, 0.2 * v);
+        return 0.06;
       case 'arrow':
         this.noise_(ctx, 0.16, 'highpass', 1500, 5200, 0.22 * v);
         this.tone(ctx, 320, 180, 0.06, 'triangle', 0.1 * v);

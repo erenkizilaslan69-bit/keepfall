@@ -13,7 +13,7 @@ Her dosya kaynaktan kırpıldı, tek kanala çevrildi ve ses düzeyi eşitlendi 
 | Dosyalar | Kaynak (yazar) | Sayfa |
 |---|---|---|
 | `clash-1..4` (kılıç çarpışması) | "20 Sword Sound Effects (Attacks and Clashes)" — StarNinjas | https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes |
-| `arrow-1..3` (ok atışı, hışırtı) | "Swishes Sound Pack" — artisticdude | https://opengameart.org/content/swishes-sound-pack |
+| ~~`arrow-1..3` (hışırtı)~~ | kaldırıldı (2026-11-06): okçu atışında çınlama gibi duyuluyordu | — |
 | `catapult-1` (mancınık atışı: hışırtı + ahşap vuruş) | "Air whoosh" — pyranostudios; "100 CC0 metal and wood SFX" — rubberduck | https://opengameart.org/content/air-whoosh · https://opengameart.org/content/100-cc0-metal-and-wood-sfx |
 | `stone-1..3` (taşın düşmesi) | "75 CC0 breaking / falling / hit sfx" — rubberduck | https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx |
 | `gate-1..3` (kapıya vuruş) | "100 CC0 metal and wood SFX" — rubberduck | https://opengameart.org/content/100-cc0-metal-and-wood-sfx |
@@ -47,3 +47,12 @@ Eren "zil/çan gibi çınlayan bir ses kötü duruyor" dedi; hangisi olduğu din
 | `upgrade` (bina yükseltme) | `upgrade-1` ("Blacksmith's Hammer", örs çınlaması) + `upgrade-2` | yalnız `upgrade-2` (dosya durur, kullanılmaz) |
 | `castleHit` (kapıya vuruş) | Kenney `castleHit-1/2` (alçak çan) + `gate-1..3` | yalnız `gate-1..3` (Kenney dosyaları durur, kullanılmaz) |
 At toynağı (`gallop`, `march`) değişmedi. Beğenilmeyen olursa eski dosya git geçmişinde (`git show HEAD~:client/public/audio/sfx/<ad>.ogg`).
+
+## 2026-11-06 ince ayar 2: okçu atışı
+Çınlamanın kaynağı okçu atışıydı (geçici hışırtı kaydı). Gerçek yay kayıtlarıyla değiştirildi; hepsi CC0:
+| Dosyalar | Kaynak | Sayfa |
+|---|---|---|
+| `bow-1..4` (yayın bırakılması + okun havada vızıltısı) | "Medieval sound effects - Weapon Textures" (sayfa: "CC0 NO RIGHTS RESERVED"); dosyalar "English Longbow Shoot" (4 ayrı atış kesildi) ve "Scythian Recurve Arrow Pass" (iki geçiş kesildi), 0,5 sn'lik karışım | https://opengameart.org/content/medieval-sound-effects-weapon-textures |
+| `arrow-hit` (okun saplanması, tok vuruş) | `gate-2` (rubberduck, yukarıda) alçak geçiren, 0,16 sn | — |
+Kesim/karışım `ffmpeg` ile yapıldı (ham arşiv `medieval_sfx_textures_1_of_2.7z`, 90 MB, repoya girmedi; yalnız kullanılan kısa kesitler repoda).
+Ses sınırı (`audio.ts MAX_SAME`): aynı anda en çok 3 ok, 4 kılıç, 3 kalkan, 3 ölüm sesi; her çalışta perde ±%10 ve ses ±%12 rastgele; yüzlerce okçu tek bir dolgun ok yağmuru gibi duyulur.

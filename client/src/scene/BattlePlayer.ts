@@ -258,6 +258,7 @@ export class BattlePlayer {
         },
         onComplete: () => {
           shadow?.destroy(); this.fx.stick(arrow, stone);
+          if (!stone) sfx.play('arrowHit', this.loudness(to.x, to.y) * 0.8);
           if (stone) { this.fx.stoneLanding(to.x, to.y + 24); sfx.play(r.view.kind === 'siege' && a.side === 0 ? 'castleHit' : 'stone', this.loudness(to.x, to.y)); } // a stone at the gate is a blow on the gate
         },
       });
