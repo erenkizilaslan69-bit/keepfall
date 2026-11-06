@@ -138,6 +138,11 @@ Bu iş için hazır prompt sohbette verildi (adımlar 0–7: envanter, renk=oyun
 
 - `?mapscale=1.3` / `VITE_MAP_SCALE`: haritadaki tüm mesafeler ve kale içi ×ölçek, sprite boyutu aynı, yolculuk süreleri aynı (karo cinsinden sayım; test `The_map_scale_is_only_a_picture…`). Varsayılan 1 (kapalı), karar Eren'in. 1,3'te rehberli maç x1, corner-check, movers-stall, smoke geçti. Ölçüm: texMB +%8 (1,3) / +%12 (1,5), nesne +%17 / +%22. Sunucuda `map.scale` yalnız sayı (istemci buradan okumaz).
 
+## 4f. İnce ayar 3 (2026-11-06; `docs/ince-ayar-3-raporu.md`)
+
+- **map.scale 1,3 varsayılan** (`?mapscale=1` eski). **Kol** yol şeridine göre (ormanda 1, yolda 2, kavşakta/açıkta 4). **Ordunun geçtiği yer açık kalır** (`MapStateView.Explored`, kalıcı, savaş başında kapanır) + geçtiği orman yerleri keşfedilir + görüşten çıkan rakip ordu **son görülme** (`LastSeen`, 120 sn). **Müzik**: `Music` yeniden yazıldı, `audio-check` tüm geçişleri doğrular. **Debug paneli** sol altta, katlanabilir.
+- Smoke notu: kuşanma denetimi artık ×1'de (×20'de pencere 0,75 sn'ydi).
+
 ## 5. Oyun mantığı (sonraki tasarım konuşması — henüz karar yok)
 
 Parti/sosyal strateji yönü için konuşulacaklar:

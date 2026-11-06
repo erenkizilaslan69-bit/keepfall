@@ -121,6 +121,7 @@ const result = await run(`(async () => {
     const x = reg.origin.x + (west ? 44 - 15 : 4 - 15) / 64, y0 = reg.origin.y + 3;
     const units = [{ unitId: 'kilicli', name: 'k', count: 16 }, { unitId: 'okcu', name: 'o', count: 8 }, { unitId: 'mancinik', name: 'm', count: 4 }, { unitId: 'suvari', name: 's', count: 4 }];
     let inside = 0, total = 0, rows = 0;
+    s.movers.setRoads([[{ x, y: y0 - 8 }, { x, y: y0 + 16 }]]); // a road that runs along the wall (the real ones lead through the gate, where the column rightly goes in)
     for (const d of [1, 2, 3, 4, 5]) {
       const pos = { x, y: y0 + d };
       s.movers.sync({ ...s.state, own: [], seen: [{ id: 'cc9', kind: 'army', ownerColor: 'red', units, position: pos, velocity: { x: 0, y: 2.5 }, heading: { x: 0, y: 1 } }] });
