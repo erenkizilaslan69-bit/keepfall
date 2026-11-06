@@ -194,7 +194,7 @@ function onCastle(c: CastleView): void {
   if (screen === 'game') crazyGameplay(!c.eliminated); // an eliminated player only watches: the site is told the play has stopped
   if (c.summary) { summary = c.summary; end?.setSummary(c.summary); }
   if (screen === 'game') {
-    music.scene(c.phase === 'war' ? 'war' : 'prep'); // the lively track for the war, the calm one before it
+    if (musicInGame) music.scene(c.phase === 'war' ? 'war' : 'prep'); // the lively track for the war, the calm one before it (once the clouds have parted)
     guarded('castle-state', () => ui?.update(c), 'ui');
     guarded('castle-state', () => { if (!scene && lastLayout) startScene(c.color, lastLayout); }, 'start scene');
     guarded('castle-state', () => scene?.setState(c), 'scene');
@@ -256,8 +256,12 @@ let siteName = '';
 /** A quick match (the player and bots only) is not a room to invite friends to: the CrazyGames invite button stays away from it. */
 let soloRoom = false;
 
+/** The match's music has begun (the clouds have parted): until then the menu music plays on. */
+let musicInGame = false;
+
 function showHome(defaults: { code?: string; error?: string } = {}): void {
-  music.scene('prep');
+  musicInGame = false;
+  music.scene('lobby');
   setLeaveAction(null);
   clear();
   document.documentElement.classList.add('in-menu');
@@ -314,7 +318,8 @@ async function quickMatch(name: string): Promise<string | null> {
 
 function showLobby(r: RoomView): void {
   disarmTutorial();
-  music.scene('prep');
+  musicInGame = false;
+  music.scene('lobby');
   setBotSeats(r.players);
   clear();
   document.documentElement.classList.add('in-menu');
@@ -360,7 +365,12 @@ function seedOf(code: string): number {
 /** The scene is drawn in the player's colour on the shared map, so it starts once both have arrived. */
 function startScene(color: CastleView['color'], layout: MapLayoutView): void {
   scene = new WorldScene(color, layout, net.seat, seedOf(net.roomCode ?? ''));
-  scene.onReady = () => curtain.open();
+  scene.onReady = () => {
+    curtain.open();
+    musicInGame = true;
+    if (lastCastle?.phase === 'war') music.scene('war'); // (back into a war already on: no opening piece)
+    else music.intro('prep'); // the clouds part: the opening piece plays once, then the preparation music comes in
+  };
   ui?.attach(scene);
   const world = scene;
   world.minimap = new Minimap(document.getElementById('stage')!, layout, (tile) => world.lookAt(tile));
@@ -399,7 +409,8 @@ function startScene(color: CastleView['color'], layout: MapLayoutView): void {
 
 function showEnd(r: RoomView): void {
   disarmTutorial();
-  music.scene('prep');
+  musicInGame = false;
+  music.scene('lobby');
   setLeaveAction(null);
   clear();
   document.documentElement.classList.add('in-menu');

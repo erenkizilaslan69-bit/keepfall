@@ -54,7 +54,7 @@ await sleep(2500);
 const state = JSON.parse(await run(`(() => { const a = window.keepfallAudio; return JSON.stringify({ ctx: a.sfx.audioContext?.state, samples: a.sfx.buffers.size, track: a.music.current?.track ?? null, musicBuffers: [...a.music.buffers.keys()] }); })()`));
 check('the audio context runs after the click', state.ctx === 'running', JSON.stringify(state));
 check('the recordings are loaded and decoded', state.samples >= 20, String(state.samples));
-check('the calm track starts at that click', state.track === 'prep');
+check('the menu track starts at that click', state.track === 'lobby');
 await run(`window.keepfallAudio.music.scene('war'); 1`);
 await sleep(1000);
 const mid = JSON.parse(await run(`(() => { const c = window.keepfallAudio.music.current; return JSON.stringify({ track: c.track, gain: c.gain.gain.value }); })()`));
@@ -70,11 +70,16 @@ await run(`window.keepfallAudio.sfx.setMusicVolume(0.6); 1`);
 const levels = JSON.parse(await run(`(() => { const s = window.keepfallAudio.sfx; return JSON.stringify({ music: s.musicBus.gain.value, sfx: s.master.gain.value }); })()`));
 check('music and effects have separate levels', Math.abs(levels.music - 0.3) < 1e-6 && Math.abs(levels.sfx - 0.15) < 1e-6, JSON.stringify(levels));
 check('a made-up sound is not needed for the files that exist', (await run(`(() => { const s = window.keepfallAudio.sfx; s.play('sword'); s.play('uiOpen'); return true; })()`)) === true);
-const mp3 = JSON.parse(await run(`(async () => { const ctx = window.keepfallAudio.sfx.audioContext, out = []; for (const n of ['sword-1', 'castleFall-3', 'ui-click-2', 'warning']) { const r = await fetch('/audio/sfx/' + n + '.mp3'); const b = await ctx.decodeAudioData(await r.arrayBuffer()); out.push(Math.round(b.duration * 100) / 100); } return JSON.stringify(out); })()`));
+const mp3 = JSON.parse(await run(`(async () => { const ctx = window.keepfallAudio.sfx.audioContext, out = []; for (const n of ['sword-slice-1', 'castle-collapse', 'ui-click-2', 'warning']) { const r = await fetch('/audio/sfx/' + n + '.mp3'); const b = await ctx.decodeAudioData(await r.arrayBuffer()); out.push(Math.round(b.duration * 100) / 100); } return JSON.stringify(out); })()`));
 check('the MP3 backups decode too (Safari)', mp3.every((d) => d > 0.005), JSON.stringify(mp3));
 const loops = JSON.parse(await run(`JSON.stringify([...window.keepfallAudio.music.buffers.values()].map((b) => Math.round(b.duration * 100) / 100))`));
-// the WAV sources last 49.95 s and 56.31 s: MP3 encoder padding is trimmed, so the loops are as long as the originals (no gap at the seam)
-check('the music loops decode to their exact length', loops.some((d) => Math.abs(d - 49.95) < 0.08) && loops.some((d) => Math.abs(d - 56.31) < 0.08), JSON.stringify(loops));
+// the preparation loop lasts 149.44 s, the war loop 56.31 s (and the menu loop 185 s, the opening piece 5.7 s): MP3 encoder padding is trimmed, so the loops are as long as the originals
+check('the music loops decode to their exact length', loops.some((d) => Math.abs(d - 149.44) < 0.1) && loops.some((d) => Math.abs(d - 56.31) < 0.1), JSON.stringify(loops));
+await run(`window.keepfallAudio.music.intro('prep'); 1`);
+await sleep(2500);
+const intro = JSON.parse(await run(`(() => { const c = window.keepfallAudio.music.current; return JSON.stringify({ track: c.track, loop: c.src.loop, buffers: [...window.keepfallAudio.music.buffers.keys()] }); })()`));
+check('the opening piece plays once (no loop)', intro.track === 'start' && intro.loop === false, JSON.stringify(intro));
+check('the ambient loops are loaded', (await run(`['campfire-loop', 'horse-gallop-loop'].every((n) => window.keepfallAudio.sfx.buffers.has(n))`)) === true);
 check('no failed requests or exceptions', failed.length === 0, failed.join(' | '));
 ws.close();
 chrome.kill();

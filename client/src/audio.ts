@@ -25,27 +25,27 @@ const MUSIC_SCALE = 0.5;
  * Recordings by sound: one of the files is picked at random (a little pitch variation on top), `gain` evens out the loudness,
  * and with `layers` all of them play together, a little apart (a castle falling is a few heavy things breaking).
  */
-interface Bank { files: string[]; gain: number; layers?: boolean }
+interface Bank { files: string[]; gain: number; layers?: boolean; /** how often each file is picked (default: all alike) */ weights?: number[] }
 const SAMPLES: Partial<Record<SoundName, Bank>> = {
   click: { files: ['ui-click-1', 'ui-click-2', 'ui-click-3'], gain: 0.7 },
   uiConfirm: { files: ['ui-confirm'], gain: 0.7 },
   uiError: { files: ['ui-error'], gain: 0.6 },
   uiOpen: { files: ['ui-open'], gain: 0.5 },
   uiClose: { files: ['ui-close'], gain: 0.5 },
-  sword: { files: ['sword-1', 'sword-2', 'sword-3', 'clash-1', 'clash-2', 'clash-3', 'clash-4'], gain: 0.8 },
+  // Two slices to one clash: a third of the blows clash, the rest slice (clashes ring: they must not pile up).
+  sword: { files: ['sword-clash-1', 'sword-slice-1', 'sword-slice-2'], gain: 0.8, weights: [1, 1, 1] },
   // An archer's shot: the string's release and the arrow in flight (a real longbow and recurve, CC0). The arrow sticking in is a dull thud.
-  arrow: { files: ['bow-1', 'bow-2', 'bow-3', 'bow-4'], gain: 0.85 },
+  arrow: { files: ['bow-shot'], gain: 0.85 },
   arrowHit: { files: ['arrow-hit'], gain: 0.7 },
-  catapult: { files: ['catapult-1'], gain: 0.9 },
+  catapult: { files: ['catapult-launch'], gain: 0.9 },
   stone: { files: ['stone-1', 'stone-2', 'stone-3'], gain: 0.9 },
-  upgrade: { files: ['upgrade-2'], gain: 0.8 }, // (upgrade-1 rang like an anvil bell: not used)
+  upgrade: { files: ['upgrade'], gain: 0.8 },
   march: { files: ['march-1', 'march-2', 'march-3'], gain: 0.5 },
-  gallop: { files: ['gallop-1'], gain: 0.55 },
   shield: { files: ['shield-1', 'shield-2'], gain: 0.8 },
   death: { files: ['death-1', 'death-2'], gain: 0.7 },
   castleHit: { files: ['gate-1', 'gate-2', 'gate-3'], gain: 1 }, // (castleHit-1/2 were low bells: not used)
-  castleFall: { files: ['castleFall-1', 'castleFall-2', 'castleFall-3', 'fall-4', 'fall-5'], gain: 1, layers: true },
-  win: { files: ['win-1', 'win-2'], gain: 0.8, layers: true },
+  castleFall: { files: ['castle-collapse'], gain: 1 },
+  win: { files: ['victory'], gain: 0.8 },
   battleStart: { files: ['battleStart'], gain: 0.9 },
   warning: { files: ['warning'], gain: 0.9 },
   // An envoy's arrival: two wooden knocks (cut from the gate recordings; the Kenney bell it had before rang too much).
@@ -56,7 +56,10 @@ const SAMPLES: Partial<Record<SoundName, Bank>> = {
 /** At most this many sounds at once; a crowded battle plays the first few and drops the rest. */
 const MAX_VOICES = 10;
 /** Looping recordings (not sounds that are played once): the camp fire. */
-const AMBIENT_FILES = ['fire-loop'];
+const AMBIENT_FILES = ['campfire-loop', 'horse-gallop-loop'];
+/** The looping ambient sounds: which recording, and how loud at full (the loudness asked for is multiplied by it). */
+const AMBIENTS = { fire: { file: 'campfire-loop', gain: 0.8 }, gallop: { file: 'horse-gallop-loop', gain: 0.6 } } as const;
+export type AmbientName = keyof typeof AMBIENTS;
 /** The same sound is not played again within this many ms (hundreds of hits in a big battle would be a roar of clicks). */
 const MIN_GAP_MS: Record<SoundName, number> = {
   click: 25, sword: 70, arrow: 110, death: 120, castleHit: 300, castleFall: 1500,
@@ -166,7 +169,7 @@ class Sfx {
   private sample(ctx: AudioContext, bank: Bank, v: number, out: { seconds: number }): boolean {
     const have = bank.files.filter((f) => this.buffers.has(f));
     if (have.length === 0) return false;
-    const files = bank.layers ? have : [have[Math.floor(Math.random() * have.length)]];
+    const files = bank.layers ? have : [this.pick(bank, have)];
     files.forEach((file, i) => {
       const buf = this.buffers.get(file)!;
       const src = ctx.createBufferSource();
@@ -180,6 +183,14 @@ class Sfx {
       out.seconds = Math.max(out.seconds, delay + buf.duration / src.playbackRate.value);
     });
     return true;
+  }
+
+  /** One of the loaded files, by the bank's weights (all alike without). */
+  private pick(bank: Bank, have: string[]): string {
+    const w = have.map((f) => bank.weights?.[bank.files.indexOf(f)] ?? 1);
+    let r = Math.random() * w.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < have.length; i++) { r -= w[i]; if (r <= 0) return have[i]; }
+    return have[have.length - 1];
   }
 
   /** <paramref name="loudness"/> 0–1: how loud this one is (e.g. far from the camera = quieter). */
@@ -370,14 +381,15 @@ class Sfx {
     bus.gain.linearRampToValueAtTime(full, t + seconds);
   }
 
-  private fire: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
-  /** The crackle of the camp fire, as loud as the camera is close to it (0 = none): a loop that starts when first wanted and fades with distance. */
-  setFire(level: number): void {
+  private readonly ambient = new Map<AmbientName, { src: AudioBufferSourceNode; gain: GainNode }>();
+  /** A looping ambient sound (the camp fire, a cavalry column) as loud as the camera is close to it (0 = none): the loop starts when first wanted and fades with distance. */
+  setAmbient(name: AmbientName, level: number): void {
     const ctx = this.ctx;
     if (!ctx || ctx.state !== 'running') return;
     const want = this.silent || this.prefs.volume <= 0 ? 0 : Math.max(0, Math.min(1, level));
-    if (!this.fire) {
-      const buf = this.buffers.get('fire-loop');
+    let loop = this.ambient.get(name);
+    if (!loop) {
+      const buf = this.buffers.get(AMBIENTS[name].file);
       if (!buf || want < 0.02) return;
       const src = ctx.createBufferSource();
       src.buffer = buf; src.loop = true;
@@ -385,10 +397,14 @@ class Sfx {
       gain.gain.value = 0;
       src.connect(gain).connect(this.master!);
       src.start();
-      this.fire = { src, gain };
+      loop = { src, gain };
+      this.ambient.set(name, loop);
     }
-    this.fire.gain.gain.setTargetAtTime(want * 0.8, ctx.currentTime, 0.3);
+    loop.gain.gain.setTargetAtTime(want * AMBIENTS[name].gain, ctx.currentTime, 0.3);
   }
+
+  /** The crackle of the camp fire. */
+  setFire(level: number): void { this.setAmbient('fire', level); }
 
   private applyLevel(): void {
     if (this.master) this.master.gain.value = this.silent ? 0 : this.prefs.volume * MASTER_SCALE;
@@ -406,22 +422,39 @@ class Sfx {
 
 export const sfx = new Sfx();
 
-export type Track = 'prep' | 'war';
+export type Track = 'lobby' | 'prep' | 'war' | 'start';
 const FADE = 2.5; // seconds of crossfade between the tracks
 
 /**
- * Two loops: calm for the preparation (and the lobby, the end of a match), lively for the war. A change of phase fades one out as the other
- * comes in. Nothing plays before the first click (the browser would refuse); the track asked for by then starts at that click.
+ * The music: a menu/lobby loop, a calm loop for the preparation, a lively one for the war, and a short opening piece that plays ONCE when the clouds part on
+ * a match (the preparation loop comes in softly under its end). A change fades one out as the other comes in. Nothing plays before the first click (the
+ * browser would refuse); the track asked for by then starts at that click.
  */
 class Music {
   private want: Track | null = null;
+  /** The track that follows the opening piece (the phase may change meanwhile). */
+  private after: Track = 'prep';
   private current: { track: Track; gain: GainNode; src: AudioBufferSourceNode } | null = null;
   private readonly buffers = new Map<Track, AudioBuffer>();
   private readonly loading = new Set<Track>();
+  private fade = FADE;
+  private introTimer = 0;
 
-  /** Which track should be playing now. */
+  /** Which track should be playing now. While the opening piece plays, the track is only remembered: it comes in after the piece. */
   scene(track: Track): void {
+    if (track === 'start') { this.intro(); return; }
+    if (this.want === 'start' && this.current?.track === 'start') { this.after = track; return; }
+    this.fade = FADE;
     this.want = track;
+    sfx.whenUnlocked(() => this.apply());
+  }
+
+  /** The clouds have parted on a match: the opening piece plays once (the menu music fades out under it), then the preparation music comes in softly. */
+  intro(after: Track = 'prep'): void {
+    window.clearTimeout(this.introTimer);
+    this.after = after;
+    this.fade = 1.2;
+    this.want = 'start';
     sfx.whenUnlocked(() => this.apply());
   }
 
@@ -435,18 +468,23 @@ class Music {
     if (old) {
       old.gain.gain.cancelScheduledValues(t);
       old.gain.gain.setValueAtTime(old.gain.gain.value, t);
-      old.gain.gain.linearRampToValueAtTime(0, t + FADE);
-      old.src.stop(t + FADE + 0.1);
+      old.gain.gain.linearRampToValueAtTime(0, t + this.fade);
+      old.src.stop(t + this.fade + 0.1);
     }
     const src = ctx.createBufferSource();
     src.buffer = buffer;
-    src.loop = true;
+    src.loop = want !== 'start'; // the opening piece plays once
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(1, t + FADE);
+    gain.gain.linearRampToValueAtTime(1, t + this.fade);
     src.connect(gain).connect(bus);
     src.start(t);
     this.current = { track: want, gain, src };
+    if (want === 'start') {
+      // the next track comes in softly while the piece is dying away
+      window.clearTimeout(this.introTimer);
+      this.introTimer = window.setTimeout(() => { this.fade = 3; this.want = this.after; this.apply(); }, Math.max(0, buffer.duration - 2.5) * 1000);
+    }
   }
 
   private async fetch(track: Track): Promise<void> {

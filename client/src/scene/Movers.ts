@@ -342,9 +342,20 @@ export class Movers {
         const horses = t.units.some((u) => u.unitId === 'suvari');
         t.stepAt = now + (horses ? 2600 : 520) / Math.max(1, Math.min(this.gameSpeed, 3));
         const at = toWorld(t.shown), l = hearing(this.scene, at.x, at.y);
-        if (l > 0.06) sfx.play(horses ? 'gallop' : 'march', l * (t.key.startsWith('own:') ? 1 : 0.8));
+        if (l > 0.06 && !horses) sfx.play('march', l * (t.key.startsWith('own:') ? 1 : 0.8)); // (a cavalry column is heard as the gallop loop, see gallopLevel)
       }
     }
+  }
+
+  /** How loudly the gallop loop is wanted now (0–1): the loudest cavalry column on the map in earshot of the camera. */
+  gallopLevel(): number {
+    let best = 0;
+    for (const t of this.tracks.values()) {
+      if (t.scout || t.envoy || t.fighting || Math.hypot(t.velocity.x, t.velocity.y) < 0.2 || !t.units.some((u) => u.unitId === 'suvari')) continue;
+      const at = toWorld(t.shown);
+      best = Math.max(best, hearing(this.scene, at.x, at.y) * (t.key.startsWith('own:') ? 1 : 0.8));
+    }
+    return best;
   }
 
   private track(key: string, color: PlayerColor, scout: boolean, units: MoverUnit[], position: Vec, envoy = false): Track {

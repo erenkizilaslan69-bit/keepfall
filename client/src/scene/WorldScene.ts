@@ -562,6 +562,7 @@ export class WorldScene extends Phaser.Scene {
     guarded('scene-update', () => this.terrain.update(dt, this.cameras.main.worldView), 'terrain');
     guarded('scene-update', () => this.props?.cull(this.cameras.main.worldView), 'props');
     guarded('scene-update', () => this.chimneys.update(), 'chimneys');
+    guarded('scene-update', () => sfx.setAmbient('gallop', this.movers.gallopLevel()), 'gallop');
     guarded('scene-update', () => sfx.setFire(document.documentElement.classList.contains('in-menu') ? 0 : hearing(this, CAMP.x, CAMP.y) ** 1.5), 'fire-sound'); // the camp fire crackles louder the nearer the camera is
     guarded('scene-update', () => this.workers.update(dt), 'workers');
     guarded('scene-update', () => { for (const r of this.regions.values()) r.update(dt); }, 'regions');

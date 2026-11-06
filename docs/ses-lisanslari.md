@@ -56,3 +56,44 @@ At toynağı (`gallop`, `march`) değişmedi. Beğenilmeyen olursa eski dosya gi
 | `arrow-hit` (okun saplanması, tok vuruş) | `gate-2` (rubberduck, yukarıda) alçak geçiren, 0,16 sn | — |
 Kesim/karışım `ffmpeg` ile yapıldı (ham arşiv `medieval_sfx_textures_1_of_2.7z`, 90 MB, repoya girmedi; yalnız kullanılan kısa kesitler repoda).
 Ses sınırı (`audio.ts MAX_SAME`): aynı anda en çok 3 ok, 4 kılıç, 3 kalkan, 3 ölüm sesi; her çalışta perde ±%10 ve ses ±%12 rastgele; yüzlerce okçu tek bir dolgun ok yağmuru gibi duyulur.
+
+## 2026-11-06 Eren'in seçtiği sesler (Pixabay Content License) — bunlar aşağıdaki eski kayıtların yerine geçti
+**Lisans:** Pixabay Content License (ticari kullanım serbest, isim zorunlu değil; seslerin tek başına dağıtılması/satılması YASAK: yalnızca oyunun parçası olarak kullanılır, ses paketi olarak yayınlanmaz). Bu satırdan önceki bölümlerdeki CC0 kayıtlardan aşağıdakilerin yerine geçenler repodan kaldırıldı; **kayıtları ve eski dosyalar git geçmişinde** (`git log -- client/public/audio`).
+Kaynak linkleri henüz doldurulmadı (Eren dolduracak). Teknik işleme (Eren'in notu): baştaki sessizlik kırpıldı, kısa fade-out, tepe ≈ −1 dBFS, kamp ateşi kesintisiz döngü. Claude yalnız ogg üretti (`ffmpeg -c:a libvorbis -q:a 5`, başka işlem yok); mp3'ler olduğu gibi.
+
+Yerleşim:
+| Dosya | Oyunda |
+|---|---|
+| `bow-shot` | okçu atışı (`arrow`) |
+| `sword-clash-1`, `sword-slice-1`, `sword-slice-2` | kılıç vuruşu; ağırlıklar 1:1:1 → çarpışma vuruşların ~1/3'ünde, kalan 2/3 slice |
+| `catapult-launch` | mancınık atışı |
+| `castle-collapse` | kale yıkılışı (+ müzik kısılır) |
+| `upgrade` | bina yükseltme |
+| `victory` | zafer |
+| `campfire-loop` | kamp ateşi döngüsü (kameranın kampa yakınlığıyla yükselir) |
+| `horse-gallop-loop` | süvari kolu döngüsü (kameraya en yakın süvari kolunun uzaklığıyla yükselir/alçalır) |
+| `music/start.mp3` (music-start) | bulutlar açılınca BİR KEZ; ardından hazırlık müziği yumuşakça girer |
+| `music/prep.mp3` (music-bg-loop, 149 sn) | hazırlık müziği |
+| `music/lobby.mp3` (music-lobby-loop, 185 sn) | ana menü, lobi ve maç sonu müziği; maça geçerken yumuşak geçiş (opening piece altında kaybolur) |
+| `music/war.mp3` | savaş müziği: değişmedi (eski, RandomMind, CC0) |
+Ses sınırları (`MAX_SAME`: 3 ok, 3 saplanma, 4 kılıç…) ve perde/ses rastgeleliği duruyor.
+
+Eren'in `kaynaklar.txt` dosyası olduğu gibi:
+```
+# Eren'in seçtiği sesler (2026-11-06). Kaynak linklerini Eren dolduracak.
+# Claude (sohbet) teknik işleme yaptı: baştaki sessizlik kırpıldı, kısa fade-out, tepe -1 dBFS civarı, kamp ateşi kesintisiz döngü.
+bow-shot.mp3          - okçu atışı        - kaynak: Pixabay - link: ?
+sword-clash-1.mp3     - kılıç çarpışması  - kaynak: Pixabay - Dragon Studio "sword clash/hit" (393837) - link: ?
+sword-slice-1.mp3     - kılıç savurma     - kaynak: Pixabay - Dragon Studio "sword slice" (393847) - link: ?
+sword-slice-2.mp3     - kılıç savurma 2   - kaynak: Pixabay - Dragon Studio "sword slice 2" (393845) - link: ?
+catapult-launch.mp3   - mancınık atışı    - kaynak: Pixabay - link: ?
+castle-collapse.mp3   - kale yıkılması    - kaynak: Pixabay - link: ?
+campfire-loop.mp3     - kamp ateşi döngü  - kaynak: Pixabay - link: ?
+horse-gallop-loop.mp3 - at dörtnala döngü - kaynak: Pixabay - link: ?
+upgrade.mp3           - bina yükseltme    - kaynak: Pixabay - link: ?
+victory.mp3           - zafer             - kaynak: Pixabay - link: ?
+music-start.mp3       - BAŞLANGIÇ müziği: bulutlar açılınca BİR KEZ çalar (döngü değil) (24 kHz, düşük kalite; daha iyisi bulunursa değiştir) - kaynak: Pixabay - link: ?
+music-bg-loop.mp3     - HAZIRLIK arka plan müziği (~2,5 dk kesintisiz döngü; orijinal parçanın bölümleri ölçü sınırlarında yeniden düzenlendi, yumuşak/ince varyasyonlarla) - kaynak: Pixabay - link: ?
+music-lobby-loop.mp3  - LOBİ / ana menü müziği (~3 dk kesintisiz döngü; orijinal çok yüksek kaydedilmişti, -16 LUFS'e indirildi) - kaynak: Pixabay - link: ?
+# Lisans: Pixabay Content License (ticari kullanım serbest, isim zorunlu değil; sesleri tek başına dağıtmak/satmak yasak).
+```
