@@ -466,6 +466,7 @@ export class EndScreen {
   /** The goals and stars of the finished challenge (HTML built by ui/challenges.ts); `hasNext` shows the "next" button. */
   setChallengeResult(html: string, hasNext: boolean): void {
     this.root.querySelector('#challenge')!.innerHTML = html;
+    this.root.querySelector('.screen.end')?.classList.add('ch-mode');
     this.root.querySelector('[data-a="ch-next"]')!.classList.toggle('hidden', !hasNext);
   }
 

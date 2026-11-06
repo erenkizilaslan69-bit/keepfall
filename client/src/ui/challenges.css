@@ -39,3 +39,6 @@
   .ch-card { padding: 6px 8px; }
   .ch-desc { font-size: .85em; }
 }
+/* a challenge's result replaces the big picture: the goals are what the player came for */
+.screen.end.ch-mode .end-art { display: none; }
+.screen.end.ch-mode #challenge { margin-top: 4px; }
