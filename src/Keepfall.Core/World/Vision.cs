@@ -14,6 +14,9 @@ public sealed record VisionCircle(Vec Center, double Radius)
 /// </summary>
 public sealed record TrailCircle(Vec Center, double Radius, double Fade);
 
+/// <summary>Where a rival army was when the player last saw it (it has left their sight since): its owner as it looked then, its place, the soldiers they made out, and how long ago.</summary>
+public sealed record LastSeenArmy(string Id, string Owner, Vec Position, IReadOnlyDictionary<UnitType, int> Units, double SecondsAgo);
+
 public enum MoverKind { Army, Scout, Envoy }
 
 /// <summary>

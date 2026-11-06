@@ -178,6 +178,8 @@ public sealed class MapConfig
 {
     /// <summary>The map scale (default 1.3, approved; 1 = the old size): the client draws every distance of the map this many times longer (castle yards, roads, vision) while the rules stay in tiles, so every journey takes as long as before. The server only carries the number; the client reads it from VITE_MAP_SCALE or ?mapscale=.</summary>
     public double Scale { get; set; } = 1.3;
+    /// <summary>A rival army that has left the player's sight stays on their map as "last seen" (where it was, what they made out) this many seconds; then it is forgotten.</summary>
+    public double LastSeenSeconds { get; set; } = 120;
     public double ArmySpeed { get; set; } = 1.5;
     public double ScoutSpeed { get; set; } = 2.5;
     /// <summary>The ground a scout walked over stays in view this long (s) after it passed; 0 = until the match ends.</summary>
@@ -555,7 +557,7 @@ public static class BalanceConfigLoader
             new ScoutingRules(sc.ReportError, sc.MaxScouts, sc.NoScoutLastPrepSeconds),
             new WarRules(w.FamineStart, w.FamineFoodMultiplier,
                 w.BattlePlayback, w.EncounterRadius, w.FallLootShare, w.FallWorkerShare, w.FamineStartSeconds, w.PrisonerShare, w.RaidBurnSeconds, w.RaidBurnFactor, w.MinBattleSeconds),
-            new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout, mp.ScoutTrailSeconds, mp.Scale),
+            new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout, mp.ScoutTrailSeconds, mp.Scale, mp.LastSeenSeconds),
             config.Mercenary,
             new ForestRules(fo.ChestsPerCorner, fo.VillagesPerCorner, fo.CampsPerCorner, fo.MinSpacing, fo.HubClearing, fo.FootMin, fo.FootMax,
                 fo.SpurMin, fo.SpurMax, fo.EdgeMargin, fo.DiscoverRadius,

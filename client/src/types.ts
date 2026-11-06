@@ -279,7 +279,12 @@ export interface MapStateView {
   sites: SiteView[];
   /** Rivals whose castle is in live sight, with their kingdom (their ornaments are drawn only then). */
   kingdoms?: { seat: number; faction: string }[] | null;
+  /** Rival armies we saw and no longer see: where they were, what we made out, how long ago (they are only remembered, not alive). */
+  lastSeen?: LastSeenView[] | null;
+  /** The ground our armies walked over: the fog stays open there (a picture only; nothing alive is shown from it). */
+  explored?: TrailView[] | null;
 }
+export interface LastSeenView { id: string; ownerSeat: number; ownerColor: PlayerColor; position: Vec; units: MoverUnit[]; secondsAgo: number }
 
 export type SiteKind = 'chest' | 'village' | 'camp' | 'bigCamp';
 /** A place of the forest we found. `gone`: used up (a chest taken, a village plundered, a camp cleared); `bandits`: about how many are in a camp. */

@@ -41,8 +41,11 @@ public sealed record SeatKingdomView(int Seat, string Faction);
 /// <summary>A battle going on that the player can see. Deliberately only where it is: not who, not how it goes.</summary>
 public sealed record BattleMarkerView(string Id, VecView At);
 
-/// <summary>Ground one of the player's scouts walked over that is still in view (fading out as it closes).</summary>
+/// <summary>Ground one of the player's scouts walked over that is still in view (fading out as it closes); the same shape is used for the ground their armies opened for good.</summary>
 public sealed record TrailView(VecView Center, double Radius, double Fade);
+
+/// <summary>A rival army the player saw earlier and no longer sees: where it was, what they made out then, how long ago (the client draws a faded marker).</summary>
+public sealed record LastSeenView(string Id, int OwnerSeat, PlayerColor OwnerColor, VecView Position, IReadOnlyList<ArmyUnitView> Units, double SecondsAgo);
 
 /// <summary>
 /// A place of the forest the player has found, as they last saw it: what it is, where, the trail to it, whether it was
@@ -55,7 +58,7 @@ public sealed record SiteView(
 public sealed record MapStateView(
     double ElapsedSeconds, IReadOnlyList<VisionView> Vision, IReadOnlyList<OwnMoverView> Own, IReadOnlyList<SeenMoverView> Seen,
     IReadOnlyList<BattleMarkerView> Battles, IReadOnlyList<TrailView> Trail, IReadOnlyList<SiteView> Sites,
-    IReadOnlyList<SeatKingdomView>? Kingdoms = null);
+    IReadOnlyList<SeatKingdomView>? Kingdoms = null, IReadOnlyList<LastSeenView>? LastSeen = null, IReadOnlyList<TrailView>? Explored = null);
 
 // A battle, for the two sides fighting it and nobody else: both armies soldier by soldier and the whole
 // record (hits [tick, attacker, target], deaths [tick, soldier], advances [tick, soldier]; soldiers are
@@ -116,7 +119,13 @@ public static class MapViewMapper
             game.KnownSitesOf(key).Select(k => new SiteView(k.Site.Id, k.Site.Kind, VecView.Of(k.Site.Position),
                 k.Site.Spur.Select(VecView.Of).ToList(), k.Site.Quadrant, k.Gone, Units(k.BanditsSeen), k.DiscoveredAt, k.SeenAt,
                 k.Site.Kind == SiteKind.Village ? game.Rules.Forest.Village.MinSoldiers : 0)).ToList(),
-            game.FactionsInSightOf(key).Select(f => new SeatKingdomView(SeatOf(f.Player), f.Faction)).ToList() is { Count: > 0 } kingdoms ? kingdoms : null);
+            game.FactionsInSightOf(key).Select(f => new SeatKingdomView(SeatOf(f.Player), f.Faction)).ToList() is { Count: > 0 } kingdoms ? kingdoms : null,
+            game.LastSeenOf(key).Select(g =>
+            {
+                var owner = room.PlayerOfCastle(g.Owner);
+                return new LastSeenView(g.Id, owner?.Seat ?? 0, owner?.Color ?? PlayerColor.Blue, VecView.Of(g.Position), Units(g.Units), g.SecondsAgo);
+            }).ToList() is { Count: > 0 } ghosts ? ghosts : null,
+            game.WalkedOf(key).Select(t => new TrailView(VecView.Of(t.Center), t.Radius, t.Fade)).ToList() is { Count: > 0 } explored ? explored : null);
     }
 
     /// <summary>More hits than this and only the deaths are sent (the client then animates attacks loosely).</summary>

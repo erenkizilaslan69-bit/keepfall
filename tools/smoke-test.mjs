@@ -119,16 +119,18 @@ await B.call('MoveWorkers', 'idle', 'blacksmith', 4);
 await B.call('QueueWeapon', 'mizrakci', 6);
 await B.call('QueueWeapon', 'okcu', 2);
 await sleep(3500);
+await A.call('SetSpeed', 1); // the arming picture is checked at ×1 (at ×20 the 15 s of arming are over in 0.75 s: a slow machine missed the window)
 check('B arms 6 spearmen', (await B.call('ArmWorkers', 'mizrakci', 6, 'idle')).ok);
 check('A arms 4 swordsmen', (await A.call('ArmWorkers', 'kilicli', 4, 'idle')).ok);
-await sleep(150); // ×20: about 3 game seconds into the 15 s of arming
+await sleep(1800); // about 2 game seconds into the 15 s of arming, and a picture has come since the command
 {
   const armingNow = A.of('CastleState').at(-1);
   const sword = armingNow.units.find((u) => u.id === 'kilicli');
   check('the arming time is part of the picture (15 s) and the four swordsmen are still being armed',
-    armingNow.armSeconds === 15 && sword.arming === 4 && sword.soldiers === 0);
+    armingNow.armSeconds === 15 && sword.arming === 4 && sword.soldiers === 0, JSON.stringify({ arm: armingNow.armSeconds, arming: sword.arming, soldiers: sword.soldiers, weapons: sword.weapons, elapsed: armingNow.elapsedSeconds }));
   check('people being armed count in the population but are not soldiers yet', armingNow.soldiers === 0);
 }
+await A.call('SetSpeed', 20);
 check('attacks refused in preparation', !(await A.call('SendArmy', 2, { kilicli: 1 }, null, null, 'attack')).ok);
 check('cannot scout yourself', !(await A.call('SendScout', 1, 'idle')).ok);
 check('hiring needs gold, and nobody has any yet', !(await A.call('HireMercenary', 'kilicli', 1)).ok
@@ -217,6 +219,30 @@ check('nobody ever sees their own movers as "seen"',
   [[mapsA, 1], [mapsB, 2], [mapsC, 3]].every(([maps, seat]) => maps.every((m) => m.seen.every((s) => s.ownerSeat !== seat))));
 check('whatever is seen is inside the vision or the scouts trail (and never inside a foreign corner through the trail)',
   [[mapsA, 1], [mapsB, 2], [mapsC, 3]].every(([maps, seat]) => maps.every((m) => m.seen.every((s) => inVision(s.position, m, seat)))));
+// ---- ground opened by armies and "last seen" (the hidden-information rules of the explored ground and the memory of rival armies) ----
+check('armies opened ground for A (who marched): explored circles with the army sight radius, and B/C who did not march only have what their own armies opened',
+  mapsA.some((m) => (m.explored ?? []).length > 0) && mapsA.every((m) => (m.explored ?? []).every((t) => t.radius === 6 && t.fade === 1)));
+check('the explored ground never lies inside another player corner (what is inside a castle is learned from reports only)',
+  [[mapsA, 1], [mapsB, 2], [mapsC, 3]].every(([maps, seat]) => maps.every((m) => (m.explored ?? []).every((t) => !inForeignRegion(t.center, seat)))));
+check('an explored circle carries only centre, radius and fade',
+  [...mapsA, ...mapsB, ...mapsC].every((m) => (m.explored ?? []).every((t) => JSON.stringify(Object.keys(t).sort()) === '["center","fade","radius"]')));
+{
+  const maps = [[mapsA, 1], [mapsB, 2], [mapsC, 3]];
+  const seenIds = (list) => new Set(list.flatMap((m) => m.seen.map((s) => s.id)));
+  // (The server sees every game tick, the client gets a picture a few times a second: an army can have been in sight between two pictures. So the rule checked is
+  // the one that matters: a remembered army was inside what that player could see at some moment, and is never their own.)
+  const badGhost = [];
+  for (const [list, seat] of maps) {
+    const circles = list.flatMap((m) => [...m.vision, ...m.trail.map((t) => ({ center: t.center, radius: t.radius }))]);
+    for (const m of list) for (const g of m.lastSeen ?? [])
+      if (g.ownerSeat === seat || !circles.some((c) => near(g.position, { center: c.center, radius: c.radius + 4 }))) badGhost.push(`seat ${seat}: ${g.id} owner ${g.ownerSeat} at ${g.position.x.toFixed(1)},${g.position.y.toFixed(1)}`);
+  }
+  check('"last seen" names only armies from inside what that player could see, never their own', badGhost.length === 0, badGhost.slice(0, 3).join(' | '));
+  check('"last seen" carries no road, target or arrival either',
+    ![...mapsA, ...mapsB, ...mapsC].some((m) => (m.lastSeen ?? []).some((g) => /target|route|travelled|arriv|remaining|returning|velocity/i.test(JSON.stringify(g)))));
+  check('an army that is in sight right now is not also listed as "last seen"',
+    maps.every(([list]) => list.every((m) => (m.lastSeen ?? []).every((g) => !m.seen.some((s) => s.id === g.id)))));
+}
 // Ground truth: A's own army position at each tick. B and C must see it exactly when it is in their vision
 // (while it is fighting, nobody but the two sides sees it at all).
 let compared = 0, mismatches = [];

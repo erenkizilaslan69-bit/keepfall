@@ -580,12 +580,12 @@ export class WorldScene extends Phaser.Scene {
       // The castle's circle comes from the server; the walking circles follow the drawn armies and scouts.
       const fixed = map.vision.slice(0, 1);
       const moving = this.movers.ownVision();
-      guarded('scene-update', () => { if (!this.spectating) this.fog.draw(fixed, moving, map.trail, this.foreignRegions); }, 'fog');
+      guarded('scene-update', () => { if (!this.spectating) this.fog.draw(fixed, moving, [...map.trail, ...(map.explored ?? [])], this.foreignRegions); }, 'fog');
       guarded('scene-update', () => {
         const view = this.cameras.main.worldView;
         const tl = toTiles({ x: view.x, y: view.y });
         const battles = [...map.battles.map((b) => b.at), ...this.battles.active.map((b) => b.at)];
-        this.minimap?.draw([...fixed, ...moving], this.movers.all(), { x: tl.x, y: tl.y, w: view.width / TILE, h: view.height / TILE }, battles, map.trail, this.foreignRegions,
+        this.minimap?.draw([...fixed, ...moving], this.movers.all(), { x: tl.x, y: tl.y, w: view.width / TILE, h: view.height / TILE }, battles, [...map.trail, ...(map.explored ?? [])], this.foreignRegions,
           map.sites.map((s) => ({ position: s.position, kind: s.kind, gone: s.gone })));
       }, 'minimap');
     }

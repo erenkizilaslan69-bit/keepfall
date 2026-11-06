@@ -27,6 +27,7 @@ export const EN: Record<string, string> = {
   "Haydut kampı": "Bandit Camp",
   "Büyük haydut kampı": "Great Bandit Camp",
   "{0} dk önce": "{0}m ago",
+  "{0} sn önce": "{0}s ago",
   "boş": "empty",
   "yağmalandı": "plundered",
   "temizlendi": "cleared",

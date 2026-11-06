@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
-import type { MapStateView, MoverUnit, PlayerColor, Vec } from '../types';
+import type { LastSeenView, MapStateView, MoverUnit, PlayerColor, Vec } from '../types';
+import { esc } from '../format';
+import { t } from '../i18n';
 import { UNIT_SCALE, colorKey, playRandom, unitOriginY, unitScale } from './assets';
 import { hearing } from './hearing';
 import { sfx } from '../audio';
@@ -177,6 +179,7 @@ export class Movers {
   }
 
   sync(state: MapStateView): void {
+    this.syncLastSeen(state.lastSeen ?? []);
     const now = performance.now();
     const alive = new Set<string>();
     for (const o of state.own) {
@@ -379,6 +382,31 @@ export class Movers {
     }
   }
 
+  /** The rivals' armies we saw and no longer see: a faded ring where they were, with a sign (how many we made out, how long ago). Only what the server remembers for us. */
+  private readonly ghosts = new Map<string, Phaser.GameObjects.Arc>();
+  private syncLastSeen(list: LastSeenView[]): void {
+    const alive = new Set<string>();
+    for (const g of list) {
+      alive.add(g.id);
+      const at = toWorld(g.position), total = g.units.reduce((n, u) => n + u.count, 0);
+      let ring = this.ghosts.get(g.id);
+      if (!ring) {
+        ring = this.scene.add.circle(at.x, at.y, 20, 0xffffff, 0.12).setStrokeStyle(3, hexOf(COLOR_CSS[g.ownerColor]), 0.6).setDepth(at.y - 1);
+        this.ghosts.set(g.id, ring);
+      }
+      ring.setPosition(at.x, at.y).setDepth(at.y - 1);
+      const age = g.secondsAgo < 60 ? t('{0} sn önce', Math.round(g.secondsAgo)) : t('{0} dk önce', Math.floor(g.secondsAgo / 60));
+      this.labels.set(`ghost:${g.id}`, {
+        x: at.x, y: at.y - 28, anchor: 'bottom', minZoom: 0.45, cls: 'wl-small',
+        html: `<div class="wl-sign wl-gone"><i class="dot" style="background:${COLOR_CSS[g.ownerColor] ?? '#888'}"></i><i class="ico ico-sword"></i><b>≈${total}</b><span>${esc(age)}</span></div>`,
+      });
+    }
+    for (const [id, ring] of this.ghosts) {
+      if (alive.has(id)) continue;
+      ring.destroy(); this.ghosts.delete(id); this.labels.remove(`ghost:${id}`);
+    }
+  }
+
   /** How loudly the gallop loop is wanted now (0–1): the loudest cavalry column on the map in earshot of the camera. */
   gallopLevel(): number {
     let best = 0;
@@ -539,6 +567,8 @@ export class Movers {
     return null;
   }
 }
+
+const hexOf = (css: string | undefined): number => (css ? parseInt(css.replace('#', ''), 16) : 0xffffff);
 
 /** One entry per soldier drawn (at most MAX_DRAWN), in marching order; types keep their share. */
 function formation(units: MoverUnit[]): string[] {

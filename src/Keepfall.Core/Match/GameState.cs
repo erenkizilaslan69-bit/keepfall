@@ -57,6 +57,13 @@ public sealed partial class GameState
     private readonly List<ActiveBattle> _startedForSpectators = [];
     /// <summary>The ground scouts walked over that is still in view: where, whose, and until when (null = to the end).</summary>
     private readonly List<TrailPoint> _trail = [];
+    // The ground our armies walked over (picture only: cells of WalkedCell tiles, each opened with the army's sight radius) and where rival armies were last seen.
+    private const double WalkedCell = 3;
+    /// <summary>The guess at a place's bandits when an army passes it (its own stream: it must not shift the battles' dice).</summary>
+    private readonly Random _walkRng = new(20261106);
+    private readonly Dictionary<string, HashSet<(int X, int Y)>> _walked = [];
+    private readonly Dictionary<string, Dictionary<string, (SeenMover Mover, double At)>> _lastPicture = [];
+    private readonly Dictionary<string, HashSet<string>> _inView = [];
     private sealed record TrailPoint(string Owner, Vec Center, double? ExpiresAt);
     /// <summary>The trail fades out over this many seconds before it closes.</summary>
     public const double TrailFadeSeconds = 10;
@@ -317,6 +324,75 @@ public sealed partial class GameState
         return true;
     }
 
+    /// <summary>True when <paramref name="p"/> lies inside another player's corner (what is in it is learned from reports only).</summary>
+    private bool InsideForeignRegion(string playerKey, Vec p)
+    {
+        foreach (var (other, corner) in _corners)
+        {
+            if (other == playerKey) continue;
+            var r = Map.RegionOf(corner);
+            if (p.X >= r.Origin.X && p.X <= r.Origin.X + r.Width && p.Y >= r.Origin.Y && p.Y <= r.Origin.Y + r.Height) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// An army opens the ground it walks over for good (for the picture of the map: the fog stays open there), never the inside of another player's
+    /// corner, and finds the places of the forest it passes close to (as a scout does). Nothing about a rival is learned from this: rival armies and castles
+    /// are seen live only while in sight, and then remembered as "last seen" (<see cref="LastSeenOf"/>).
+    /// </summary>
+    private void LayArmyGround()
+    {
+        foreach (var a in _armies)
+        {
+            if (a.Decoy || a.Rented || _eliminated.ContainsKey(a.From)) continue;
+            var cell = ((int)Math.Floor(a.Position.X / WalkedCell), (int)Math.Floor(a.Position.Y / WalkedCell));
+            var centre = new Vec((cell.Item1 + 0.5) * WalkedCell, (cell.Item2 + 0.5) * WalkedCell);
+            if (!InsideForeignRegion(a.From, a.Position) && !InsideForeignRegion(a.From, centre))
+            {
+                if (!_walked.TryGetValue(a.From, out var set)) _walked[a.From] = set = [];
+                set.Add(cell);
+            }
+            foreach (var site in ForestSites)
+                if (site.Position.DistanceTo(a.Position) <= Rules.Forest.DiscoverRadius + 1e-9) Discover(a.From, site, _walkRng);
+        }
+    }
+
+    /// <summary>The ground this player's armies opened, as circles of the army's sight (all fully open: they do not fade).</summary>
+    public IReadOnlyList<TrailCircle> WalkedOf(string playerKey)
+    {
+        if (_eliminated.ContainsKey(playerKey) || !_walked.TryGetValue(playerKey, out var set)) return [];
+        return set.OrderBy(c => c.X).ThenBy(c => c.Y)
+            .Select(c => new TrailCircle(new Vec((c.X + 0.5) * WalkedCell, (c.Y + 0.5) * WalkedCell), Rules.Map.ArmyVision, 1)).ToList();
+    }
+
+    /// <summary>Remembers, for each player, the last picture of every rival army they could see, and which are in sight now.</summary>
+    private void UpdateLastSeen()
+    {
+        foreach (var player in _players.Keys)
+        {
+            if (_eliminated.ContainsKey(player)) continue;
+            var now = new HashSet<string>();
+            if (!_lastPicture.TryGetValue(player, out var pictures)) _lastPicture[player] = pictures = [];
+            foreach (var s in SeenBy(player).Where(s => s.Kind == MoverKind.Army))
+            {
+                now.Add(s.Id);
+                pictures[s.Id] = (s, ElapsedSeconds);
+            }
+            _inView[player] = now;
+            foreach (var id in pictures.Where(kv => ElapsedSeconds - kv.Value.At > Rules.Map.LastSeenSeconds).Select(kv => kv.Key).ToList()) pictures.Remove(id);
+        }
+    }
+
+    /// <summary>Rival armies this player saw and no longer sees: where, what they made out (as it was then) and how long ago. Nothing they never saw is here.</summary>
+    public IReadOnlyList<LastSeenArmy> LastSeenOf(string playerKey)
+    {
+        if (_eliminated.ContainsKey(playerKey) || !_lastPicture.TryGetValue(playerKey, out var pictures)) return [];
+        var inView = _inView.GetValueOrDefault(playerKey) ?? [];
+        return pictures.Where(kv => !inView.Contains(kv.Key))
+            .Select(kv => new LastSeenArmy(kv.Key, kv.Value.Mover.Owner, kv.Value.Mover.Position, kv.Value.Mover.Units, ElapsedSeconds - kv.Value.At)).ToList();
+    }
+
     /// <summary>Every battle being fought right now.</summary>
     public IReadOnlyList<ActiveBattle> ActiveBattles => _active;
 
@@ -371,9 +447,11 @@ public sealed partial class GameState
         ElapsedSeconds += dt;
         AdvanceScouts(dt);
         AdvanceArmies(dt);
+        LayArmyGround();
         AdvanceKingdoms();
         CheckContinuity(Rules.Map.ArmySpeed * Math.Max(1, _prepSpeed) * Rules.Units.Max(u => u.SpeedFactor) * dt + 1e-6);
         RefreshSight();
+        UpdateLastSeen();
         if (Phase == MatchPhase.Ended) return; // the last castle standing ended it
         if (ElapsedSeconds + 1e-9 >= _nextSample) TakeSamples();
         if (RemainingSeconds <= 1e-9)
@@ -382,6 +460,7 @@ public sealed partial class GameState
             {
                 Phase = MatchPhase.War;
                 SlowToWarPace();
+                _walked.Clear(); // (and the ground the armies of the preparation opened)
                 _trail.Clear(); // everybody starts the war in the same dark: the ground scouted in the preparation closes (scouts still out go on)
             }
             else
@@ -641,25 +720,26 @@ public sealed partial class GameState
     // ---- the forest: what each player has found ---------------------------------------------------
 
     /// <summary>The player finds a place: from now on they know it is there, and how it looks.</summary>
-    private void Discover(string player, ForestSite site)
+    private void Discover(string player, ForestSite site, Random? rng = null)
     {
         if (!_knowledge.TryGetValue(player, out var known)) _knowledge[player] = known = [];
         if (known.ContainsKey(site.Id)) return;
         var state = _sites[site.Id];
         known[site.Id] = new SiteKnowledge
         {
-            DiscoveredAt = ElapsedSeconds, SeenAt = ElapsedSeconds, SeenVersion = state.Version, Gone = state.Gone, Bandits = ApproximateBandits(state),
+            DiscoveredAt = ElapsedSeconds, SeenAt = ElapsedSeconds, SeenVersion = state.Version, Gone = state.Gone, Bandits = ApproximateBandits(state, rng),
         };
     }
 
     /// <summary>How many bandits a visitor makes out: off by up to the scouts' margin, never none when there are some.</summary>
-    private IReadOnlyDictionary<UnitType, int> ApproximateBandits(SiteState state)
+    private IReadOnlyDictionary<UnitType, int> ApproximateBandits(SiteState state, Random? rng = null)
     {
+        rng ??= _rng;
         double error = Rules.Scouting.ReportError;
         return state.Bandits.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv =>
         {
             double spread = Math.Max(kv.Value * error, 1);
-            return Math.Max(1, (int)Math.Round(kv.Value + (_rng.NextDouble() * 2 - 1) * spread, MidpointRounding.AwayFromZero));
+            return Math.Max(1, (int)Math.Round(kv.Value + (rng.NextDouble() * 2 - 1) * spread, MidpointRounding.AwayFromZero));
         });
     }
 
@@ -1264,6 +1344,9 @@ public sealed partial class GameState
         _eliminated[player] = ElapsedSeconds;
         _missions.RemoveAll(m => m.From == player);
         _trail.RemoveAll(t => t.Owner == player);
+        _walked.Remove(player);
+        _lastPicture.Remove(player);
+        _inView.Remove(player);
         foreach (var a in _armies.Where(a => a.From == player && a.State == ArmyState.Returning && a.Battle is null).ToList())
         {
             if (!a.Decoy && !a.Rented) _players[player].Castle.ArmyLost(a.Survivors);

@@ -53,6 +53,8 @@
     // Harita ölçeği (varsayılan 1,3: Eren onayladı; 1 = eski boyut): istemci haritadaki tüm mesafeleri bu kadar uzun çizer (kale içi, yollar, görüş), kurallar karo cinsinden kalır:
     // yolculuk süreleri (ETA) değişmez. Sunucu yalnız sayıyı taşır; istemci VITE_MAP_SCALE ya da ?mapscale= ile okur.
     "scale": 1.3,
+    // Görüşten çıkan rakip ordu haritada bu kadar saniye "son görülme" olarak kalır (nerede olduğu, ne kadar asker görüldüğü); sonra unutulur.
+    "lastSeenSeconds": 120,
     "armySpeed": 1.5,
     "scoutSpeed": 2.5,
     // Gözcünün yürüdüğü yolun çevresi (görüş yarıçapı kadar) geçtikten sonra bu kadar saniye canlı görüşte kalır
