@@ -120,6 +120,15 @@ Bu iş için hazır prompt sohbette verildi (adımlar 0–7: envanter, renk=oyun
 - **Hazırlık sıkıştırma**: `match.prepSpeed` 1,6, hazırlık 5 dk; ölçüm `docs/hazirlik-sikistirma.md`. **Zor bot Orta karşısında %59 → %49** (açık konu). Karar bekleyen: 5 mi 4 dk mı.
 - Berserker hâlâ 8. birlik adayı (görsel geçişten sonra ayrı denge turu). `tools/clip.mjs`: önce/sonra mp4. 5090 dev LAN son build'le çalışıyor; Production 5080 kapalıydı.
 
+## 4c. İnce ayar turu (2026-11-06): orman, kale içi, hareket, King, ses (ayrıntı `docs/ince-ayar-raporu.md`)
+
+- **Hazırlık hızı:** gözcü ve ordu hızı hazırlıkta da `prepSpeed` kat (orman gezileri ekonomiye yetişsin; Orta asker 16,4 → 19,5, Zor vs Orta %49 → %65,5, kullanıcı "Zor kalsın" dedi); savaş başlayınca yoldakiler normal hıza döner (`SlowToWarPace`).
+- **Orman:** haydutlar ateşin çevresinde halka, sandık yerine altın yığını, büyük kamp kale değil (kule+ev+çit+ateş).
+- **Kale içi:** çimen + toprak yollar/aşınmış alanlar, süsler yok, binalar surdan ≥64 px ve çakışmasız (`layout.ts` yeniden yazıldı, `signSpot`), King binaları dolaşır (`Lord.ts`).
+- **Hareket:** rakip yürüyenler de yol boyunca mesafeyle (`Movers.followRoadOf`), sütun düzeni birim türüne göre (`FOOT`). `corner-check` 11 durum.
+- **Ses:** çınlayanlar tok vuruşa çevrildi (kılıç, ulak, uyarı, onay, örs, kapı); `docs/ses-lisanslari.md` sonu.
+- 5090 son build'le çalışıyor (`http://192.168.1.3:5090/?debug=1`). Yenilemek: sunucu kodu değiştiğinden `dotnet publish src/Keepfall.Server -c Release -o ..\keepfall-dev-lan\server` (önce 5090 işlemini durdur).
+
 ## 5. Oyun mantığı (sonraki tasarım konuşması — henüz karar yok)
 
 Parti/sosyal strateji yönü için konuşulacaklar:
