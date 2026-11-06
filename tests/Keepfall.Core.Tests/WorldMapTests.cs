@@ -110,22 +110,22 @@ public class WorldMapTests
         // map.scale makes the client draw every distance longer; the server counts in tiles, so the same route takes the same time at scale 1 and 1.3
         var path = BalanceConfigLoader.FindDefaultPath(AppContext.BaseDirectory)!;
         var text = File.ReadAllText(path);
-        Assert.Contains("\"scale\": 1,", text);
+        Assert.Contains("\"scale\": 1.3,", text);
         var tmp = Path.Combine(Path.GetTempPath(), $"balance-scale-{Guid.NewGuid():N}.json");
-        File.WriteAllText(tmp, text.Replace("\"scale\": 1,", "\"scale\": 1.3,"));
+        File.WriteAllText(tmp, text.Replace("\"scale\": 1.3,", "\"scale\": 1,"));
         try
         {
-            var big = BalanceConfigLoader.LoadFromFile(tmp);
-            Assert.Equal(1, Rules.Map.VisualScale);
-            Assert.Equal(1.3, big.Map.VisualScale);
+            var plain = BalanceConfigLoader.LoadFromFile(tmp);
+            Assert.Equal(1.3, Rules.Map.VisualScale);
+            Assert.Equal(1, plain.Map.VisualScale);
             var corners = new Dictionary<string, Corner> { ["a"] = Corner.NorthWest, ["b"] = Corner.SouthEast };
             var one = new GameState(Rules, ["a", "b"], rng: new Random(1), corners: corners);
-            var scaled = new GameState(big, ["a", "b"], rng: new Random(1), corners: corners);
+            var scaled = new GameState(plain, ["a", "b"], rng: new Random(1), corners: corners);
             Assert.Equal(one.MarchSeconds("a", "b"), scaled.MarchSeconds("a", "b"), 9);
             Assert.Equal(one.ScoutSeconds("a", "b"), scaled.ScoutSeconds("a", "b"), 9);
-            Assert.Equal(Rules.Map.ArmySpeed, big.Map.ArmySpeed);
-            Assert.Equal(Rules.Map.CastleVision, big.Map.CastleVision);
-            Assert.Equal(Rules.Map.ScoutVision, big.Map.ScoutVision);
+            Assert.Equal(Rules.Map.ArmySpeed, plain.Map.ArmySpeed);
+            Assert.Equal(Rules.Map.CastleVision, plain.Map.CastleVision);
+            Assert.Equal(Rules.Map.ScoutVision, plain.Map.ScoutVision);
         }
         finally { File.Delete(tmp); }
     }

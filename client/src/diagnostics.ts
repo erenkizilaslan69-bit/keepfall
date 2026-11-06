@@ -68,9 +68,17 @@ export function startDiagnostics(src: DiagSource): void {
   const debug = import.meta.env.VITE_PLATFORM !== 'crazygames' && new URLSearchParams(location.search).get('debug') === '1';
   let panel: HTMLPreElement | null = null;
   if (debug) {
+    // Bottom left beside the FPS counter (never over the resource strip): a small chip that opens and closes the numbers (closed at first).
+    const chip = document.createElement('button');
+    chip.className = 'kf-diag-chip';
     panel = document.createElement('pre');
     panel.className = 'kf-diag';
-    document.body.appendChild(panel);
+    let open = false;
+    try { open = sessionStorage.getItem('keepfall.diag-open') === '1'; } catch { /* no storage */ }
+    const show = () => { panel!.hidden = !open; chip.textContent = open ? 'debug ▾' : 'debug ▸'; };
+    chip.addEventListener('click', () => { open = !open; try { sessionStorage.setItem('keepfall.diag-open', open ? '1' : '0'); } catch { /* no storage */ } show(); });
+    show();
+    document.body.append(chip, panel);
   }
   const inGame = () => document.documentElement.classList.contains('in-game');
 

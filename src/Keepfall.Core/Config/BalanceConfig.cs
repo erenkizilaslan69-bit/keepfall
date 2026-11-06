@@ -176,8 +176,8 @@ public sealed class CampConfig
 
 public sealed class MapConfig
 {
-    /// <summary>The map experiment (default 1 = off): the client draws every distance of the map this many times longer (castle yards, roads, vision) while the rules stay in tiles, so every journey takes as long as before. The server only carries the number; the client reads it from VITE_MAP_SCALE or ?mapscale=.</summary>
-    public double Scale { get; set; } = 1;
+    /// <summary>The map scale (default 1.3, approved; 1 = the old size): the client draws every distance of the map this many times longer (castle yards, roads, vision) while the rules stay in tiles, so every journey takes as long as before. The server only carries the number; the client reads it from VITE_MAP_SCALE or ?mapscale=.</summary>
+    public double Scale { get; set; } = 1.3;
     public double ArmySpeed { get; set; } = 1.5;
     public double ScoutSpeed { get; set; } = 2.5;
     /// <summary>The ground a scout walked over stays in view this long (s) after it passed; 0 = until the match ends.</summary>

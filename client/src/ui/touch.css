@@ -42,7 +42,8 @@ html.in-menu #app { padding: var(--sa-t) var(--sa-r) var(--sa-b) var(--sa-l); }
 @media (pointer: coarse) { .ucard-btns { display: none !important; } }
 .touch-only { display: none; }
 @media (pointer: coarse) { .touch-only { display: block; } }
-.kf-diag { position: fixed; left: 4px; top: 4px; z-index: 100002; margin: 0; padding: 4px 6px; background: rgba(0, 0, 0, .72); color: #9f9; font: 10px/1.25 monospace; pointer-events: none; max-width: 40vw; }
+.kf-diag { position: fixed; left: 8px; bottom: 36px; z-index: 100002; margin: 0; padding: 4px 6px; background: rgba(0, 0, 0, .78); color: #9f9; font: 9px/1.2 monospace; max-width: 34vw; max-height: 46vh; overflow: auto; pointer-events: auto; }
+.kf-diag-chip { position: fixed; left: 118px; bottom: 8px; z-index: 100003; padding: 2px 8px; border: 0; border-radius: 4px; background: rgba(15, 20, 28, .72); color: #9f9; font: 11px/1.4 monospace; cursor: pointer; }
 
 /* Windows on a touch screen: the close button sits inside the window's corner (not floating outside it over the map), and scrolling a window never scrolls anything behind it. */
 .win { overscroll-behavior: contain; }
