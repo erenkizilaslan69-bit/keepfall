@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { emblemCanvas } from '../ui/tiny-ui';
+import { bannerDesign } from '../progress/catalog';
 
 // Our own kingdom's banner, hung by our castle's gate: a pole with a top ornament and a crossbar, and under the bar a cloth in the kingdom's colour with
 // the kingdom's emblem. Each kingdom has a few designs (a, b, c); CHOICE says which one the game hangs. The cloth is its own picture so that it can sway.
@@ -52,8 +53,8 @@ export const DESIGNS: Record<string, Record<string, Spec>> = {
   },
 };
 
-/** The design the game hangs for each kingdom (the player's pick). */
-const CHOICE: Record<string, string> = { golge: 'a', tuccar: 'a', kahin: 'a', entrikaci: 'a' };
+/** The design the game hangs for a kingdom: the player's pick (only one they have earned; the plain one a otherwise). */
+const chosen = (id: string): string => bannerDesign(id);
 
 function make(w: number, h: number): [HTMLCanvasElement, CanvasRenderingContext2D, (color: string, x: number, y: number, w: number, h: number) => void] {
   const c = document.createElement('canvas');
@@ -144,7 +145,7 @@ export interface BannerKeys { pole: string; cloth: string }
 
 /** The texture keys of a kingdom's banner (made once), or null for an unknown kingdom. */
 export function kingdomBanner(scene: Phaser.Scene, id: string): BannerKeys | null {
-  const design = CHOICE[id] ?? 'a';
+  const design = chosen(id);
   const spec = DESIGNS[id]?.[design];
   if (!spec) return null;
   const pole = `kf-banner-pole-${spec.pole}`, cloth = `kf-banner-cloth-${id}-${design}`;

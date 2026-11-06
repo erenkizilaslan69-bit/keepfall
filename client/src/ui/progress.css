@@ -1,0 +1,43 @@
+/* Progress: the achievements and mastery screen, the end-screen block, avatar frames. Loaded after theme.css. */
+.screen.progress { max-width: min(calc(980px * var(--u, 1)), calc(100vw - 24px)); display: flex; flex-direction: column; max-height: calc(100dvh - 40px * var(--u, 1)); }
+.screen.progress .kf-logo { transform: scale(.7); transform-origin: top center; margin-bottom: calc(-30px * var(--u, 1)); }
+.screen.progress .pg-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: calc(4px * var(--u, 1)); }
+.screen.progress .start { flex: none; margin-top: calc(8px * var(--u, 1)); }
+.pg-scroll h2 { margin: .8em 0 .2em; }
+.pg-scroll h3 { margin: .6em 0 .3em; font-size: 1em; }
+.pg-kingdoms { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(220px * var(--u, 1)), 1fr)); gap: calc(8px * var(--u, 1)); }
+.pg-kingdom { padding: calc(8px * var(--u, 1)) calc(10px * var(--u, 1)); background: rgba(255, 248, 224, .6); border: 2px solid rgba(90, 66, 34, .45); border-radius: 8px; }
+.pg-kingdom header { display: flex; align-items: center; gap: .5em; }
+.pg-kingdom h3 { margin: 0; flex: 1 1 auto; }
+.pg-kingdom p { margin: .3em 0 0; }
+.pg-pips { display: inline-flex; gap: .2em; }
+.pg-pips i { width: .8em; height: .8em; transform: rotate(45deg); background: rgba(75, 46, 23, .3); }
+.pg-pips i.on { background: var(--kf-gold); box-shadow: 0 0 0 1px var(--kf-gold-lo); }
+.pg-bar { margin-top: .4em; height: calc(8px * var(--u, 1)); border-radius: 999px; background: rgba(75, 46, 23, .25); overflow: hidden; }
+.pg-bar i { display: block; height: 100%; background: var(--kf-gold); }
+.pg-swatches { display: flex; flex-wrap: wrap; gap: calc(6px * var(--u, 1)); }
+.pg-swatch { display: flex; flex-direction: column; align-items: center; gap: .15em; min-width: calc(76px * var(--u, 1)); padding: .35em .5em; background: rgba(255, 248, 224, .6); border: 2px solid rgba(90, 66, 34, .45); border-radius: 8px; color: inherit; font: inherit; cursor: pointer; }
+.pg-swatch.on { border-color: var(--kf-gold-lo); background: rgba(255, 236, 170, .85); }
+.pg-swatch.locked { opacity: .55; cursor: default; }
+.pg-swatch img { height: calc(48px * var(--u, 1)); width: auto; image-rendering: pixelated; }
+.pg-swatch small { font-size: .7em; max-width: 9em; text-align: center; }
+.pg-banner-row { display: flex; align-items: center; gap: calc(10px * var(--u, 1)); margin-bottom: calc(6px * var(--u, 1)); flex-wrap: wrap; }
+.pg-banner-name { flex: 0 0 calc(210px * var(--u, 1)); display: flex; align-items: center; gap: .4em; }
+.pg-avatar { display: inline-block; width: calc(34px * var(--u, 1)); height: calc(34px * var(--u, 1)); border-radius: 50%; background: #cfc0a0; }
+.pg-achs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(280px * var(--u, 1)), 1fr)); gap: calc(5px * var(--u, 1)); }
+.pg-ach { display: flex; align-items: center; gap: .6em; padding: .3em .5em; border-radius: 6px; background: rgba(255, 255, 255, .22); opacity: .6; }
+.pg-ach > div { display: flex; flex-direction: column; }
+.pg-ach.got { opacity: 1; background: rgba(255, 236, 170, .7); }
+.pg-ach.fresh { animation: pg-pop .5s ease-out; }
+.pg-medal { flex: none; width: 1.6em; height: 1.6em; border-radius: 50%; background: rgba(75, 46, 23, .3); border: 2px solid rgba(75, 46, 23, .5); }
+.pg-ach.got .pg-medal { background: var(--kf-gold); border-color: var(--kf-gold-lo); box-shadow: 0 0 .5em rgba(240, 200, 74, .7); }
+.pg-end { display: flex; flex-direction: column; gap: .5em; text-align: left; max-width: 34em; margin: 0 auto; }
+.pg-end h3 { margin: 0 0 .2em; }
+.pg-up { margin: .3em 0 0; font-weight: bold; color: var(--kf-gold-lo); }
+@keyframes pg-pop { from { transform: scale(.9); opacity: 0; } to { transform: none; opacity: 1; } }
+html.kf-calm .pg-ach.fresh { animation: none; }
+/* avatar frames (a cosmetic the player picked; shown in the lobby and on the end screen) */
+.avatar.frame-bronze { box-shadow: 0 0 0 3px #a8672d, 0 0 0 5px #3c2410; }
+.avatar.frame-silver { box-shadow: 0 0 0 3px #d8dde6, 0 0 0 5px #4a5260; }
+.avatar.frame-gold { box-shadow: 0 0 0 3px #f0c84a, 0 0 0 5px #7a5a10, 0 0 10px 3px rgba(240, 200, 74, .75); }
+.rank-banner { height: calc(26px * var(--u, 1)); width: auto; image-rendering: pixelated; vertical-align: middle; flex: none; }

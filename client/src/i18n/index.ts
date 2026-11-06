@@ -7,6 +7,7 @@
 import { EN } from './en';
 import { EN_SERVER } from './en-server';
 import { EN_GUIDE } from './en-guide';
+import { EN_PROGRESS } from './en-progress';
 
 export type Lang = 'tr' | 'en';
 const KEY = 'keepfall_lang';
@@ -32,7 +33,7 @@ export function setLang(next: Lang): void {
 }
 export function toggleLang(): void { setLang(lang === 'tr' ? 'en' : 'tr'); }
 
-const DICT: Record<string, string> = { ...EN, ...EN_SERVER, ...EN_GUIDE };
+const DICT: Record<string, string> = { ...EN, ...EN_SERVER, ...EN_GUIDE, ...EN_PROGRESS };
 
 /** {0} {1} ... take the arguments; an English text may also say {0:one|many}: the first word when argument 0 is exactly 1, the second otherwise ("{0} {0:soldier|soldiers}"). */
 const fill = (text: string, args: readonly (string | number)[]): string => (args.length

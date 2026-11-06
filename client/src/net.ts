@@ -1,7 +1,9 @@
+import { effectivePicks } from './progress/catalog';
+import { progressStore } from './progress/store';
 import * as signalR from '@microsoft/signalr';
 import { loadIdentity, markActiveRoom, saveIdentity } from './identity';
 import { trace } from './debug-trace';
-import type { ChallengeList, ChallengeResult, ArmyMode, BattleStartedView, BotLevel, BuildingType, CastleView, CommandResult, Job, JoinView, MapLayoutView, MapStateView, RoomView, Row, SpectatorStateView, SpectatorWaitView, SummaryView } from './types';
+import type { ProgressResult, ChallengeList, ChallengeResult, ArmyMode, BattleStartedView, BotLevel, BuildingType, CastleView, CommandResult, Job, JoinView, MapLayoutView, MapStateView, RoomView, Row, SpectatorStateView, SpectatorWaitView, SummaryView } from './types';
 import { serverUrl } from './env';
 
 /** The version of the conversation with the server; Hello on the hub answers with the server's (GameHub.Protocol). */
@@ -25,6 +27,8 @@ export interface ConnectionEvents {
   matchEnded: (summary: SummaryView) => void;
   /** Only in a challenge: the goals and the stars, to the one player. */
   challengeResult: (result: ChallengeResult) => void;
+  /** At the end of every match: the achievements it earned, to the one player. */
+  progressResult: (result: ProgressResult) => void;
   /** Something that happened to us, e.g. "Kırmızı'nın gözcüsü kaleni gözetledi." */
   notification: (text: string) => void;
   status: (status: ConnectionStatus) => void;
@@ -58,6 +62,7 @@ export class GameConnection {
     this.hub.on('SpectatorWait', (wait: SpectatorWaitView) => this.on.spectatorWait(wait));
     this.hub.on('MatchEnded', (summary: SummaryView) => this.on.matchEnded(summary));
     this.hub.on('ChallengeResult', (result: ChallengeResult) => this.on.challengeResult(result));
+    this.hub.on('ProgressResult', (result: ProgressResult) => this.on.progressResult(result));
     this.hub.on('Notification', (text: string) => this.on.notification(text));
     this.hub.onreconnecting(() => this.on.status('reconnecting'));
     // A reconnect is a new connection on the server: rejoin the same seat with our token.
@@ -140,6 +145,7 @@ export class GameConnection {
       markActiveRoom(result.code);
       this.on.status('connected');
       if (result.room) this.on.room(result.room);
+      void this.setCosmetics();
     }
     return result;
   }
@@ -159,6 +165,8 @@ export class GameConnection {
   setGuided = (on: boolean) => this.call('SetGuided', on);
   /** Starter rules for this (single human) room: no kingdom abilities, fixed rows, the classic deck unless one was picked. */
   setStarter = (on: boolean) => this.call('SetStarter', on);
+  /** Our avatar frame and banner designs (only what we have earned; the server accepts known ids only). A server that does not know them just says no. */
+  setCosmetics = () => { const p = effectivePicks(progressStore().load()); return this.call('SetCosmetics', p.frame, p.banners); };
   setDeck = (units: string[]) => this.call('SetDeck', units);
   startMatch = () => this.call('StartMatch');
   /** The challenges and today's daily one (the same for everybody; nothing of any match). */

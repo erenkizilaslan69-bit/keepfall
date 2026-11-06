@@ -204,5 +204,7 @@ export const EN_SERVER: Record<string, string> = {
   "Meydan okumayı yalnız oda sahibi başlatabilir.": "Only the room's host can start a challenge.",
   "Meydan okuma tek kişiliktir.": "A challenge is for one player.",
   "Meydan okuma tanımı geçersiz.": "This challenge is not valid.",
-  "Böyle bir meydan okuma yok.": "There is no such challenge."
+  "Böyle bir meydan okuma yok.": "There is no such challenge.",
+  "Bilinmeyen çerçeve.": "Unknown frame.",
+  "Bilinmeyen flama.": "Unknown banner."
 };

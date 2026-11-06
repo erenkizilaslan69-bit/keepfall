@@ -44,8 +44,11 @@ import { FEATURE_PRIVATE_ROOM } from './features';
 import { crazyGameplay, crazyInstant, crazyInviteRoom, crazyLoaded, crazyRoom, crazyUsername, crazyVictory, initCrazy, onCrazyJoin, watchCrazySettings } from './crazy';
 import { countMatch, newPlayer, playsFullRules, setSiteChatOff } from './prefs';
 import { guarded, installErrorReporting } from './error-report';
-import { ChallengeScreen, nextOf, resultHtml, saveStars } from './ui/challenges';
-import type { BattleStartedView, BotLevel, CastleView, ChallengeList, ChallengeResult, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
+import { ChallengeScreen, loadStars, nextOf, resultHtml, saveStars } from './ui/challenges';
+import './ui/progress.css';
+import { ProgressScreen, mergeDelta, progressPanelHtml } from './ui/progress';
+import { recordMatch, recordMeta, type ProgressDelta } from './progress/catalog';
+import type { BattleStartedView, ProgressResult, BotLevel, CastleView, ChallengeList, ChallengeResult, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 import { currentRoute, embedded, setRoute } from './env';
 
 // Routes: "/" is the home screen, "/oda/ABCD" is a room. Inside a room the screen follows the
@@ -65,7 +68,7 @@ const statusText: Record<ConnectionStatus, string> = {
   roomLost: t('Oda kapandı'),
 };
 
-type Screen = 'none' | 'home' | 'challenges' | 'lobby' | 'game' | 'end';
+type Screen = 'none' | 'home' | 'challenges' | 'progress' | 'lobby' | 'game' | 'end';
 let screen: Screen = 'none';
 let lastCastle: CastleView | null = null;
 let lastLayout: MapLayoutView | null = null;
@@ -77,6 +80,9 @@ let status = '';
 /** Challenge mode: the list from the server (once), and the result of the match that just ended until the end screen has shown it. */
 let challengeList: ChallengeList | null = null;
 let lastChallengeResult: ChallengeResult | null = null;
+/** What the finished match changed in the player's progress (kept until the end screen shows it). */
+let progressDelta: ProgressDelta | null = null;
+let progressSeen = false;
 
 installTouch();
 mountGuideButton(); // the "?" for the menus (in the game it is in the top bar)
@@ -135,6 +141,7 @@ const net = new GameConnection({
   spectatorWait: (wait) => ui?.setSpectatorWait(wait.startsIn),
   matchEnded: (s) => { summary = s; end?.setSummary(s); },
   challengeResult: (r) => { lastChallengeResult = r; applyChallengeResult(); },
+  progressResult: (r) => onProgressResult(r),
   notification: (text) => ui?.notify(text),
   status: (s) => {
     // A blip shorter than a second and a half is not worth a red ribbon: "reconnecting" is only shown if it lasts.
@@ -255,7 +262,7 @@ async function leaveToMenu(): Promise<void> {
   crazyRoom(null, false);
   crazyGameplay(false);
   soloRoom = false;
-  lastCastle = null; lastLayout = null; lastMap = null; lastSpectator = null; pendingBattles = []; summary = null;
+  lastCastle = null; lastLayout = null; lastMap = null; lastSpectator = null; pendingBattles = []; summary = null; progressDelta = null; progressSeen = false;
   setRoute(`/${location.search}`);
   showHome();
 }
@@ -285,6 +292,7 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
       return null;
     },
     challenges: () => void showChallenges(),
+    progress: () => void showProgress(),
     quick: async (name) => {
       saveName(name);
       return quickMatch(name);
@@ -299,6 +307,36 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
       return null;
     },
   });
+}
+
+// ---- progress: achievements, mastery, cosmetics --------------------------------------------
+
+/** What the history rules need besides the stored counters: the stars of the challenges and how many fixed challenges there are. */
+const metaContext = () => ({ challengeStars: loadStars(), challengeCount: challengeList?.challenges.length ?? 0 });
+
+async function showProgress(): Promise<void> {
+  if (!challengeList) { try { challengeList = await net.getChallenges(); } catch { /* an old server: the challenge achievements wait */ } }
+  musicInGame = false;
+  music.scene('lobby');
+  setLeaveAction(null);
+  clear();
+  document.documentElement.classList.add('in-menu');
+  screen = 'progress';
+  recordMeta(metaContext()); // (stars earned meanwhile may have opened history achievements)
+  new ProgressScreen(app, metaContext(), { back: () => showHome() });
+}
+
+/** The server named the achievements this match earned: they are kept in this browser together with the kingdom's tally. */
+function onProgressResult(r: ProgressResult): void {
+  if (progressSeen) return;
+  progressSeen = true;
+  progressDelta = recordMatch(r, metaContext());
+  showProgressPanel();
+}
+
+function showProgressPanel(): void {
+  if (!end) return;
+  end.setProgressHtml(progressPanelHtml(progressDelta));
 }
 
 // ---- challenge mode ------------------------------------------------------------------------
@@ -340,6 +378,11 @@ function applyChallengeResult(): void {
   const r = lastChallengeResult;
   lastChallengeResult = null;
   const before = saveStars(r.id, r.stars);
+  // (the stars may have opened history achievements: add them to the progress block)
+  const more = recordMeta(metaContext());
+  progressDelta = mergeDelta(progressDelta, more);
+  if (progressDelta === null && (more.newAchievements.length || more.newCosmetics.length)) progressDelta = { newAchievements: more.newAchievements, newCosmetics: more.newCosmetics, kingdom: null, won: r.won, masteryBefore: 0, masteryAfter: 0, winsAfter: 0 };
+  showProgressPanel();
   const list = challengeList;
   const card = list ? (r.id.startsWith('daily-') ? list.daily : list.challenges.find((c) => c.id === r.id) ?? null) : null;
   const next = card && list && r.stars >= 1 ? nextOf(card, list) : null;
@@ -391,7 +434,7 @@ function showLobby(r: RoomView): void {
   lastMap = null;
   lastSpectator = null;
   pendingBattles = [];
-  summary = null;
+  summary = null; progressDelta = null; progressSeen = false;
   setLeaveAction(null);
   lobby = new LobbyScreen(app, net, net.seat, r, saveName, () => void leaveToMenu());
 }
@@ -514,6 +557,7 @@ function showEnd(r: RoomView): void {
   lastEndRoom = r;
   end.update(r);
   applyChallengeResult(); // (the result may have come before the screen)
+  showProgressPanel();
 }
 
 function hideBanner(): void { document.getElementById('banner')?.remove(); }

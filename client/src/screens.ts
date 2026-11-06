@@ -14,6 +14,7 @@ import { deceptionTimelineHtml } from './ui/deceptions';
 import { clipAvailable, clipDownload, clipSupported } from './ui/clip';
 import type { PlayerColor } from './types';
 import { asset } from './env';
+import { bannerUrl, frameClass } from './progress/looks';
 import { FEATURE_PRIVATE_ROOM } from './features';
 import { crazyActive, crazyInviteLink, crazyVictory } from './crazy';
 
@@ -69,7 +70,7 @@ export class HomeScreen {
   constructor(
     parent: HTMLElement,
     defaults: { name: string; code: string; error?: string },
-    actions: { create: (name: string) => Promise<string | null>; join: (name: string, code: string) => Promise<string | null>; quick: (name: string) => Promise<string | null>; challenges: () => void },
+    actions: { create: (name: string) => Promise<string | null>; join: (name: string, code: string) => Promise<string | null>; quick: (name: string) => Promise<string | null>; challenges: () => void; progress: () => void },
   ) {
     const root = mount(parent, `
       <div class="screen menu paper home">
@@ -78,6 +79,7 @@ export class HomeScreen {
         <label class="field">${t('Adın')} <input id="name" maxlength="16" autocomplete="nickname" value="${esc(defaults.name)}" placeholder="${t('Oyuncu')}"></label>
         <button id="quick" class="btn wide kf-btn--green">${t('Hızlı oyna')} <small>${t('(3 bota karşı, hemen)')}</small></button>
         <button id="challenges" class="btn wide">${t('Meydan Okuma')} <small>${t('(tek kişilik, hedefli maçlar)')}</small></button>
+        <button id="progress" class="btn wide">${t('Başarımlar ve Ustalık')} <small>${t('(rozetler, flamalar)')}</small></button>
         ${FEATURE_PRIVATE_ROOM ? `<div class="or">${t('ya da arkadaşlarınla')}</div>
         <button id="create" class="btn wide">${t('Oda kur')}</button>
         <div class="or">${t('ya da')}</div>
@@ -98,6 +100,7 @@ export class HomeScreen {
     };
     root.querySelector('#quick')!.addEventListener('click', () => run(() => actions.quick(name.value)));
     root.querySelector('#challenges')!.addEventListener('click', () => actions.challenges());
+    root.querySelector('#progress')!.addEventListener('click', () => actions.progress());
     root.querySelector('#create')?.addEventListener('click', () => run(() => actions.create(name.value)));
     root.querySelector('#join')?.addEventListener('click', () => run(() => actions.join(name.value, code.value)));
     code.addEventListener('keydown', (e) => { if (e.key === 'Enter') void run(() => actions.join(name.value, code.value)); });
@@ -327,7 +330,7 @@ export class LobbyScreen {
     const seats = Array.from({ length: room.maxPlayers }, (_, i) => room.players.find((p) => p.seat === i + 1));
     this.q('#players').innerHTML = seats.map((p, i) => p ? `
       <li class="${p.connected ? '' : 'offline'}" data-color="${p.color}">
-        <i class="avatar" style="background-image:url('${avatar(p.seat)}')"></i>
+        <i class="avatar${frameClass(p.frame)}" style="background-image:url('${avatar(p.seat)}')"></i>
         <span class="pname">${botMark(p.seat)}${esc(tr(p.name))}${p.seat === this.mySeat ? ` <span class="muted">${t('(sen)')}</span>` : ''}</span>
         <span class="tags">
           ${p.isBot ? `<span class="tag">${t('bot · {0}', p.botLevel === 'easy' ? t('kolay') : p.botLevel === 'hard' ? t('zor') : t('orta'))}</span>` : ''}
@@ -393,6 +396,7 @@ export class EndScreen {
           <div class="end-art" id="end-art"></div>
           <p class="muted center" id="end-reason"></p>
           <div id="challenge"></div>
+          <div id="progress-panel"></div>
           <div id="ranking"></div>
           <div id="deceptions"></div>
           <div id="summary"><p class="muted">${t('Özet hazırlanıyor…')}</p></div>
@@ -472,6 +476,11 @@ export class EndScreen {
   /** Set by the page when the room plays a challenge: what the foot buttons do (each returns an error text, or null). */
   challenge: { retry: () => Promise<string | null>; next: () => Promise<string | null>; list: () => void } | null = null;
 
+  /** The progress block (mastery, new achievements and unlocks), built by ui/progress.ts. */
+  setProgressHtml(html: string): void {
+    this.root.querySelector('#progress-panel')!.innerHTML = html;
+  }
+
   /** The goals and stars of the finished challenge (HTML built by ui/challenges.ts); `hasNext` shows the "next" button. */
   setChallengeResult(html: string, hasNext: boolean): void {
     this.root.querySelector('#challenge')!.innerHTML = html;
@@ -504,8 +513,8 @@ export class EndScreen {
       this.root.querySelector('#ranking')!.innerHTML = `
         <ol class="ranking">${r.ranking.map((x) => `
           <li class="${r.winners.includes(x.seat) ? 'winner' : ''}" data-color="${x.color}">
-            <span class="place">${x.place}.</span><i class="avatar" style="background-image:url('${avatar(x.seat)}')"></i>
-            ${emblemHtml(x.kingdom, 'emblem-rank')}<span class="pname">${r.winners.includes(x.seat) ? `<i class="ico ico-crown" title="${t('Kazanan')}"></i>` : ''}${botMark(x.seat)}${esc(tr(x.name))}${x.seat === this.mySeat ? ` <span class="muted">${t('(sen)')}</span>` : ''}</span>
+            <span class="place">${x.place}.</span><i class="avatar${frameClass(x.frame)}" style="background-image:url('${avatar(x.seat)}')"></i>
+            ${emblemHtml(x.kingdom, 'emblem-rank')}${rankBanner(x.kingdom, x.banner)}<span class="pname">${r.winners.includes(x.seat) ? `<i class="ico ico-crown" title="${t('Kazanan')}"></i>` : ''}${botMark(x.seat)}${esc(tr(x.name))}${x.seat === this.mySeat ? ` <span class="muted">${t('(sen)')}</span>` : ''}</span>
             <span class="muted small">${x.eliminated ? t('elendi') : t('nüfus {0}', x.population)}</span>
           </li>`).join('')}</ol>`;
       this.root.querySelector('#deceptions')!.innerHTML = deceptionTimelineHtml(r);
@@ -524,6 +533,12 @@ export class EndScreen {
       ? t('Aynı oyuncularla yeni bir hazırlık için lobiye dön.')
       : t('Oda sahibi lobiye dönünce yeni maç kurulabilir.');
   }
+}
+
+/** A player's banner on the end screen: the design they picked for the kingdom they played (the match is over, so the kingdom is public). */
+function rankBanner(kingdom: string | null | undefined, design: string | null | undefined): string {
+  const src = bannerUrl(kingdom, design);
+  return src ? `<img class="rank-banner" src="${src}" alt="" draggable="false">` : '';
 }
 
 function summaryHtml(s: SummaryView): string {

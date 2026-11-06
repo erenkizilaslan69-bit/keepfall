@@ -56,7 +56,7 @@ export type RoomPhase = 'lobby' | 'preparation' | 'war' | 'ended';
 
 /** Public facts about a player; the server never sends anyone else's token or castle. */
 export type BotLevel = 'easy' | 'medium' | 'hard';
-export interface PlayerView { seat: number; name: string; color: PlayerColor; ready: boolean; connected: boolean; isHost: boolean; eliminated: boolean; isBot: boolean; botLevel: BotLevel | null; sheltered?: boolean }
+export interface PlayerView { seat: number; name: string; color: PlayerColor; ready: boolean; connected: boolean; isHost: boolean; eliminated: boolean; isBot: boolean; botLevel: BotLevel | null; sheltered?: boolean; frame?: string | null }
 
 export interface RoomView {
   code: string;
@@ -95,9 +95,11 @@ export interface ChallengeCard {
 }
 export interface ChallengeList { challenges: ChallengeCard[]; daily: ChallengeCard }
 export interface GoalResult { id: string; type: string; target: number; actual: number; passed: boolean; star: number }
+/** After a match, to the one player: the kingdom played, the result and the achievement ids the match earned (the browser keeps the history). */
+export interface ProgressResult { kingdom: string | null; won: boolean; lesson: boolean; earned: string[] }
 export interface ChallengeResult { id: string; won: boolean; stars: number; goals: GoalResult[] }
 
-export interface RankView { seat: number; name: string; color: PlayerColor; place: number; population: number; eliminated: boolean; kingdom?: string | null }
+export interface RankView { seat: number; name: string; color: PlayerColor; place: number; population: number; eliminated: boolean; kingdom?: string | null; frame?: string | null; banner?: string | null }
 export interface DeceptionEventView { at: number; kind: string; actorSeat: number; targetSeat: number | null; asSeat: number | null; count: number; detail: string | null }
 export interface ResultView {
   winners: number[];
