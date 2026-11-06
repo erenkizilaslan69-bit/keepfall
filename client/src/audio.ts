@@ -36,18 +36,20 @@ const SAMPLES: Partial<Record<SoundName, Bank>> = {
   arrow: { files: ['arrow-1', 'arrow-2', 'arrow-3'], gain: 0.7 },
   catapult: { files: ['catapult-1'], gain: 0.9 },
   stone: { files: ['stone-1', 'stone-2', 'stone-3'], gain: 0.9 },
-  upgrade: { files: ['upgrade-1', 'upgrade-2'], gain: 0.8 },
+  upgrade: { files: ['upgrade-2'], gain: 0.8 }, // (upgrade-1 rang like an anvil bell: not used)
   march: { files: ['march-1', 'march-2', 'march-3'], gain: 0.5 },
   gallop: { files: ['gallop-1'], gain: 0.55 },
   shield: { files: ['shield-1', 'shield-2'], gain: 0.8 },
   death: { files: ['death-1', 'death-2'], gain: 0.7 },
-  castleHit: { files: ['castleHit-1', 'castleHit-2', 'gate-1', 'gate-2', 'gate-3'], gain: 1 },
+  castleHit: { files: ['gate-1', 'gate-2', 'gate-3'], gain: 1 }, // (castleHit-1/2 were low bells: not used)
   castleFall: { files: ['castleFall-1', 'castleFall-2', 'castleFall-3', 'fall-4', 'fall-5'], gain: 1, layers: true },
   win: { files: ['win-1', 'win-2'], gain: 0.8, layers: true },
   battleStart: { files: ['battleStart'], gain: 0.9 },
   warning: { files: ['warning'], gain: 0.9 },
-  // An envoy's arrival: a bell (Kenney Interface Sounds, bong_001), not the scout's chime.
+  // An envoy's arrival: two wooden knocks (cut from the gate recordings; the Kenney bell it had before rang too much).
   envoy: { files: ['envoy'], gain: 0.9 },
+  // A scout back home: a single wooden knock.
+  scoutBack: { files: ['knock'], gain: 0.9 },
 };
 /** At most this many sounds at once; a crowded battle plays the first few and drops the rest. */
 const MAX_VOICES = 10;
