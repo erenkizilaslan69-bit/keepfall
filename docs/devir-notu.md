@@ -134,6 +134,10 @@ Bu iş için hazır prompt sohbette verildi (adımlar 0–7: envanter, renk=oyun
 - **Okçu sesi** gerçek yay (CC0 Weapon Textures) + `arrow-hit`; `MAX_SAME` ses sınırı. **Kol** 4 genişlik, mancınık ortada, süvari arkada; **sur halkası** yanındaki yolda kol kayar/sıkışır (`Movers.setWalls`/`fitRow`). **L1–L3 çakışmalar** açıldı, L4 eski yerleşim; `tools/layout-check.steps.json`. **Boş sandık** etiketsiz.
 - Seviye 4 çakışma denetimi hâlâ uyarı verir (eski yerleşim, bilerek).
 
+## 4e. Harita ölçeği deneyi (2026-11-06, bayrak arkasında; `docs/harita-olcegi.md`)
+
+- `?mapscale=1.3` / `VITE_MAP_SCALE`: haritadaki tüm mesafeler ve kale içi ×ölçek, sprite boyutu aynı, yolculuk süreleri aynı (karo cinsinden sayım; test `The_map_scale_is_only_a_picture…`). Varsayılan 1 (kapalı), karar Eren'in. 1,3'te rehberli maç x1, corner-check, movers-stall, smoke geçti. Ölçüm: texMB +%8 (1,3) / +%12 (1,5), nesne +%17 / +%22. Sunucuda `map.scale` yalnız sayı (istemci buradan okumaz).
+
 ## 5. Oyun mantığı (sonraki tasarım konuşması — henüz karar yok)
 
 Parti/sosyal strateji yönü için konuşulacaklar:
