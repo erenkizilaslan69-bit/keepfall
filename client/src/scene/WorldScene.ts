@@ -12,7 +12,7 @@ import { sfx } from '../audio';
 import { hearing } from './hearing';
 import { kingdomBanner } from './Banners';
 import { createAnimations, playFrom, loadSpectatorAssets, preloadAssets } from './assets';
-import { CAMP, CASTLE, GATE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH } from './layout';
+import { CAMP, CASTLE, GATE, SITES, TILE, WORLD_HEIGHT, WORLD_WIDTH, signSpot } from './layout';
 import { distanceToSegment, seeded, setWorldOrigin, toTiles, toWorld } from './world';
 import { NO_OFFSET, buildingSign, setShadeHook, sign } from './parts';
 import { RegionDisplay } from './RegionDisplay';
@@ -51,7 +51,6 @@ const DEPTH_WATER = -100_000, DEPTH_GROUND = -90_000, DEPTH_ROAD = -80_000;
 const GRASS = { tl: 0, t: 1, tr: 2, l: 9, c: 10, r: 11, bl: 18, b: 19, br: 20 };
 
 /** Building signs stay above the bottom wall (which begins a little below this). */
-const SIGN_MAX_Y = 684;
 
 /** Where the castle's health sign hangs: just inside the top edge of the world. */
 const WALL_SIGN_Y = 66;
@@ -887,7 +886,7 @@ export class WorldScene extends Phaser.Scene {
     slot.dust.setVisible(upgrading);
     if (upgrading && !slot.dust.anims.isPlaying) slot.dust.play('dust');
     this.labels.set(`building:${b.type}`, {
-      x: site.center.x, y: Math.min(site.center.y + site.area.h / 2 - 6, SIGN_MAX_Y), anchor: 'bottom', minZoom: 0.5, html: buildingSign(b, workers),
+      x: signSpot(b.type, b.level).x, y: signSpot(b.type, b.level).y, anchor: 'top', minZoom: 0.5, html: buildingSign(b, workers),
     });
   }
 

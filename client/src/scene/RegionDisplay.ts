@@ -5,7 +5,7 @@ import { COLORED_IMAGES, colorKey } from './assets';
 import { drawBuilding } from './BuildingArt';
 import { Chimneys } from './Chimneys';
 import { Lord } from './Lord';
-import { SITES, type Point } from './layout';
+import { SITES, signSpot, type Point } from './layout';
 import { buildingSign } from './parts';
 import { Soldiers } from './Soldiers';
 import { Workers } from './Workers';
@@ -45,7 +45,6 @@ export class RegionDisplay {
     for (const b of castle.buildings) {
       const slot = this.slots.get(b.type);
       if (!slot) continue;
-      const site = SITES[b.type];
       if (slot.level !== b.level) {
         slot.sprites.forEach((s) => s.destroy());
         this.chimneys.clear(b.type);
@@ -59,8 +58,8 @@ export class RegionDisplay {
       if (upgrading && !slot.dust.anims.isPlaying) slot.dust.play('dust');
       const workers = castle.jobs.find((j) => j.job === b.worker)?.count ?? 0;
       this.labels.set(`building:${this.seat}:${b.type}`, {
-        x: site.center.x + this.off.x, y: Math.min(site.center.y + site.area.h / 2 - 6, 684) + this.off.y,
-        anchor: 'bottom', minZoom: 0.5, html: buildingSign(b, workers),
+        x: signSpot(b.type, b.level).x + this.off.x, y: signSpot(b.type, b.level).y + this.off.y,
+        anchor: 'top', minZoom: 0.5, html: buildingSign(b, workers),
       });
     }
     this.workers.sync(castle.jobs);

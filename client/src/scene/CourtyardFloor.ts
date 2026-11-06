@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
 import { TILE, type Point } from './layout';
 
-// The ground inside a castle's wall: packed earth with a flagstone walk along the wall and a stone square before the castle, so the castle
-// reads as a yard and not as a meadow with a fence round it. Painted in code (nothing of the Tiny Swords art is copied), once per region, into a
-// small canvas (one pixel per 4 px cell, like the roads) that is scaled up without smoothing. A few barrels, crates, stones, wood piles and
-// a rail of fence stand along the inside of the north and south wall, where no building or worker walks. Pure picture: no rule, no server data.
+// The ground inside a castle's wall: meadow grass with dirt tracks from the gate to every building and a small worn patch of earth in front of each
+// (soft, ragged edges, not squares), a flagstone walk along the wall and a stone square before the castle gate. Painted in code (nothing of the Tiny Swords
+// art is copied), once per region, into a small canvas (one pixel per 4 px cell, like the roads) that is scaled up without smoothing; the grass is the
+// terrain showing through. Pure picture: no rule, no server data.
 
 const REGION_W = 16 * TILE, REGION_H = 12 * TILE;
 const CELL = 4;
@@ -14,7 +14,7 @@ const GATE_SIDE_INSET = 40;
 type Rgb = [number, number, number];
 const rgb = (hex: number): Rgb => [(hex >> 16) & 255, (hex >> 8) & 255, hex & 255];
 const EARTH = [rgb(0xb48e5b), rgb(0xaa8452), rgb(0xbf9a66), rgb(0xa27d4e)];
-const EARTH_DARK = rgb(0x9a774b), EARTH_LIGHT = rgb(0xcaa874);
+const EARTH_DARK = rgb(0x9a774b);
 const FLAG = [rgb(0xb3ad9d), rgb(0xa59f8f), rgb(0xbdb7a6)];
 const MORTAR = rgb(0x6f6552), SHINE = rgb(0xd9d3c0);
 const PEBBLE = [rgb(0x9aa09c), rgb(0xc4c9c0), rgb(0x6f7778)];
@@ -32,48 +32,43 @@ function noise(x: number, y: number, size: number, salt: number): number {
   return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
 }
 
-// ---- the small wooden things (drawn from character grids: o outline, l light, m mid, d dark wood, b iron band) -----------------------
+// ---- dirt: tracks (polylines from the gate square) and worn patches (ellipses before the buildings), region-local px --------------------
 
-const PIXELS: Record<string, string[]> = {
-  'kf-barrel': ['.ooooo.', 'olllllo', 'obbbbbo', 'omllmdo', 'omlmmdo', 'obbbbbo', 'omllmdo', '.ooooo.'],
-  'kf-crate': ['oooooooo', 'ollllllo', 'olmmmddo', 'olmmdmdo', 'olmdmmdo', 'oddddddo', 'oooooooo'],
-  'kf-crate-small': ['oooooo', 'ollllo', 'olmmdo', 'olmdmo', 'oddddo', 'oooooo'],
-};
-const COLORS: Record<string, string> = { o: '#241a14', l: '#c58f56', m: '#9d6a3b', d: '#744827', b: '#7d8896' };
-
-function makeSmallThings(scene: Phaser.Scene): void {
-  for (const [key, rows] of Object.entries(PIXELS)) {
-    if (scene.textures.exists(key)) continue;
-    const c = document.createElement('canvas');
-    c.width = rows[0].length * CELL; c.height = rows.length * CELL;
-    const g = c.getContext('2d')!;
-    rows.forEach((row, j) => [...row].forEach((ch, i) => { if (ch !== '.') { g.fillStyle = COLORS[ch]; g.fillRect(i * CELL, j * CELL, CELL, CELL); } }));
-    scene.textures.addCanvas(key, c);
-  }
-}
-
-/** What stands along the north and south wall, region-local pixels (x, y of the base). */
-const THINGS: { key: string; x: number; y: number; scale?: number; flip?: boolean }[] = [
-  { key: 'rock2', x: 338, y: 86, scale: 0.55 },
-  { key: 'kf-barrel', x: 404, y: 86 }, { key: 'kf-barrel', x: 428, y: 92 }, { key: 'kf-crate', x: 458, y: 88 },
-  { key: 'kf-crate-small', x: 482, y: 90 },
-  { key: 'wood-pile', x: 628, y: 92, scale: 0.8 }, { key: 'kf-barrel', x: 660, y: 88 },
-  { key: 'rock4', x: 684, y: 84, scale: 0.5, flip: true },
-  { key: 'kf-crate', x: 366, y: 704 }, { key: 'kf-barrel', x: 398, y: 706 }, { key: 'kf-crate-small', x: 424, y: 706 },
-  { key: 'rock1', x: 492, y: 702, scale: 0.55 },
+const TRACK_HALF = 17;
+const TRACKS: [number, number][][] = [
+  [[512, 482], [400, 504], [288, 486], [262, 400], [258, 300]],  // farm
+  [[512, 482], [624, 504], [736, 486], [764, 400], [770, 300]],  // woodcutter
+  [[400, 504], [340, 548], [300, 596]],                           // mine
+  [[624, 504], [712, 536], [790, 596]],                           // forge
 ];
-/** Fence rails (x from, x to, y) in front of the north wall and the south wall. */
-const RAILS: [number, number, number][] = [[512, 596, 82], [440, 520, 714]];
+/** [x, y, rx, ry]: the worn earth in front of each building. */
+const PATCHES: [number, number, number, number][] = [
+  [246, 304, 48, 118], [778, 316, 44, 118], [284, 624, 88, 28], [806, 656, 76, 28],
+];
+
+/** 1 on the middle of a track or patch, falling to 0 at its edge (negative outside). */
+function dirtCover(x: number, y: number): number {
+  let best = -1;
+  for (const line of TRACKS) {
+    for (let k = 0; k + 1 < line.length; k++) {
+      const [ax, ay] = line[k], [bx, by] = line[k + 1];
+      const dx = bx - ax, dy = by - ay, len2 = dx * dx + dy * dy;
+      const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / len2));
+      const d = Math.hypot(x - (ax + dx * t), y - (ay + dy * t));
+      best = Math.max(best, 1 - d / TRACK_HALF);
+    }
+  }
+  for (const [cx, cy, rx, ry] of PATCHES) best = Math.max(best, 1 - Math.hypot((x - cx) / rx, (y - cy) / ry));
+  return best;
+}
 
 export class CourtyardFloor {
   private image: Phaser.GameObjects.Image | null = null;
-  private things: Phaser.GameObjects.GameObject[] = [];
   private fallen = false;
 
   /** `origin`: the region's top-left corner in scene pixels; `onEast`: the gate is in the east wall (the wall on the gate side stands further in). */
   constructor(private readonly scene: Phaser.Scene, private readonly origin: Point, private readonly onEast: boolean, private readonly key: string) {
     this.paint();
-    this.furnish();
   }
 
   /** The castle has fallen: the yard greys out. */
@@ -85,8 +80,6 @@ export class CourtyardFloor {
 
   destroy(): void {
     this.image?.destroy(); this.image = null;
-    for (const t of this.things) t.destroy();
-    this.things = [];
   }
 
   private paint(): void {
@@ -125,13 +118,14 @@ export class CourtyardFloor {
           // a missing stone here and there: bare earth shows through
           if (hash(col, row, seed + 6) > 0.96 && c !== MORTAR) c = EARTH[1];
         } else {
+          // grass shows through; dirt where a track or patch covers (ragged edge, a darker rim)
+          const cover = dirtCover(i * CELL, j * CELL) + (noise(i * CELL, j * CELL, 26, seed + 13) - 0.5) * 0.5 + (hash(i, j, seed + 14) - 0.5) * 0.12;
+          if (cover < 0.04) continue;
           c = EARTH[Math.floor(hash(i, j, seed) * EARTH.length)];
-          const n = noise(i * CELL, j * CELL, 70, seed + 9);
-          if (n < 0.33) c = EARTH_DARK; // worn, darker patches
-          else if (n > 0.7 && hash(i, j, seed + 10) > 0.5) c = EARTH_LIGHT;
-          const s = hash(i, j, seed + 11);
-          if (s > 0.992) c = PEBBLE[Math.floor(hash(i, j, seed + 12) * PEBBLE.length)];
-          else if (s < 0.012) c = EARTH_DARK;
+          if (cover < 0.16) c = EARTH_DARK;
+          else if (noise(i * CELL, j * CELL, 70, seed + 9) < 0.3) c = EARTH_DARK;
+          const sp = hash(i, j, seed + 11);
+          if (sp > 0.992) c = PEBBLE[Math.floor(hash(i, j, seed + 12) * PEBBLE.length)];
         }
         px[j * w + i] = (255 << 24) | (c[2] << 16) | (c[1] << 8) | c[0];
       }
@@ -141,36 +135,5 @@ export class CourtyardFloor {
     canvas.setFilter(Phaser.Textures.FilterMode.NEAREST);
     this.image?.destroy();
     this.image = this.scene.add.image(this.origin.x, this.origin.y, tex).setOrigin(0).setScale(CELL).setDepth(DEPTH_FLOOR);
-  }
-
-  private furnish(): void {
-    makeSmallThings(this.scene);
-    const rnd = (n: number) => hash(n, 3, this.key.length * 17 + this.key.charCodeAt(0));
-    THINGS.forEach((t, n) => {
-      if (!this.scene.textures.exists(t.key)) return;
-      const x = this.origin.x + t.x + (rnd(n) - 0.5) * 6, y = this.origin.y + t.y;
-      const big = t.key.startsWith('rock') || t.key === 'wood-pile';
-      const img = this.scene.add.image(x, y, t.key).setOrigin(0.5, big ? 0.75 : 1).setScale(t.scale ?? 1).setDepth(y).setFlipX(!!t.flip);
-      this.things.push(img);
-    });
-    const g = this.scene.add.graphics();
-    for (const [x1, x2, y] of RAILS) this.rail(g, this.origin.x + x1, this.origin.x + x2, this.origin.y + y);
-    g.setDepth(this.origin.y + 90);
-    this.things.push(g);
-  }
-
-  /** A short wooden fence (two rails and posts) in the pack's wood colours. */
-  private rail(g: Phaser.GameObjects.Graphics, x1: number, x2: number, y: number): void {
-    const dark = 0x4a2f1b, mid = 0x8a5a34, light = 0xb07a48;
-    for (const dy of [-20, -9]) {
-      g.lineStyle(6, dark, 1).lineBetween(x1, y + dy, x2, y + dy);
-      g.lineStyle(3, mid, 1).lineBetween(x1, y + dy, x2, y + dy);
-    }
-    for (let x = x1; x <= x2 + 1; x += 22) {
-      g.fillStyle(dark, 1).fillRect(x - 4, y - 30, 9, 34);
-      g.fillStyle(mid, 1).fillRect(x - 3, y - 30, 6, 32);
-      g.fillStyle(light, 1).fillRect(x - 3, y - 30, 2, 32);
-      g.fillStyle(dark, 1).fillRect(x - 4, y - 33, 9, 4);
-    }
   }
 }

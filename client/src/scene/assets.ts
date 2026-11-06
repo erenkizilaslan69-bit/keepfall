@@ -78,6 +78,7 @@ const warfare = (color: string): SheetDef[] => {
     w('Catapult', 'mancinik-fire', 'Catapult_FireStone', 256),
     w('King', 'lord-idle', 'King_Idle', 192),
     w('King', 'lord-attack', 'King_Attack', 192),
+    w('King', 'lord-run', 'King_Run', 192),
   ];
 };
 
@@ -135,7 +136,7 @@ const IMAGES: Record<string, string> = {
 const MOVER_KEYS = ['pawn-run', 'archer-run', 'lancer-run', 'warrior-guard', 'archer-shoot', 'lancer-attack',
   'warrior-idle', 'archer-idle', 'lancer-idle', 'pawn-idle', 'monk-idle', 'monk-run', 'monk-heal', 'monk-heal-fx',
   'swordsman-idle', 'swordsman-run', 'swordsman-attack', 'suvari-idle', 'suvari-run', 'suvari-attack', 'mancinik-idle', 'mancinik-run', 'mancinik-fire',
-  'lord-idle', 'lord-attack'];
+  'lord-idle', 'lord-attack', 'lord-run'];
 const moverSheets = (others: PlayerColor[]): SheetDef[] =>
   others.flatMap((c) => units(COLOR_FOLDER[c]).filter((s) => MOVER_KEYS.includes(s.key)).map((s) => ({ ...s, key: `${c}-${s.key}` })));
 
@@ -249,7 +250,7 @@ function oreSheet(scene: Phaser.Scene, goldKey: string): void {
 
 function createSheetAnimations(scene: Phaser.Scene, list: SheetDef[]): void {
   const rates: Record<string, number> = { 'pawn-run': 12, dust: 14, explosion: 14, 'suvari-run': 12, 'suvari-attack': 14, 'mancinik-run': 6, 'mancinik-fire': 12,
-    'swordsman-attack': 16, 'lord-attack': 12 };
+    'swordsman-attack': 16, 'lord-attack': 12, 'lord-run': 9 };
   for (const s of list) if (/pawn-run-gold$/.test(s.key)) oreSheet(scene, s.key);
   for (const s of list) {
     if (scene.anims.exists(s.key)) continue;

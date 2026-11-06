@@ -24,6 +24,8 @@ export interface Part { key: string; x: number; y: number; scale?: number; anim?
 export interface Site {
   /** Centre of the clickable area and the label. */
   center: Point;
+  /** Where the sign's middle stands (the column of houses it belongs to). */
+  signX: number;
   /** Clickable rectangle (and where the progress bar goes). */
   area: { w: number; h: number };
   /** One spot per worker slot (max level capacity). */
@@ -34,109 +36,119 @@ export interface Site {
 }
 
 
+// Every building stands at least a tile (64 px) from the wall on every side (the wall's inner face is at x 52..972, y 58..712; the side with the gate stands
+// 40 px further in), and the four sites share the yard without overlapping: farm and woodcutter in a column each beside the castle (houses 0.8 size, one more
+// per level), mine and forge in the strip below the castle's road (the road to the gate runs at y 480-530), clear of the soldiers' camp fire and the idle pen.
+const HOUSE = 0.8;
+
 export const SITES: Record<BuildingType, Site> = {
-  // Sheep pasture: the pack has no crops, food is meat. One more farmhouse and more sheep per level.
+  // Sheep pasture: the pack has no crops, food is meat. One more farmhouse and more sheep per level; the pasture is the strip between the houses and the castle.
   farm: {
-    center: { x: 190, y: 250 },
-    area: { w: 270, h: 300 },
+    center: { x: 240, y: 330 }, signX: 205,
+    area: { w: 200, h: 380 },
     workSpots: [
-      { x: 168, y: 268 }, { x: 232, y: 298 }, { x: 282, y: 258 }, { x: 206, y: 338 },
-      { x: 146, y: 314 }, { x: 286, y: 322 }, { x: 250, y: 226 }, { x: 186, y: 226 },
-      { x: 150, y: 268 }, { x: 306, y: 290 },
+      { x: 266, y: 250 }, { x: 292, y: 292 }, { x: 266, y: 336 }, { x: 294, y: 380 },
+      { x: 266, y: 420 }, { x: 294, y: 452 }, { x: 292, y: 236 }, { x: 250, y: 462 },
+      { x: 270, y: 280 }, { x: 292, y: 410 },
     ],
-    faceLeft: (p) => p.x > 220,
+    faceLeft: () => true,
     parts: (level) => [
-      { key: 'house1', x: 165, y: 225, scale: 1 },
-      ...(level >= 2 ? [{ key: 'house2', x: 300, y: 232, scale: 1 }] : []),
-      ...(level >= 3 ? [{ key: 'house3', x: 172, y: 364, scale: 1 }] : []),
-      ...[{ x: 196, y: 254 }, { x: 262, y: 284 }, { x: 226, y: 322 }, { x: 290, y: 236 }, { x: 262, y: 356 }, { x: 170, y: 296 }, { x: 140, y: 340 }, { x: 310, y: 300 }]
+      { key: 'house1', x: 205, y: 212, scale: HOUSE },
+      ...(level >= 2 ? [{ key: 'house2', x: 205, y: 300, scale: HOUSE }] : []),
+      ...(level >= 3 ? [{ key: 'house3', x: 205, y: 388, scale: HOUSE }] : []),
+      ...[{ x: 270, y: 256 }, { x: 294, y: 330 }, { x: 264, y: 386 }, { x: 296, y: 446 }, { x: 276, y: 296 }, { x: 292, y: 230 }, { x: 262, y: 440 }, { x: 298, y: 372 }]
         .slice(0, level * 2)
         .map((p, i) => ({ key: i % 2 ? 'sheep-idle' : 'sheep-grass', x: p.x, y: p.y, scale: 0.85, anim: true, flip: i % 3 === 0 })),
-      ...(level >= 2 ? [{ key: 'bush1', x: 300, y: 130, scale: 0.8, anim: true }] : []),
-      ...(level >= 3 ? [{ key: 'bush2', x: 160, y: 390, scale: 0.75, anim: true }] : []),
+      ...(level >= 2 ? [{ key: 'bush1', x: 250, y: 214, scale: 0.7, anim: true }] : []),
+      ...(level >= 3 ? [{ key: 'bush2', x: 244, y: 470, scale: 0.65, anim: true }] : []),
       // level 4: a second barn and a lookout tower over the pasture
-      ...(level >= 4 ? [{ key: 'house1', x: 230, y: 400, scale: 1 }, { key: 'tower', x: 372, y: 256, scale: 0.7 }] : []),
+      ...(level >= 4 ? [{ key: 'house1', x: 205, y: 470, scale: HOUSE }, { key: 'tower', x: 288, y: 210, scale: 0.55 }] : []),
     ],
   },
-  // Forest with a woodcutter's hut; more trees, wood piles and a second hut as it grows.
+  // Forest with a woodcutter's hut; more trees, wood piles and a second hut as it grows. The trees stand in the strip between the huts and the castle.
   lumberCamp: {
-    center: { x: 840, y: 240 },
-    area: { w: 280, h: 300 },
+    center: { x: 790, y: 330 }, signX: 819,
+    area: { w: 200, h: 380 },
     workSpots: [
-      // Just left of and in front of a trunk, so the pawn draws over its tree.
-      { x: 840, y: 188 }, { x: 900, y: 238 }, { x: 830, y: 288 }, { x: 896, y: 332 },
-      { x: 864, y: 144 }, { x: 865, y: 381 }, { x: 884, y: 384 }, { x: 820, y: 128 },
-      { x: 910, y: 270 }, { x: 920, y: 205 },
+      { x: 768, y: 196 }, { x: 768, y: 236 }, { x: 768, y: 276 }, { x: 768, y: 316 },
+      { x: 768, y: 356 }, { x: 768, y: 396 }, { x: 768, y: 436 }, { x: 768, y: 466 },
+      { x: 750, y: 216 }, { x: 750, y: 300 },
     ],
     faceLeft: () => false,
     parts: (level) => {
       const trees = [
-        { x: 860, y: 176 }, { x: 888, y: 226 }, { x: 850, y: 276 }, { x: 886, y: 320 }, { x: 890, y: 132 },
-        { x: 880, y: 368 }, { x: 890, y: 330 }, { x: 830, y: 120 }, { x: 890, y: 180 }, { x: 896, y: 262 }, { x: 880, y: 372 },
+        { x: 742, y: 214 }, { x: 760, y: 252 }, { x: 740, y: 292 }, { x: 758, y: 332 }, { x: 740, y: 372 },
+        { x: 758, y: 412 }, { x: 740, y: 450 }, { x: 760, y: 470 }, { x: 742, y: 192 }, { x: 760, y: 232 }, { x: 742, y: 314 },
       ].slice(0, 3 + level * 2);
       return [
-        { key: 'house2', x: 762, y: 214, scale: 1 },
-        ...trees.map((p, i) => ({ key: `tree${(i % 2) + 1}`, x: p.x, y: p.y, scale: 0.8, anim: true })),
+        { key: 'house2', x: 819, y: 212, scale: HOUSE },
+        ...trees.map((p, i) => ({ key: `tree${(i % 2) + 1}`, x: p.x, y: p.y, scale: 0.55, anim: true })),
         ...(level >= 2 ? [
-          { key: 'wood-pile', x: 790, y: 252, scale: 1 },
-          { key: 'wood-pile', x: 812, y: 262, scale: 1 },
-          { key: 'stump1', x: 828, y: 230, scale: 0.6 },
+          { key: 'wood-pile', x: 790, y: 252, scale: 0.8 },
+          { key: 'wood-pile', x: 808, y: 262, scale: 0.8 },
+          { key: 'stump1', x: 812, y: 280, scale: 0.5 },
         ] : []),
-        ...(level >= 3 ? [{ key: 'house1', x: 772, y: 380, scale: 1 }, { key: 'stump2', x: 820, y: 330, scale: 0.6 }] : []),
+        ...(level >= 3 ? [{ key: 'house1', x: 819, y: 300, scale: HOUSE }, { key: 'stump2', x: 800, y: 340, scale: 0.5 }] : []),
         // level 4: a sawmill hut with stacked timber
         ...(level >= 4 ? [
-          { key: 'house3', x: 748, y: 318, scale: 1 },
-          { key: 'wood-pile', x: 790, y: 300, scale: 1 },
-          { key: 'wood-pile', x: 812, y: 312, scale: 1 },
-          { key: 'wood-pile', x: 770, y: 266, scale: 1 },
+          { key: 'house3', x: 819, y: 388, scale: HOUSE },
+          { key: 'wood-pile', x: 796, y: 420, scale: 0.8 },
+          { key: 'wood-pile', x: 816, y: 432, scale: 0.8 },
+          { key: 'wood-pile', x: 796, y: 450, scale: 0.8 },
         ] : []),
       ];
     },
   },
   // Ore rocks (Gold Stone tinted grey); bigger rocks, a miners' hut and a tower as it grows.
   mine: {
-    center: { x: 200, y: 590 },
-    area: { w: 270, h: 250 },
+    center: { x: 250, y: 600 }, signX: 250,
+    area: { w: 250, h: 130 },
     workSpots: [
-      { x: 156, y: 576 }, { x: 226, y: 604 }, { x: 296, y: 612 }, { x: 196, y: 664 },
-      { x: 266, y: 672 }, { x: 150, y: 640 }, { x: 320, y: 588 }, { x: 240, y: 548 },
-      { x: 150, y: 600 }, { x: 330, y: 650 },
+      { x: 246, y: 574 }, { x: 304, y: 580 }, { x: 350, y: 612 }, { x: 214, y: 628 },
+      { x: 268, y: 664 }, { x: 330, y: 656 }, { x: 236, y: 600 }, { x: 288, y: 612 },
+      { x: 200, y: 672 }, { x: 352, y: 576 },
     ],
-    faceLeft: (p) => p.x > 190,
+    faceLeft: (p) => p.x > 260,
     parts: (level) => {
       const sizes = [[3, 4, 2], [4, 5, 3, 4], [6, 5, 6, 4, 5], [6, 6, 6, 5, 6]][level - 1];
-      const spots = [{ x: 192, y: 562 }, { x: 262, y: 590 }, { x: 158, y: 620 }, { x: 236, y: 650 }, { x: 306, y: 640 }];
+      const spots = [{ x: 262, y: 598 }, { x: 310, y: 610 }, { x: 232, y: 630 }, { x: 282, y: 642 }, { x: 328, y: 638 }];
       return [
         // Gold Stone in greyscale reads as iron ore.
-        ...sizes.map((size, i) => ({ key: `stone${size}`, x: spots[i].x, y: spots[i].y, scale: 1, grey: true })),
-        { key: 'rock1', x: 320, y: 694, scale: 0.8 },
-        ...(level >= 2 ? [{ key: 'house3', x: 172, y: 694, scale: 1 }] : []),
-        ...(level >= 3 ? [{ key: 'tower', x: 300, y: 530, scale: 0.75 }] : []),
-        // level 4: a second tower and a foreman's house
-        ...(level >= 4 ? [{ key: 'tower', x: 150, y: 548, scale: 0.75 }, { key: 'house1', x: 190, y: 706, scale: 1 }] : []),
+        ...sizes.map((size, i) => ({ key: `stone${size}`, x: spots[i].x, y: spots[i].y, scale: 0.8, grey: true })),
+        ...(level >= 2 ? [{ key: 'house3', x: 205, y: 640, scale: HOUSE }] : []),
+        ...(level >= 3 ? [{ key: 'tower', x: 320, y: 566, scale: 0.55 }] : []),
+        // level 4: a second tower
+        ...(level >= 4 ? [{ key: 'tower', x: 250, y: 566, scale: 0.55 }] : []),
       ];
     },
   },
   // Forge: a workshop, then the barracks (crossed swords), then barracks + archery range.
   forge: {
-    center: { x: 830, y: 590 },
-    area: { w: 270, h: 250 },
+    center: { x: 806, y: 590 }, signX: 806,
+    area: { w: 170, h: 150 },
     workSpots: [
-      { x: 784, y: 628 }, { x: 870, y: 628 }, { x: 742, y: 600 }, { x: 912, y: 600 },
-      { x: 808, y: 664 }, { x: 860, y: 668 }, { x: 760, y: 650 }, { x: 920, y: 650 },
-      { x: 700, y: 620 }, { x: 950, y: 630 },
+      { x: 770, y: 668 }, { x: 842, y: 668 }, { x: 740, y: 640 }, { x: 874, y: 640 },
+      { x: 806, y: 676 }, { x: 724, y: 668 }, { x: 788, y: 664 }, { x: 860, y: 664 },
+      { x: 700, y: 690 }, { x: 880, y: 676 },
     ],
-    faceLeft: (p) => p.x > 830,
+    faceLeft: (p) => p.x > 806,
     parts: (level) => [
-      ...(level === 1 ? [{ key: 'house3', x: 830, y: 590, scale: 1 }] : []),
-      ...(level >= 2 ? [{ key: 'barracks', x: 830, y: 594, scale: 1 }] : []),
-      ...(level >= 3 ? [{ key: 'archery', x: 716, y: 700, scale: 0.85 }] : []),
-      // level 4: the full complex, with a watchtower and a second hall
-      ...(level >= 4 ? [{ key: 'tower', x: 884, y: 560, scale: 0.8 }, { key: 'house1', x: 700, y: 560, scale: 1 }] : []),
-      { key: 'rock2', x: 890, y: 690, scale: 0.8 },
+      ...(level === 1 ? [{ key: 'house3', x: 806, y: 646, scale: HOUSE }] : []),
+      ...(level >= 2 ? [{ key: 'barracks', x: 806, y: 648, scale: 0.7 }] : []),
+      ...(level >= 3 ? [{ key: 'archery', x: 826, y: 556, scale: 0.6 }] : []),
+      // level 4: the full complex, with a watchtower
+      ...(level >= 4 ? [{ key: 'tower', x: 750, y: 556, scale: 0.55 }] : []),
     ],
   },
 };
+
+/** Where a building's sign goes: just in front of (below) its lowest house at this level, so it never covers the building. */
+export function signSpot(type: BuildingType, level: number): Point {
+  const all = SITES[type].parts(Math.max(1, level));
+  const houses = all.filter((p) => /^(house|tower|barracks|archery)/.test(p.key));
+  const base = Math.max(...(houses.length ? houses : all).map((p) => p.y));
+  return { x: SITES[type].signX, y: base + 8 };
+}
 
 /** Per job: which building, which pawn sheets, and what (if anything) is carried home. */
 export interface JobLook { building?: BuildingType; idle: string; run: string; work?: string; carry?: string }
