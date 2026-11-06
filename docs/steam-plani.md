@@ -14,9 +14,12 @@ Eleştirinin ana bulguları: (1) çok oyunculu oyun boş lobiyle çıkarsa ölü
 - Günlük meydan okuma: tarihten türeyen tohum, aynı rakip herkeste.
 - Altyapı: mevcut `Room` + botlar + `SetGuided`; yeni bir "Challenge" tanımı (JSON, `config/challenges.json`) odayı bu ayarlarla kurar. Çok oyunculu kurallar değişmez.
 
-### B. Elenme sonrası döngü
-- Elenen oyuncu "Yeni maç" ve "izleyiciyi atla" seçeneği alır (bot maçında hemen yeni maç).
-- Çok oyunculuda: elenen kısa bir **ajan** görevi (kalan oyunculardan birine sahte rapor/uyarı gönderme hakkı) denenecek; ölçülüp karar verilir.
+### B. Elenme sonrası döngü — YAPILDI 2026-11-07 (dev; ajan yalnız tasarlandı)
+- **Meydan Okuma**: oyuncu elenince sunucu `Room.FallGraceSeconds` (5 oyun sn, düşüşü görmek için) sonra kalan maçı hemen oynatıp bitirir (`Room.Tick` → `PlayOut`); sonuç ekranı 0 yıldız + "Tekrar dene / Sonraki / Meydan okumalar" kendiliğinden gelir. Yalnız tanımda 2+ bot varsa anlamlı (1 botta düşüş zaten maçı bitirir). Hız değişmez (sunucu hesabı, Production'da da aynı).
+- **Botlu hızlı maç** (tek insan): düşer düşmez kart (`ui/game-ui.ts` `updateFinish`): "Maçı izle" (mevcut izleyici akışı) / "Yeni maç" (kalan maç sunucuda oynatılır, aynı bot düzeniyle yeni maç) / "Menü" (maç oynatılıp çıkılır, oda boşuna dönmez). Çok insanlı odada: "Maçı izle" / "Odadan çık" / "Yeni oda"; tüm insanlar elenmişse oda sahibi "Maçı bitir" de görür. Düşen oyuncu odadan çıkınca koltuğu bot olmaz, maç kalanlar için sürer (`Room.Leave`, değişmedi; test + duman denetler); çıkan, sonraki hiçbir mesajı almaz.
+- Gizli bilgi kuralı değişmedi (elenen yalnız kendi düşüşünden sonra tam görünümü alır).
+- **Ajan**: `docs/ajan-fikri.md` (kural, gizli bilgi, kötüye kullanım, botlar, ölçüm planı, açık sorular). KOD YOK; öneri şimdilik yapma, önce izleyici tahmini gibi güvenli alternatif.
+- Testler: `FallFlowTests` (3), duman testi (elenmiş konuk çıkar, koltuk bot olmaz, meydan okuma kendiliğinden biter), `tools/shot-fall.mjs` (kart görüntüleri).
 
 ### C. İlerleme ve kozmetik
 - Kozmetik: kale/flama/avatar açılımları (denge etkisi yok). Başarımlar (Steam Achievements için liste hazırlanır).
