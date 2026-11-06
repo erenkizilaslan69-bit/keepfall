@@ -53,9 +53,9 @@ const NEW_SITES: Record<BuildingType, Site> = {
     ],
     faceLeft: () => true,
     parts: (level) => [
-      { key: 'house1', x: 205, y: 212, scale: HOUSE },
-      ...(level >= 2 ? [{ key: 'house2', x: 205, y: 300, scale: HOUSE }] : []),
-      ...(level >= 3 ? [{ key: 'house3', x: 205, y: 388, scale: HOUSE }] : []),
+      { key: 'house1', x: 205, y: 222, scale: HOUSE },
+      ...(level >= 2 ? [{ key: 'house2', x: 205, y: 332, scale: HOUSE }] : []),
+      ...(level >= 3 ? [{ key: 'house3', x: 205, y: 442, scale: HOUSE }] : []),
       ...[{ x: 270, y: 256 }, { x: 294, y: 330 }, { x: 264, y: 386 }, { x: 296, y: 446 }, { x: 276, y: 296 }, { x: 292, y: 230 }, { x: 262, y: 440 }, { x: 298, y: 372 }]
         .slice(0, level * 2)
         .map((p, i) => ({ key: i % 2 ? 'sheep-idle' : 'sheep-grass', x: p.x, y: p.y, scale: 0.85, anim: true, flip: i % 3 === 0 })),
@@ -81,14 +81,14 @@ const NEW_SITES: Record<BuildingType, Site> = {
         { x: 758, y: 412 }, { x: 740, y: 450 }, { x: 760, y: 470 }, { x: 742, y: 192 }, { x: 760, y: 232 }, { x: 742, y: 314 },
       ].slice(0, 3 + level * 2);
       return [
-        { key: 'house2', x: 819, y: 212, scale: HOUSE },
+        { key: 'house2', x: 819, y: 222, scale: HOUSE },
         ...trees.map((p, i) => ({ key: `tree${(i % 2) + 1}`, x: p.x, y: p.y, scale: 0.55, anim: true })),
         ...(level >= 2 ? [
           { key: 'wood-pile', x: 790, y: 252, scale: 0.8 },
           { key: 'wood-pile', x: 808, y: 262, scale: 0.8 },
           { key: 'stump1', x: 812, y: 280, scale: 0.5 },
         ] : []),
-        ...(level >= 3 ? [{ key: 'house1', x: 819, y: 300, scale: HOUSE }, { key: 'stump2', x: 800, y: 340, scale: 0.5 }] : []),
+        ...(level >= 3 ? [{ key: 'house1', x: 819, y: 336, scale: HOUSE }, { key: 'stump2', x: 800, y: 340, scale: 0.5 }] : []),
         // level 4: a sawmill hut with stacked timber
         ...(level >= 4 ? [
           { key: 'house3', x: 819, y: 388, scale: HOUSE },
@@ -135,7 +135,7 @@ const NEW_SITES: Record<BuildingType, Site> = {
     parts: (level) => [
       ...(level === 1 ? [{ key: 'house3', x: 806, y: 646, scale: HOUSE }] : []),
       ...(level >= 2 ? [{ key: 'barracks', x: 806, y: 648, scale: 0.7 }] : []),
-      ...(level >= 3 ? [{ key: 'archery', x: 826, y: 556, scale: 0.6 }] : []),
+      ...(level >= 3 ? [{ key: 'archery', x: 826, y: 534, scale: 0.6 }] : []),
       // level 4: the full complex, with a watchtower
       ...(level >= 4 ? [{ key: 'tower', x: 750, y: 556, scale: 0.55 }] : []),
     ],
