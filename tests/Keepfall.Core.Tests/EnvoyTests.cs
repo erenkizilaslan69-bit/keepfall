@@ -70,7 +70,7 @@ public class EnvoyTests
         Assert.False(game.Execute(A, new SendEnvoy(C, 0, 0, 0, 1)).Ok);
         var m = Assert.Single(game.MissionsOf(A));
         Assert.Equal(MissionKind.Envoy, m.Kind);
-        Assert.Equal(Rules.Map.ScoutSpeed, m.Leg.Speed);
+        Assert.Equal(Rules.Map.ScoutSpeed * Rules.Match.PrepSpeed, m.Leg.Speed); // a scout (and an envoy) leaves in the preparation: it walks as much faster as the economy
         UntilHome(game, A);
 
         Ok(game.Execute(A, new SendScout(C)));

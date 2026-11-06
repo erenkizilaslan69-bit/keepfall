@@ -176,14 +176,20 @@ public sealed partial class GameState
     public Route RouteBetween(string from, string to) => Map.RouteBetween(_corners[from], _corners[to]);
 
     /// <summary>How long an army needs from one castle to another (one way).</summary>
-    public double MarchSeconds(string from, string to) => RouteBetween(from, to).Length / Rules.Map.ArmySpeed;
+    public double MarchSeconds(string from, string to) => RouteBetween(from, to).Length / ArmySpeedNow;
 
     /// <summary>An army walks as fast as its slowest unit (cavalry alone: twice the usual).</summary>
     private double SpeedOf(IReadOnlyDictionary<UnitType, int> units) =>
-        Rules.Map.ArmySpeed * units.Where(kv => kv.Value > 0).Select(kv => kv.Key.SpeedFactor).DefaultIfEmpty(1).Min();
+        ArmySpeedNow * units.Where(kv => kv.Value > 0).Select(kv => kv.Key.SpeedFactor).DefaultIfEmpty(1).Min();
 
     /// <summary>How long a scout needs from one castle to another (one way).</summary>
-    public double ScoutSeconds(string from, string to) => RouteBetween(from, to).Length / Rules.Map.ScoutSpeed;
+    public double ScoutSeconds(string from, string to) => RouteBetween(from, to).Length / ScoutSpeedNow;
+
+    /// <summary>The army speed now: in the (standard) preparation armies (to forest camps) walk match.prepSpeed times as fast too, so a raid started late still gets home before the war; fixed when the army leaves.</summary>
+    private double ArmySpeedNow => Rules.Map.ArmySpeed * (Phase == MatchPhase.Preparation ? _prepSpeed : 1);
+
+    /// <summary>A scout's speed now: in the (standard) preparation it walks match.prepSpeed times as fast, like the economy it brings gold to (forest chests, villages); the speed is fixed when it leaves.</summary>
+    private double ScoutSpeedNow => Rules.Map.ScoutSpeed * (Phase == MatchPhase.Preparation ? _prepSpeed : 1);
     public bool IsEliminated(string playerKey) => _eliminated.ContainsKey(playerKey);
     public IReadOnlyDictionary<string, double> Eliminated => _eliminated;
 
@@ -358,7 +364,7 @@ public sealed partial class GameState
         AdvanceScouts(dt);
         AdvanceArmies(dt);
         AdvanceKingdoms();
-        CheckContinuity(Rules.Map.ArmySpeed * Rules.Units.Max(u => u.SpeedFactor) * dt + 1e-6);
+        CheckContinuity(Rules.Map.ArmySpeed * Math.Max(1, _prepSpeed) * Rules.Units.Max(u => u.SpeedFactor) * dt + 1e-6);
         RefreshSight();
         if (Phase == MatchPhase.Ended) return; // the last castle standing ended it
         if (ElapsedSeconds + 1e-9 >= _nextSample) TakeSamples();
@@ -456,7 +462,7 @@ public sealed partial class GameState
         if (ScoutsAvailable(from) is { Ok: false } busy) return busy;
         var sent = player.Castle.SendScout(c.From);
         if (!sent.Ok) return sent;
-        _missions.Add(new ScoutMission(NewPublicId(), from, c.TargetKey, ElapsedSeconds, RouteBetween(from, c.TargetKey), Rules.Map.ScoutSpeed));
+        _missions.Add(new ScoutMission(NewPublicId(), from, c.TargetKey, ElapsedSeconds, RouteBetween(from, c.TargetKey), ScoutSpeedNow));
         return CommandResult.Success;
     }
 
@@ -471,7 +477,7 @@ public sealed partial class GameState
         var sent = player.Castle.SendScout(c.From);
         if (!sent.Ok) return sent;
         _missions.Add(new ScoutMission(NewPublicId(), from, target, ElapsedSeconds, Map.RouteToSite(_corners[from], site.Site),
-            Rules.Map.ScoutSpeed, MissionKind.Chest) { Site = site });
+            ScoutSpeedNow, MissionKind.Chest) { Site = site });
         return CommandResult.Success;
     }
 
@@ -495,7 +501,7 @@ public sealed partial class GameState
         var sent = castle.SendScout(c.From);
         if (!sent.Ok) return sent;
         castle.TrySpendCargo(c.Food, c.Wood, c.Iron, c.Gold);
-        _missions.Add(new ScoutMission(NewPublicId(), from, c.TargetKey, ElapsedSeconds, RouteBetween(from, c.TargetKey), Rules.Map.ScoutSpeed, MissionKind.Envoy)
+        _missions.Add(new ScoutMission(NewPublicId(), from, c.TargetKey, ElapsedSeconds, RouteBetween(from, c.TargetKey), ScoutSpeedNow, MissionKind.Envoy)
         {
             GiftFood = c.Food, GiftWood = c.Wood, GiftIron = c.Iron, GiftGold = c.Gold, Message = message.Text, ShownAs = asKey,
         });
@@ -529,7 +535,7 @@ public sealed partial class GameState
         var sent = player.Castle.SendScout(c.From);
         if (!sent.Ok) return sent;
         _missions.Add(new ScoutMission(NewPublicId(), from, target, ElapsedSeconds, Map.ExploreRoute(_corners[from], c.Quarter),
-            Rules.Map.ScoutSpeed, MissionKind.Explore, c.Quarter));
+            ScoutSpeedNow, MissionKind.Explore, c.Quarter));
         return CommandResult.Success;
     }
 
@@ -678,7 +684,7 @@ public sealed partial class GameState
             : [];
 
     /// <summary>How long a scout of this player needs for a tour of a quarter of the forest (there and back home).</summary>
-    public double ExploreSeconds(string playerKey, Corner quarter) => Map.ExploreRoute(_corners[playerKey], quarter).Length / Rules.Map.ScoutSpeed;
+    public double ExploreSeconds(string playerKey, Corner quarter) => Map.ExploreRoute(_corners[playerKey], quarter).Length / ScoutSpeedNow;
 
     /// <summary>Whether one of the player's scouts is out touring this quarter right now.</summary>
     public bool IsExploring(string playerKey, Corner quarter) =>

@@ -112,9 +112,10 @@ public class WorldMapTests
             corners: new Dictionary<string, Corner> { ["a"] = Corner.NorthWest, ["b"] = Corner.NorthEast, ["c"] = Corner.SouthEast });
         double neighbour = Map.RouteBetween(Corner.NorthWest, Corner.NorthEast).Length;
         double opposite = Map.RouteBetween(Corner.NorthWest, Corner.SouthEast).Length;
-        Assert.Equal(neighbour / 1.5, game.MarchSeconds("a", "b"), 9);
-        Assert.Equal(opposite / 1.5, game.MarchSeconds("a", "c"), 9);
-        Assert.Equal(opposite / Rules.Map.ScoutSpeed, game.ScoutSeconds("c", "a"), 9);
+        double pace = Rules.Match.PrepSpeed; // a standard preparation: armies and scouts walk as much faster as its economy
+        Assert.Equal(neighbour / 1.5 / pace, game.MarchSeconds("a", "b"), 9);
+        Assert.Equal(opposite / 1.5 / pace, game.MarchSeconds("a", "c"), 9);
+        Assert.Equal(opposite / Rules.Map.ScoutSpeed / pace, game.ScoutSeconds("c", "a"), 9);
     }
 
     [Theory]

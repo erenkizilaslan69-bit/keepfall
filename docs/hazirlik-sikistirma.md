@@ -47,3 +47,20 @@ Ham çıktı: `docs/gece/hazirlik-bot-*.txt`.
 1. 5 dk / ×1,6 varsayılan mı kalsın (öneri), 4 dk mı denensin? Karar: Eren 5 dk'yı kendisi ve hiç oynamamış bir arkadaşıyla oynayarak verecek (dev sunucu 5090).
 2. Zor bot düzeltmesi yapılsın mı?
 3. Rehberli maç gerçek hızda (x1) 5 dk hazırlıkla: bkz. `docs/gece-raporu.md` testleri.
+
+## Düzeltme: asker açığı (2026-11-06)
+**Sebep:** çarpan yalnız `Castle.Tick` içindeydi; ormana yürüyen **gözcüler** (sandık/köy altını) ve **ordular** (kamp yağması) gerçek hızda yürüyordu. Hazırlık 5 dk'ya inince orman gezileri ekonomiye göre 1,6 kat az iş gördü: Orta'da kiralık asker 8,0 → 5,9, Zor'da kasadaki altın 158 → 104; geç yola çıkan yağma orduları hazırlık bitince hâlâ dışarıdaydı (seyri, `hazirlik` komutunun "Orta botun hazırlık seyri" tablosu: %80'de yeni hız önde, son %15'te eski 12 birim kazanırken yeni 4). Demirhane, kuşanma, işçi→asker dönüşümü ve bot zamanlaması sorun DEĞİLDİ (hepsi çarpanla ölçekleniyor).
+**Düzeltme:** `GameState.ScoutSpeedNow/ArmySpeedNow`: standart hazırlıkta gözcü ve ordu hızı `prepSpeed` kat (yola çıkarken sabitlenir; ETA'lar `SecondsLeft`/`ScoutSeconds`/`MarchSeconds` da buna göre). Savaşta çarpan yok. Hiçbir `balance.json` sayısı değişmedi. `CheckContinuity` payı çarpanla genişledi (ışınlanma ihlali 0).
+
+| 40 maç, 2 bot | 8 dk ×1 | 5 dk ×1,6 (önce) | 5 dk ×1,6 (sonra) |
+|---|---|---|---|
+| Orta asker (+silah) | 20,1 (0,8) | 16,4 (1,2) | **19,5 (0,6)** |
+| Orta paralı | 8,0 | 5,9 | 7,7 |
+| Orta nüfus / bina / demir | 37,3 / 10,4 / 62 | 34,6 / 10,1 / 51 | 37,7 / 10,2 / 62 |
+| Zor asker (silah depoda) | 10,1 (5,1) | 8,2 (5,9) | 8,2 (7,4) |
+| Zor asker+silah | 15,2 | 14,1 | 15,6 |
+| Zor altın | 158 | 104 | 153 |
+| Kolay asker | 8,5 | 9,4 | 9,6 |
+
+Zor'un "Asker" sütunu hâlâ −%19: Zor silahı bilerek savaş başına kadar depoda tutar (`holdWeapons`); asker+silah toplamı eski hazırlıkla aynı (+%3).
+**Bot kazanma (200 maç, `docs/gece/hazirlik-duzelt-*.txt`)**: Zor vs Orta Zor payı **%65,5** (8 dk ×1: %58,8 [80 maç], düzeltmeden önce %48,8); Orta vs Kolay Orta payı %86,8 (öncesi 82–83, Kolay'a göre 6,5×). Işınlanma ihlali 0. Zor'un hedefin (%75–85) altında olduğu eskisi gibi; şimdi 8 dk'dan biraz üstünde (hata payı ±3,4 puan).
