@@ -7,7 +7,7 @@ import { UNIT_SCALE, playRandom, unitOriginY } from './assets';
 import { sign } from './parts';
 import { toWorld } from './world';
 import { reducedEffects } from '../prefs';
-import { makeChestTextures } from './ForestSprites';
+import { makeFenceTexture, makeGlintTexture } from './ForestSprites';
 
 // The places of the forest we have found: a chest (a pile of gold), a village (black houses), a bandit camp (a
 // tower, a fire and the bandits) and the big camp in the middle, each with its trail from the forest road. What
@@ -101,14 +101,7 @@ export class SiteLayer {
 
   /** A short glow and a few sparkles over a chest that has just been found. */
   private glint(x: number, y: number, extras: Phaser.GameObjects.GameObject[]): void {
-    const key = 'kf-glint';
-    if (!this.scene.textures.exists(key)) {
-      const c = document.createElement('canvas');
-      c.width = c.height = 9;
-      const g = c.getContext('2d')!;
-      g.fillStyle = '#fff6c0'; g.fillRect(4, 0, 1, 9); g.fillRect(0, 4, 9, 1); g.fillStyle = '#ffffff'; g.fillRect(3, 3, 3, 3); g.fillStyle = '#ffd34a'; g.fillRect(2, 2, 1, 1); g.fillRect(6, 2, 1, 1); g.fillRect(2, 6, 1, 1); g.fillRect(6, 6, 1, 1);
-      this.scene.textures.addCanvas(key, c);
-    }
+    const key = makeGlintTexture(this.scene);
     const depth = y + DEPTH_LIFT + 20;
     const glow = this.scene.add.ellipse(x, y + 6, 104, 58, 0xffe27a, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(depth);
     extras.push(glow);
@@ -117,6 +110,21 @@ export class SiteLayer {
       const spark = this.scene.add.image(x + Phaser.Math.Between(-34, 34), y + Phaser.Math.Between(-24, 14), key).setScale(0.1).setAlpha(0).setDepth(depth + 1).setBlendMode(Phaser.BlendModes.ADD);
       extras.push(spark);
       this.scene.tweens.add({ targets: spark, alpha: { from: 0, to: 1 }, scale: { from: 0.2, to: 1.5 }, y: spark.y - 16, duration: 520, delay: i * 150, yoyo: true, repeat: 1, ease: 'Sine.easeOut', onComplete: () => spark.setVisible(false) });
+    }
+  }
+
+  /** The gold heap's own light: a soft glow that breathes and a few twinkles that come and go (not with reduced effects). */
+  private shimmer(x: number, y: number, extras: Phaser.GameObjects.GameObject[]): void {
+    const key = makeGlintTexture(this.scene);
+    const depth = y + DEPTH_LIFT + 30;
+    const glow = this.scene.add.ellipse(x, y + 16, 92, 46, 0xffe27a, 0.16).setBlendMode(Phaser.BlendModes.ADD).setDepth(depth - 25);
+    extras.push(glow);
+    this.scene.tweens.add({ targets: glow, fillAlpha: 0.34, duration: 1300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    for (let i = 0; i < 4; i++) {
+      const sx = x + Phaser.Math.Between(-30, 30), sy = y + Phaser.Math.Between(-4, 26);
+      const spark = this.scene.add.image(sx, sy, key).setScale(0.1).setAlpha(0).setDepth(depth).setBlendMode(Phaser.BlendModes.ADD);
+      extras.push(spark);
+      this.scene.tweens.add({ targets: spark, alpha: { from: 0, to: 1 }, scale: { from: 0.1, to: 1 }, duration: 520, delay: 400 + i * 700, hold: 60, yoyo: true, repeat: -1, repeatDelay: 2200, ease: 'Sine.easeOut' });
     }
   }
 
@@ -151,6 +159,7 @@ export class SiteLayer {
   private build(s: SiteView, signature: string, fresh = false): Item {
     const p = toWorld(s.position);
     const sprites: Phaser.GameObjects.Sprite[] = [];
+    const extras: Phaser.GameObjects.GameObject[] = [];
     const add = (x: number, y: number, key: string, scale: number, depthShift = 0, originY = 0.9): Phaser.GameObjects.Sprite => {
       const sp = this.scene.add.sprite(x, y, key).setOrigin(0.5, originY).setScale(scale).setDepth(y + depthShift + DEPTH_LIFT);
       sprites.push(sp);
@@ -176,6 +185,22 @@ export class SiteLayer {
         if (this.scene.anims.exists(bk)) playRandom(sp, bk, 5);
       });
     };
+    // A fence section at (x, y), turned along the ring it stands on.
+    const fence = (x: number, y: number, turn: number): void => {
+      makeFenceTexture(this.scene);
+      const sp = add(x, y, 'kf-fence', 1, -2, 0.9);
+      sp.setRotation(Phaser.Math.Clamp(turn, -0.5, 0.5));
+      if (s.gone) sp.setTint(0x6b6870).setAlpha(0.9);
+    };
+    /** Fence sections round the back and sides of an ellipse (rx, ry) about (cx, cy); the front (the way in) stays open. */
+    const palisade = (cx: number, cy: number, rx: number, ry: number, from: number, to: number, step: number): void => {
+      const n = Math.max(2, Math.round(((to - from) * rx) / step));
+      for (let i = 0; i <= n; i++) {
+        const a = from + ((to - from) * i) / n;
+        fence(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry, Math.atan2(Math.cos(a) * ry, -Math.sin(a) * rx));
+      }
+    };
+    const TOP = Math.PI * 1.5;
     if (s.kind === 'village') {
       // three black houses; a plundered village stands burnt out, smouldering
       ruin(add(p.x - 50, p.y + 22, 'black-house2', 0.62));
@@ -183,29 +208,37 @@ export class SiteLayer {
       ruin(add(p.x, p.y - 2, 'black-house3', 0.62));
       if (s.gone) { fire(p.x - 20, p.y + 40, 1); fire(p.x + 26, p.y + 36, 0.8); }
     } else if (s.kind === 'camp') {
-      // a watch tower and a camp fire with the bandits round it; cleared: the fire is out, the tower stands grey
-      ruin(add(p.x - 46, p.y + 10, 'black-tower', 0.62));
-      if (!s.gone) { fire(p.x + 22, p.y + 28, 1.1); bandits(p.x + 22, 34, 20, 4, 0.55); }
-      else add(p.x + 22, p.y + 26, 'rock3', 0.4, 0, 0.75).setTint(0x4a4a50);
+      // the same family as the big camp, smaller: a watch tower and a hut behind a short fence, the fire in the middle and the bandits in a ring round it
+      palisade(p.x, p.y + 14, 96, 50, TOP - 1.25, TOP + 1.25, 36);
+      ruin(add(p.x - 66, p.y - 4, 'black-tower', 0.56));
+      ruin(add(p.x + 64, p.y - 8, 'black-house1', 0.5));
+      if (!s.gone) { fire(p.x, p.y + 26, 1.15); bandits(p.x, 46, 18, 4, 0.5); }
+      else add(p.x, p.y + 24, 'rock3', 0.4, 0, 0.75).setTint(0x4a4a50);
     } else if (s.kind === 'bigCamp') {
-      // the black castle with a fire at each side and a crowd of bandits in front
-      ruin(add(p.x, p.y + 6, 'castle-black', 0.8));
-      if (!s.gone) { fire(p.x - 132, p.y + 52, 1.3); fire(p.x + 132, p.y + 52, 1.3); bandits(p.x, 78, 48, 10, 0.34); }
+      // a bandit town, not a castle: black towers at the back corners, huts, a fence round the back and sides, a big fire in the middle and the bandits round it
+      palisade(p.x, p.y + 16, 178, 112, TOP - 1.45, TOP + 1.45, 44);
+      ruin(add(p.x - 138, p.y - 40, 'black-tower', 0.62));
+      ruin(add(p.x + 138, p.y - 40, 'black-tower', 0.62));
+      ruin(add(p.x - 66, p.y - 66, 'black-house2', 0.6));
+      ruin(add(p.x + 64, p.y - 70, 'black-house1', 0.58));
+      ruin(add(p.x + 2, p.y - 92, 'black-house3', 0.6));
+      if (!s.gone) { fire(p.x, p.y + 28, 1.7); bandits(p.x, 74, 20, 10, 0.5); }
+      else add(p.x, p.y + 26, 'rock3', 0.6, 0, 0.75).setTint(0x4a4a50);
     } else {
-      // the pack has no chest: one drawn in code, shut with its gold beside it, or open and empty
-      makeChestTextures(this.scene);
-      if (s.gone) add(p.x, p.y + 12, 'kf-chest-open', 1, 0, 0.9);
-      else {
-        add(p.x - 6, p.y + 12, 'kf-chest', 1, 0, 0.9);
-        add(p.x + 34, p.y + 14, 'stone3', 0.5, 1, 0.55);
-        add(p.x - 40, p.y + 16, 'stone1', 0.42, 1, 0.55);
+      // a heap of gold: the pack's gold stones piled up (with a slow shimmer); looted: only the trampled ground and one dull stone are left
+      if (s.gone) {
+        this.scene.add.ellipse(p.x, p.y + 14, 64, 26, 0x6b5a3a, 0.5).setDepth(p.y + DEPTH_LIFT - 1);
+        add(p.x + 4, p.y + 14, 'stone2', 0.34, 0, 0.55).setTint(0x6f6a64);
+      } else {
+        const heap: [number, number, string, number][] = [[-30, 16, 'stone1', 0.46], [28, 14, 'stone4', 0.46], [0, 18, 'stone3', 0.62], [-14, 4, 'stone5', 0.5], [16, 2, 'stone2', 0.5], [0, -10, 'gold-pile', 0.78]];
+        for (const [dx, dy, key, sc] of heap) add(p.x + dx, p.y + 14 + dy, key, sc, dy > 6 ? 0 : 1, 0.62);
+        if (!reducedEffects()) this.shimmer(p.x, p.y, extras);
       }
     }
 
     const zone = this.scene.add.zone(p.x, p.y - 10, s.kind === 'bigCamp' ? 260 : 130, s.kind === 'bigCamp' ? 200 : 110)
       .setDepth(15_000).setInteractive({ useHandCursor: true });
     zone.on('pointerup', () => this.onSelect(s.id));
-    const extras: Phaser.GameObjects.GameObject[] = [];
     if (fresh && s.kind === 'chest' && !s.gone && !reducedEffects()) this.glint(p.x, p.y, extras);
     return { signature, sprites, zone, extras };
   }
