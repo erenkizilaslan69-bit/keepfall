@@ -627,6 +627,14 @@ if (allOut?.allHumansOut) {
   check('the room is over with a result, won by a bot', end.phase === 'ended' && !!end.result && end.result.winners.every((w) => end.players.find((x) => x.seat === w)?.isBot));
   check('only now (the match is over) the ranking names every player kingdom, and they are real ones', end.result.ranking.every((x) => ['golge', 'tuccar', 'kahin', 'entrikaci'].includes(x.kingdom)));;
   check('while the match runs no room view carries a kingdom for anybody', H.of('RoomState').filter((r) => r.phase !== 'ended').every((r) => !JSON.stringify(r).includes('kingdom')));
+  // The "who fooled whom" log: nothing of it anywhere while the match runs (room views, castle, map, spectator pictures), the whole of it with the final result.
+  const DECEPTION = /deception|FakeReport|DecoySent|DecoyFaded|Bribed|CampRented|EnvoyAs|ArmyAsSent|DisguisedFought/;
+  check('while the match runs no room view carries any deception log', H.of('RoomState').filter((r) => r.phase !== 'ended').every((r) => !r.result && !DECEPTION.test(JSON.stringify(r))));
+  check('no castle, map or spectator picture carries deception log entries',
+    [H, K].every((c) => ['CastleState', 'MapState', 'SpectatorState'].every((tgt) => c.of(tgt).every((m) => !DECEPTION.test(JSON.stringify(m))))));
+  check('the final result carries the log (a list, every entry names a seat that is in the ranking)',
+    Array.isArray(end.result.deceptions) && end.result.deceptions.every((e) => end.result.ranking.some((x) => x.seat === e.actorSeat) && typeof e.kind === 'string' && e.at >= 0),
+    JSON.stringify(end.result.deceptions)?.slice(0, 200));
   check('the host got the summary, and the guest who left got nothing more', H.of('MatchEnded').length === 1 && K.of('MatchEnded').length === 0);
   check('it cannot be ended twice', !(await H.call('FinishMatch')).ok);
 }
