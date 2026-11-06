@@ -64,11 +64,11 @@ public class AchievementTests
     [Fact]
     public void Plunder_counters_have_their_thresholds()
     {
-        var one = Achievements.Evaluate(Facts(f => f with { Villages = 1, Camps = 1, Chests = 2 }));
+        var one = Achievements.Evaluate(Facts(f => f with { Villages = 1, Camps = 1 }));
         Assert.Contains("village_raid", one); Assert.Contains("camp_clear", one);
-        Assert.DoesNotContain("village_x3", one); Assert.DoesNotContain("chest_x3", one);
-        var more = Achievements.Evaluate(Facts(f => f with { Villages = 3, Chests = 3 }));
-        Assert.Contains("village_x3", more); Assert.Contains("chest_x3", more);
+        Assert.DoesNotContain("village_x3", one);
+        var more = Achievements.Evaluate(Facts(f => f with { Villages = 3 }));
+        Assert.Contains("village_x3", more);
     }
 
     [Fact]
@@ -100,16 +100,16 @@ public class AchievementTests
     [Fact]
     public void Kingdom_tricks_earn_their_own_achievements()
     {
-        var ids = Achievements.Evaluate(Facts(f => f with { FakeReports = 1, Bribed = 20, CampsRented = 1, Disguises = 1, Envoys = 1, Scouts = 1, Reports = 1 }));
-        foreach (var id in new[] { "fake_report", "bribe", "bribe_x20", "camp_rent", "disguise", "envoy", "scout_report" }) Assert.Contains(id, ids);
+        var ids = Achievements.Evaluate(Facts(f => f with { FakeReports = 1, Bribed = 1, CampsRented = 1, Disguises = 1, Envoys = 1, Scouts = 1, Reports = 1 }));
+        foreach (var id in new[] { "fake_report", "bribe", "camp_rent", "disguise", "envoy", "scout_report" }) Assert.Contains(id, ids);
     }
 
     [Fact]
     public void Lessons_do_not_count_for_record_achievements()
     {
-        // 100 kills in a starter match is not the slayer's feat; the same in a plain match is.
-        Assert.DoesNotContain("slayer_x100", Achievements.Evaluate(Facts(f => f with { EnemiesKilled = 120, Starter = true })));
-        Assert.Contains("slayer_x100", Achievements.Evaluate(Facts(f => f with { EnemiesKilled = 120 })));
+        // Falling bravely in a starter match is not the record feat; the same in a plain match is.
+        Assert.DoesNotContain("brave_fall", Achievements.Evaluate(Facts(f => f with { Eliminated = true, Opponents = 2, BattlesWon = 3, Starter = true })));
+        Assert.Contains("brave_fall", Achievements.Evaluate(Facts(f => f with { Eliminated = true, Opponents = 2, BattlesWon = 3 })));
         // ...but a first win in a starter match is still a first win.
         Assert.Contains("first_win", Achievements.Evaluate(Facts(f => f with { Won = true, Starter = true })));
     }

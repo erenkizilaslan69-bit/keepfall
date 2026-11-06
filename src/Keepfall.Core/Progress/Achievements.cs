@@ -41,10 +41,8 @@ public static class Achievements
         new("village_raid", f => f.Villages >= 1),
         new("village_x3", f => f.Villages >= 3),
         new("camp_clear", f => f.Camps >= 1),
-        new("chest_x3", f => f.Chests >= 3),
         new("early_win", f => WonSolo(f) && f.WarElapsed < f.FamineAfter - 1e-6),
         new("castle_felled", f => f.CastlesFelled >= 1),
-        new("castle_x2", f => f.CastlesFelled >= 2),
         new("flawless", f => WonSolo(f) && f.SoldiersLost == 0 && f.BattlesWon >= 1),
         new("comeback", f => WonSolo(f) && f.BattlesLost >= 2),
         new("last_standing", f => WonSolo(f) && f.ByElimination && f.Opponents >= 2),
@@ -54,10 +52,8 @@ public static class Achievements
         new("envoy", f => f.Envoys >= 1),
         new("fake_report", f => f.FakeReports >= 1),
         new("bribe", f => f.Bribed >= 1),
-        new("bribe_x20", f => f.Bribed >= 20),
         new("camp_rent", f => f.CampsRented >= 1),
         new("disguise", f => f.Disguises >= 1),
-        new("slayer_x100", f => f.EnemiesKilled >= 100, InLessons: false),
         new("brave_fall", f => f.Eliminated && f.Opponents >= 2 && f.BattlesWon >= 3, InLessons: false),
     ];
 
