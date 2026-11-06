@@ -80,14 +80,17 @@ public sealed partial class GameState
     {
         if (a.ShownAs is not { } shown || report.Kind == BattleKind.Camp) return;
         a.RevealAt ??= ElapsedSeconds + Rules.Kingdoms.DisguiseRevealSeconds;
+        LogDeception(DeceptionKind.DisguisedFought, a.From, report.Defender, shown, detail: report.DefenderEliminated ? "fell" : report.Kind == BattleKind.Siege ? "held" : "road");
         _disguises[report.Id] = new DisguiseRecord(a.From, shown, a.RevealAt.Value, report.Defender);
     }
 
     /// <summary>A scout that reached <paramref name="target"/>'s castle learns who the disguised armies of that castle really are.</summary>
     private void UnmaskFor(string target, string observer)
     {
-        foreach (var a in _armies.Where(a => a.From == target && a.ShownAs is not null)) a.RevealedTo.Add(observer);
-        foreach (var d in _disguises.Values.Where(d => d.Real == target)) d.RevealedTo.Add(observer);
+        bool told = false;
+        foreach (var a in _armies.Where(a => a.From == target && a.ShownAs is not null)) told |= a.RevealedTo.Add(observer);
+        foreach (var d in _disguises.Values.Where(d => d.Real == target)) told |= d.RevealedTo.Add(observer);
+        if (told) LogDeception(DeceptionKind.Unmasked, target, observer, detail: "scout");
     }
 
     private void AdvanceKingdoms()
@@ -95,6 +98,7 @@ public sealed partial class GameState
         foreach (var d in _disguises.Values.Where(d => !d.Told && ElapsedSeconds >= d.RevealAt))
         {
             d.Told = true;
+            LogDeception(DeceptionKind.Unmasked, d.Real, d.Victim, d.Shown, detail: "time");
             if (!_eliminated.ContainsKey(d.Victim)) Notify(d.Victim, new GameNotification(NotificationKind.Unmasked, d.Real, ElapsedSeconds, Detail: d.Shown));
         }
     }
@@ -133,7 +137,7 @@ public sealed partial class GameState
             if (n > 0) table[type] = n;
         }
         KingdomOf(from).FakeReport = table.Count == 0 ? null : table;
-        if (table.Count > 0) _players[from].Castle.Stats.FakeReportsSet++;
+        if (table.Count > 0) { _players[from].Castle.Stats.FakeReportsSet++; LogDeception(DeceptionKind.FakeReportSet, from, count: table.Values.Sum()); }
         return CommandResult.Success;
     }
 
@@ -160,6 +164,7 @@ public sealed partial class GameState
         _armies.Add(new ArmyMarch(_nextId++, NewPublicId(), from, c.TargetKey, units, rows, priority, ElapsedSeconds,
             RouteBetween(from, c.TargetKey), SpeedOf(units)) { Decoy = true });
         player.Castle.Stats.DecoysSent++;
+        LogDeception(DeceptionKind.DecoySent, from, c.TargetKey, count: total);
         return CommandResult.Success;
     }
 
@@ -168,7 +173,10 @@ public sealed partial class GameState
     {
         foreach (var d in _armies.Where(a => a.Decoy && a.Battle is null).ToList())
             if (_armies.Any(r => !r.Decoy && r.From != d.From && r.Position.DistanceTo(d.Position) <= radius + 1e-9))
+            {
                 _armies.Remove(d);
+                LogDeception(DeceptionKind.DecoyMet, d.From, d.Target);
+            }
     }
 
     // ---- the Merchants -------------------------------------------------------------------------
@@ -191,6 +199,7 @@ public sealed partial class GameState
         state.BribeReadyAt = ElapsedSeconds + k.BribeCooldownSeconds;
 
         player.Castle.Stats.SoldiersBribed += n;
+        LogDeception(DeceptionKind.Bribed, from, a.From, count: n, detail: a.Decoy ? "decoy" : null);
         var turned = TakeProportional(a.Units, n);
         a.Units = a.Units.ToDictionary(kv => kv.Key, kv => kv.Value - turned.GetValueOrDefault(kv.Key));
         if (a.Decoy) return CommandResult.Success; // a phantom just thins out
@@ -241,6 +250,7 @@ public sealed partial class GameState
         if (!player.Castle.TrySpendCargo(0, 0, 0, cost)) return CommandResult.Fail($"Kampı kiralamak için {cost} altın gerekiyor.");
         var units = site.Bandits.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
         player.Castle.Stats.CampsRented++;
+        LogDeception(DeceptionKind.CampRented, from, c.TargetKey, count: units.Values.Sum());
         foreach (var type in site.Bandits.Keys.ToList()) site.Bandits[type] = 0;
         site.Gone = true;
         site.Version++;

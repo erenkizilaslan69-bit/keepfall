@@ -132,8 +132,11 @@ public sealed record PlayerView(int Seat, string Name, PlayerColor Color, bool R
 /// <summary>Sent to everyone once the match is over: the hidden-information rule ends with the match.</summary>
 public sealed record RankView(int Seat, string Name, PlayerColor Color, int Place, int Population, bool Eliminated, string? Kingdom = null);
 public sealed record PlayerSummaryView(int Seat, string Name, PlayerColor Color, SummaryView Summary);
+/// <summary>One line of the "who fooled whom" timeline (seats; TargetSeat/AsSeat null when not applicable). Only ever sent inside <see cref="ResultView"/>.</summary>
+public sealed record DeceptionEventView(double At, string Kind, int ActorSeat, int? TargetSeat, int? AsSeat, int Count, string? Detail);
 public sealed record ResultView(
-    IReadOnlyList<int> Winners, bool ByElimination, IReadOnlyList<RankView> Ranking, IReadOnlyList<PlayerSummaryView> Summaries);
+    IReadOnlyList<int> Winners, bool ByElimination, IReadOnlyList<RankView> Ranking, IReadOnlyList<PlayerSummaryView> Summaries,
+    IReadOnlyList<DeceptionEventView>? Deceptions = null);
 
 public sealed record RoomView(
     string Code, RoomPhase Phase, IReadOnlyList<PlayerView> Players, int MinPlayers, int MaxPlayers,
@@ -166,7 +169,10 @@ public static class ViewMapper
             room.Players
                 .Where(p => game.SummaryOf(p.CastleKey) is not null)
                 .Select(p => new PlayerSummaryView(p.Seat, p.Name, p.Color, ToView(game.SummaryOf(p.CastleKey)!, game.CastleOf(p.CastleKey)!)))
-                .ToList());
+                .ToList(),
+            // The match is over: the deception log is public now (and only now).
+            game.DeceptionLog.Select(e => new DeceptionEventView(
+                Math.Round(e.At, 1), e.Kind.ToString(), SeatOf(e.Actor), e.Target is null ? null : SeatOf(e.Target), e.As is null ? null : SeatOf(e.As), e.Count, e.Detail)).ToList());
     }
 
     /// <summary>The castle of <paramref name="player"/>; null while the room has no match.</summary>

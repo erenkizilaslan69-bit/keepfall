@@ -595,7 +595,7 @@ public sealed partial class GameState
         var sent = castle.SendScout(c.From);
         if (!sent.Ok) return sent;
         castle.TrySpendCargo(c.Food, c.Wood, c.Iron, c.Gold);
-        if (asKey is not null) castle.Stats.Disguises++;
+        if (asKey is not null) { castle.Stats.Disguises++; LogDeception(DeceptionKind.EnvoyAsSent, from, c.TargetKey, asKey); }
         _missions.Add(new ScoutMission(NewPublicId(), from, c.TargetKey, ElapsedSeconds, RouteBetween(from, c.TargetKey), ScoutSpeedNow, MissionKind.Envoy)
         {
             GiftFood = c.Food, GiftWood = c.Wood, GiftIron = c.Iron, GiftGold = c.Gold, Message = message.Text, ShownAs = asKey,
@@ -619,6 +619,7 @@ public sealed partial class GameState
         Notify(m.Target, new GameNotification(NotificationKind.EnvoyArrived, m.ShownAs ?? m.From, ElapsedSeconds));
         Notify(m.From, new GameNotification(NotificationKind.EnvoyDelivered, m.Target, ElapsedSeconds));
         _players[m.From].Castle.Stats.EnvoysDelivered++;
+        if (m.ShownAs is not null) LogDeception(DeceptionKind.EnvoyAsDelivered, m.From, m.Target, m.ShownAs);
     }
 
     private bool Knows(string player, string siteId) => _knowledge.TryGetValue(player, out var k) && k.ContainsKey(siteId);
@@ -827,6 +828,8 @@ public sealed partial class GameState
         }).ToList();
         var levels = Jobs.Buildings.ToDictionary(b => b, b => castle.Building(b).Level);
         UnmaskFor(target, observer);
+        if (FakeReportOf(target) is not null)
+            LogDeception(IsFaction(observer, Factions.Oracle) ? DeceptionKind.FakeReportSeenThrough : DeceptionKind.FakeReportRead, target, observer);
         return new ScoutReport(target, now, now, soldiers, levels, castle.UnitTypes.Select(u => u.Id).ToList(), FactionOf(target), IsFaction(observer, Factions.Oracle) && FakeReportOf(target) is not null);
     }
 
@@ -850,7 +853,12 @@ public sealed partial class GameState
         if (!sent.Ok) return sent;
         _armies.Add(new ArmyMarch(_nextId++, NewPublicId(), from, c.TargetKey, units, rows, priority, ElapsedSeconds,
             RouteBetween(from, c.TargetKey), SpeedOf(units), c.Mode) { ShownAs = c.AsKey });
-        if (c.AsKey is not null) { StartDisguiseCooldown(from); player.Castle.Stats.Disguises++; }
+        if (c.AsKey is not null)
+        {
+            StartDisguiseCooldown(from);
+            player.Castle.Stats.Disguises++;
+            LogDeception(DeceptionKind.ArmyAsSent, from, c.TargetKey, c.AsKey, units.Values.Sum());
+        }
         return CommandResult.Success;
     }
 
@@ -986,13 +994,15 @@ public sealed partial class GameState
             if (!CastleVisionOf(a.Target).Contains(a.Position)) continue;
             a.Sighted = true;
             Notify(a.Target, new GameNotification(NotificationKind.ArmyIncoming, ShownOwner(a, a.Target), ElapsedSeconds, ElapsedSeconds + a.SecondsLeft));
+            if (a.Decoy) LogDeception(DeceptionKind.DecoySighted, a.From, a.Target);
+            if ((a.Decoy || a.ShownAs is not null) && IsFaction(a.Target, Factions.Oracle)) LogDeception(DeceptionKind.OracleSawIncoming, a.From, a.Target, a.ShownAs, detail: a.Decoy ? "decoy" : "disguise");
         }
 
         // Armies at their target's gate lay siege one at a time per castle, earliest sent first; the rest wait.
         foreach (var a in _armies.Where(a => a.State == ArmyState.Marching && a.Battle is null && a.Out.Arrived).OrderBy(a => a.Id).ToList())
         {
             if (Phase == MatchPhase.Ended) return;
-            if (a.Decoy) { _armies.Remove(a); continue; } // a phantom fades away at the gate
+            if (a.Decoy) { _armies.Remove(a); LogDeception(DeceptionKind.DecoyFaded, a.From, a.Target); continue; } // a phantom fades away at the gate
             if (a.Site is not null) { ArriveAtSite(a); continue; }
             if (_eliminated.ContainsKey(a.Target)) { SendHome(a, a.Units); continue; } // nothing left to attack
             if (_active.Any(b => b.Kind == BattleKind.Siege && b.Defender == a.Target)) continue;
@@ -1237,6 +1247,7 @@ public sealed partial class GameState
         Notify(a.From, new GameNotification(NotificationKind.BattleFought, b.Defender, ElapsedSeconds, BattleId: report.Id));
         Notify(b.Defender, new GameNotification(NotificationKind.BattleFought, ShownOwner(a, b.Defender), ElapsedSeconds, BattleId: report.Id));
 
+        if (a.Rented && b.Kind == BattleKind.Siege) LogDeception(DeceptionKind.RentedFought, a.From, b.Defender, detail: fell ? "fell" : "held");
         if (a.Rented && b.Kind == BattleKind.Siege) FinishRented(a);
         else if (b.Kind == BattleKind.Siege) SendHome(a, Merge(b.AttackerSurvivors, prisoners));
         else
