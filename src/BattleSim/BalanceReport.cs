@@ -69,7 +69,7 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
         foreach (var u in Units)
         {
             t.Add(u.Name, F(u.Hp, "0"), F(u.Damage, "0.#"), F(u.AttackInterval, "0.0#") + "s", F(u.Dps, "0.00"),
-                u.DefaultRow == Row.Front ? "ön" : "arka", u.Range == AttackRange.Melee ? "yakın" : "uzak",
+                u.DefaultRow == Row.First ? "ön" : "arka", u.Range == AttackRange.Melee ? "yakın" : "uzak",
                 F(rules.ResourceValueInWood(u), "0.00"), F(u.Hp * u.Dps, "0"));
         }
         t.Print();
@@ -257,8 +257,11 @@ public sealed class BalanceReport(GameRules rules, BalanceOptions options)
         return stats;
     }
 
-    private static bool HasMeleeFront(ArmySetup army) =>
-        army.Counts.Any(kv => kv.Value > 0 && kv.Key.Range == AttackRange.Melee && army.RowOf(kv.Key) == Row.Front);
+    private static bool HasMeleeFront(ArmySetup army)
+    {
+        var present = army.Counts.Where(kv => kv.Value > 0).Select(kv => kv.Key).ToList();
+        return present.Count > 0 && present.Any(t => t.Range == AttackRange.Melee && army.RowOf(t) == present.Min(army.RowOf));
+    }
 
     private static void Accumulate(TypeStats s, int count, double share, double score, bool screened)
     {

@@ -23,9 +23,11 @@ public static class ArmyParser
             {
                 row = entry[(at + 1)..].ToLowerInvariant() switch
                 {
-                    "on" or "ön" or "front" => Row.Front,
-                    "arka" or "back" => Row.Back,
-                    var other => throw new FormatException($"Geçersiz sıra \"{other}\" (on | arka)."),
+                    "1" or "on" or "ön" or "front" => Row.First,
+                    "2" => Row.Second,
+                    "3" => Row.Third,
+                    "4" or "arka" or "back" => Row.Fourth,
+                    var other => throw new FormatException($"Geçersiz sıra \"{other}\" (1 | 2 | 3 | 4, ya da on | arka)."),
                 };
                 entry = entry[..at];
             }

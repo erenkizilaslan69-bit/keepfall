@@ -789,12 +789,26 @@ public class WarTests
     }
 
     [Fact]
+    public void Two_unit_types_cannot_share_a_row()
+    {
+        var game = War();
+        var twice = new Dictionary<string, Row> { ["kilicli"] = Row.First, ["okcu"] = Row.First };
+        Assert.False(game.Execute(B, new SetDefense(twice, null)).Ok);
+        var sameRow = new SendArmy(A, new Dictionary<string, int> { ["kilicli"] = 1, ["okcu"] = 1 }, twice);
+        var bad = game.Execute(B, sameRow);
+        Assert.False(bad.Ok);
+        Assert.Contains("sıra", bad.Error);
+        // only the types really sent count: a row given to a type that stays home does not clash
+        Assert.DoesNotContain("sıra", game.Execute(B, sameRow with { Units = new Dictionary<string, int> { ["kilicli"] = 1 } }).Error ?? "");
+    }
+
+    [Fact]
     public void Defense_settings_shape_the_defending_army()
     {
         var game = War();
-        Ok(game.Execute(B, new SetDefense(new Dictionary<string, Row> { ["kilicli"] = Row.Back }, "okcu")));
+        Ok(game.Execute(B, new SetDefense(new Dictionary<string, Row> { ["kilicli"] = Row.Fourth }, "okcu")));
         var castle = game.CastleOf(B)!;
-        Assert.Equal(Row.Back, castle.DefenseRows[Sword]);
+        Assert.Equal(Row.Fourth, castle.DefenseRows[Sword]);
         Assert.Equal(Archer, castle.DefensePriority);
         Assert.False(game.Execute(B, new SetDefense(null, "ejderha")).Ok);
     }

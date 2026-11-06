@@ -55,7 +55,7 @@ await measure('idle');
 // three battles of 24 soldiers a side at once, near our castle, replayed for the whole measurement
 await run(`(async () => {
   const s = window.keepfallScene; const now = s.gameNow().now;
-  const side = (seat, color, n, unit) => ({ seat, color, name: 'x', soldiers: Array.from({ length: n }, (_, i) => ({ unitId: ['kilicli', 'okcu', 'mizrakci', 'kalkanli'][i % 4], row: i % 4 === 1 ? 'back' : 'front' })) });
+  const side = (seat, color, n, unit) => ({ seat, color, name: 'x', soldiers: Array.from({ length: n }, (_, i) => ({ unitId: ['kilicli', 'okcu', 'mizrakci', 'kalkanli'][i % 4], row: i % 4 === 1 ? 'second' : 'first' })) });
   const at = [{ x: 10, y: 8 }, { x: 16, y: 10 }, { x: 12, y: 14 }];
   at.forEach((p, i) => s.playBattle({ id: 'fps' + i, kind: 'field', at: p, facing: { x: 1, y: 0 }, startedAt: now, playback: 1, tickSeconds: 0.5, ticks: 400, fightSeconds: 200,
     sides: [side(1, 'blue', 24), side(2, 'red', 24)],

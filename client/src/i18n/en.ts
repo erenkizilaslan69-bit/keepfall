@@ -261,5 +261,6 @@ export const EN: Record<string, string> = {
   "Bu kamp temizlenmiş görünüyor.": "This camp looks cleared.",
   "Gözcü sandığa gidiyor.": "The scout is heading for the chest.",
   "Ordu gönderilemedi.": "The army could not be sent.",
-  "Ordu yola çıktı.": "The army has set out."
+  "Ordu yola çıktı.": "The army has set out.",
+  "{0}. sıra": "Row {0}"
 };

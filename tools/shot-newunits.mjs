@@ -50,8 +50,8 @@ const fs = await import('node:fs');
 await evalJs(`(async()=>{
  const w=ms=>new Promise(r=>setTimeout(r,ms)); const s=window.keepfallScene; const now=s.gameNow().now;
  const side=(seat,color,list)=>({seat,color,name:'x',soldiers:list.flatMap(([u,n,row])=>Array.from({length:n},()=>({unitId:u,row})))});
- const A=side(1,'blue',[['kalkanli',3,'front'],['suvari',3,'front'],['kesis',2,'back'],['mancinik',2,'back'],['okcu',2,'back']]);
- const B=side(2,'red',[['kilicli',4,'front'],['mizrakci',3,'front'],['okcu',3,'back'],['mancinik',1,'back'],['kesis',1,'back']]);
+ const A=side(1,'blue',[['kalkanli',3,'first'],['suvari',3,'first'],['kesis',2,'second'],['mancinik',2,'second'],['okcu',2,'second']]);
+ const B=side(2,'red',[['kilicli',4,'first'],['mizrakci',3,'first'],['okcu',3,'second'],['mancinik',1,'second'],['kesis',1,'second']]);
  const nA=A.soldiers.length;
  const hits=[]; for(let k=0;k<40;k++){ hits.push(2+k, k%nA, nA+((k*3)%B.soldiers.length)); }
  const heals=[]; for(let k=0;k<10;k++){ heals.push(6+k*3, 6+(k%2), (k*2)%6); }

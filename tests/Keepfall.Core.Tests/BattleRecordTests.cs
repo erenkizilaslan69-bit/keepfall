@@ -75,7 +75,7 @@ public class BattleRecordTests
     public void Melee_only_strikes_after_the_approach_and_reserves_advance_when_the_front_falls()
     {
         var setup = Army("A", ("okcu", 3), ("kilicli", 2));
-        setup.PlaceIn(Rules.FindUnit("kilicli")!, Row.Back); // swordsmen held back as reserves
+        setup.PlaceIn(Rules.FindUnit("kilicli")!, Row.Fourth); // swordsmen held back as reserves
         var r = new BattleSimulator(Rules).Simulate(setup, Army("B", ("kilicli", 2)), new Random(5), recordBattle: true).Record!;
         int approach = (int)Math.Round(Rules.Combat.ApproachTime / r.TickSeconds);
         for (int i = 0; i < r.Hits.Count; i += 3)

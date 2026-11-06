@@ -140,7 +140,7 @@ export function guideHtml(g: Guide): string {
         <td><b>${esc(tr(u.name))}</b><small>${u.ranged ? t('uzaktan') : t('yakın')}</small></td><td>${num(u.hp)}</td><td>${num(u.dps)}</td>
         <td>${t('{0} demir, {1} odun', num(u.iron), num(u.wood))}</td><td>${u.strong.map((n) => esc(tr(n))).join(', ') || '—'}</td><td>${u.weak.map((n) => esc(tr(n))).join(', ') || '—'}</td></tr>`).join('')}
     </table>
-    <p class="guide-note">${t('Ön sıra önce vurulur; arka sıradakiler öndekiler düşene kadar hasar almaz (yakın dövüşçüler orada yedektir).')}</p>`;
+    <p class="guide-note">${t('Dört sıra vardır, her birliğe ayrı bir sıra: 1. sıra önce vurulur; arkadakiler öndekiler düşene kadar hasar almaz (yakın dövüşçüler sıraları gelene kadar yedektir).')}</p>`;
   return sections.map(([title, lines, units]) => `
     <section><h3>${title}</h3>${units ? table : `<ul>${lines.filter(Boolean).map((l) => `<li>${l}</li>`).join('')}</ul>`}</section>`).join('');
 }

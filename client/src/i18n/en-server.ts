@@ -198,5 +198,6 @@ export const EN_SERVER: Record<string, string> = {
   "Sahte ulak": "Fake envoy",
   "Başka bir oyuncunun adıyla ve renginde ulak ya da mesaj gönderirsin; alıcı gerçek göndereni göremez (Kâhin hariç).": "You send an envoy or a message in another player's name and colour; the receiver cannot see the real sender (Oracles excepted).",
   "Kılık değiştirme": "Disguise",
-  "Ordunu başka bir oyuncunun renginde gönderirsin: haritada, uyarıda ve savaş raporunda o oyuncu saldırıyor görünür. Gerçek kimlik savaştan bir süre sonra ya da gözcü raporuyla ortaya çıkar. Bekleme süresi vardır.": "You send your army in another player's colour: on the map, in the warning and in the battle report that player appears to attack. The real identity comes out some time after the battle or through a scout report. It has a cooldown."
+  "Ordunu başka bir oyuncunun renginde gönderirsin: haritada, uyarıda ve savaş raporunda o oyuncu saldırıyor görünür. Gerçek kimlik savaştan bir süre sonra ya da gözcü raporuyla ortaya çıkar. Bekleme süresi vardır.": "You send your army in another player's colour: on the map, in the warning and in the battle report that player appears to attack. The real identity comes out some time after the battle or through a scout report. It has a cooldown.",
+  "Aynı sıraya iki birlik konamaz.": "Two unit types cannot share a row."
 };

@@ -50,7 +50,7 @@ public static class GuideMapper
             rules.MercenaryPrices.TryGetValue(u.Id, out var price) ? price : null,
             rules.Units.Where(d => rules.Counters.Get(u, d) > 1.0001).Select(d => d.Name).ToList(),
             rules.Units.Where(d => rules.Counters.Get(u, d) < 0.9999).Select(d => d.Name).ToList(),
-            u.Heal, u.HealInterval, u.Cost.People, u.SpeedFactor, u.DefaultRow == Row.Back, u.Flank, u.BackFirst, u.SplashTargets)).ToList();
+            u.Heal, u.HealInterval, u.Cost.People, u.SpeedFactor, u.DefaultRow == Row.Fourth, u.Flank, u.BackFirst, u.SplashTargets)).ToList();
         string NameOf(string id) => rules.FindUnit(id)?.Name ?? id;
         List<GuideCount> Counts(IReadOnlyDictionary<string, int> d) => d.Where(kv => kv.Value > 0).Select(kv => new GuideCount(NameOf(kv.Key), kv.Value)).ToList();
         GuideCampView Camp(CampRules c) => new(Counts(c.Bandits), new(c.GoldMin, c.GoldMax), new(c.WoodMin, c.WoodMax), Counts(c.Weapons));

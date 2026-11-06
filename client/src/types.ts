@@ -81,7 +81,8 @@ export interface ResultView {
 }
 
 // War: our own armies, warnings about armies coming at us (who and when only), our battles.
-export type Row = 'front' | 'back';
+/** The four rows of a formation, front to back; every unit type of an army has a row of its own. */
+export type Row = 'first' | 'second' | 'third' | 'fourth';
 export interface ArmyView {
   id: number;
   targetSeat: number;

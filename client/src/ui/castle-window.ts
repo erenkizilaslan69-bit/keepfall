@@ -1,4 +1,4 @@
-import { BACK_LINE, SHOOTERS, esc, fmt } from '../format';
+import { SHOOTERS, bindRowSwap, defaultRows, esc, fmt, rowSelect } from '../format';
 import { t as tt, tr } from '../i18n';
 import type { CastleView, Job, Row } from '../types';
 import { Win, type WinContext, type WinData } from './windows';
@@ -29,9 +29,9 @@ export class CastleWin extends Win {
           <small class="muted-ink" data-f="hired"></small></div>
         <span class="stepper"><button class="btn" data-act="hire" data-n="1">+1</button><button class="btn" data-act="hire" data-n="5">+5</button></span>
       </div>`).join('');
+    const defaults = defaultRows(s.units.map((u) => u.id));
     const rows = s.units.map((u) => `
-      <div class="row"><span>${esc(tr(u.name))}</span>
-        <select data-d-row="${u.id}"><option value="front">${tt('ön sıra')}</option><option value="back">${tt('arka sıra')}</option></select></div>`).join('');
+      <div class="row"><span>${esc(tr(u.name))}</span>${rowSelect('data-d-row', u.id, defaults[u.id])}</div>`).join('');
     const priority = `<option value="">${tt('ön sıra')}</option>${s.units.map((u) => `<option value="${u.id}">${tt('önce {0}', esc(tr(u.name)))}</option>`).join('')}`;
     this.body.innerHTML = `
       <div class="tabs">${TABS.map(([id, label]) => `<button class="tab" data-tab="${id}">${label}</button>`).join('')}</div>
@@ -59,6 +59,7 @@ export class CastleWin extends Win {
         ${s.units.some((u) => SHOOTERS.includes(u.id)) ? `<div class="row"><span>${s.units.some((u) => u.id === 'okcu') ? tt('Okçu hedefi') : tt('Mancınık hedefi')}</span><select data-d="priority">${priority}</select></div>` : ''}
         <div class="row center win-foot-sticky"><button class="btn" data-act="save-defense">${tt('Kaydet')}</button></div>
       </div>`;
+    bindRowSwap(this.body, 'data-d-row');
     this.body.addEventListener('click', (e) => void this.click(e));
     this.body.addEventListener('change', (e) => { if ((e.target as HTMLElement).closest('[data-pane="defense"]')) this.defenseTouched = true; });
     this.fillDefense(s);
@@ -66,7 +67,10 @@ export class CastleWin extends Win {
   }
 
   private fillDefense(s: CastleView): void {
-    for (const u of s.units) this.q<HTMLSelectElement>(`[data-d-row="${u.id}"]`).value = (s.war.defense.rows[u.id] as Row | undefined) ?? (BACK_LINE.includes(u.id) ? 'back' : 'front');
+    const saved = s.units.map((u) => s.war.defense.rows[u.id]);
+    const usable = saved.every(Boolean) && new Set(saved).size === saved.length; // a saved formation holds a row for every type, none twice
+    const rows = usable ? s.war.defense.rows : defaultRows(s.units.map((u) => u.id));
+    for (const u of s.units) { const sel = this.q<HTMLSelectElement>(`[data-d-row="${u.id}"]`); sel.value = rows[u.id]; sel.dataset.prev = rows[u.id]; }
     const priority = this.body.querySelector<HTMLSelectElement>('[data-d="priority"]');
     if (priority) priority.value = s.war.defense.archerPriority ?? '';
   }

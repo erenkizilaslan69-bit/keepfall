@@ -87,7 +87,7 @@ export const EN_GUIDE: Record<string, string> = {
   "uzaktan": "ranged",
   "yakın": "melee",
   "{0} demir, {1} odun": "{0} iron, {1} wood",
-  "Ön sıra önce vurulur; arka sıradakiler öndekiler düşene kadar hasar almaz (yakın dövüşçüler orada yedektir).": "The front row is hit first; those behind take no damage until the ones in front have fallen (melee fighters in the back are reserves).",
+  "Dört sıra vardır, her birliğe ayrı bir sıra: 1. sıra önce vurulur; arkadakiler öndekiler düşene kadar hasar almaz (yakın dövüşçüler sıraları gelene kadar yedektir).": "There are four rows, one per unit type: row 1 is hit first; those behind take no damage until the ones in front have fallen (melee fighters wait as reserves until their row comes).",
   "Nasıl oynanır": "How to Play",
   "Kapat": "Close",
   "Yükleniyor…": "Loading…",

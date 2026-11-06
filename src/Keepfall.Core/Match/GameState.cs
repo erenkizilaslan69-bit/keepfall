@@ -859,6 +859,10 @@ public sealed partial class GameState
             if (Rules.FindUnit(id) is not { } type) return CommandResult.Fail($"Bilinmeyen birlik \"{id}\".");
             rows[type] = row;
         }
+        // One unit type to a row: only the types that are really sent count.
+        var sent = units;
+        if (rows.Where(kv => sent.ContainsKey(kv.Key)).GroupBy(kv => kv.Value).Any(g => g.Count() > 1))
+            return CommandResult.Fail("Aynı sıraya iki birlik konamaz.");
         if (!string.IsNullOrEmpty(archerPriority) && (priority = Rules.FindUnit(archerPriority)) is null)
             return CommandResult.Fail($"Bilinmeyen birlik \"{archerPriority}\".");
         return CommandResult.Success;

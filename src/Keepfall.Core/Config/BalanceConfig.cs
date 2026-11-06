@@ -500,8 +500,8 @@ public static class BalanceConfigLoader
             };
             Row row = u.Row.ToLowerInvariant() switch
             {
-                "front" => Row.Front,
-                "back" => Row.Back,
+                "front" => Row.First,
+                "back" => Row.Fourth,
                 _ => Fail<Row>(errors, $"{where}.row \"{u.Row}\" geçersiz (front | back)."),
             };
 

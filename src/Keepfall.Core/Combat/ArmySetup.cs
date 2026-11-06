@@ -23,6 +23,7 @@ public sealed class ArmySetup
 {
     private readonly Dictionary<UnitType, int> _counts = [];
     private readonly Dictionary<UnitType, Row> _rowOverrides = [];
+    private Dictionary<UnitType, Row>? _layout;
 
     public ArmySetup(string name = "Ordu") => Name = name;
 
@@ -39,19 +40,56 @@ public sealed class ArmySetup
         ArgumentOutOfRangeException.ThrowIfNegative(count);
         if (count == 0) return this;
         _counts[type] = _counts.GetValueOrDefault(type) + count;
+        _layout = null;
         return this;
     }
 
     public int CountOf(UnitType type) => _counts.GetValueOrDefault(type);
 
-    /// <summary>Formation: place every unit of this type in the given row instead of its default.</summary>
+    /// <summary>Formation: place every unit of this type in the given row (each type has a row of its own: see <see cref="RowOf"/>).</summary>
     public ArmySetup PlaceIn(UnitType type, Row row)
     {
         _rowOverrides[type] = row;
+        _layout = null;
         return this;
     }
 
-    public Row RowOf(UnitType type) => _rowOverrides.TryGetValue(type, out var r) ? r : type.DefaultRow;
+    /// <summary>
+    /// The row this type stands in. Every unit type of an army has a row of its own: the chosen rows come first (a row that is taken goes to the next free
+    /// one behind it), then the rest take the free rows from the front, the fighters first and the ones that stay behind after them.
+    /// Only when an army has more than four types (never in a match: the deck is four) do the last ones share the fourth row.
+    /// </summary>
+    public Row RowOf(UnitType type)
+    {
+        _layout ??= BuildLayout();
+        return _layout.TryGetValue(type, out var r) ? r : _rowOverrides.TryGetValue(type, out var o) ? o : type.DefaultRow;
+    }
+
+    private Dictionary<UnitType, Row> BuildLayout()
+    {
+        var layout = new Dictionary<UnitType, Row>();
+        var taken = new bool[4];
+        int Take(int from, bool forward)
+        {
+            if (forward) { for (int i = from; i < 4; i++) if (!taken[i]) return i; for (int i = from - 1; i >= 0; i--) if (!taken[i]) return i; }
+            else { for (int i = from; i >= 0; i--) if (!taken[i]) return i; for (int i = from + 1; i < 4; i++) if (!taken[i]) return i; }
+            return -1;
+        }
+        var present = _counts.Where(kv => kv.Value > 0).Select(kv => kv.Key).ToList();
+        foreach (var t in present.Where(t => _rowOverrides.ContainsKey(t)).OrderBy(t => (int)_rowOverrides[t]).ThenBy(t => t.Index))
+        {
+            int i = Take((int)_rowOverrides[t], true);
+            if (i < 0) { layout[t] = Row.Fourth; continue; }
+            taken[i] = true; layout[t] = (Row)i;
+        }
+        foreach (var t in present.Where(t => !_rowOverrides.ContainsKey(t)).OrderBy(t => t.DefaultRow == Row.First ? 0 : 1).ThenBy(t => t.Index))
+        {
+            int i = Take(0, true);
+            if (i < 0) { layout[t] = Row.Fourth; continue; }
+            taken[i] = true; layout[t] = (Row)i;
+        }
+        return layout;
+    }
 
     /// <summary>Same composition and formation, with a new name and target priority.</summary>
     public ArmySetup Clone(string name, TargetPriority targeting)

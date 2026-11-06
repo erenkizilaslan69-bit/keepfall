@@ -56,7 +56,7 @@ await run(`document.querySelector('.ui-root').style.visibility = 'hidden'; (asyn
 // A battle in front of the castle: 8 against 8, swords and arrows, blows and falls over a few seconds.
 await run(`(async () => {
   const s = window.keepfallScene, now = s.gameNow().now, hits = [], deaths = [];
-  const side = (seat, color) => ({ seat, color, name: 'x', soldiers: Array.from({ length: 8 }, (_, i) => ({ unitId: i % 3 === 0 ? 'okcu' : 'kilicli', row: 'front' })) });
+  const side = (seat, color) => ({ seat, color, name: 'x', soldiers: Array.from({ length: 8 }, (_, i) => ({ unitId: i % 3 === 0 ? 'okcu' : 'kilicli', row: 'first' })) });
   for (let t = 1; t < 20; t++) for (let i = 0; i < 8; i++) { hits.push(t, i, 8 + ((i + t) % 8)); hits.push(t, 8 + i, (i + 2 * t) % 8); }
   [3, 6, 9, 12].forEach((t, k) => { deaths.push(t * 2, k * 2, t * 2, 8 + k * 2 + 1); });
   const c = s.castleSprite;

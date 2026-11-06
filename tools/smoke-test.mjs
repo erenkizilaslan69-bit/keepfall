@@ -182,7 +182,7 @@ const bMsgsBefore = B.msgs.length;
 // going on, and nothing else.
 const tA = A.of('CastleState').at(-1).scouting.targets.find((t) => t.seat === 2).marchSeconds;
 const sC = C.of('CastleState').at(-1).scouting.targets.find((t) => t.seat === 2).scoutSeconds;
-check('A sends 3 swordsmen at B', (await A.call('SendArmy', 2, { kilicli: 3 }, { kilicli: 'front' }, null, 'attack')).ok);
+check('A sends 3 swordsmen at B', (await A.call('SendArmy', 2, { kilicli: 3 }, { kilicli: 'first' }, null, 'attack')).ok);
 setTimeout(() => { void C.call('SendScout', 2, 'idle'); }, Math.max(0, (tA + 4 - sC) / 5) * 1000);
 check('A sees its own army', await waitFor(() => (A.of('CastleState').at(-1)?.war.armies.length ?? 0) === 1, 3000));
 check('the battle happens', await waitFor(() => (B.of('CastleState').at(-1)?.war.battles.length ?? 0) === 1, 15000));

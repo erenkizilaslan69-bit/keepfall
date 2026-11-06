@@ -1,5 +1,5 @@
 import { syncStepButtons } from './step-buttons';
-import { BACK_LINE, SHOOTERS, colorNote, esc } from '../format';
+import { SHOOTERS, bindRowSwap, colorNote, defaultRows, esc, rowSelect } from '../format';
 import { t as tt, tr } from '../i18n';
 import type { CastleView, Corner, Job, QuarterView, Row, SiteView } from '../types';
 import { SITE_NAME } from '../scene/Sites';
@@ -52,6 +52,7 @@ export class ForestWin extends Win {
       <h4>${tt('Bulunanlar')}</h4>
       <div data-f="list" class="site-list"></div>
       <p class="muted-ink small">${tt('Bir yer ancak gözcün yakınından geçince bulunur ve harita üzerinde kalır. Başkası bir yeri boşaltırsa, onu tekrar görene kadar eski haliyle görürsün.')}</p>`;
+    bindRowSwap(this.body, 'data-row');
     this.body.addEventListener('click', (e) => void this.click(e));
     this.update({ castle: s, room: null });
   }
@@ -113,13 +114,14 @@ export class SiteWin extends Win {
     this.el.classList.add('wide');
     const site = this.site();
     const kind = site?.kind ?? 'chest';
+    const defaults = defaultRows(s.units.map((u) => u.id));
     const units = s.units.map((u) => `
       <div class="atk-row" data-unit="${u.id}">
         <span><b>${esc(tr(u.name))}</b> <small class="muted-ink" data-f="home"></small></span>
         <span class="stepper"><button class="btn-round" data-act="less" title="${tt('Bir eksik')}">−</button>
           <input type="number" min="0" value="0" data-count="${u.id}" aria-label="${esc(tt('{0} sayısı', tr(u.name)))}">
           <button class="btn-round" data-act="more" title="${tt('Bir fazla')}">+</button></span>
-        <select data-row="${u.id}"><option value="front"${BACK_LINE.includes(u.id) ? '' : ' selected'}>${tt('ön')}</option><option value="back"${BACK_LINE.includes(u.id) ? ' selected' : ''}>${tt('arka')}</option></select>
+        ${rowSelect('data-row', u.id, defaults[u.id])}
       </div>`).join('');
     const priority = `<option value="">${tt('ön sıra')}</option>${s.units.map((u) => `<option value="${u.id}">${tt('önce {0}', esc(tr(u.name)))}</option>`).join('')}`;
     const army = kind === 'chest' ? '' : `

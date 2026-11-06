@@ -2,7 +2,9 @@ namespace Keepfall.Core.Units;
 
 public enum AttackRange { Melee, Ranged }
 
-public enum Row { Front, Back }
+/// <summary>The rows of a formation, front to back. In an army every unit type has a row of its own (see ArmySetup); a unit's default is only a hint:
+/// First for the ones that fight up front, Fourth for those that stay behind.</summary>
+public enum Row { First, Second, Third, Fourth }
 
 public sealed record ResourceCost(double Iron, double Wood, double Food, int People);
 

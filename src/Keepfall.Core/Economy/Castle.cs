@@ -493,6 +493,7 @@ public sealed class Castle
             if (FindUnit(id) is not { } type) return CommandResult.Fail($"Bilinmeyen birlik \"{id}\".");
             rows[type] = row;
         }
+        if (rows.GroupBy(kv => kv.Value).Any(g => g.Count() > 1)) return CommandResult.Fail("Aynı sıraya iki birlik konamaz.");
         UnitType? priority = null;
         if (!string.IsNullOrEmpty(c.ArcherPriority) && (priority = FindUnit(c.ArcherPriority)) is null)
             return CommandResult.Fail($"Bilinmeyen birlik \"{c.ArcherPriority}\".");

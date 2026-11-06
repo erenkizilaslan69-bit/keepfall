@@ -1,4 +1,5 @@
 import { t, tr } from './i18n';
+import type { Row } from './types';
 
 // Small display helpers shared by the panels.
 
@@ -25,6 +26,29 @@ export const COLOR_NAMES: Record<string, string> = { blue: t('Mavi'), red: t('K�
 /** Units that shoot from the back and have a target to pick (the monk only heals), and units that stand at the back by default. */
 export const SHOOTERS = ['okcu', 'mancinik'];
 export const BACK_LINE = ['okcu', 'mancinik', 'kesis'];
+
+export const ROWS: Row[] = ['first', 'second', 'third', 'fourth'];
+/** The default formation (as the server lays it out): the fighters first, then the ones that stay behind, one row each. */
+export function defaultRows(ids: string[]): Record<string, Row> {
+  const sorted = [...ids].sort((a, b) => Number(BACK_LINE.includes(a)) - Number(BACK_LINE.includes(b)));
+  return Object.fromEntries(sorted.map((id, i) => [id, ROWS[Math.min(i, 3)]]));
+}
+/** A row picker: "1. row" to "4. row". Pair it with <see cref="bindRowSwap"/> so that two types never share a row. */
+export function rowSelect(attr: string, id: string, def: Row): string {
+  return `<select ${attr}="${id}" data-prev="${def}" aria-label="${esc(t('Sıra'))}">${ROWS.map((r, i) => `<option value="${r}"${r === def ? ' selected' : ''}>${t('{0}. sıra', i + 1)}</option>`).join('')}</select>`;
+}
+/** Choosing a row that another type stands in swaps the two: one unit type to a row. */
+export function bindRowSwap(root: HTMLElement, attr: string): void {
+  root.addEventListener('change', (e) => {
+    const sel = e.target as HTMLSelectElement;
+    if (!sel.matches?.(`select[${attr}]`)) return;
+    const prev = sel.dataset.prev as Row | undefined;
+    for (const other of root.querySelectorAll<HTMLSelectElement>(`select[${attr}]`)) {
+      if (other !== sel && other.value === sel.value && prev) { other.value = prev; other.dataset.prev = prev; }
+    }
+    sel.dataset.prev = sel.value;
+  });
+}
 
 export const COLOR_CSS: Record<string, string> = { blue: '#4a8fd9', red: '#d9534a', yellow: '#e2b93b', purple: '#9b6bd1', black: '#3a3a44' };
 

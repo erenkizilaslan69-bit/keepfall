@@ -7,11 +7,11 @@ namespace Keepfall.Core.Combat;
 /// Resolves a field battle between two armies with fixed time steps.
 ///
 /// Rules:
-/// - Melee units always hit the frontmost enemies: the front row while it has living units, then the back row.
+/// - Melee units always hit the frontmost enemies: the first row that still has living units (rows run 1 to 4, front to back, one unit type per row).
 /// - Ranged units do the same by default. If the army picked a preferred unit type, they shoot that
 ///   type wherever it stands (back row included) while any of it is alive.
-/// - Ranged units attack from either row. Melee units attack only from the front row; melee units
-///   placed in the back are reserves and step forward when their own front row is gone.
+/// - Ranged units attack from any row. Melee units attack only from their army's frontmost row that still lives; melee units
+///   further back are reserves and step forward when the rows before them are gone.
 /// - Melee units need ApproachTime seconds to reach the enemy at the start; ranged units shoot freely meanwhile.
 /// - Damage = attacker damage × counter multiplier. All hits in a tick land simultaneously,
 ///   so neither side gets a first-strike advantage from processing order.
@@ -35,6 +35,7 @@ public sealed class BattleSimulator
             : null;
         var setups = new[] { a, b };
         var combat = _rules.Combat;
+        var lastFront = new Row[] { FrontRow(sides[0]), FrontRow(sides[1]) };
         double dt = combat.TickSeconds;
         int maxTicks = (int)Math.Ceiling(combat.MaxBattleSeconds / dt);
 
@@ -60,22 +61,24 @@ public sealed class BattleSimulator
 
             double now = tick * dt;
             for (int s = 0; s < 2; s++)
-                AdvanceReserves(sides[s], log, record, tick, now, setups[s].Name);
+                lastFront[s] = AdvanceReserves(sides[s], lastFront[s], log, record, tick, now, setups[s].Name);
 
             for (int s = 0; s < 2; s++)
             {
                 var enemies = sides[1 - s];
+                var enemyFront = FrontRow(enemies);
                 var aim = new Aim(
-                    HasAliveInRow(enemies, Row.Front) ? Row.Front : Row.Back,
+                    enemyFront,
                     setups[s].Targeting.PreferredType is { } p && HasAliveOfType(enemies, p) ? p : null,
-                    HasAliveInRow(enemies, Row.Back), HasAliveSupportInBack(enemies));
+                    RearRow(enemies), HasAliveSupportBehind(enemies, enemyFront));
+                var ownFront = FrontRow(sides[s]);
                 foreach (var soldier in sides[s])
                 {
                     if (!soldier.Alive) continue;
                     soldier.Cooldown -= dt;
                     if (soldier.Cooldown > 1e-9) continue;
 
-                    if (soldier.Type.Range == AttackRange.Melee && soldier.Row != Row.Front)
+                    if (soldier.Type.Range == AttackRange.Melee && soldier.Row != ownFront)
                     {
                         soldier.Cooldown = 0; // reserve: ready to strike as soon as it steps forward
                         continue;
@@ -176,31 +179,49 @@ public sealed class BattleSimulator
         return soldiers;
     }
 
-    private static void AdvanceReserves(List<Soldier> army, List<string>? log, BattleRecord? record, int tick, double now, string name)
+    /// <summary>When the rows in front have died out, the melee soldiers of the new front row step forward (they were reserves until now).</summary>
+    private static Row AdvanceReserves(List<Soldier> army, Row lastFront, List<string>? log, BattleRecord? record, int tick, double now, string name)
     {
-        if (HasAliveInRow(army, Row.Front)) return;
+        var front = FrontRow(army);
+        if (front <= lastFront) return lastFront;
         int moved = 0;
         foreach (var soldier in army)
         {
-            if (soldier.Alive && soldier.Row == Row.Back && soldier.Type.Range == AttackRange.Melee)
+            if (soldier.Alive && soldier.Row == front && soldier.Type.Range == AttackRange.Melee)
             {
-                soldier.Row = Row.Front;
                 record?.Advance(tick, soldier.Index);
                 moved++;
             }
         }
         if (moved > 0) log?.Add(Fmt(now, $"{name}: {moved} yedek birlik ön sıraya geçti."));
+        return front;
+    }
+
+    /// <summary>The first row (front to back) that still has a living soldier; the last row when none is left.</summary>
+    private static Row FrontRow(List<Soldier> army)
+    {
+        var best = Row.Fourth;
+        foreach (var s in army) if (s.Alive && s.Row < best) best = s.Row;
+        return best;
+    }
+
+    /// <summary>The rearmost row with a living soldier.</summary>
+    private static Row RearRow(List<Soldier> army)
+    {
+        var best = Row.First;
+        foreach (var s in army) if (s.Alive && s.Row > best) best = s.Row;
+        return best;
     }
 
     /// <summary>What one side may hit this tick: the frontmost enemy row, and the preferred type if any is alive.</summary>
-    private readonly record struct Aim(Row FrontmostRow, UnitType? PreferredAlive, bool BackAlive, bool SupportAlive);
+    private readonly record struct Aim(Row FrontmostRow, UnitType? PreferredAlive, Row RearRow, bool SupportAlive);
 
     private static bool IsValidTarget(Soldier attacker, Soldier target, Aim aim)
     {
         if (!target.Alive) return false;
         // Siege engines always go for the back row; flanking riders for shooters and healers there, while any are alive.
-        if (attacker.Type.BackFirst) return target.Row == (aim.BackAlive ? Row.Back : Row.Front);
-        if (attacker.Type.Flank && aim.SupportAlive) return target.Row == Row.Back && target.Type.IsSupport;
+        if (attacker.Type.BackFirst) return target.Row == aim.RearRow;
+        if (attacker.Type.Flank && aim.SupportAlive) return target.Row > aim.FrontmostRow && target.Type.IsSupport;
         if (attacker.Type.Range == AttackRange.Ranged && aim.PreferredAlive is { } preferred)
             return target.Type == preferred;
         return target.Row == aim.FrontmostRow;
@@ -221,9 +242,9 @@ public sealed class BattleSimulator
         return false;
     }
 
-    private static bool HasAliveSupportInBack(List<Soldier> army)
+    private static bool HasAliveSupportBehind(List<Soldier> army, Row front)
     {
-        foreach (var s in army) if (s.Alive && s.Row == Row.Back && s.Type.IsSupport) return true;
+        foreach (var s in army) if (s.Alive && s.Row > front && s.Type.IsSupport) return true;
         return false;
     }
 
@@ -244,13 +265,6 @@ public sealed class BattleSimulator
     {
         foreach (var s in army)
             if (s.Alive && s.Type == type) return true;
-        return false;
-    }
-
-    private static bool HasAliveInRow(List<Soldier> army, Row row)
-    {
-        foreach (var s in army)
-            if (s.Alive && s.Row == row) return true;
         return false;
     }
 
@@ -278,7 +292,7 @@ public sealed class BattleSimulator
         public int Number { get; } = number;
         public int Side { get; } = side;
         public int Index { get; } = index;
-        public Row Row { get; set; } = row;
+        public Row Row { get; } = row;
         public double Hp { get; set; } = type.Hp;
         public double Cooldown { get; set; }
         public double PendingDamage { get; set; }

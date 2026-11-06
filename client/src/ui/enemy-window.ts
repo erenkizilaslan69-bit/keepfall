@@ -1,5 +1,5 @@
 import { syncStepButtons } from './step-buttons';
-import { BACK_LINE, SHOOTERS, botMark, clock, colorNote, esc } from '../format';
+import { SHOOTERS, bindRowSwap, botMark, clock, colorNote, defaultRows, esc, rowSelect } from '../format';
 import { t as tt, tr } from '../i18n';
 import { messagesOn } from '../prefs';
 import { emblemHtml, rivalKingdom } from './emblem';
@@ -18,15 +18,14 @@ export class EnemyWin extends Win {
   constructor(ctx: WinContext, private readonly seat: number, s: CastleView, room: RoomView | null) {
     super(ctx, 'red');
     this.el.classList.add('wide');
-    const rowSelect = (id: string, def: Row) =>
-      `<select data-row="${id}"><option value="front"${def === 'front' ? ' selected' : ''}>${tt('ön')}</option><option value="back"${def === 'back' ? ' selected' : ''}>${tt('arka')}</option></select>`;
+    const defaults = defaultRows(s.units.map((u) => u.id));
     const units = s.units.map((u) => `
       <div class="atk-row" data-unit="${u.id}">
         <span><b>${esc(tr(u.name))}</b> <small class="muted-ink" data-f="home"></small></span>
         <span class="stepper"><button class="btn-round" data-act="less" title="${tt('Bir eksik')}">−</button>
           <input type="number" min="0" value="0" data-count="${u.id}" aria-label="${esc(tt('{0} sayısı', tr(u.name)))}">
           <button class="btn-round" data-act="more" title="${tt('Bir fazla')}">+</button></span>
-        ${rowSelect(u.id, BACK_LINE.includes(u.id) ? 'back' : 'front')}
+        ${rowSelect('data-row', u.id, defaults[u.id])}
       </div>`).join('');
     const priority = `<option value="">${tt('ön sıra')}</option>${s.units.map((u) => `<option value="${u.id}">${tt('önce {0}', esc(tr(u.name)))}</option>`).join('')}`;
     const sources = s.jobs.map((j) => `<option value="${j.job}"></option>`).join('');
@@ -78,6 +77,7 @@ export class EnemyWin extends Win {
     this.tabbed = window.matchMedia?.('(pointer: coarse)').matches ?? false;
     this.el.classList.toggle('tabbed', this.tabbed);
     this.showSection(s.phase === 'war' ? 'attack' : 'scout');
+    bindRowSwap(this.body, 'data-row');
     this.body.addEventListener('click', (e) => {
       const tab = (e.target as HTMLElement).closest<HTMLElement>('[data-tab-sec]');
       if (tab) { this.showSection(tab.dataset.tabSec!); return; }

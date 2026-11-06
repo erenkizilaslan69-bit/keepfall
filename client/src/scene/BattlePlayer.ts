@@ -22,7 +22,8 @@ const APPROACH_SECONDS = 2.5;
 const MAX_DRAWN = 40; // per side
 const PER_LINE = 8;
 const COL = 0.75, LINE = 0.55; // tiles between soldiers across and along
-const FRONT_START = 1.7, FRONT_MEET = 0.6, BACK = 2.4; // tiles from the centre
+const FRONT_START = 1.7, FRONT_MEET = 0.6, BACK = 2.4, ROW_STEP = 0.9; // tiles from the centre
+const ROW_ORDER = ['first', 'second', 'third', 'fourth'];
 
 const LOOK: Record<string, { run: string; attack: string | null; scale: number }> = {
   kalkanli: { run: 'warrior-guard', attack: null, scale: UNIT_SCALE },
@@ -116,8 +117,9 @@ export class BattlePlayer {
     try {
     view.sides.forEach((side, s) => {
       const sign = s === 0 ? -1 : 1; // side A stands behind the centre, side B in front of it
-      const fronts = side.soldiers.map((x, i) => ({ ...x, i })).filter((x) => x.row === 'front');
-      const backs = side.soldiers.map((x, i) => ({ ...x, i })).filter((x) => x.row !== 'front');
+      // The side's rows, front to back (one unit type each): the first stands up front, the others behind it, one step further each.
+      const rowKeys = [...new Set(side.soldiers.map((x) => x.row))].sort((p, q) => ROW_ORDER.indexOf(p) - ROW_ORDER.indexOf(q));
+      const groups = rowKeys.map((key, r) => ({ r, list: side.soldiers.map((x, i) => ({ ...x, i })).filter((x) => x.row === key) }));
       const place = (k: number, n: number, depth: number): Point => {
         const line = Math.floor(k / PER_LINE), inLine = Math.min(PER_LINE, n - line * PER_LINE);
         const across = ((k % PER_LINE) - (inLine - 1) / 2) * COL;
@@ -126,15 +128,16 @@ export class BattlePlayer {
       };
       const courtyard = view.kind === 'siege' && s === 1 ? this.courtyardOf(side.seat) : null;
       let drawn = 0;
-      for (const [list, isFront] of [[fronts, true], [backs, false]] as const) {
+      for (const { r, list } of groups) {
+        const isFront = r === 0, behind = BACK + Math.max(0, r - 1) * ROW_STEP;
         list.forEach((x, k) => {
           if (drawn >= MAX_DRAWN) { fighters[offset(view, s) + x.i] = null; return; }
           drawn++;
           const look = LOOK[x.unitId] ?? LOOK.kilicli;
           const ranged = STAYS_BACK.has(x.unitId);
           const front = place(k, list.length, ranged || !isFront ? FRONT_START : FRONT_MEET);
-          const start = place(k, list.length, isFront ? FRONT_START : BACK);
-          const back = place(k, list.length, BACK);
+          const start = place(k, list.length, isFront ? FRONT_START : behind);
+          const back = place(k, list.length, isFront ? BACK : behind);
           const at = courtyard ?? (isFront ? start : back);
           let key = colorKey(side.color, this.ownColor, look.run);
           if (!this.scene.textures.exists(key)) key = colorKey(side.color, this.ownColor, LOOK.kilicli.run); // (never the black square)
