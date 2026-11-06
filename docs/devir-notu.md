@@ -112,6 +112,14 @@ Bu iş için hazır prompt sohbette verildi (adımlar 0–7: envanter, renk=oyun
 
 ---
 
+## 4b. Gece çalışması (2026-11-06): köşe düzeltmesi, efekt, ses, hazırlık sıkıştırma (ayrıntı `docs/gece-raporu.md`)
+
+- **Ordu köşeleri**: kendi ordu yol boyunca mesafeyle ilerler, köşeler yumuşar (`Movers.alongSmooth`); `tools/corner-check.mjs`.
+- **Efektler**: `scene/Effects.ts` (vuruş duraklaması, slow-mo, taş düşüşü, parıltı, nabız halkası), `ui/juice.ts|css` (pencere aç/kapa, +N, konfeti). Hepsi `html.kf-calm` ile kapanır (efekt azalt / düşük grafik).
+- **Ses**: OpenGameArt CC0 kayıtları (`docs/ses-lisanslari.md`), konuma göre ses (`scene/hearing.ts`), kamp ateşi döngüsü, müzik kısılması.
+- **Hazırlık sıkıştırma**: `match.prepSpeed` 1,6, hazırlık 5 dk; ölçüm `docs/hazirlik-sikistirma.md`. **Zor bot Orta karşısında %59 → %49** (açık konu). Karar bekleyen: 5 mi 4 dk mı.
+- Berserker hâlâ 8. birlik adayı (görsel geçişten sonra ayrı denge turu). `tools/clip.mjs`: önce/sonra mp4. 5090 dev LAN son build'le çalışıyor; Production 5080 kapalıydı.
+
 ## 5. Oyun mantığı (sonraki tasarım konuşması — henüz karar yok)
 
 Parti/sosyal strateji yönü için konuşulacaklar:
