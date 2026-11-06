@@ -133,6 +133,7 @@ public sealed partial class GameState
             if (n > 0) table[type] = n;
         }
         KingdomOf(from).FakeReport = table.Count == 0 ? null : table;
+        if (table.Count > 0) _players[from].Castle.Stats.FakeReportsSet++;
         return CommandResult.Success;
     }
 
@@ -158,6 +159,7 @@ public sealed partial class GameState
         state.DecoyReadyAt = ElapsedSeconds + k.DecoyCooldownSeconds;
         _armies.Add(new ArmyMarch(_nextId++, NewPublicId(), from, c.TargetKey, units, rows, priority, ElapsedSeconds,
             RouteBetween(from, c.TargetKey), SpeedOf(units)) { Decoy = true });
+        player.Castle.Stats.DecoysSent++;
         return CommandResult.Success;
     }
 
@@ -188,6 +190,7 @@ public sealed partial class GameState
         if (!player.Castle.TrySpendCargo(0, 0, 0, cost)) return CommandResult.Fail($"{n} asker için {cost} altın gerekiyor.");
         state.BribeReadyAt = ElapsedSeconds + k.BribeCooldownSeconds;
 
+        player.Castle.Stats.SoldiersBribed += n;
         var turned = TakeProportional(a.Units, n);
         a.Units = a.Units.ToDictionary(kv => kv.Key, kv => kv.Value - turned.GetValueOrDefault(kv.Key));
         if (a.Decoy) return CommandResult.Success; // a phantom just thins out
@@ -237,6 +240,7 @@ public sealed partial class GameState
         int cost = (int)Math.Ceiling((site.Site.Kind == SiteKind.BigCamp ? Rules.Kingdoms.CampPriceBig : Rules.Kingdoms.CampPriceSmall) - 1e-9);
         if (!player.Castle.TrySpendCargo(0, 0, 0, cost)) return CommandResult.Fail($"Kampı kiralamak için {cost} altın gerekiyor.");
         var units = site.Bandits.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
+        player.Castle.Stats.CampsRented++;
         foreach (var type in site.Bandits.Keys.ToList()) site.Bandits[type] = 0;
         site.Gone = true;
         site.Version++;

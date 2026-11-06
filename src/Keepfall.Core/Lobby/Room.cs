@@ -1,4 +1,5 @@
 ﻿using Keepfall.Core.Economy;
+using Keepfall.Core.Challenges;
 using Keepfall.Core.Match;
 
 namespace Keepfall.Core.Lobby;
@@ -327,6 +328,35 @@ public sealed class Room
         return CommandResult.Success;
     });
 
+    /// <summary>The solo challenge this room plays (null in an ordinary room). Set only by <see cref="StartChallenge"/>.</summary>
+    public ChallengeDef? Challenge { get; private set; }
+
+    /// <summary>
+    /// The single human of the room starts a challenge: the room's computer players, seed, kingdoms, decks and times come from the definition
+    /// and the match begins at once. Refused if anyone else is in the room (a challenge is for one player; the multiplayer rules are untouched).
+    /// </summary>
+    public CommandResult StartChallenge(string token, ChallengeDef def) => InLobby(token, p =>
+    {
+        if (p.Seat != HostSeat) return CommandResult.Fail("Meydan okumayı yalnız oda sahibi başlatabilir.");
+        if (_players.Any(x => !x.IsBot && x.Seat != p.Seat)) return CommandResult.Fail("Meydan okuma tek kişiliktir.");
+        var errors = new List<string>();
+        ChallengeCatalog.Validate(def, _rules, errors);
+        if (errors.Count > 0) return CommandResult.Fail("Meydan okuma tanımı geçersiz.");
+        _players.RemoveAll(x => x.IsBot);
+        foreach (var bot in def.Bots)
+        {
+            int seat = Enumerable.Range(1, Options.MaxPlayers).First(s => _players.All(x => x.Seat != s));
+            _players.Add(new RoomPlayer(seat, Tokens.NewPlayerToken(), $"Bot {ColorName((PlayerColor)(seat - 1))}", bot.Level) { Deck = bot.Deck });
+            _players.Sort((a, b) => a.Seat.CompareTo(b.Seat));
+        }
+        if (_players.Count > Options.MaxPlayers) return CommandResult.Fail("Boş koltuk yok.");
+        p.Deck = def.PlayerDeck is null ? null : def.PlayerDeck.Select(id => _rules.FindUnit(id)!.Id).ToList();
+        p.Ready = true;
+        Challenge = def;
+        StartGame();
+        return CommandResult.Success;
+    });
+
     public CommandResult SetReady(string token, bool ready) => InLobby(token, p =>
     {
         p.Ready = ready;
@@ -354,7 +384,9 @@ public sealed class Room
     private void StartGame()
     {
         var keys = _players.Select(x => x.CastleKey).ToList();
-        var deckRng = Options.Seed is { } ds ? new Random(ds + 53) : new Random();
+        // A challenge brings its own seed and times; everything below that used Options.* then reads these.
+        int? seedOpt = Challenge?.Seed ?? Options.Seed;
+        var deckRng = seedOpt is { } ds ? new Random(ds + 53) : new Random();
         IReadOnlyDictionary<string, IReadOnlyList<string>>? decks = null;
         if (_rules.Deck.Enabled)
         {
@@ -362,15 +394,29 @@ public sealed class Room
             decks = _players.ToDictionary(p => p.CastleKey, p => p.Deck!);
         }
         Dictionary<string, string>? factions = null;
-        if (_rules.Kingdoms.Enabled && Options.Kingdoms) factions = Factions.Assign(keys, Options.Seed is { } ks ? new Random(ks + 71) : new Random());
+        if (_rules.Kingdoms.Enabled && Options.Kingdoms) factions = Factions.Assign(keys, seedOpt is { } ks ? new Random(ks + 71) : new Random());
+        if (Challenge is { } ch && factions is not null)
+        {
+            // The player's kingdom is fixed, and so are the bots' where the definition says; the rest keep the seeded draw (and stay different from the fixed ones).
+            var rest = new Queue<string>(Factions.All.Select(f => f.Id).Where(id => id != ch.Kingdom && !ch.Bots.Any(b => b.Kingdom == id)));
+            var humanSeat = _players.First(x => !x.IsBot).Seat;
+            int botIndex = 0;
+            foreach (var pl in _players)
+            {
+                if (pl.Seat == humanSeat) { factions[pl.CastleKey] = ch.Kingdom; continue; }
+                var wanted = ch.Bots[botIndex++].Kingdom;
+                factions[pl.CastleKey] = wanted ?? (rest.Count > 0 ? rest.Dequeue() : factions[pl.CastleKey]);
+            }
+        }
         // The guided first match gives a new player the long, plain-speed preparation (match.guidedPrepSeconds), whatever the mode asked for.
         bool guidedSolo = Guided && _players.Count(p => !p.IsBot) == 1;
-        double? prep = Options.PrepSeconds ?? (guidedSolo ? _rules.Match.GuidedPrepSeconds : null);
-        if (Options.Seed is { } seed)
-            Game = new GameState(_rules, keys, prep, Options.WarSeconds, new Random(seed),
+        double? prep = Challenge?.PrepSeconds ?? Options.PrepSeconds ?? (guidedSolo ? _rules.Match.GuidedPrepSeconds : null);
+        double? war = Challenge?.WarSeconds ?? Options.WarSeconds;
+        if (seedOpt is { } seed)
+            Game = new GameState(_rules, keys, prep, war, new Random(seed),
                 GameState.AssignCorners(keys, new Random(seed + 17)), Options.ForestSeed ?? new Random(seed + 31).Next(), decks, factions);
         else
-            Game = new GameState(_rules, keys, prep, Options.WarSeconds, forestSeed: Options.ForestSeed, decks: decks, factions: factions);
+            Game = new GameState(_rules, keys, prep, war, forestSeed: Options.ForestSeed, decks: decks, factions: factions);
         if (guidedSolo)
             foreach (var human in _players.Where(p => !p.IsBot)) Game.ShieldedKeys.Add(human.CastleKey);
         Phase = RoomPhase.Preparation;
@@ -433,6 +479,7 @@ public sealed class Room
         if (player.Seat != HostSeat) return CommandResult.Fail("Lobiye dönüşü sadece odayı kuran başlatabilir.");
         Phase = RoomPhase.Lobby;
         Game = null;
+        Challenge = null;
         Speed = 1;
         foreach (var p in _players) p.Ready = false;
         return CommandResult.Success;

@@ -28,6 +28,22 @@ public static class MatchPush
         await clients.Group(Hubs.GameHub.RoomGroup(session.Room.Code)).SendAsync("RoomState", final);
         await Notifications(clients, session);
         await Summaries(clients, session);
+        await ChallengeResults(clients, session);
+    }
+
+    /// <summary>A challenge's goals and stars, to the one player it is about.</summary>
+    private static async Task ChallengeResults(IHubClients<IClientProxy> clients, RoomSession session)
+    {
+        List<(int Seat, ChallengeResultView Result)> results;
+        lock (session.Lock)
+            results = session.Room.Players
+                .Where(p => !p.IsBot)
+                .Select(p => (p.Seat, Outcome: Keepfall.Core.Challenges.ChallengeEvaluator.Evaluate(session.Room, p)))
+                .Where(x => x.Outcome is not null)
+                .Select(x => (x.Seat, ChallengeMapper.ResultOf(x.Outcome!)))
+                .ToList();
+        foreach (var (seat, result) in results)
+            await clients.Group(Hubs.GameHub.PlayerGroup(session.Room.Code, seat)).SendAsync("ChallengeResult", result);
     }
 
     /// <summary>Each player gets only their own summary.</summary>

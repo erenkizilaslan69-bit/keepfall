@@ -40,6 +40,18 @@ public sealed class CastleStats
     public int AttacksLaunched { get; internal set; }
     public int SoldiersLost { get; internal set; }
     public int EnemiesKilled { get; internal set; }
+    // Challenge goals (counted for every player; only the challenge mode reads them)
+    public int ScoutsSent { get; internal set; }
+    public int ReportsRead { get; internal set; }
+    public int EnvoysDelivered { get; internal set; }
+    public int DecoysSent { get; internal set; }
+    public int FakeReportsSet { get; internal set; }
+    public int SoldiersBribed { get; internal set; }
+    public int CampsRented { get; internal set; }
+    public int Disguises { get; internal set; }
+    public int VillagesPlundered { get; internal set; }
+    public int CampsCleared { get; internal set; }
+    public int ChestsLooted { get; internal set; }
 }
 
 /// <summary>

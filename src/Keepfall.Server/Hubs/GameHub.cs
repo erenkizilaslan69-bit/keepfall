@@ -17,7 +17,7 @@ namespace Keepfall.Server.Hubs;
 ///
 /// Groups: "oda:{code}" gets the public room state; "oda:{code}:o{seat}" gets that seat's castle.
 /// </summary>
-public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules, ILogger<GameHub> logger) : Hub
+public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules, Keepfall.Core.Challenges.ChallengeCatalog challenges, ILogger<GameHub> logger) : Hub
 {
     private const string CodeKey = "code";
     private const string TokenKey = "token";
@@ -142,6 +142,33 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     public Task<CommandResultView> SetReady(bool ready) => RoomCommand((room, token) => room.SetReady(token, ready));
     public Task<CommandResultView> SetGuided(bool on) => RoomCommand((room, token) => room.SetGuided(token, on));
     public Task<CommandResultView> SetDeck(string[]? units) => RoomCommand((room, token) => room.SetDeck(token, units));
+    /// <summary>The challenges and today's daily one: the same for everybody, nothing of any match.</summary>
+    public ChallengeListView GetChallenges() => ChallengeMapper.ListOf(challenges, Keepfall.Core.Challenges.ChallengeCatalog.Daily(DateTime.UtcNow, rules));
+
+    /// <summary>
+    /// The room's only human starts a challenge ("daily" = today's): the computer players, seed, kingdoms and times come from the definition
+    /// on the server; the client names nothing but the challenge.
+    /// </summary>
+    public async Task<CommandResultView> StartChallenge(string? id)
+    {
+        if (Bound() is not { } bound) return NotJoined;
+        var def = id == "daily" ? Keepfall.Core.Challenges.ChallengeCatalog.Daily(DateTime.UtcNow, rules) : challenges.Find(id);
+        if (def is null) return new CommandResultView(false, "Böyle bir meydan okuma yok.");
+        CommandResult result;
+        lock (bound.Session.Lock)
+        {
+            result = bound.Session.Room.StartChallenge(bound.Token, def);
+            if (result.Ok) bound.Session.SeedBots(def.Seed);
+        }
+        if (result.Ok)
+        {
+            await PushRoom(bound.Session);
+            await PushLayout(bound.Session);
+            await PushCastles(Clients, bound.Session);
+        }
+        return new CommandResultView(result.Ok, result.Error);
+    }
+
     public Task<CommandResultView> StartMatch() => RoomCommand((room, token) => room.Start(token), pushCastles: true, pushLayout: true);
     public Task<CommandResultView> BackToLobby() => RoomCommand((room, token) => room.BackToLobby(token));
     public Task<CommandResultView> AddBot(BotDifficulty difficulty) => RoomCommand((room, token) => room.AddBot(token, difficulty));

@@ -23,6 +23,7 @@ string balancePath = !string.IsNullOrWhiteSpace(options.BalancePath)
 var rules = BalanceConfigLoader.LoadFromFile(balancePath);
 
 builder.Services.AddSingleton(rules);
+builder.Services.AddSingleton(Keepfall.Core.Challenges.ChallengeCatalog.LoadBeside(balancePath, rules));
 builder.Services.AddSingleton<RoomRegistry>();
 builder.Services.AddSingleton<ServerStats>();
 builder.Services.AddSingleton<ClientErrorLog>();

@@ -1,0 +1,198 @@
+{
+  // Meydan Okuma (tek kişilik mod). Denge sayısı değil: balance.json'a dokunmaz.
+  // Hedef türleri: Keepfall.Core/Challenges/Challenges.cs içindeki GoalTypes (sunucu oda sonucundan hesaplar).
+  // star: 1 = meydan okumayı geçmek için gerekenler (win zorunlu), 2 ve 3 = ek yıldızlar (her yıldız öncekileri de ister).
+  // Botların krallığı/destesi oyuncuya gösterilmez; kingdom verilmediyse sabit tohumdan çıkar.
+  "version": 1,
+  "challenges": [
+    {
+      "id": "ilk-zafer",
+      "order": 1,
+      "name": { "tr": "İlk Zafer", "en": "First Victory" },
+      "description": {
+        "tr": "Tek bir rakip, kolay bir bot. İşçilerini üretime, ardından askere ver: her asker kaybedilmiş bir işçidir. Rakibin kalesini düşür.",
+        "en": "One rival, an easy bot. Put your workers to work, then into armour: every soldier is a worker lost. Bring the rival's castle down."
+      },
+      "tip": {
+        "tr": "Önce çiftçi ve oduncu, sonra demirci. Ordun rakibinkinden büyükse saldır.",
+        "en": "Farmers and woodcutters first, then the smith. Attack when your army is bigger than theirs."
+      },
+      "seed": 7101,
+      "kingdom": "tuccar",
+      "playerDeck": ["okcu", "kilicli", "mizrakci", "kalkanli"],
+      "bots": [ { "difficulty": "easy" } ],
+      "warSeconds": 480,
+      "goals": [
+        { "id": "win", "type": "win", "value": 1, "star": 1 },
+        { "id": "thrifty", "type": "maxSoldiersLost", "value": 40, "star": 2 },
+        { "id": "swift", "type": "winWithin", "value": 420, "star": 3 }
+      ]
+    },
+    {
+      "id": "gozcu-ve-rapor",
+      "order": 2,
+      "name": { "tr": "Gözcü ve Rapor", "en": "Scout and Report" },
+      "description": {
+        "tr": "Sis her şeyi saklar. Gözcü gönder, raporu oku, ordunu rakibin gücüne göre kur. Kör saldırmak kaybetmenin en kısa yolu.",
+        "en": "Fog hides everything. Send scouts, read their reports and build your army to match the rival's. Attacking blind is the shortest way to lose."
+      },
+      "tip": {
+        "tr": "Rapor yaklaşıktır (yaklaşık ±%20). Birden çok rapor topla.",
+        "en": "A report is approximate (about ±20%). Gather more than one."
+      },
+      "seed": 7102,
+      "kingdom": "tuccar",
+      "playerDeck": ["okcu", "kilicli", "kalkanli", "kesis"],
+      "bots": [ { "difficulty": "easy" }, { "difficulty": "easy" } ],
+      "warSeconds": 480,
+      "goals": [
+        { "id": "win", "type": "win", "value": 1, "star": 1 },
+        { "id": "reports", "type": "minReports", "value": 3, "star": 2 },
+        { "id": "no-loss", "type": "maxBattlesLost", "value": 0, "star": 3 }
+      ]
+    },
+    {
+      "id": "ulak-ve-blof",
+      "order": 3,
+      "name": { "tr": "Ulak ve Blöf", "en": "Envoys and Bluffs" },
+      "description": {
+        "tr": "Bir rakibe ulakla altın ya da erzak yolla: hediye alan bot seni bir süre rahat bırakır. İki düşmanla birden uğraşmak yerine birini oyala.",
+        "en": "Send a rival gold or food by envoy: a bot that receives a gift leaves you alone for a while. Do not fight two enemies at once; keep one busy."
+      },
+      "tip": {
+        "tr": "Ulak yakalanmaz ve iz bırakmaz. Mesajına ne yazarsan yaz, rakip gerçeği bilmez.",
+        "en": "An envoy cannot be caught and leaves no trail. Whatever you write, the rival cannot know the truth."
+      },
+      "seed": 7103,
+      "kingdom": "tuccar",
+      "playerDeck": ["okcu", "mizrakci", "kalkanli", "kilicli"],
+      "bots": [ { "difficulty": "easy" }, { "difficulty": "medium" } ],
+      "warSeconds": 480,
+      "goals": [
+        { "id": "win", "type": "win", "value": 1, "star": 1 },
+        { "id": "envoys", "type": "minEnvoys", "value": 2, "star": 2 },
+        { "id": "thrifty", "type": "maxSoldiersLost", "value": 40, "star": 3 }
+      ]
+    },
+    {
+      "id": "orman-yagmasi",
+      "order": 4,
+      "name": { "tr": "Orman Yağması", "en": "Plunder the Forest" },
+      "description": {
+        "tr": "Ormanda köyler, haydut kampları ve sandıklar var. Gözcüyle bölgeyi keşfet, süvarinle köy yağmala, kampları temizle. Ganimet ordunu besler.",
+        "en": "The forest holds villages, bandit camps and chests. Explore it with a scout, plunder villages with your cavalry and clear the camps. The loot feeds your army."
+      },
+      "tip": {
+        "tr": "Köy yağmalamak için en az 3 asker gerekir. Sandığı önce ulaşan alır.",
+        "en": "Plundering a village takes at least 3 soldiers. Whoever reaches a chest first takes it."
+      },
+      "seed": 7104,
+      "kingdom": "tuccar",
+      "playerDeck": ["kilicli", "mizrakci", "kalkanli", "suvari"],
+      "bots": [ { "difficulty": "easy" } ],
+      "warSeconds": 540,
+      "goals": [
+        { "id": "win", "type": "win", "value": 1, "star": 1 },
+        { "id": "village", "type": "minVillages", "value": 1, "star": 2 },
+        { "id": "camp", "type": "minCamps", "value": 1, "star": 2 },
+        { "id": "villages", "type": "minVillages", "value": 2, "star": 3 },
+        { "id": "chest", "type": "minChests", "value": 1, "star": 3 }
+      ]
+    },
+    {
+      "id": "hayalet-ordu",
+      "order": 5,
+      "name": { "tr": "Hayalet Ordu", "en": "Phantom Army" },
+      "description": {
+        "tr": "Gölge Krallığı: rakibe gerçekten yürüyen ama savaşa girince dağılan bir hayalet ordu gönder, sahte bir ordu tablosu yaz. Rakip seni olduğundan güçlü sanıp ürkecek.",
+        "en": "The Shadow Kingdom: send a phantom army that really marches but fades when it fights, and write a false army table. Your rivals will think you stronger than you are."
+      },
+      "tip": {
+        "tr": "Hayalet ordu altın harcar, asker harcamaz. Rakibin gözcüsü sahte tabloyu okur.",
+        "en": "A phantom costs gold, not soldiers. A rival's scout reads the false table."
+      },
+      "seed": 7105,
+      "kingdom": "golge",
+      "playerDeck": ["okcu", "kalkanli", "mizrakci", "mancinik"],
+      "bots": [ { "difficulty": "easy" }, { "difficulty": "medium" } ],
+      "warSeconds": 480,
+      "goals": [
+        { "id": "win", "type": "win", "value": 1, "star": 1 },
+        { "id": "decoys", "type": "minDecoys", "value": 2, "star": 2 },
+        { "id": "fake", "type": "minFakeReports", "value": 1, "star": 3 },
+        { "id": "thrifty", "type": "maxSoldiersLost", "value": 50, "star": 3 }
+      ]
+    },
+    {
+      "id": "altinin-gucu",
+      "order": 6,
+      "name": { "tr": "Altının Gücü", "en": "The Power of Gold" },
+      "description": {
+        "tr": "Tüccar Cumhuriyeti: yaklaşan düşman ordusundan askerlerin bir kısmına rüşvet ver, bulduğun bir haydut kampını kirala ve rakibe saldırt.",
+        "en": "The Merchant Republic: bribe some of an approaching enemy army, then hire a bandit camp you have found and send it at a rival."
+      },
+      "tip": {
+        "tr": "Rüşvet için ordunun sana yaklaşırken görüş alanında olması gerekir. Önce kampı keşfet.",
+        "en": "To bribe, the army must be in your sight on its way to you. Find the camp first."
+      },
+      "seed": 7106,
+      "kingdom": "tuccar",
+      "playerDeck": ["okcu", "kilicli", "kalkanli", "kesis"],
+      "bots": [ { "difficulty": "medium" }, { "difficulty": "easy" } ],
+      "warSeconds": 480,
+      "goals": [
+        { "id": "win", "type": "win", "value": 1, "star": 1 },
+        { "id": "bribe", "type": "minBribed", "value": 3, "star": 2 },
+        { "id": "camp", "type": "minCampsRented", "value": 1, "star": 3 }
+      ]
+    },
+    {
+      "id": "kahinin-gozu",
+      "order": 7,
+      "name": { "tr": "Kâhinin Gözü", "en": "The Oracle's Eye" },
+      "description": {
+        "tr": "Kâhinler herkesin krallığını ve destesini bilir, savaşın kazanç şansını görür. Bilgi sende: yalnız kazanacağın savaşlara gir.",
+        "en": "The Oracle knows every kingdom and deck and sees the odds of a fight. The knowledge is yours: enter only the battles you will win."
+      },
+      "tip": {
+        "tr": "Kazanma aralığı geniş ya da düşükse saldırma. Hileleri (hayalet ordu, kılık) işaretli görürsün.",
+        "en": "If the range of the odds is low or wide, hold back. You see tricks (phantoms, disguises) marked as such."
+      },
+      "seed": 7107,
+      "kingdom": "kahin",
+      "playerDeck": ["kilicli", "mizrakci", "okcu", "mancinik"],
+      "bots": [ { "difficulty": "medium" }, { "difficulty": "easy" } ],
+      "warSeconds": 480,
+      "goals": [
+        { "id": "win", "type": "win", "value": 1, "star": 1 },
+        { "id": "felled", "type": "minCastlesFelled", "value": 1, "star": 2 },
+        { "id": "few-losses", "type": "maxBattlesLost", "value": 1, "star": 2 },
+        { "id": "no-loss", "type": "maxBattlesLost", "value": 0, "star": 3 }
+      ]
+    },
+    {
+      "id": "maskeli-balo",
+      "order": 8,
+      "name": { "tr": "Maskeli Balo", "en": "Masked Ball" },
+      "description": {
+        "tr": "Entrikacılar: ordunu başka bir oyuncunun renginde gönder, sahte bir ulak yolla. Rakipler birbirini suçlarken sen kalenin yolunu aç.",
+        "en": "The Schemers: send your army in another player's colour, and a false envoy. While your rivals blame each other, you clear the road to the castle."
+      },
+      "tip": {
+        "tr": "Kılık değiştirmenin bekleme süresi var. Gerçek kimlik ilk savaştan bir süre sonra ya da gözcü raporuyla ortaya çıkar.",
+        "en": "Disguise has a cooldown. The truth comes out some time after the first battle, or through a scout report."
+      },
+      "seed": 7108,
+      "kingdom": "entrikaci",
+      "playerDeck": ["suvari", "okcu", "kilicli", "kalkanli"],
+      "bots": [ { "difficulty": "medium" }, { "difficulty": "easy" } ],
+      "warSeconds": 480,
+      "goals": [
+        { "id": "win", "type": "win", "value": 1, "star": 1 },
+        { "id": "disguise", "type": "minDisguises", "value": 1, "star": 2 },
+        { "id": "envoy", "type": "minEnvoys", "value": 1, "star": 2 },
+        { "id": "disguise2", "type": "minDisguises", "value": 2, "star": 3 }
+      ]
+    }
+  ]
+}

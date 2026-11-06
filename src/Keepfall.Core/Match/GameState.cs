@@ -550,6 +550,7 @@ public sealed partial class GameState
         if (ScoutsAvailable(from) is { Ok: false } busy) return busy;
         var sent = player.Castle.SendScout(c.From);
         if (!sent.Ok) return sent;
+        player.Castle.Stats.ScoutsSent++;
         _missions.Add(new ScoutMission(NewPublicId(), from, c.TargetKey, ElapsedSeconds, RouteBetween(from, c.TargetKey), ScoutSpeedNow));
         return CommandResult.Success;
     }
@@ -564,6 +565,7 @@ public sealed partial class GameState
         if (ScoutsAvailable(from) is { Ok: false } busy) return busy;
         var sent = player.Castle.SendScout(c.From);
         if (!sent.Ok) return sent;
+        player.Castle.Stats.ScoutsSent++;
         _missions.Add(new ScoutMission(NewPublicId(), from, target, ElapsedSeconds, Map.RouteToSite(_corners[from], site.Site),
             ScoutSpeedNow, MissionKind.Chest) { Site = site });
         return CommandResult.Success;
@@ -589,6 +591,7 @@ public sealed partial class GameState
         var sent = castle.SendScout(c.From);
         if (!sent.Ok) return sent;
         castle.TrySpendCargo(c.Food, c.Wood, c.Iron, c.Gold);
+        if (asKey is not null) castle.Stats.Disguises++;
         _missions.Add(new ScoutMission(NewPublicId(), from, c.TargetKey, ElapsedSeconds, RouteBetween(from, c.TargetKey), ScoutSpeedNow, MissionKind.Envoy)
         {
             GiftFood = c.Food, GiftWood = c.Wood, GiftIron = c.Iron, GiftGold = c.Gold, Message = message.Text, ShownAs = asKey,
@@ -611,6 +614,7 @@ public sealed partial class GameState
         if (list.Count > MaxLetters) list.RemoveAt(0);
         Notify(m.Target, new GameNotification(NotificationKind.EnvoyArrived, m.ShownAs ?? m.From, ElapsedSeconds));
         Notify(m.From, new GameNotification(NotificationKind.EnvoyDelivered, m.Target, ElapsedSeconds));
+        _players[m.From].Castle.Stats.EnvoysDelivered++;
     }
 
     private bool Knows(string player, string siteId) => _knowledge.TryGetValue(player, out var k) && k.ContainsKey(siteId);
@@ -622,6 +626,7 @@ public sealed partial class GameState
         if (ScoutsAvailable(from) is { Ok: false } busy) return busy;
         var sent = player.Castle.SendScout(c.From);
         if (!sent.Ok) return sent;
+        player.Castle.Stats.ScoutsSent++;
         _missions.Add(new ScoutMission(NewPublicId(), from, target, ElapsedSeconds, Map.ExploreRoute(_corners[from], c.Quarter),
             ScoutSpeedNow, MissionKind.Explore, c.Quarter));
         return CommandResult.Success;
@@ -647,6 +652,7 @@ public sealed partial class GameState
                         m.Site.Version++;
                         m.LootGold = m.Site.Site.Gold;
                         m.LootIron = m.Site.Site.Iron;
+                        _players[m.From].Castle.Stats.ChestsLooted++;
                     }
                     m.Back = new Traveller(m.Out.Route.Reversed(), m.Out.Speed);
                     continue;
@@ -712,6 +718,7 @@ public sealed partial class GameState
             LayTrail(m);
             if (!m.Back.Arrived) continue;
             _reports[(m.From, m.Target)] = m.Report! with { DeliveredAt = ElapsedSeconds };
+            _players[m.From].Castle.Stats.ReportsRead++;
             _players[m.From].Castle.ReturnScout();
             _missions.Remove(m);
         }
@@ -839,7 +846,7 @@ public sealed partial class GameState
         if (!sent.Ok) return sent;
         _armies.Add(new ArmyMarch(_nextId++, NewPublicId(), from, c.TargetKey, units, rows, priority, ElapsedSeconds,
             RouteBetween(from, c.TargetKey), SpeedOf(units), c.Mode) { ShownAs = c.AsKey });
-        if (c.AsKey is not null) StartDisguiseCooldown(from);
+        if (c.AsKey is not null) { StartDisguiseCooldown(from); player.Castle.Stats.Disguises++; }
         return CommandResult.Success;
     }
 
@@ -1029,6 +1036,7 @@ public sealed partial class GameState
             a.LootGold += site.Site.Gold;
             a.LootPeople += site.Site.People;
             a.LootFood += site.Site.Food;
+            _players[a.From].Castle.Stats.VillagesPlundered++;
         }
         SendHome(a, a.Units);
     }
@@ -1293,6 +1301,7 @@ public sealed partial class GameState
         if (cleared)
         {
             camp.Gone = true;
+            attacker.Stats.CampsCleared++;
             a.LootGold += camp.Site.Gold;
             a.LootWeapons = a.LootWeapons.Concat(camp.Site.Weapons).GroupBy(kv => kv.Key).ToDictionary(grp => grp.Key, grp => grp.Sum(kv => kv.Value));
             a.LootWood += camp.Site.Wood;

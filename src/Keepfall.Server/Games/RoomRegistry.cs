@@ -28,7 +28,10 @@ public sealed class RoomSession(Room room, GameRules rules)
     /// <summary>The delayed pictures of the whole world that fallen players watch (guarded by <see cref="Lock"/>).</summary>
     public SpectatorFeed Spectators { get; } = new();
     /// <summary>The room's computer players; run before every simulated step (guarded by <see cref="Lock"/>).</summary>
-    public Keepfall.BotHost.BotHost Bots { get; } = new(rules, Random.Shared.Next());
+    public Keepfall.BotHost.BotHost Bots { get; private set; } = new(rules, Random.Shared.Next());
+
+    /// <summary>A challenge's bots roll their dice from the challenge's seed (call before the match starts).</summary>
+    public void SeedBots(int seed) => Bots = new Keepfall.BotHost.BotHost(rules, seed);
 }
 
 /// <summary>Room code → room.</summary>
