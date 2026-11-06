@@ -50,7 +50,9 @@ public sealed class Bot
         var ctx = new BotContext(_rules, input, _memory, Difficulty, _level, Stats, _rng) { Simulator = _simulator };
         foreach (var module in _modules) module.Think(ctx);
         var commands = ctx.Decide(_level.Commands);
-        _nextThink = input.Now + _level.ThinkMin + _rng.NextDouble() * (_level.ThinkMax - _level.ThinkMin);
+        // In a faster preparation (match.prepSpeed) a bot thinks as much more often: its thinking time runs on the preparation's clock.
+        double pace = input.Now < input.Castle.PrepSeconds ? Math.Max(1, _rules.Match.PrepSpeed) : 1;
+        _nextThink = input.Now + (_level.ThinkMin + _rng.NextDouble() * (_level.ThinkMax - _level.ThinkMin)) / pace;
         Stats.Count("thinks");
         Stats.Count("commands", commands.Count);
         return commands;

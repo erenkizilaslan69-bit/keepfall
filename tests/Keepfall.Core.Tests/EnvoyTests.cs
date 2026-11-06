@@ -78,7 +78,7 @@ public class EnvoyTests
         UntilHome(game, A);
 
         var late = NewGame(prep: 100);
-        for (int t = 0; t < 45; t++) late.Tick(1);
+        for (int t = 0; t < 70; t++) late.Tick(1);
         Assert.True(late.ScoutingLocked);
         Assert.False(late.Execute(A, new SendScout(B)).Ok);
         Ok(late.Execute(A, new SendEnvoy(B, 1, 0, 0, 0, "Son dakika.")));

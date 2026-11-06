@@ -5,10 +5,12 @@
   // Excel "Maç" sekmesi.
   "match": {
     // Mod süresi ve bunun hazırlığa ayrılan kısmı (dk). Savaş = mod − hazırlık (18 dk → 8 + 10, 30 dk → 20 + 10).
-    "shortModeMinutes": 18,
-    "shortModePrepMinutes": 8,
-    "longModeMinutes": 30,
-    "longModePrepMinutes": 20,
+    "shortModeMinutes": 15,
+    "shortModePrepMinutes": 5,
+    // Hazırlıkta kalenin ekonomisi (üretim, demirci, kuşanma, yükseltme, nüfus artışı) saatten bu kadar kat hızlı işler: 8 dk'lık hazırlık 5 dk'ya sığar (8/5 = 1.6; 4 dk için 2.0 ve shortModePrepMinutes 4). 1 = eski hız. Ölçüm: docs/hazirlik-sikistirma.md
+    "prepSpeed": 1.6,
+    "longModeMinutes": 22.5,
+    "longModePrepMinutes": 12.5,
     // Sunucu bu aralıkla tick atar (sn); üretim ve tüketim her tick'te hesaplanır.
     "serverTickSeconds": 1,
     // Elenen oyuncu önce spectatorWaitSeconds oyun saniyesi süren bir geçiş ekranı görür, sonra tüm haritayı (sissiz)
@@ -183,7 +185,7 @@
     // Bir oyuncunun aynı anda en fazla bu kadar gözcüsü olur (kale gözetleme, çeyrek keşfi ve sandık gözcüsü hepsi sayılır); gözcü dönmeden yenisi çıkamaz.
     "maxScouts": 1,
     // Hazırlığın son bu kadar saniyesinde hiçbir gözcü gönderilemez (rakip, orman keşfi, sandık; botlar da); 0 = hep serbest. Savaş başlayınca hazırlıkta açılan tüm gözcü izleri kapanır.
-    "noScoutLastPrepSeconds": 60
+    "noScoutLastPrepSeconds": 37.5
   },
 
   // Sur: kale canı yok; sur hep en üst seviye görünümünde durur. Saldıran kapıdaki savaşı kazanırsa kale düşer.

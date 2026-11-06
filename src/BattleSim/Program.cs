@@ -18,6 +18,7 @@ const string Usage = """
       BattleSim krallik [--mac 100] [--oyuncu 2|3|4] [--mod 20|30] [--seed 1]   (krallık dengesi: her krallığın kazanma payı ve yetenek kullanımı)
       BattleSim deste  [--cift 8] [--seed 1] [--zorluk orta|zor] [--cikti docs/deste.md]   (her deste her desteyle: bot maçlarıyla kazanma payı)
       BattleSim bot --izle [--oyuncu 2] [--zorluk orta|kolay] [--mod 15|30] [--seed 1] [--aralik 60]   (tek maçı dakika dakika göster)
+      BattleSim hazirlik [--mac 50] [--seed 1]   (hazırlık sonunda kale: asker, silah, bina, stok, boşta işçi; --config ile farklı hazırlık süresi/hızı)
       BattleSim kontrol
 
     Ortak:   --config <yol>   (varsayılan: yukarı klasörlerde config/balance.json)
@@ -132,6 +133,10 @@ try
 
         case "deste":
             new DeckReport(rules, Int(flags, "cift", 8), Int(flags, "seed", 1), flags.GetValueOrDefault("cikti"), flags.GetValueOrDefault("zorluk", "orta"), Int(flags, "deste-basi", 0)).Run();
+            return 0;
+
+        case "hazirlik":
+            new HazirlikReport(rules, Int(flags, "mac", 50), Int(flags, "seed", 1)).Run();
             return 0;
 
         case "kontrol":

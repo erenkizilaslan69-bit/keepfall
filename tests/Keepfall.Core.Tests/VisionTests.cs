@@ -188,7 +188,7 @@ public class VisionTests
     public void No_scout_of_any_kind_can_leave_in_the_last_stretch_of_the_preparation_but_any_can_once_the_war_begins()
     {
         double lastSeconds = Rules.Scouting.NoScoutLastPrepSeconds;
-        Assert.Equal(60, lastSeconds);
+        Assert.Equal(37.5, lastSeconds); // 60 s of the old 8-minute preparation, in 5 minutes
         var game = Prep(200);
         for (int t = 0; t < 10; t++) game.Tick(1);
         Assert.False(game.ScoutingLocked);

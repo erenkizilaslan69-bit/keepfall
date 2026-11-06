@@ -48,6 +48,8 @@ public sealed class MatchConfig
     public double ArmSeconds { get; set; }
     /// <summary>The guided first match (the tutorial): for this long (game seconds) from the start of the war the computer players do not attack the human player. Only a room that asked for it uses it.</summary>
     public double GuidedShieldSeconds { get; set; } = 180;
+    /// <summary>The castle's economy runs this many times faster than the clock during the preparation (see MatchRules.PrepSpeed); 1 = as before.</summary>
+    public double PrepSpeed { get; set; } = 1;
     public int StartingPopulation { get; set; } = 10;
     public ProductionConfig StartingResources { get; set; } = new();
 }
@@ -386,6 +388,7 @@ public static class BalanceConfigLoader
         if (mc.SpectatorWaitSeconds < 0) errors.Add("match.spectatorWaitSeconds negatif olamaz.");
         if (mc.SpectatorMinSeconds < 0) errors.Add("match.spectatorMinSeconds negatif olamaz.");
         if (mc.GuidedShieldSeconds < 0) errors.Add("match.guidedShieldSeconds negatif olamaz.");
+        if (mc.PrepSpeed <= 0) errors.Add("match.prepSpeed sıfırdan büyük olmalı.");
         if (mc.ArmSeconds < 0) errors.Add("match.armSeconds negatif olamaz.");
         if (mc.StartingPopulation < 0) errors.Add("match.startingPopulation negatif olamaz.");
         var sr = mc.StartingResources;
@@ -537,7 +540,7 @@ public static class BalanceConfigLoader
                 mc.ShortModePrepMinutes * 60, mc.LongModePrepMinutes * 60,
                 (mc.ShortModeMinutes - mc.ShortModePrepMinutes) * 60,
                 (mc.LongModeMinutes - mc.LongModePrepMinutes) * 60,
-                mc.ServerTickSeconds, mc.StartingPopulation, sr.Food, sr.Wood, sr.Iron, mc.SpectatorDelaySeconds, mc.SpectatorWaitSeconds, mc.SpectatorMinSeconds, mc.ArmSeconds, mc.GuidedShieldSeconds),
+                mc.ServerTickSeconds, mc.StartingPopulation, sr.Food, sr.Wood, sr.Iron, mc.SpectatorDelaySeconds, mc.SpectatorWaitSeconds, mc.SpectatorMinSeconds, mc.ArmSeconds, mc.GuidedShieldSeconds, mc.PrepSpeed),
             new EconomyRules(
                 e.WorkerFoodPerMinute, e.SoldierFoodPerMinute, e.StarvationMultiplier,
                 e.NewPersonBaseCost, e.NewPersonCostGrowth, e.NewPersonBasePopulation, e.GrowthReserveSeconds,

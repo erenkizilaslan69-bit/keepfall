@@ -39,8 +39,8 @@ public class EconomyTests
     [Fact]
     public void Modes_split_into_preparation_and_war()
     {
-        Assert.Equal((480, 600), (Rules.Match.ShortModePrepSeconds, Rules.Match.ShortModeWarSeconds));  // 8 + 10 min
-        Assert.Equal((1200, 600), (Rules.Match.LongModePrepSeconds, Rules.Match.LongModeWarSeconds));   // 20 + 10 min
+        Assert.Equal((300, 600), (Rules.Match.ShortModePrepSeconds, Rules.Match.ShortModeWarSeconds));  // 5 + 10 min (the 8-minute preparation's economy in 5: prepSpeed 1.6)
+        Assert.Equal((750, 600), (Rules.Match.LongModePrepSeconds, Rules.Match.LongModeWarSeconds));   // 12.5 + 10 min
     }
 
     [Fact]

@@ -64,16 +64,30 @@ public class WarTests
     // ---- phases and famine -------------------------------------------------------------------
 
     [Fact]
-    public void Short_mode_is_eight_minutes_of_preparation_then_ten_of_war()
+    public void Short_mode_is_five_minutes_of_preparation_then_ten_of_war()
     {
-        Assert.Equal(480, Rules.Match.ShortModePrepSeconds);
+        Assert.Equal(300, Rules.Match.ShortModePrepSeconds);
+        Assert.Equal(1.6, Rules.Match.PrepSpeed, 6);
         Assert.Equal(600, Rules.Match.ShortModeWarSeconds);
         var game = new GameState(Rules, [A, B]);
-        Run(game, 480);
+        Run(game, 300);
         Assert.Equal(MatchPhase.War, game.Phase);
         Assert.Equal(600, game.RemainingSeconds);
         Run(game, 600);
         Assert.Equal(MatchPhase.Ended, game.Phase);
+    }
+
+    [Fact]
+    public void The_preparation_economy_runs_faster_than_its_clock_and_the_war_does_not()
+    {
+        // the standard preparation (null: the mode's own) is sped up by match.prepSpeed; a game that asks for its own length is not
+        var fast = new GameState(Rules, [A, B]);
+        var plain = new GameState(Rules, [A, B], 400);
+        foreach (var g in new[] { fast, plain }) Assert.True(g.Execute(A, new MoveWorkers(Job.Idle, Job.Farmer, 3)).Ok);
+        Run(fast, 60); Run(plain, 60);
+        double f = fast.CastleOf(A).Stats.ProducedFood, p = plain.CastleOf(A).Stats.ProducedFood;
+        Assert.Equal(60, fast.ElapsedSeconds, 6);
+        Assert.True(f > p * 1.5 && f < p * 1.7, $"{f} vs {p}");
     }
 
     [Fact]

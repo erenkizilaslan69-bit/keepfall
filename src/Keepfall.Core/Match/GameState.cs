@@ -96,6 +96,8 @@ public sealed partial class GameState
         _rng = rng ?? new Random(RandomNumberGenerator.GetInt32(int.MaxValue));
         _simulator = new BattleSimulator(rules);
         PrepSeconds = prepSeconds ?? rules.Match.ShortModePrepSeconds;
+        // The faster preparation applies to the standard one (a match, a bot measurement); a test or tool that asks for its own length gets the plain economy.
+        _prepSpeed = prepSeconds is null || Math.Abs(prepSeconds.Value - rules.Match.ShortModePrepSeconds) < 1e-9 ? Math.Max(1e-9, rules.Match.PrepSpeed) : 1;
         WarSeconds = warSeconds ?? rules.Match.ShortModeWarSeconds;
         _players = playerKeys.Distinct().ToDictionary(k => k, _ => new PlayerEconomy(new Castle(rules)));
         if (decks is not null)
@@ -135,6 +137,7 @@ public sealed partial class GameState
     public IReadOnlyList<ForestSite> ForestSites { get; }
     public MatchPhase Phase { get; private set; } = MatchPhase.Preparation;
     public double PrepSeconds { get; }
+    private readonly double _prepSpeed;
     public double WarSeconds { get; }
     public double ElapsedSeconds { get; private set; }
     /// <summary>Time left in the current phase.</summary>
@@ -349,7 +352,7 @@ public sealed partial class GameState
         {
             if (_eliminated.ContainsKey(key)) continue; // a fallen castle's economy stops
             p.Castle.FoodFactor = foodFactor * (p.Castle.ScorchLeft > 0 ? Rules.War.RaidBurnFactor : 1);
-            p.Castle.Tick(dt);
+            p.Castle.Tick(Phase == MatchPhase.Preparation ? dt * _prepSpeed : dt); // the preparation's economy runs faster than its clock (match.prepSpeed)
         }
         ElapsedSeconds += dt;
         AdvanceScouts(dt);
