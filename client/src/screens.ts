@@ -10,6 +10,8 @@ import { loadGuide, type GuideUnit } from './ui/guide';
 import { mountPortrait } from './ui/portraits';
 import { endArt } from './ui/tiny-ui';
 import { confetti } from './ui/juice';
+import { deceptionTimelineHtml } from './ui/deceptions';
+import { clipAvailable, clipDownload, clipSupported } from './ui/clip';
 import type { PlayerColor } from './types';
 import { asset } from './env';
 import { FEATURE_PRIVATE_ROOM } from './features';
@@ -392,10 +394,12 @@ export class EndScreen {
           <p class="muted center" id="end-reason"></p>
           <div id="challenge"></div>
           <div id="ranking"></div>
+          <div id="deceptions"></div>
           <div id="summary"><p class="muted">${t('Özet hazırlanıyor…')}</p></div>
           <div id="others"></div>
         </div>
         <div class="start end-foot">
+          <button data-a="clip" id="clip" class="btn wide hidden">${t('Klibi kaydet')}</button>
           <button data-a="again" id="again" class="btn wide kf-btn--green hidden">${t('Aynı oyuncularla yeni maç')}</button>
           <button data-a="lobby" id="lobby" class="btn wide hidden">${t('Lobiye dön')}</button>
           <p class="muted small center" id="lobby-hint"></p>
@@ -415,6 +419,11 @@ export class EndScreen {
         const message = act === 'ch-retry' ? await this.challenge.retry() : act === 'ch-next' ? await this.challenge.next() : (this.challenge.list(), null);
         root.querySelectorAll<HTMLButtonElement>('.ch-foot button').forEach((b) => (b.disabled = false));
         if (error) error.textContent = tr(message ?? '');
+        return;
+      }
+      if ((e.target as HTMLElement).closest('button[data-a="clip"]')) {
+        const error = this.root.querySelector('#error');
+        if (error) error.textContent = clipDownload() ? '' : t('Kaydedilecek bir savaş klibi yok.');
         return;
       }
       if ((e.target as HTMLElement).closest('button[data-a="again"]')) {
@@ -499,6 +508,8 @@ export class EndScreen {
             ${emblemHtml(x.kingdom, 'emblem-rank')}<span class="pname">${r.winners.includes(x.seat) ? `<i class="ico ico-crown" title="${t('Kazanan')}"></i>` : ''}${botMark(x.seat)}${esc(tr(x.name))}${x.seat === this.mySeat ? ` <span class="muted">${t('(sen)')}</span>` : ''}</span>
             <span class="muted small">${x.eliminated ? t('elendi') : t('nüfus {0}', x.population)}</span>
           </li>`).join('')}</ol>`;
+      this.root.querySelector('#deceptions')!.innerHTML = deceptionTimelineHtml(r);
+      this.root.querySelector('#clip')!.classList.toggle('hidden', !(clipSupported() && clipAvailable() && import.meta.env.VITE_PLATFORM !== 'crazygames'));
       const mine = r.summaries.find((x) => x.seat === this.mySeat);
       if (mine) this.setSummary(mine.summary);
       this.root.querySelector('#others')!.innerHTML = r.summaries.filter((x) => x.seat !== this.mySeat).map((x) => `

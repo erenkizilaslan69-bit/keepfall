@@ -98,11 +98,14 @@ export interface GoalResult { id: string; type: string; target: number; actual: 
 export interface ChallengeResult { id: string; won: boolean; stars: number; goals: GoalResult[] }
 
 export interface RankView { seat: number; name: string; color: PlayerColor; place: number; population: number; eliminated: boolean; kingdom?: string | null }
+export interface DeceptionEventView { at: number; kind: string; actorSeat: number; targetSeat: number | null; asSeat: number | null; count: number; detail: string | null }
 export interface ResultView {
   winners: number[];
   byElimination: boolean;
   ranking: RankView[];
   summaries: { seat: number; name: string; color: PlayerColor; summary: SummaryView }[];
+  /** The "who fooled whom" log; only ever present in the final result. */
+  deceptions?: DeceptionEventView[] | null;
 }
 
 // War: our own armies, warnings about armies coming at us (who and when only), our battles.

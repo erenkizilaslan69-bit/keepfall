@@ -35,6 +35,7 @@ import { bakeRoads, placeSignposts } from './Roads';
 import { MapProps } from './MapProps';
 import { WallRing } from './Walls';
 import { Workers } from './Workers';
+import { clipBattleStarted, clipReset } from '../ui/clip';
 
 const MAX_ZOOM = 1.5;
 /** Open water all round the map (tiles), so the camera can centre a castle that sits in a corner. Roads and coordinates are untouched. */
@@ -204,6 +205,8 @@ export class WorldScene extends Phaser.Scene {
     this.chimneys = new Chimneys(this);
     this.battles = new BattlePlayer(this, this.color, () => this.gameNow(), (seat) => this.courtyardOf(seat), this.fx);
     this.battles.onSiege = (seat, progress, wins, done) => this.siegeFx(seat, progress, wins, done);
+    clipReset();
+    this.battles.onStart = (v, speed) => clipBattleStarted(this.game.canvas, v.kind === 'siege' ? (v.winner === 'attacker' ? 3 : 2) : 1, v.fightSeconds / Math.max(1, speed));
     if (import.meta.env.DEV) {
       setTraceClock(() => this.gameNow().now);
       this.debug = new DebugLayer(this, this.movers, this.battles,

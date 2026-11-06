@@ -82,6 +82,8 @@ export class BattlePlayer {
   private played = new Set<string>();
   hasPlayed(id: string): boolean { return this.played.has(id); }
   /** A siege replay tells the scene how far the fight is (the scene smokes and burns the castle under attack): seat of the castle, 0..1, whether the attacker wins, over. */
+  /** A replay began (the clip recorder listens). */
+  onStart: ((view: BattleStartedView, speed: number) => void) | null = null;
   onSiege: ((seat: number, progress: number, attackerWins: boolean, done: boolean) => void) | null = null;
 
   /**
@@ -161,6 +163,7 @@ export class BattlePlayer {
       return;
     }
     sfx.play('battleStart');
+    try { this.onStart?.(view, this.clock().speed); } catch { /* the clip is optional */ }
     this.replays.set(view.id, { view, fighters, hit: 0, death: 0, advance: 0, heal: 0, gate: toWorld(view.at), ended: false });
   }
 
