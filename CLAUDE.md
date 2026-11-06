@@ -40,6 +40,10 @@ Bot dengesi: `BattleSim bot --mac 400 --zorluk karisik|bekleyen|orta|zor-orta` (
 - **Botlar** (400 maç, `docs/gece/raid-*.txt`): Orta vs Kolay ≈%71–75 (hedef 70–80); yalnız bekleyen botun kazanma oranı ≈%13; Zor vs Orta ≈%59 (hedef %75–85'in ALTINDA, dokunulmadı); Orta baskın yapar ~0,15 baskın/maç.
 - Bot desteleri: hepsi `bots.decks` listesindeki 7 dengeli desteden birini seçer (Kolay dahil). Zorluk oyun tarzından gelir: Kolay yavaş düşünür/tepki verir (7–12 / 8–15 sn), hata yapar (`mistake` 0,25), saldırıyı kafa sayısıyla seçer (`calculates` false), baskın yapmaz; Orta hesaplar ve baskın yapar (`raidEvery` 150 sn, `raidMax` 4); Zor ayrıca öngörülü ve silahı depoda tutar. `RaidModule`: destesinde süvari varsa, yalnız süvariyle kapıda kazanacağı rakibi savaş hesaplayıcısıyla bulur (rakip ordusu yolda görüldüyse evdeki payı azalır); en çok bir baskın dışarıda; baskın ordusu ana saldırının "tek saldırı" ve "yeniden yönelme" denetimlerinde sayılmaz.
 
+## Başlangıç modu ve sıra sonrası denge (2026-11-07)
+- **Başlangıç modu** (tek insanlı oda): krallık yok, klasik deste, savaş sırası kilitli (`GameState.RowsLocked`, istemcide `html.kf-starter` sıra seçicileri gizler). Hızlı oyna'nın ilk 3 maçı + Meydan Okuma ilk iki kart (`starter: true`); ayarlarda "Tam kurallarla oyna" (`prefs.fullRules`, hub `StartChallengeFullRules`) kapatır. Çok insanlı oda etkilenmez. Hub'a isteğe bağlı parametre EKLEME (SignalR reddeder), ayrı metot aç.
+- **Sıra sonrası denge**: `docs/denge-sira-sonrasi.md` (deste sd 7,6→12,4, en iyi %73; Zor vs Orta %70). Ana öneri `combat.meleeActiveRows: 2` onay bekliyor (anahtar kodda, balance.json'da yok).
+
 ## Bilinen açık konular
 - **Okçu hâlâ biraz güçlü**: deste turnuvalarında Okçulu desteler ortalama ~%52 ve en iyi 5 deste içinde her turda; tam çözülmedi (hasar 9, can 68'e inmişti). Yeni ayar turunda önce okçu içeren desteleri izle.
 - **Zor bot Orta karşısında ≈%59** (hedef %75–85). Kuşanma süresi (15 sn) ve süvari/keşiş eklenmesinden sonra yeniden ayarlanmadı; kullanıcı "dokunma" dedi, isterse `docs/bot-zor-tablo.md` yöntemiyle yeniden ölç.

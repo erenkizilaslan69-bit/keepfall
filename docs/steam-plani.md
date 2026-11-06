@@ -29,7 +29,8 @@ Eleştirinin ana bulguları: (1) çok oyunculu oyun boş lobiyle çıkarsa ölü
 - Maç sonunda "kim kimi kandırdı" zaman çizelgesi: sahte rapor, hayalet ordu, rüşvet, kılık değiştirme (gizli bilgi artık açık, maç bitti).
 - Savaş oynatmasından kısa paylaşılabilir klip.
 
-### E. Denge ve ilk deneyim
+### E. Denge ve ilk deneyim — YAPILDI 2026-11-07 (öneriler onay bekliyor)
+- Ölçüm ve öneriler: `docs/denge-sira-sonrasi.md` (ana öneri: `combat.meleeActiveRows: 2`, önce oynatma işi). Başlangıç modu kodlandı: `Room.SetStarter`/`StartChallenge(fullRules)`, `RoomView.Starter`, ayarlarda "Tam kurallarla oyna".
 - Yeni 4 sıralı düzen sonrası okçu/deste/bot ölçümleri (`docs/` altında tablo), öneri sunulur, onayla uygulanır.
 - İlk maçlar için "başlangıç" modu: krallık yetenekleri kapalı, daha az sistem.
 
