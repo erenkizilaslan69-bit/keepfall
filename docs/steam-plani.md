@@ -21,8 +21,8 @@ Eleştirinin ana bulguları: (1) çok oyunculu oyun boş lobiyle çıkarsa ölü
 - **Ajan**: `docs/ajan-fikri.md` (kural, gizli bilgi, kötüye kullanım, botlar, ölçüm planı, açık sorular). KOD YOK; öneri şimdilik yapma, önce izleyici tahmini gibi güvenli alternatif.
 - Testler: `FallFlowTests` (3), duman testi (elenmiş konuk çıkar, koltuk bot olmaz, meydan okuma kendiliğinden biter), `tools/shot-fall.mjs` (kart görüntüleri).
 
-### C. İlerleme ve kozmetik
-- Kozmetik: kale/flama/avatar açılımları (denge etkisi yok). Başarımlar (Steam Achievements için liste hazırlanır).
+### C. İlerleme ve kozmetik — YAPILDI 2026-11-07 (dev; ayrıntı `docs/ilerleme.md`, liste `docs/basarimlar.md`)
+- Durum: 30 başarım (22 sunucuda maç sonunda, 8 geçmişe bağlı istemcide), krallık ustalığı (1/5/15 galibiyet), kozmetik (flama II/III her krallık için + bronz/gümüş/altın avatar çerçevesi; denge etkisi yok), soyut `ProgressStore` (Aşama F'de Steamworks'e bağlanır), ana menüde "Başarımlar ve Ustalık" + maç sonu ilerleme bloğu, duman testi (geçersiz kimlik reddi, flama sızmaz).- Kozmetik: kale/flama/avatar açılımları (denge etkisi yok). Başarımlar (Steam Achievements için liste hazırlanır).
 - Krallık ustalığı: her krallıkla N maç → flama/kale süsü.
 
 ### D. Anlatı: maç sonu özeti ve tekrar — YAPILDI 2026-11-07 (dev; ayrıntı `docs/kandirma-ozeti.md`)

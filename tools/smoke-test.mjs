@@ -588,6 +588,7 @@ P.ws.close();
 Q.ws.close();
 
 // ---- every human falls: the host may end the match and the bots play the rest out at once ----------------------
+const refusedCall = async (c, name, ...args) => !(await c.call(name, ...args)).ok;
 const H = client(), K = client();
 await Promise.all([H.ready, K.ready]);
 const jh = await H.call('CreateRoom', 'Hasan');
@@ -596,6 +597,14 @@ check('two humans and two bots take their seats', jh.ok && jk.ok && (await H.cal
 await H.call('SetDeck', FOUR); await K.call('SetDeck', FOUR);
 await H.call('SetReady', true);
 await K.call('SetReady', true);
+// Cosmetics: only known ids are accepted (nothing else can ever reach another player); the frame is public in the lobby, the banner design stays secret until the result.
+check('unknown cosmetic ids are refused (frame, banner, kingdom, design, two for one kingdom)',
+  await refusedCall(H, 'SetCosmetics', 'diamond', []) && await refusedCall(H, 'SetCosmetics', 'gold', ['tuccar:z']) && await refusedCall(H, 'SetCosmetics', 'gold', ['orc:a'])
+  && await refusedCall(H, 'SetCosmetics', 'gold', ['tuccar:b', 'tuccar:c']) && await refusedCall(H, 'SetCosmetics', '<img src=x onerror=1>', []));
+check('a refused call left nothing behind', K.of('RoomState').every((r) => r.players.every((x) => !x.frame)));
+check('known cosmetic ids are accepted', (await H.call('SetCosmetics', 'gold', ['tuccar:c', 'golge:b', 'kahin:c', 'entrikaci:b'])).ok);
+await sleep(300);
+check('the frame is public: the other player sees it in the lobby', K.of('RoomState').at(-1)?.players.find((x) => x.seat === jh.seat)?.frame === 'gold');
 check('the match starts', (await H.call('StartMatch')).ok);
 check('the host sets ×20', (await H.call('SetSpeed', 20)).ok);
 // The humans do nothing; the bots scout them, find them undefended and take their gates.
@@ -635,6 +644,16 @@ if (allOut?.allHumansOut) {
   check('the final result carries the log (a list, every entry names a seat that is in the ranking)',
     Array.isArray(end.result.deceptions) && end.result.deceptions.every((e) => end.result.ranking.some((x) => x.seat === e.actorSeat) && typeof e.kind === 'string' && e.at >= 0),
     JSON.stringify(end.result.deceptions)?.slice(0, 200));
+  // The banner design is a secret of the kingdom (it would give it away): never before the result, and then the one picked for the kingdom the player really had.
+  const BANNER = /"banner"|tuccar:|golge:|kahin:|entrikaci:/;
+  check('before the result no message to the guest carries a banner pick', K.msgs.filter((m) => !(m.target === 'RoomState' && m.arg?.phase === 'ended')).every((m) => !BANNER.test(m.raw)));
+  const hRank = end.result.ranking.find((x) => x.seat === jh.seat);
+  check('the result shows each player frame and the banner design picked for their real kingdom',
+    hRank.frame === 'gold' && hRank.banner === ({ tuccar: 'c', golge: 'b', kahin: 'c', entrikaci: 'b' })[hRank.kingdom] && end.result.ranking.filter((x) => x.seat !== jh.seat).every((x) => !x.frame && x.banner === 'a'),
+    JSON.stringify(end.result.ranking));
+  const prog = H.of('ProgressResult').at(-1);
+  check('the host alone got a progress result (kingdom, outcome, known achievement ids), the guest none', !!prog && prog.kingdom === hRank.kingdom && typeof prog.won === 'boolean' && Array.isArray(prog.earned)
+    && prog.earned.every((id) => /^[a-z][a-z0-9_]*$/.test(id)) && K.of('ProgressResult').length === 0, JSON.stringify(prog));
   check('the host got the summary, and the guest who left got nothing more', H.of('MatchEnded').length === 1 && K.of('MatchEnded').length === 0);
   check('it cannot be ended twice', !(await H.call('FinishMatch')).ok);
 }
