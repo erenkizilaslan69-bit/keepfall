@@ -50,6 +50,8 @@ public sealed class MatchConfig
     public double GuidedShieldSeconds { get; set; } = 180;
     /// <summary>The castle's economy runs this many times faster than the clock during the preparation (see MatchRules.PrepSpeed); 1 = as before.</summary>
     public double PrepSpeed { get; set; } = 1;
+    /// <summary>The guided first match (tutorial): preparation length in game seconds, plain economy speed (see MatchRules.GuidedPrepSeconds).</summary>
+    public double GuidedPrepSeconds { get; set; } = 480;
     public int StartingPopulation { get; set; } = 10;
     public ProductionConfig StartingResources { get; set; } = new();
 }
@@ -388,6 +390,7 @@ public static class BalanceConfigLoader
         if (mc.SpectatorWaitSeconds < 0) errors.Add("match.spectatorWaitSeconds negatif olamaz.");
         if (mc.SpectatorMinSeconds < 0) errors.Add("match.spectatorMinSeconds negatif olamaz.");
         if (mc.GuidedShieldSeconds < 0) errors.Add("match.guidedShieldSeconds negatif olamaz.");
+        if (mc.GuidedPrepSeconds <= 0) errors.Add("match.guidedPrepSeconds sıfırdan büyük olmalı.");
         if (mc.PrepSpeed <= 0) errors.Add("match.prepSpeed sıfırdan büyük olmalı.");
         if (mc.ArmSeconds < 0) errors.Add("match.armSeconds negatif olamaz.");
         if (mc.StartingPopulation < 0) errors.Add("match.startingPopulation negatif olamaz.");
@@ -540,7 +543,7 @@ public static class BalanceConfigLoader
                 mc.ShortModePrepMinutes * 60, mc.LongModePrepMinutes * 60,
                 (mc.ShortModeMinutes - mc.ShortModePrepMinutes) * 60,
                 (mc.LongModeMinutes - mc.LongModePrepMinutes) * 60,
-                mc.ServerTickSeconds, mc.StartingPopulation, sr.Food, sr.Wood, sr.Iron, mc.SpectatorDelaySeconds, mc.SpectatorWaitSeconds, mc.SpectatorMinSeconds, mc.ArmSeconds, mc.GuidedShieldSeconds, mc.PrepSpeed),
+                mc.ServerTickSeconds, mc.StartingPopulation, sr.Food, sr.Wood, sr.Iron, mc.SpectatorDelaySeconds, mc.SpectatorWaitSeconds, mc.SpectatorMinSeconds, mc.ArmSeconds, mc.GuidedShieldSeconds, mc.PrepSpeed, mc.GuidedPrepSeconds),
             new EconomyRules(
                 e.WorkerFoodPerMinute, e.SoldierFoodPerMinute, e.StarvationMultiplier,
                 e.NewPersonBaseCost, e.NewPersonCostGrowth, e.NewPersonBasePopulation, e.GrowthReserveSeconds,

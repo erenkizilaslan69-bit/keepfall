@@ -28,11 +28,11 @@ public class GuidedShieldTests
     [Fact]
     public void The_shield_is_the_configured_length_and_shows_in_the_room_view_only_while_it_holds()
     {
-        Assert.Equal(180, Rules.Match.GuidedShieldSeconds);
+        Assert.Equal(240, Rules.Match.GuidedShieldSeconds);
         var game = WarMatch();
         Assert.True(game.IsShielded(Human));
         Assert.False(game.IsShielded(Bot));
-        for (int i = 0; i < 179; i++) game.Tick(1);
+        for (int i = 0; i < 239; i++) game.Tick(1);
         Assert.True(game.IsShielded(Human));
         for (int i = 0; i < 3; i++) game.Tick(1);
         Assert.False(game.IsShielded(Human));
@@ -48,7 +48,7 @@ public class GuidedShieldTests
         Assert.False(refused.Ok);
         Assert.Contains("rehberli", refused.Error);
         Assert.Empty(game.ArmiesOf(Bot));
-        for (int i = 0; i < 181; i++) game.Tick(1);
+        for (int i = 0; i < 241; i++) game.Tick(1);
         Assert.True(game.Execute(Bot, army).Ok);
     }
 
@@ -70,6 +70,8 @@ public class GuidedShieldTests
         one.SetReady(host.Token, true);
         Assert.True(one.Start(host.Token).Ok);
         Assert.Contains(host.CastleKey, one.Game!.ShieldedKeys);
+        Assert.Equal(Rules.Match.GuidedPrepSeconds, one.Game!.PrepSeconds); // the tutorial's preparation is the long one (8 minutes, plain speed)
+        Assert.Equal(480, one.Game!.PrepSeconds);
 
         var two = new Room("WXYZ", Rules, new RoomOptions { MinPlayers = 2 });
         var a = two.Join("A", null, false, DateTime.UtcNow).Player!;
@@ -79,5 +81,6 @@ public class GuidedShieldTests
         two.SetReady(b.Token, true);
         Assert.True(two.Start(a.Token).Ok);
         Assert.Empty(two.Game!.ShieldedKeys);
+        Assert.Equal(Rules.Match.ShortModePrepSeconds, two.Game!.PrepSeconds); // a normal match keeps the five minutes
     }
 }

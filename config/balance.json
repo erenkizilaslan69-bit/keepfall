@@ -19,7 +19,9 @@
     // Son insan elenip botlar oynamaya devam ediyorsa maç en az bu kadar oyun saniyesi daha sürer; oda sahibi bu sürede "İzlemeye devam" ya da "Maçı bitir" seçer.
     "spectatorMinSeconds": 120,
     // Rehberli ilk maç (öğretici): savaşın ilk bu kadar saniyesinde (oyun sn) botlar insan oyuncunun kalesine saldırmaz. Yalnız rehber isteyen oda kullanır; denge sayısı değil.
-    "guidedShieldSeconds": 180,
+    "guidedShieldSeconds": 240,
+    // Rehberli ilk maçın hazırlığı (oyun sn) ve hızı: 480 sn (8 dk), prepSpeed uygulanmaz (süre standart olmadığı için). Normal maç 5 dk.
+    "guidedPrepSeconds": 480,
     // Bir işçiyi askere çevirmek (silah kuşanmak) bu kadar saniye sürer: bu sürede ne çalışır ne savaşır; 0 = anında. Kullanıcı kararı: 15. Paralı asker her zaman anında.
     "armSeconds": 15,
     "spectatorDelaySeconds": 0,

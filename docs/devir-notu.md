@@ -28,7 +28,7 @@ Keepfall: 2–4 oyunculu, maç tabanlı kale strateji / sosyal strateji ("parti"
 - 7 birlik, maç öncesi 4'ü seçilir: Okçu, Kılıçlı, Mızrakçı, Kalkanlı, Keşiş, Mancınık, Süvari.
 - Kale tek savaşta düşer (kapı savaşını kazanan alır); esir + ganimet.
 - Orman: köy (≥3 asker), küçük/büyük haydut kampı, sandık. Paralı asker. Savunma dizilişi.
-- Botlar 3 zorluk. Rehberli ilk maç (bot kalkanı ilk 180 sn), ilk 3 maçta varsayılan Kolay bot.
+- Botlar 3 zorluk. Rehberli ilk maç (8 dk hazırlık, düz hız; bot kalkanı ilk 240 sn), ilk 3 maçta varsayılan Kolay bot.
 
 Teknik: ASP.NET Core + SignalR sunucu (1 sn tick), Vite + TypeScript + Phaser 3 istemci, HTML arayüz. Render ücretsiz sunucu + cron-job.org `/ping` (10 dk). MaxRooms=15.
 

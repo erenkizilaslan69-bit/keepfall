@@ -363,12 +363,15 @@ public sealed class Room
         }
         Dictionary<string, string>? factions = null;
         if (_rules.Kingdoms.Enabled && Options.Kingdoms) factions = Factions.Assign(keys, Options.Seed is { } ks ? new Random(ks + 71) : new Random());
+        // The guided first match gives a new player the long, plain-speed preparation (match.guidedPrepSeconds), whatever the mode asked for.
+        bool guidedSolo = Guided && _players.Count(p => !p.IsBot) == 1;
+        double? prep = Options.PrepSeconds ?? (guidedSolo ? _rules.Match.GuidedPrepSeconds : null);
         if (Options.Seed is { } seed)
-            Game = new GameState(_rules, keys, Options.PrepSeconds, Options.WarSeconds, new Random(seed),
+            Game = new GameState(_rules, keys, prep, Options.WarSeconds, new Random(seed),
                 GameState.AssignCorners(keys, new Random(seed + 17)), Options.ForestSeed ?? new Random(seed + 31).Next(), decks, factions);
         else
-            Game = new GameState(_rules, keys, Options.PrepSeconds, Options.WarSeconds, forestSeed: Options.ForestSeed, decks: decks, factions: factions);
-        if (Guided && _players.Count(p => !p.IsBot) == 1)
+            Game = new GameState(_rules, keys, prep, Options.WarSeconds, forestSeed: Options.ForestSeed, decks: decks, factions: factions);
+        if (guidedSolo)
             foreach (var human in _players.Where(p => !p.IsBot)) Game.ShieldedKeys.Add(human.CastleKey);
         Phase = RoomPhase.Preparation;
     }
