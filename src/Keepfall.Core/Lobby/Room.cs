@@ -70,6 +70,10 @@ public sealed class RoomPlayer
     public bool Ready { get; internal set; }
     /// <summary>The units the player picked for the match (null until they pick; a player who does not gets a random deck). Secret from the other players.</summary>
     public IReadOnlyList<string>? Deck { get; internal set; }
+    /// <summary>The avatar frame the player wears (a Cosmetics.Frames id) or null. Cosmetic only; public.</summary>
+    public string? Frame { get; internal set; }
+    /// <summary>The banner designs the player picked ("kingdom:design" per kingdom). Cosmetic only; shown on the end screen, never earlier (it would tell the kingdom).</summary>
+    public IReadOnlyList<string> Banners { get; internal set; } = [];
     public int Connections { get; internal set; }
     public bool Connected => Connections > 0;
     public DateTime? DisconnectedAtUtc { get; internal set; }
@@ -315,6 +319,21 @@ public sealed class Room
     public CommandResult SetName(string token, string? name) => InLobby(token, p =>
     {
         p.Name = CleanName(name, p.Seat);
+        return CommandResult.Success;
+    });
+
+    /// <summary>Cosmetic picks (frame + banner designs). Unknown ids are refused as a whole, so nothing else can ever be shown to the others.</summary>
+    public CommandResult SetCosmetics(string token, string? frame, string[]? banners) => InLobby(token, p =>
+    {
+        if (!string.IsNullOrEmpty(frame) && !Progress.Cosmetics.IsFrame(frame)) return CommandResult.Fail("Bilinmeyen çerçeve.");
+        var list = new List<string>();
+        foreach (var b in banners ?? [])
+        {
+            if (!Progress.Cosmetics.TryParseBanner(b, out var k, out _) || list.Any(x => x.StartsWith(k + ":"))) return CommandResult.Fail("Bilinmeyen flama.");
+            list.Add(b);
+        }
+        p.Frame = string.IsNullOrEmpty(frame) ? null : frame;
+        p.Banners = list;
         return CommandResult.Success;
     });
 

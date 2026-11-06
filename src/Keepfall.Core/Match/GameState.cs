@@ -165,6 +165,7 @@ public sealed partial class GameState
     public double FamineStartsIn => Math.Max(0, PrepSeconds + FamineAfter - ElapsedSeconds);
 
     /// <summary>Seconds into the war when the famine begins (it then lasts to the end).</summary>
+    public double FamineAfterSeconds => FamineAfter;
     private double FamineAfter => Rules.War.FamineStartSeconds >= 0 ? Math.Min(Rules.War.FamineStartSeconds, WarSeconds) : Rules.War.FamineStart * WarSeconds;
     public IReadOnlyCollection<string> PlayerKeys => _players.Keys;
     public MatchResult? Result { get; private set; }

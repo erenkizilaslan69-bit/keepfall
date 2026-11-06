@@ -29,6 +29,7 @@ public static class MatchPush
         await Notifications(clients, session);
         await Summaries(clients, session);
         await ChallengeResults(clients, session);
+        await ProgressResults(clients, session);
     }
 
     /// <summary>A challenge's goals and stars, to the one player it is about.</summary>
@@ -44,6 +45,20 @@ public static class MatchPush
                 .ToList();
         foreach (var (seat, result) in results)
             await clients.Group(Hubs.GameHub.PlayerGroup(session.Room.Code, seat)).SendAsync("ChallengeResult", result);
+    }
+
+    /// <summary>Which achievements the match earned, to the one player they are about (the kingdom they played is theirs to know).</summary>
+    private static async Task ProgressResults(IHubClients<IClientProxy> clients, RoomSession session)
+    {
+        List<(int Seat, ProgressResultView Result)> results = [];
+        lock (session.Lock)
+            foreach (var p in session.Room.Players.Where(p => !p.IsBot))
+            {
+                if (Keepfall.Core.Progress.Achievements.FactsOf(session.Room, p) is not { } facts) continue;
+                results.Add((p.Seat, new ProgressResultView(facts.Kingdom, facts.Won, !facts.Plain, Keepfall.Core.Progress.Achievements.Evaluate(facts))));
+            }
+        foreach (var (seat, result) in results)
+            await clients.Group(Hubs.GameHub.PlayerGroup(session.Room.Code, seat)).SendAsync("ProgressResult", result);
     }
 
     /// <summary>Each player gets only their own summary.</summary>

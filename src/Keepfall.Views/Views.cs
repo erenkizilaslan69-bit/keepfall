@@ -127,10 +127,13 @@ public sealed record CommandResultView(bool Ok, string? Error);
 
 /// <summary>Public facts about a player. Never the token.</summary>
 public sealed record PlayerView(int Seat, string Name, PlayerColor Color, bool Ready, bool Connected, bool IsHost, bool Eliminated,
-    bool IsBot = false, BotDifficulty? BotLevel = null, bool Sheltered = false);
+    bool IsBot = false, BotDifficulty? BotLevel = null, bool Sheltered = false, string? Frame = null);
 
 /// <summary>Sent to everyone once the match is over: the hidden-information rule ends with the match.</summary>
-public sealed record RankView(int Seat, string Name, PlayerColor Color, int Place, int Population, bool Eliminated, string? Kingdom = null);
+public sealed record RankView(int Seat, string Name, PlayerColor Color, int Place, int Population, bool Eliminated, string? Kingdom = null, string? Frame = null, string? Banner = null);
+
+/// <summary>Progress of one player after a match, sent only to that player: the kingdom played, the result and the achievement ids this match earned (the client keeps the history).</summary>
+public sealed record ProgressResultView(string? Kingdom, bool Won, bool Lesson, IReadOnlyList<string> Earned);
 public sealed record PlayerSummaryView(int Seat, string Name, PlayerColor Color, SummaryView Summary);
 /// <summary>One line of the "who fooled whom" timeline (seats; TargetSeat/AsSeat null when not applicable). Only ever sent inside <see cref="ResultView"/>.</summary>
 public sealed record DeceptionEventView(double At, string Kind, int ActorSeat, int? TargetSeat, int? AsSeat, int Count, string? Detail);
@@ -149,7 +152,7 @@ public static class ViewMapper
 {
     public static RoomView ToView(Room room) => new(
         room.Code, room.Phase,
-        room.Players.Select(p => new PlayerView(p.Seat, p.Name, p.Color, p.Ready, p.Connected, p.Seat == room.HostSeat, room.IsEliminated(p), p.IsBot, p.Bot, room.Game?.IsShielded(p.CastleKey) == true)).ToList(),
+        room.Players.Select(p => new PlayerView(p.Seat, p.Name, p.Color, p.Ready, p.Connected, p.Seat == room.HostSeat, room.IsEliminated(p), p.IsBot, p.Bot, room.Game?.IsShielded(p.CastleKey) == true, p.Frame)).ToList(),
         room.Options.MinPlayers, room.Options.MaxPlayers, room.CanStart, room.Game?.RemainingSeconds,
         room.Phase == RoomPhase.Ended ? ResultOf(room) : null, room.AllHumansOut, room.Challenge?.Id, room.StarterActive);
 
@@ -164,7 +167,8 @@ public static class ViewMapper
             {
                 var p = room.PlayerOfCastle(r.Player);
                 // The match is over: every kingdom is public now.
-                return new RankView(p?.Seat ?? 0, p?.Name ?? "?", p?.Color ?? PlayerColor.Blue, r.Place, r.Population, r.Eliminated, game.KingdomStatusOf(r.Player)?.Faction);
+                return new RankView(p?.Seat ?? 0, p?.Name ?? "?", p?.Color ?? PlayerColor.Blue, r.Place, r.Population, r.Eliminated, game.KingdomStatusOf(r.Player)?.Faction, p?.Frame,
+                    game.KingdomStatusOf(r.Player)?.Faction is { } kd ? Keepfall.Core.Progress.Cosmetics.DesignFor(p?.Banners, kd) : null);
             }).ToList(),
             room.Players
                 .Where(p => game.SummaryOf(p.CastleKey) is not null)
