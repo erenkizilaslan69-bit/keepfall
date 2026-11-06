@@ -84,3 +84,8 @@ Bot etkisi (A / D, 400 maç): Orta vs Kolay %76,8 / %80,3, bekleyen %1,8 / %2,5,
 
 ## 5. Yöntem
 `dotnet src/BattleSim/bin/Release/net10.0/BattleSim.dll denge --mac 3000`; `bot --mac 400 --zorluk karisik|bekleyen|orta|zor-orta`; `deste --deste-basi 50 --cikti …`. Varyant config'leri `balance.json` kopyasında `"combat": { "meleeActiveRows": 2 }` (A, D, F), `"rangedReachRows": 2` (E, F; yalnız bu ölçümde kullanılan deneme anahtarı, varsayılan 1) ve okçu `hp/damage` satırı. ESKİ: `git worktree` ile `358cc7a^`, aynı `balance.json`.
+
+## Uygulandı (2026-11-07): `combat.meleeActiveRows: 2`
+Kullanıcı onayladı ("patron sensin, nasıl daha iyi olacaksa öyle yap"); `config/balance.json`'a eklendi. Oynatma da ikinci sıra yakın dövüşçüsünü (ilk sıranın hemen arkasına yaklaşır, vurur) gösteriyor (`BattlePlayer.ts`, `ACTIVE_MELEE_ROWS`).
+Yeniden ölçüm (ham: `docs/gece/sira2-*.txt`): deste turnuvası (35 deste × ~50 maç) sd 9,2 (önce 12,4), en iyi %75,0 / en kötü %33,8, %58↑ 6 deste, Okçulu ortalama %54,1; Orta vs Kolay %76,8; yalnız bekleyen bot %1,8; Zor vs Orta %69,9. Tek deste ±7 puan gürültülü; en iyi %75 bu gürültüden olabilir, sd belirgin düştü.
+**Öneri 2 (okçu hasarı 8) uygulanmadı**: tabloda %58↑ deste sayısını 4→8 çıkarıyordu. Okçu hâlâ en iyi 5'te; bir sonraki ayar turunda izle.

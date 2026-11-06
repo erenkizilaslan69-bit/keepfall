@@ -22,6 +22,7 @@ const APPROACH_SECONDS = 2.5;
 const MAX_DRAWN = 40; // per side
 const PER_LINE = 8;
 const COL = 0.75, LINE = 0.55; // tiles between soldiers across and along
+const ACTIVE_MELEE_ROWS = 2, SECOND_GAP = 0.8; // mirrors config combat.meleeActiveRows; tiles between the first and second melee row
 const FRONT_START = 1.7, FRONT_MEET = 0.6, BACK = 2.4, ROW_STEP = 0.9; // tiles from the centre
 const ROW_ORDER = ['first', 'second', 'third', 'fourth'];
 
@@ -135,7 +136,9 @@ export class BattlePlayer {
           drawn++;
           const look = LOOK[x.unitId] ?? LOOK.kilicli;
           const ranged = STAYS_BACK.has(x.unitId);
-          const front = place(k, list.length, ranged || !isFront ? FRONT_START : FRONT_MEET);
+          // Melee soldiers of the first ACTIVE_MELEE_ROWS rows fight (combat.meleeActiveRows): the second row closes in right behind the first.
+          const second = !isFront && !ranged && r < ACTIVE_MELEE_ROWS;
+          const front = place(k, list.length, second ? FRONT_MEET + SECOND_GAP : ranged || !isFront ? FRONT_START : FRONT_MEET);
           const start = place(k, list.length, isFront ? FRONT_START : behind);
           const back = place(k, list.length, isFront ? BACK : behind);
           const at = courtyard ?? (isFront ? start : back);
@@ -144,7 +147,7 @@ export class BattlePlayer {
           const sprite = this.scene.add.sprite(at.x, at.y, key).setScale(look.scale).setOrigin(0.5, unitOriginY(look.run));
           sprite.setFlipX(sign > 0 ? f.x > 0 : f.x < 0).setDepth(at.y).setData('replay', view.id);
           playRandom(sprite, key);
-          fighters[offset(view, s) + x.i] = { sprite, side: s, unit: x.unitId, ranged, front, start, back, inFront: isFront, dead: false };
+          fighters[offset(view, s) + x.i] = { sprite, side: s, unit: x.unitId, ranged, front, start, back, inFront: isFront || second, dead: false };
           if (courtyard) this.walk(sprite, isFront ? start : back, 1.6); // down from the courtyard to the gate
         });
       }

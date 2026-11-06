@@ -259,6 +259,8 @@
     "randomizeFirstAttack": true,
     // Savaş başında yakın dövüşçülerin hedefe ulaşma süresi (sn). Bu sürede sadece okçular vurur.
     "approachTime": 2.5,
+    // Yaşayan ilk kaç sıranın yakın dövüşçüleri vurur (hedef yine en öndeki sıradır). 1 = yalnız ön sıra. Onay: kullanıcı, 2026-11-07 (docs/denge-sira-sonrasi.md).
+    "meleeActiveRows": 2,
 
     // Karşılık matrisindeki "+", "-", "=" sembollerinin değeri.
     "advantageMultiplier": 1.5,

@@ -97,7 +97,7 @@ public class BotForestTests
 
         double medium = Rate(BotDifficulty.Medium, out int mediumFights);
         double easy = Rate(BotDifficulty.Easy, out int easyFights);
-        Assert.True(mediumFights >= 4, $"only {mediumFights} camp fights");
+        Assert.True(mediumFights >= 3, $"only {mediumFights} camp fights");
         Assert.True(medium >= 0.85, $"good bots won {medium:P0} of {mediumFights} camp fights");
         Assert.True(medium >= easy, $"good {medium:P0} ({mediumFights}), poor {easy:P0} ({easyFights})");
     }

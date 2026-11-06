@@ -12,6 +12,13 @@ public class RowTests
         BalanceConfigLoader.FindDefaultPath(AppContext.BaseDirectory)
         ?? throw new InvalidOperationException("config/balance.json bulunamadı."));
 
+    /// <summary>The same rules with only the first row fighting (combat.meleeActiveRows 1).</summary>
+    private static GameRules OneRowRules()
+    {
+        var json = File.ReadAllText(BalanceConfigLoader.FindDefaultPath(AppContext.BaseDirectory)!);
+        return BalanceConfigLoader.LoadFromJson(System.Text.RegularExpressions.Regex.Replace(json, @"""meleeActiveRows""\s*:\s*\d+", @"""meleeActiveRows"": 1"));
+    }
+
     private static UnitType U(string id) => Rules.FindUnit(id)!;
 
     private static ArmySetup Army(params (string Id, int Count)[] units)
@@ -47,7 +54,7 @@ public class RowTests
         var setup = Army(("kilicli", 3), ("mizrakci", 3));
         setup.PlaceIn(U("kilicli"), Row.First);
         setup.PlaceIn(U("mizrakci"), Row.Third);
-        var r = new BattleSimulator(Rules).Simulate(setup, Army(("kalkanli", 6)), new Random(3), recordBattle: true).Record!;
+        var r = new BattleSimulator(OneRowRules()).Simulate(setup, Army(("kalkanli", 6)), new Random(3), recordBattle: true).Record!; // the one-row rule: reserves wait
         int firstAdvance = int.MaxValue;
         for (int i = 0; i < r.Advances.Count; i += 2)
             if (r.Soldiers[r.Advances[i + 1]].Type.Id == "mizrakci") firstAdvance = Math.Min(firstAdvance, r.Advances[i]);

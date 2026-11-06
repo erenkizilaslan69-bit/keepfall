@@ -1,0 +1,260 @@
+ok    A creates, B and C join
+ok    economy refused in the lobby
+ok    scouting refused in the lobby
+ok    only the host starts
+ok    a deck needs exactly four different units
+ok    a deck is accepted
+ok    a deck is accepted
+ok    a deck is accepted
+ok    host starts the match
+ok    everyone got the map
+ok    the map is the same for everyone
+ok    the map shows whose castle is in which corner
+ok    the map carries no token and no castle contents
+ok    lobby command refused in the match
+ok    everybody got a kingdom, and they differ
+ok    the kingdom comes with its decree and abilities
+ok    the oracle knows every rival kingdom and deck, and it is the truth
+ok    player 2 (not the oracle) got no rival kingdoms, decks or odds
+ok    player 3 (not the oracle) got no rival kingdoms, decks or odds
+ok    player 1 sees no rival kingdom before any castle is in sight
+ok    player 2 sees no rival kingdom before any castle is in sight
+ok    player 3 sees no rival kingdom before any castle is in sight
+ok    only the Shadow can send phantoms or set a false report
+ok    only the Merchant can bribe or hire a camp
+ok    only the Schemer can go under another name
+ok    host sets ×20
+ok    B arms 6 spearmen
+ok    A arms 4 swordsmen
+ok    the arming time is part of the picture (15 s) and the four swordsmen are still being armed
+ok    people being armed count in the population but are not soldiers yet
+ok    attacks refused in preparation
+ok    cannot scout yourself
+ok    hiring needs gold, and nobody has any yet
+ok    units carry their hiring price
+ok    the picture says whether scouting is locked (the last stretch of the preparation)
+ok    A sends a scout to B
+ok    only one scout per target
+ok    A only ever got its own (blue) castle
+ok    B only ever got its own (red) castle
+ok    no token in any room state
+ok    A's traffic never contains B's token
+ok    A has a report on B
+ok    report has only target, time, soldiers, buildings
+ok    the scout report names B's real kingdom (and only a scout report does it this early)
+ok    report soldiers have only id, name and count
+ok    spearmen within ±max(20 %, 1) (real 6, seen 7)
+ok    bows in storage are not reported
+ok    building levels are exact
+ok    report mentions no weapons, workers or resources
+ok    B was told about the scout
+ok    A got no notification
+ok    the war phase begins
+ok    A sends 3 swordsmen at B
+ok    A sees its own army
+ok    the battle happens
+ok    B is warned
+ok    the warning names the sender only
+ok    A and C are not warned
+ok    B's castle showed the countdown
+ok    an incoming warning carries only who and when
+ok    B's castle never lists A's army
+ok    A got its own army with its road
+ok    A and C (who sent scouts) got trails, B (who never did) never did
+ok    a seen mover carries only id, kind, owner, position, heading and units
+ok    nothing seen ever mentions a target, road or arrival
+ok    seen ids are random
+ok    nobody ever sees their own movers as "seen"
+ok    whatever is seen is inside the vision or the scouts trail (and never inside a foreign corner through the trail)
+ok    armies opened ground for A (who marched): explored circles with the army sight radius, and B/C who did not march only have what their own armies opened
+ok    the explored ground never lies inside another player corner (what is inside a castle is learned from reports only)
+ok    an explored circle carries only centre, radius and fade
+ok    "last seen" names only armies from inside what that player could see, never their own
+ok    "last seen" carries no road, target or arrival either
+ok    an army that is in sight right now is not also listed as "last seen"
+ok    others see A's army exactly when it is in their vision (22 ticks compared)
+ok    B saw A's army coming, with its soldiers
+ok    C never sees a warning, an army or a battle
+ok    C only ever got its own (yellow) castle
+ok    both sides got the battle report
+ok    the attacker sees the defending army
+ok    the report has losses and no castle health
+ok    A was told about the battle, B too
+ok    no CastleState ever went to the wrong player
+ok    both sides got the battle record
+ok    the record has both armies soldier by soldier
+ok    the record has hits and deaths
+ok    the battle takes its time
+ok    C never gets a battle record
+ok    C saw that a battle was going on at B (its scout was there)
+ok    a battle C sees is only where it is
+ok    C only sees the battle inside its vision
+ok    the army is sent in intercept mode
+ok    B cannot recall A's army
+ok    A recalls its army
+ok    the recalled army is on its way home
+ok    C never learns the mode
+ok    an order needs a target
+ok    A cannot send an army to its own castle
+ok    B cannot give orders to A's army
+ok    A sends the returning army on to C
+ok    the army marches again, to C
+ok    it cannot be sent where it already goes
+ok    the road is a new one that starts where the army stood
+ok    nobody else sees where an army goes, even after a new order
+ok    A turns it on B again
+ok    A brings it home in the end
+ok    players still in the match never got a spectator picture or countdown
+ok    second match starts
+ok    X arms 6 swordsmen
+ok    X sends a scout to Z
+ok    one scout at a time: a second one cannot leave yet
+ok    the scout leaves a trail
+ok    the scout comes home
+ok    the trail stays open after the scout is home
+ok    a reload rejoins the same seat
+ok    a reload gets the open trail back
+ok    a trail circle carries only centre, radius and fade, with the scouts sight
+ok    the trail lies along the scouts own road
+ok    nobody but the scouts owner gets a trail
+ok    the trail closes again after its time
+ok    the castle picture carries the envoy limits
+ok    an envoy needs a load or a message
+ok    a message with a line break is refused
+ok    too much is refused
+ok    X sends an envoy to Y
+ok    the envoy takes the scouts place
+ok    X sees its own envoy, with no sight
+ok    Y gets the letter: who from, what and the message exactly
+ok    the envoy comes home
+ok    the sender is told it arrived
+ok    the receiver is told, without the contents
+ok    the sender and the third player have no letter
+ok    the message reached nobody but Y
+ok    an envoy brings no report and leaves no trail
+ok    whoever sees an envoy sees it as an envoy in its sender colour (an owner seat, no units, nothing of its load)
+ok    four quarters to explore, one of them X own
+ok    nobody knows a place of the forest before a scout was there
+ok    X explores its own quarter
+ok    one scout per quarter
+ok    the tour ends and the quarter counts as explored
+ok    X found places
+ok    only its own quarter and the big camp
+ok    a place carries what a visitor sees
+ok    the quarter holds two chests, a village and a camp
+ok    Y and Z never get a place or a trail to one
+ok    no id of a found place shows up in Y or Z traffic
+ok    the public map does not mention any place
+ok    a reload gets the found places back
+ok    Y tours X quarter and sees the chest full
+ok    Y is back and its trail closed
+ok    X sends a scout for the chest
+ok    Z (who never found it) cannot
+ok    the gold arrives with the scout
+ok    a chest holds 30 to 45 gold
+ok    the iron of the chest (4 to 8) came with the gold
+ok    a found place tells nothing about what it holds
+ok    X knows the chest is empty
+ok    Y, who has not looked since, still thinks it is full
+ok    nobody else got any gold
+ok    X plunders the village with three soldiers
+ok    two soldiers are not enough
+ok    X sends its scout for the second chest
+ok    the army is home with the loot
+ok    the village (20 to 30) and the second chest (30 to 45) give 50 to 75 gold
+ok    the village is gone for X, all soldiers came home
+ok    the raid shows in nobody elses castle state, and Z never hears of the village at all
+ok    Y explores again and learns about the empty chest
+ok    Y finds the village plundered too
+ok    Z knows nothing of all this
+ok    X hires mercenaries with the loot
+ok    the hired are soldiers on top of the people, and cost gold
+ok    hired soldiers cannot be turned into workers
+ok    nobody else can hire without gold
+ok    X sends three soldiers at the camp
+ok    the fight is replayed for X, against black bandits
+ok    the camp record has both sides soldier by soldier
+ok    Y and Z get no record of it
+ok    the army is home again
+ok    X got a report against the bandits
+ok    X sees roughly who is left at the camp
+ok    Y, who has not looked, still sees the first numbers and Z never hears of the report
+ok    the second war begins
+ok    Y's castle falls
+ok    the report of the fall says what X took
+ok    Y sees it too (its own report)
+ok    a ribbon says what came home
+ok    Z never hears of the loot
+ok    a countdown comes before the first picture
+ok    the countdown is at most the wait
+ok    the picture arrives
+ok    the view starts after the wait, not before
+ok    every picture is of the live game (no delay)
+ok    pictures arrive in order
+ok    a picture has every castle, inside
+ok    a picture shows every place of the forest with its true state
+ok    a picture says who has fallen
+ok    pictures match X's real castle at that moment (2 compared)
+ok    movers in a picture carry no route, target or arrival
+ok    nobody still playing got a spectator picture or countdown
+ok    X's and Z's traffic never mentions the other castles' insides
+ok    Y only ever got its own castle state
+ok    a guest cannot add a bot
+ok    the host seats a bot
+ok    everyone sees the bot as a bot, with its colour name and level
+ok    a guest cannot remove the bot
+ok    the host cannot remove a human
+ok    the host removes and seats a hard bot instead
+ok    everyone sees it as a hard bot
+ok    a match starts with a bot in it
+ok    no bot can be added or removed once the match is on
+ok    the match cannot be "finished" while a human is still in it
+ok    P and Q only ever got their own castles, never the bots
+ok    no token in anything the room sent about the bot
+ok    nobody was sent the bots castle (yellow)
+ok    two humans and two bots take their seats
+ok    the match starts
+ok    the host sets ×20
+ok    once every human has fallen the room says so
+ok    the guest cannot end the match
+ok    both fallen humans were shown the whole world, and only them
+ok    a fallen guest leaves the room
+ok    their seat is still a human seat (not given to a bot) and the match is still on
+ok    the host ends it: the bots play the rest at once
+ok    the room is over with a result, won by a bot
+ok    only now (the match is over) the ranking names every player kingdom, and they are real ones
+ok    while the match runs no room view carries a kingdom for anybody
+ok    the host got the summary, and the guest who left got nothing more
+ok    it cannot be ended twice
+ok    the humans only ever got their own castles, never a bot castle
+ok    the challenge list has at least six challenges and today's daily one
+ok    a card carries only the public facts (no rival kingdom, no rival deck, no seed)
+ok    the list is the same for everybody
+ok    a challenge cannot be started before joining a room
+ok    the room is made
+ok    an unknown challenge is refused
+ok    a challenge is for one player: a room of two humans refuses it
+ok    a guest cannot start it either
+ok    the first challenge starts
+ok    the room is in the preparation, plays this challenge, with the bots of the definition seated
+ok    the player got only their own castle
+ok    starter rules: the room says so, and the player has no kingdom (castle, map, room views carry no kingdom data)
+ok    no rival kingdom or deck anywhere while the match runs (castle rivals, room views)
+ok    the challenge cannot be started again while it is on
+ok    no result before the match is over
+ok    the player sets ×20
+ok    the match came to its end (or to the point where the player may end it)
+ok    the challenge ended by itself (the clock, or a few seconds after its player fell)
+ok    nobody can "finish" a challenge by hand (and it is over anyway)
+ok    the player got exactly one result: stars 0-3, every goal of the definition, the win goal first among them
+ok    a match that was not won has no stars
+ok    the result names no rival kingdom beyond the ranking the end of every match shows
+ok    back to the lobby, and the same challenge starts again from scratch
+ok    with "full rules" the same card has its kingdom and no starter flag
+ok    the second try is a fresh preparation with the same bots (not more of them)
+ok    "daily" starts today's challenge
+ok    and the room says which day's it is
+ok    an ordinary match has no challenge id and was never sent a challenge result
+
+All checks passed.
+done

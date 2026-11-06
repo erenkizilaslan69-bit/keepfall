@@ -1,0 +1,60 @@
+Ayar dosyası: C:\Users\Eren\Desktop\Cladue Projeleri\Keepfall\config\balance.json
+Bot maçları: 400 maç · 2 oyuncu · 15 dk (5+10) · zorluk: karisik · tohum: 1
+
+1. Sonuçlar
+───────────
+   Elemeyle biten: 285/400 (%71,3) · süre sonunda biten: 115
+   Ortalama maç süresi: 10,6 dk (oyun saati)
+   Hiç kale saldırısı olmayan maç: 0/400 (%0,0)
+   İlk elemenin zamanı (savaş başlangıcından): 3,8 dk (285 maçta eleme oldu)
+   Işınlanma (süreklilik) ihlali: 0 (hedef 0; ihlalli maç: 0)
+
+   Zorluk  Koltuk  Kazanma payı  Elenme  Ort. son nüfus
+   ------  ------  ------------  ------  --------------
+   Kolay      400         %23,3   %65,5            18,6
+   Orta       400         %76,8    %5,8            33,4
+   Orta bir koltuk başına kazanma oranı Kolay'ın 3,3 katı.
+
+2. Ekonomi ve ordu
+──────────────────
+   Zorluk  Nüfus savaş başı  Asker savaş başı  Depo odun+demir savaş başı  Zirve nüfus  Son nüfus  Son asker  Paralı oranı savaş başı  Paralı oranı maç sonu  En büyük saldırı ordusu  Ort. saldırı ordusu
+   ------  ----------------  ----------------  --------------------------  -----------  ---------  ---------  -----------------------  ---------------------  -----------------------  -------------------
+   Kolay               32,2               9,3                         100         34,6       18,6        4,9                    %40,1                  %10,0                       16                  6,6
+   Orta                39,4              19,9                          96         42,5       33,4       17,4                    %41,5                  %25,4                       17                  7,8
+   Nüfus/asker savaş başlarken (hazırlığın sonu), zirve ve maç sonu; askerler yoldakiler dahil.
+
+3. Savaş
+────────
+   Zorluk  Kale saldırısı/maç  Pusu/maç  Ölen asker  Öldürülen düşman  Savunma tepkisi/maç  Yeni hedefe yönelme/maç  Süvari baskını/maç
+   ------  ------------------  --------  ----------  ----------------  -------------------  -----------------------  ------------------
+   Kolay                 1,20      0,00        20,1              19,1                  0,5                     0,00                0,00
+   Orta                  2,17      0,08        17,0              23,5                  3,2                     0,00                0,16
+   Maç başına: kale savaşı 2,74 · yol savaşı 0,97
+
+4. Orman
+────────
+   Zorluk  Kazanılan altın  Harcanan altın  Paralı asker  Köy yağması  Kamp saldırısı  Büyük kamp  Gözcü sandığı  Casusluk
+   ------  ---------------  --------------  ------------  -----------  --------------  ----------  -------------  --------
+   Kolay               179             167           5,8          2,4             1,3        0,00            7,3       2,7
+   Orta                333             317          10,7          2,9             1,3        0,00            9,7       6,2
+   Maç sonunda kullanılmış yerler: sandık %100,0 · köy %99,9 · küçük kamp %41,5 · büyük kamp %0,0
+   Kamp savaşlarının kazanılma oranı: %78,0 (850 savaş)
+
+5. Kazananın stratejisi
+───────────────────────
+   Strateji                             Koltuk  Kazanan  Kazanma oranı  Kazananlar içinde pay
+   -----------------------------------  ------  -------  -------------  ---------------------
+   ormancı (köy+kamp ≥ 4, altın ≥ 150)     405      269          %66,4                  %65,3
+   paralı (≥ 6 kiralık)                    566      374          %66,1                  %90,8
+   saldırgan (≥ 1 kale saldırısı)          668      395          %59,1                  %95,9
+   savunmacı (hiç saldırmadı)              132       17          %12,9                   %4,1
+   pusucu (≥ 1 pusu)                        30       26          %86,7                   %6,3
+   büyük ordu (savaşa ≥ 15 asker)          406      313          %77,1                  %76,0
+   Berabere biten maçta (süre sonunda en çok nüfus aynıysa) birden çok kazanan sayılır.
+
+Özet
+────
+  ! Orta bot Kolay'ı yeterince yenmiyor (koltuk başına kazanma: Orta %76,8, Kolay %23,3).
+  ! Büyük kamp hemen hiç temizlenmiyor (%0,0).
+
+Süre: 31,2 sn

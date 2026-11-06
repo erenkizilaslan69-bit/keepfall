@@ -42,7 +42,7 @@ Bot dengesi: `BattleSim bot --mac 400 --zorluk karisik|bekleyen|orta|zor-orta` (
 
 ## Başlangıç modu ve sıra sonrası denge (2026-11-07)
 - **Başlangıç modu** (tek insanlı oda): krallık yok, klasik deste, savaş sırası kilitli (`GameState.RowsLocked`, istemcide `html.kf-starter` sıra seçicileri gizler). Hızlı oyna'nın ilk 3 maçı + Meydan Okuma ilk iki kart (`starter: true`); ayarlarda "Tam kurallarla oyna" (`prefs.fullRules`, hub `StartChallengeFullRules`) kapatır. Çok insanlı oda etkilenmez. Hub'a isteğe bağlı parametre EKLEME (SignalR reddeder), ayrı metot aç.
-- **Sıra sonrası denge**: `docs/denge-sira-sonrasi.md` (deste sd 7,6→12,4, en iyi %73; Zor vs Orta %70). Ana öneri `combat.meleeActiveRows: 2` onay bekliyor (anahtar kodda, balance.json'da yok).
+- **Sıra sonrası denge**: `docs/denge-sira-sonrasi.md` (deste sd 7,6→12,4, en iyi %73; Zor vs Orta %70). `combat.meleeActiveRows: 2` UYGULANDI (balance.json, kullanıcı onayı 2026-11-07; ikinci sıra da vurur, oynatma da gösterir). Sonrası: sd 9,2, en iyi %75, Zor vs Orta %69,9; okçu hasarı 8 önerisi yapılmadı.
 
 ## Bilinen açık konular
 - **Okçu hâlâ biraz güçlü**: deste turnuvalarında Okçulu desteler ortalama ~%52 ve en iyi 5 deste içinde her turda; tam çözülmedi (hasar 9, can 68'e inmişti). Yeni ayar turunda önce okçu içeren desteleri izle.
