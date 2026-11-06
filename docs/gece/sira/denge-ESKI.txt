@@ -1,0 +1,198 @@
+Ayar dosyası: C:\Users\Eren\Desktop\Cladue Projeleri\Keepfall\config\balance.json
+Bütçe: eşit kişi sayısı · tohum: 12345
+
+1. Birlikler (ayar dosyasından)
+───────────────────────────────
+   Birlik    Can  Hasar  Aralık   DPS  Sıra  Menzil  Kaynak*  Can×DPS
+   --------  ---  -----  ------  ----  ----  ------  -------  -------
+   Okçu       68      9    1,2s  7,50  arka    uzak    10,50      510
+   Kılıçlı   100    8,5    1,0s  8,50    ön   yakın    11,50      850
+   Mızrakçı   90     10    1,2s  8,33    ön   yakın     8,50      750
+   Kalkanlı  135      7    1,3s  5,38    ön   yakın    11,00      727
+   Keşiş      60      0    1,5s  0,00  arka    uzak    10,50        0
+   Mancınık   50     17    3,0s  5,67  arka    uzak    15,00      283
+   Süvari     90      9    1,0s  9,00    ön   yakın    15,50      810
+  * Kaynak = odun karşılığı (demir ve yemek, üretim hızına göre oduna çevrilir).
+
+2. Düello: 10 satır birliği vs 10 sütun birliği — satırın kazanma oranı
+───────────────────────────────────────────────────────────────────────
+               Okçu  Kılıçlı  Mızrakçı  Kalkanlı   Keşiş  Mancınık  Süvari
+   --------  ------  -------  --------  --------  ------  --------  ------
+   Okçu           —   %100,0     %37,5      %0,0  %100,0      %4,8    %0,0
+   Kılıçlı     %0,0        —    %100,0     %99,0  %100,0    %100,0   %91,5
+   Mızrakçı   %62,0     %0,0         —    %100,0  %100,0     %59,3  %100,0
+   Kalkanlı  %100,0     %0,0      %0,0         —  %100,0     %52,5  %100,0
+   Keşiş       %0,0     %0,0      %0,0      %0,0       —      %0,0    %0,0
+   Mancınık   %98,3     %0,0     %40,0     %48,8  %100,0         —    %0,0
+   Süvari    %100,0     %7,0      %0,0      %0,0  %100,0    %100,0       —
+
+   10 satır birliğini yenmek (≥%50) için gereken sütun birliği sayısı:
+             Okçu  Kılıçlı  Mızrakçı  Kalkanlı  Keşiş  Mancınık  Süvari
+   --------  ----  -------  --------  --------  -----  --------  ------
+   Okçu         —       14        10         7    >40        10       7
+   Kılıçlı      8        —        16        12    >40        13      11
+   Mızrakçı    11        7         —        16    >40        11      21
+   Kalkanlı    15        9         7         —    >40        11      14
+   Keşiş        1        1         1         1      —         1       1
+   Mancınık    12        8        10        10    >40         —       6
+   Süvari      15       10         5         8    >40        20       —
+   (10'dan küçük = sütun birliği daha güçlü; 10'dan büyük = satır birliği daha güçlü.)
+
+   Karşılık kontrolü: 10 avantajlı birliği yenmek için gereken dezavantajlı birlik (hedef 13–15)
+   Avantajlı  Karşısındaki  Çarpan        Başabaş   Durum
+   ---------  ------------  ------------  --------  ----------
+   Okçu       Kılıçlı       ×1,5 / ×0,75  10 : 14   hedefte
+   Okçu       Keşiş         ×1,5 / ×1     10 : >40  HEDEF DIŞI
+   Kılıçlı    Mızrakçı      ×1,5 / ×0,75  10 : 16   HEDEF DIŞI
+   Kılıçlı    Keşiş         ×1,5 / ×1     10 : >40  HEDEF DIŞI
+   Kılıçlı    Mancınık      ×1,5 / ×1     10 : 13   hedefte
+   Mızrakçı   Kalkanlı      ×1,5 / ×0,75  10 : 16   HEDEF DIŞI
+   Mızrakçı   Süvari        ×2 / ×0,5     10 : 21   HEDEF DIŞI
+   Kalkanlı   Okçu          ×1 / ×0,6     10 : 15   hedefte
+   Kalkanlı   Süvari        ×1,5 / ×0,75  10 : 14   hedefte
+   Mancınık   Okçu          ×1,25 / ×1    10 : 12   HEDEF DIŞI
+   Mancınık   Keşiş         ×1,25 / ×1    10 : >40  HEDEF DIŞI
+   Süvari     Okçu          ×1,5 / ×0,75  10 : 15   hedefte
+   Süvari     Keşiş         ×1,5 / ×1     10 : >40  HEDEF DIŞI
+   Süvari     Mancınık      ×1,5 / ×0,5   10 : 20   HEDEF DIŞI
+
+3. Rastgele turnuva: 3000 maç, ordu büyüklüğü 10–30
+───────────────────────────────────────────────────
+   Birlik    Ort. pay  Asker başı kazanma  Baskın ordu kazanma  Korelasyon  Hayatta kalma  Hasar/asker  Hasar/kaynak        Karar
+   --------  --------  ------------------  -------------------  ----------  -------------  -----------  ------------  -----------
+   Okçu         %14,4               %42,1          %36,9 (290)       -0,16          %21,9           74           7,0        ZAYIF
+   Kılıçlı      %14,3               %61,3          %78,2 (285)       +0,23          %37,2           90           7,8  FAZLA GÜÇLÜ
+   Mızrakçı     %14,4               %58,6          %73,0 (289)       +0,18          %36,2           94          11,0  FAZLA GÜÇLÜ
+   Kalkanlı     %14,2               %53,9          %61,0 (282)       +0,09          %35,9           68           6,1      dengeli
+   Keşiş        %14,5               %25,5           %5,1 (275)       -0,52          %11,8            0           0,0        ZAYIF
+   Mancınık     %14,2               %53,4          %60,9 (294)       +0,06          %28,7          105           7,0      dengeli
+   Süvari       %14,2               %55,6          %59,2 (309)       +0,12          %31,1           88           5,7  FAZLA GÜÇLÜ
+   Okçu, önünde en az 1 yakın dövüşçü olan ordularda: asker başı %43,4, ordu kazanma %46,7 (3564 ordu)
+   Keşiş, önünde en az 1 yakın dövüşçü olan ordularda: asker başı %30,6, ordu kazanma %41,6 (3592 ordu)
+   Mancınık, önünde en az 1 yakın dövüşçü olan ordularda: asker başı %51,5, ordu kazanma %48,8 (3532 ordu)
+   Beraberlik: 3 · ortalama savaş süresi: 15,9 sn
+   Asker başı kazanma: rastgele seçilen bir askerin ordusunun kazanma oranı. Dengede ≈%50.
+   Baskın ordu: o birliğin en az %50 olduğu ordular (parantezde ordu sayısı).
+   Korelasyon: o birlikten rakipten fazla almanın sonuca etkisi (+ = iyi, − = kötü).
+
+4. Kompozisyon ligi: 60 ordu (20 birlik), herkes herkesle 4 kez
+───────────────────────────────────────────────────────────────
+   Sıra  Kazanma  Ordu            Kompozisyon
+   ----  -------  --------------  ---------------------------------------------------------------
+   1       %86,9  Rastgele #30    2 Okçu, 7 Kılıçlı, 4 Mızrakçı, 4 Kalkanlı, 3 Süvari
+   2       %85,2  Rastgele #5     2 Kılıçlı, 7 Mızrakçı, 6 Kalkanlı, 5 Süvari
+   3       %83,9  Rastgele #7     12 Kılıçlı, 6 Mızrakçı, 2 Kalkanlı
+   4       %83,5  Rastgele #47    1 Okçu, 8 Kılıçlı, 1 Mızrakçı, 3 Kalkanlı, 3 Mancınık, 4 Süvari
+   5       %83,1  Rastgele #3     20 Kılıçlı
+   6       %82,6  Sadece Kılıçlı  20 Kılıçlı
+   7       %82,2  Rastgele #18    20 Kılıçlı
+   8       %80,5  Rastgele #4     1 Okçu, 12 Mızrakçı, 5 Kalkanlı, 2 Süvari
+   …
+   56       %8,9  Rastgele #33    1 Okçu, 1 Kılıçlı, 1 Mızrakçı, 5 Kalkanlı, 9 Keşiş, 3 Mancınık
+   57       %5,9  Rastgele #29    2 Okçu, 1 Kılıçlı, 4 Mızrakçı, 1 Kalkanlı, 10 Keşiş, 2 Süvari
+   58       %1,7  Sadece Keşiş    20 Keşiş
+   59       %1,7  Rastgele #26    20 Keşiş
+   60       %1,7  Rastgele #37    20 Keşiş
+   Sabit ordular:
+     Sadece Okçu       %32,2  (45. sırada)
+     Sadece Kılıçlı    %82,6  (6. sırada)
+     Sadece Mızrakçı   %76,3  (13. sırada)
+     Sadece Kalkanlı   %60,2  (21. sırada)
+     Sadece Keşiş       %1,7  (58. sırada)
+     Sadece Mancınık   %53,4  (28. sırada)
+     Sadece Süvari     %52,1  (29. sırada)
+     Eşit karışım      %34,3  (43. sırada)
+
+5. Sıra testi: 5 Kalkanlı + 5 X (yakın X önde, okçu arkada) — satırın kazanma oranı (200 tekrar)
+────────────────────────────────────────────────────────────────────────────────────────────────
+   X            Okçu  Kılıçlı  Mızrakçı    Keşiş  Mancınık   Süvari  Ort. kazanma  X hasarı  X hayatta
+   --------  -------  -------  --------  -------  --------  -------  ------------  --------  ---------
+   Okçu      (%52,0)    %29,5      %0,0   %100,0      %0,0     %0,0         %25,9       462      1,3/5
+   Kılıçlı     %70,5  (%45,0)     %87,0   %100,0      %5,0    %97,0         %71,9       580      2,0/5
+   Mızrakçı   %100,0    %14,5   (%55,0)   %100,0     %48,0   %100,0         %72,5       652      2,4/5
+   Keşiş        %0,0     %0,0      %0,0  (%42,5)      %0,0     %0,0          %0,0         0      0,4/5
+   Mancınık   %100,0    %97,5     %56,0   %100,0   (%45,5)     %0,0         %70,7       700      3,0/5
+   Süvari     %100,0     %1,0      %0,0   %100,0    %100,0  (%50,5)         %60,2       494      1,6/5
+   Ort. kazanma: ayna maç (parantezli) hariç. X hasarı/hayatta: X birliklerinin savaş başına ortalaması.
+
+   Varyant: rakipte 2 okçu var (rakip: 5 Kalkanlı + 3 Y + 2 Okçu, rakip okçuları önce Okçu vurur)
+   X         3 Kılıçlı+2 Okçu  3 Mızrakçı+2 Okçu  3 Keşiş+2 Okçu  3 Mancınık+2 Okçu  3 Süvari+2 Okçu  Ort. kazanma  X hasarı  X hayatta
+   --------  ----------------  -----------------  --------------  -----------------  ---------------  ------------  --------  ---------
+   Okçu                  %5,0               %0,5           %32,0               %0,0             %0,0          %7,5       292      0,0/5
+   Kılıçlı              %58,5              %72,5          %100,0              %29,0            %91,0         %70,2       584      1,7/5
+   Mızrakçı             %75,0              %94,5          %100,0              %93,5           %100,0         %92,6       699      2,8/5
+   Keşiş                 %0,0               %0,0            %0,0               %0,0             %0,0          %0,0         0      0,0/5
+   Mancınık            %100,0             %100,0          %100,0             %100,0             %3,0         %80,6       735      3,9/5
+   Süvari               %53,0               %0,0          %100,0             %100,0            %96,0         %69,8       550      1,7/5
+   Ort. kazanma: ayna maç (parantezli) hariç. X hasarı/hayatta: X birliklerinin savaş başına ortalaması.
+
+6. Okçu hedefi: her ayar birbirine karşı, rastgele ordular (500 ordu çifti × 2 taraf) — satırın kazanma oranı
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                  ön sıra  önce Okçu  önce Kılıçlı  önce Mızrakçı  önce Kalkanlı  önce Keşiş  önce Mancınık  önce Süvari  Ortalama
+   -------------  -------  ---------  ------------  -------------  -------------  ----------  -------------  -----------  --------
+   ön sıra              —      %49,4         %46,1          %47,9          %53,3       %48,5          %46,6        %50,0     %48,8
+   önce Okçu        %50,6          —         %47,8          %50,1          %55,2       %48,9          %47,6        %50,4     %50,1
+   önce Kılıçlı     %53,9      %52,2             —          %52,3          %57,0       %52,1          %51,2        %53,4     %53,1
+   önce Mızrakçı    %52,1      %49,9         %47,7              —          %55,2       %51,4          %48,6        %51,1     %50,9
+   önce Kalkanlı    %46,7      %44,8         %43,1          %44,8              —       %45,2          %42,8        %47,3     %45,0
+   önce Keşiş       %51,5      %51,1         %48,0          %48,6          %54,8           —          %47,4        %50,2     %50,2
+   önce Mancınık    %53,4      %52,4         %48,9          %51,4          %57,2       %52,6              —        %53,4     %52,8
+   önce Süvari      %50,0      %49,6         %46,7          %48,9          %52,7       %49,9          %46,6            —     %49,2
+   ! = satırdaki ayar sütundakini %65'in üstünde yeniyor.
+
+7. Haydut kampları: kampı yenmek için kaç asker gerekir?
+────────────────────────────────────────────────────────
+   Küçük kamp: 6 Kılıçlı, 1 Okçu (7 haydut)
+   Ordu                       Başabaş (≥%50)  ≥%90 için  Kayıp @başabaş  Kayıp @%90
+   -------------------------  --------------  ---------  --------------  ----------
+   sadece kılıçlı                          8          8       3,5 (%44)   3,5 (%44)
+   karma (eşit; okçu arkada)               8          8       3,0 (%38)   3,0 (%38)
+
+   Küçük kamp — hedef bandında (7–9 asker):
+   Ordu                       Asker  Kazanma  Ort. kayıp  Kayıp oranı
+   -------------------------  -----  -------  ----------  -----------
+   sadece kılıçlı                 7    %18,5         4,3        %61,8
+   sadece kılıçlı                 8    %99,8         3,5        %43,9
+   sadece kılıçlı                 9   %100,0         2,4        %27,0
+   karma (eşit; okçu arkada)      7    %16,3         4,8        %68,4
+   karma (eşit; okçu arkada)      8   %100,0         3,0        %37,8
+   karma (eşit; okçu arkada)      9   %100,0         2,3        %25,2
+
+   Büyük kamp: 8 Kılıçlı, 4 Kalkanlı, 4 Okçu (16 haydut)
+   Ordu                       Başabaş (≥%50)  ≥%90 için  Kayıp @başabaş  Kayıp @%90
+   -------------------------  --------------  ---------  --------------  ----------
+   sadece kılıçlı                         18         18      10,8 (%60)  10,8 (%60)
+   karma (eşit; okçu arkada)              17         18       9,8 (%58)   7,5 (%42)
+
+   Büyük kamp — hedef bandında (18–22 asker):
+   Ordu                       Asker  Kazanma  Ort. kayıp  Kayıp oranı
+   -------------------------  -----  -------  ----------  -----------
+   sadece kılıçlı                18    %98,0        10,8        %60,2
+   sadece kılıçlı                20   %100,0         7,4        %37,1
+   sadece kılıçlı                22   %100,0         5,7        %25,8
+   karma (eşit; okçu arkada)     18    %99,0         7,5        %41,6
+   karma (eşit; okçu arkada)     20   %100,0         5,4        %27,0
+   karma (eşit; okçu arkada)     22   %100,0         4,2        %18,9
+
+   Başabaş = kampı en az yarı savaşta yenen en küçük ordu. Kayıp = kazanılan savaşlarda ölen asker (kiralık/ham fark yok).
+   Hedef: küçük kamp 7–9 karma askerle, büyük kamp 18–22 iyi dizilmiş askerle; kazanınca kayıp ≈ üçte bir.
+
+Özet
+────
+  Güç sırası (asker başı kazanma): Kılıçlı %61,3 > Mızrakçı %58,6 > Süvari %55,6 > Kalkanlı %53,9 > Mancınık %53,4 > Okçu %42,1 > Keşiş %25,5
+  ! Kılıçlı fazla güçlü görünüyor.
+  ! Mızrakçı fazla güçlü görünüyor.
+  ! Süvari fazla güçlü görünüyor.
+  ! Okçu zayıf görünüyor.
+  ! Keşiş zayıf görünüyor.
+  ! Karşılık: Okçu → Keşiş başabaş 10 : >40 (hedef 13–15).
+  ! Karşılık: Kılıçlı → Mızrakçı başabaş 10 : 16 (hedef 13–15).
+  ! Karşılık: Kılıçlı → Keşiş başabaş 10 : >40 (hedef 13–15).
+  ! Karşılık: Mızrakçı → Kalkanlı başabaş 10 : 16 (hedef 13–15).
+  ! Karşılık: Mızrakçı → Süvari başabaş 10 : 21 (hedef 13–15).
+  ! Karşılık: Mancınık → Okçu başabaş 10 : 12 (hedef 13–15).
+  ! Karşılık: Mancınık → Keşiş başabaş 10 : >40 (hedef 13–15).
+  ! Karşılık: Süvari → Keşiş başabaş 10 : >40 (hedef 13–15).
+  ! Karşılık: Süvari → Mancınık başabaş 10 : 20 (hedef 13–15).
+
+Süre: 26,4 sn

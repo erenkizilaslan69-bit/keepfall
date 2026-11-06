@@ -1,0 +1,65 @@
+Ayar dosyası: C:\Users\Eren\AppData\Local\Temp\claude\fe2dbdb2a9eb90c8\28b16e94-c4d3-4769-977f-83e5da621f43\scratchpad\A-rows2.json
+Deste turnuvası: 35 deste, 1750 çift × 1 maç = 1750 maç · bot: orta · tohum 1
+  50/1750 çift  100/1750 çift  150/1750 çift  200/1750 çift  250/1750 çift  300/1750 çift  350/1750 çift  400/1750 çift  450/1750 çift  500/1750 çift  550/1750 çift  600/1750 çift  650/1750 çift  700/1750 çift  750/1750 çift  800/1750 çift  850/1750 çift  900/1750 çift  950/1750 çift  1000/1750 çift  1050/1750 çift  1100/1750 çift  1150/1750 çift  1200/1750 çift  1250/1750 çift  1300/1750 çift  1350/1750 çift  1400/1750 çift  1450/1750 çift  1500/1750 çift  1550/1750 çift  1600/1750 çift  1650/1750 çift  1700/1750 çift  1750/1750 çift
+  2 sn'den uzun süren maç: 1747 (toplam 1750)
+      39,5 sn · oyun 15,0 dk · berabere savaş 0 · kilicli+kalkanli+mancinik+suvari vs okcu+mizrakci+mancinik+suvari
+      36,5 sn · oyun 15,0 dk · berabere savaş 0 · okcu+mizrakci+mancinik+suvari vs mizrakci+kalkanli+kesis+mancinik
+      36,1 sn · oyun 15,0 dk · berabere savaş 0 · okcu+kilicli+mizrakci+kalkanli vs okcu+kilicli+kesis+suvari
+      34,4 sn · oyun 15,0 dk · berabere savaş 0 · mizrakci+kalkanli+kesis+mancinik vs kilicli+kalkanli+mancinik+suvari
+      33,9 sn · oyun 15,0 dk · berabere savaş 0 · kilicli+kalkanli+kesis+mancinik vs okcu+kilicli+mizrakci+kalkanli
+      32,7 sn · oyun 15,0 dk · berabere savaş 0 · okcu+mizrakci+kesis+mancinik vs okcu+mizrakci+kalkanli+mancinik
+      32,5 sn · oyun 12,9 dk · berabere savaş 0 · mizrakci+kalkanli+mancinik+suvari vs kilicli+mizrakci+kalkanli+mancinik
+      31,0 sn · oyun 15,0 dk · berabere savaş 0 · okcu+mizrakci+kalkanli+kesis vs okcu+kilicli+mizrakci+suvari
+      30,3 sn · oyun 15,0 dk · berabere savaş 0 · okcu+kilicli+kalkanli+suvari vs okcu+mizrakci+kalkanli+suvari
+      29,0 sn · oyun 15,0 dk · berabere savaş 0 · okcu+kilicli+kesis+suvari vs okcu+mizrakci+kalkanli+mancinik
+      28,9 sn · oyun 15,0 dk · berabere savaş 0 · okcu+kilicli+kalkanli+kesis vs mizrakci+kalkanli+mancinik+suvari
+      28,1 sn · oyun 15,0 dk · berabere savaş 0 · kilicli+mizrakci+kalkanli+mancinik vs okcu+mizrakci+kalkanli+kesis
+
+Desteler (ortalama kazanma payı, tüm diğer destelere karşı):
+   1. % 72,3  Okçu + Kalkanlı + Keşiş + Mancınık
+   2. % 67,3  Okçu + Kalkanlı + Keşiş + Süvari
+   3. % 63,0  Okçu + Mızrakçı + Keşiş + Süvari
+   4. % 62,1  Okçu + Mızrakçı + Keşiş + Mancınık
+   5. % 57,7  Kılıçlı + Keşiş + Mancınık + Süvari
+   6. % 57,6  Okçu + Mızrakçı + Kalkanlı + Keşiş
+   7. % 56,2  Okçu + Kılıçlı + Mızrakçı + Keşiş
+   8. % 55,9  Okçu + Mızrakçı + Kalkanlı + Mancınık
+   9. % 55,5  Okçu + Kılıçlı + Keşiş + Süvari
+  10. % 55,0  Kılıçlı + Mızrakçı + Kalkanlı + Süvari
+  11. % 54,8  Okçu + Keşiş + Mancınık + Süvari
+  12. % 52,7  Kılıçlı + Mızrakçı + Keşiş + Mancınık
+  13. % 52,6  Okçu + Kılıçlı + Keşiş + Mancınık
+  14. % 51,8  Okçu + Kılıçlı + Mızrakçı + Süvari
+  15. % 51,4  Kalkanlı + Keşiş + Mancınık + Süvari
+  16. % 50,5  Okçu + Kılıçlı + Kalkanlı + Süvari
+  17. % 50,0  Kılıçlı + Mızrakçı + Keşiş + Süvari
+  18. % 49,5  Kılıçlı + Mızrakçı + Kalkanlı + Keşiş
+  19. % 49,1  Kılıçlı + Kalkanlı + Keşiş + Süvari
+  20. % 48,9  Okçu + Kalkanlı + Mancınık + Süvari
+  21. % 47,1  Kılıçlı + Mızrakçı + Kalkanlı + Mancınık
+  22. % 47,0  Okçu + Mızrakçı + Kalkanlı + Süvari
+  23. % 46,4  Kılıçlı + Kalkanlı + Keşiş + Mancınık
+  24. % 46,0  Okçu + Kılıçlı + Mızrakçı + Kalkanlı
+  25. % 43,9  Okçu + Kılıçlı + Kalkanlı + Keşiş
+  26. % 43,3  Mızrakçı + Kalkanlı + Keşiş + Süvari
+  27. % 43,1  Okçu + Kılıçlı + Kalkanlı + Mancınık
+  28. % 42,7  Mızrakçı + Kalkanlı + Keşiş + Mancınık
+  29. % 42,7  Okçu + Mızrakçı + Mancınık + Süvari
+  30. % 41,4  Okçu + Kılıçlı + Mızrakçı + Mancınık
+  31. % 40,4  Kılıçlı + Mızrakçı + Mancınık + Süvari
+  32. % 39,1  Okçu + Kılıçlı + Mancınık + Süvari
+  33. % 38,2  Kılıçlı + Kalkanlı + Mancınık + Süvari
+  34. % 37,9  Mızrakçı + Keşiş + Mancınık + Süvari
+  35. % 36,1  Mızrakçı + Kalkanlı + Mancınık + Süvari
+
+  En iyi: %72,3 · en kötü: %36,1 · ortalama %50,0
+  %58'in üstünde: 4 deste · %42'nin altında: 6 deste
+  Birim başına: her birimi içeren desteler ortalaması
+    Okçu      %52,6 (en iyi 5 deste içinde 4, içeren 20 deste, en iyisi %72,3, en kötüsü %39,1)
+    Kılıçlı   %48,3 (en iyi 5 deste içinde 1, içeren 20 deste, en iyisi %57,7, en kötüsü %38,2)
+    Mızrakçı  %48,9 (en iyi 5 deste içinde 2, içeren 20 deste, en iyisi %63,0, en kötüsü %36,1)
+    Kalkanlı  %49,6 (en iyi 5 deste içinde 2, içeren 20 deste, en iyisi %72,3, en kötüsü %36,1)
+    Keşiş     %53,3 (en iyi 5 deste içinde 5, içeren 20 deste, en iyisi %72,3, en kötüsü %37,9)
+    Mancınık  %48,2 (en iyi 5 deste içinde 3, içeren 20 deste, en iyisi %72,3, en kötüsü %36,1)
+    Süvari    %49,0 (en iyi 5 deste içinde 3, içeren 20 deste, en iyisi %67,3, en kötüsü %36,1)
+  Tablo: docs/gece/sira/deste-A-rows2.md
