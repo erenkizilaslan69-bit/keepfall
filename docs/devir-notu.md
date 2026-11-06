@@ -129,6 +129,11 @@ Bu iş için hazır prompt sohbette verildi (adımlar 0–7: envanter, renk=oyun
 - **Ses:** çınlayanlar tok vuruşa çevrildi (kılıç, ulak, uyarı, onay, örs, kapı); `docs/ses-lisanslari.md` sonu.
 - 5090 son build'le çalışıyor (`http://192.168.1.3:5090/?debug=1`). Yenilemek: sunucu kodu değiştiğinden `dotnet publish src/Keepfall.Server -c Release -o ..\keepfall-dev-lan\server` (önce 5090 işlemini durdur).
 
+## 4d. İnce ayar 2 (2026-11-06): okçu sesi, sur/kol, çakışma, sandık (`docs/ince-ayar-2-raporu.md`)
+
+- **Okçu sesi** gerçek yay (CC0 Weapon Textures) + `arrow-hit`; `MAX_SAME` ses sınırı. **Kol** 4 genişlik, mancınık ortada, süvari arkada; **sur halkası** yanındaki yolda kol kayar/sıkışır (`Movers.setWalls`/`fitRow`). **L1–L3 çakışmalar** açıldı, L4 eski yerleşim; `tools/layout-check.steps.json`. **Boş sandık** etiketsiz.
+- Seviye 4 çakışma denetimi hâlâ uyarı verir (eski yerleşim, bilerek).
+
 ## 5. Oyun mantığı (sonraki tasarım konuşması — henüz karar yok)
 
 Parti/sosyal strateji yönü için konuşulacaklar:

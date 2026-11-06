@@ -1,0 +1,11 @@
+# İnce ayar turu 2 (2026-11-06, dev)
+
+Görüntüler `art/shots/incayar2/` (repoya girmez): `seviye-L1-L4.png` (L1–L4 temas sayfası), `sonra-sur-wall.png` (kol).
+
+1. **Okçu sesi** (`audio.ts`, `docs/ses-lisanslari.md`): çınlamanın kaynağı geçici hışırtı kaydıydı; kaldırıldı. Yerine gerçek yay: "Medieval sound effects – Weapon Textures" (CC0) kütüphanesinden English Longbow Shoot (4 atış) + Scythian Recurve ok vızıltısı, 0,5 sn'lik karışım (`bow-1..4`); okun saplanması `arrow-hit` (tok vuruş, `arrowHit`). Ses sınırı `MAX_SAME`: aynı anda en çok 3 ok, 3 saplanma, 4 kılıç, 3 kalkan, 3 ölüm sesi; her çalışta perde ±%10, ses ±%12 rastgele (zaten vardı). Yüzlerce okçu tek bir dolgun volley gibi duyulur. Dinleyemedim (yalnız `audio-check`: yüklenir, çözülür).
+2. **Sur/kule üstüne binme:** neden sütunun yola göre geniş olması ve yolun gate tarafındaki surun 40 px yanından geçmesiydi. Sur halkalarının dış kenarı `Movers.setWalls`'a verilir; sütunun her sırası yolun iki yanındaki boşluğu ölçer (`fitRow`): boş tarafa kayar, yer yoksa en çok yarıya kadar sıkışır. Kale kapısından çıkarken (halkanın içinde) kısıtlama yok. Derinlik sırası değişmedi (y'ye göre: kule önündeyse önde, arkasındaysa arkada). `corner-check` sur durumunu ölçer (30 askerin 0'ı surda).
+3. **Kol:** sıra genişliği 196 px (4 piyade yan yana, 2 mancınık, 3 süvari); sıra derinlikleri kısaldı (34 px); 30 asker ≈ 8 sıra (eskiden 15). Sıralama: kalkanlı, kılıçlı, mızrakçı, okçu önde; mancınık ortada; keşiş; süvari arkada. Dar yerde sıkışır, açıkta açılır (madde 2'deki `fitRow`), köşede yolu izler.
+4. **Bina çakışması** (`tools/layout-check.steps.json`, `cila-shot` ile): L1–L3'te çiftlik ve oduncu evlerinin aralığı açıldı (222/332/442 ve 222/336), evler üstte sur bandının dışına indi (taban 222), demirhane okçuluğu barakadan ayrıldı (534). L1–L3'te çakışma ve sur ihlali kalmadı. **L4 eski yerleşim:** olduğu gibi (kuleler barakanın önüne, evler üst üste: bilerek, eski görünüm), ölçümde L4'te çakışma çıkıyor; dokunulmadı.
+5. **Boş sandık:** etiket ve tıklama kalkar, yerde yalnız ezilmiş zemin ve soluk bir taş kalır (`Sites.ts`).
+
+Test: tsc temiz, `corner-check` (12 durum, sur dahil), `movers-stall-check`, `audio-check` geçti; rehberli maç ve duman testi sonuçları aşağıda/rapor mesajında.
