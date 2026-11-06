@@ -189,6 +189,10 @@ export class WorldScene extends Phaser.Scene {
     this.sites = new SiteLayer(this, this.labels, (id) => this.select({ kind: 'site', id }));
     this.movers.onSelect = (t) => this.select(t);
     this.movers.setRoads(this.layout.roads.map((r) => r.points));
+    this.movers.setWalls(this.layout.regions.map((r) => { // the outer edge of each castle's wall ring, where a column on the road beside it must keep off
+      const o = toWorld(r.origin), east = r.corner === 'northWest' || r.corner === 'southWest', inset = 40;
+      return { x: o.x + (east ? 4 : 4 + inset), y: o.y + 24, w: 16 * TILE - 8 - inset, h: 12 * TILE - 32 };
+    }));
     this.movers.inReplay = (at) => this.battles?.active.some((b) => Math.hypot(b.at.x - at.x, b.at.y - at.y) < 2.5) ?? false;
     this.fog = new Fog(this, this.layout.size, WATER_FAR);
     this.fx = new Effects(this);

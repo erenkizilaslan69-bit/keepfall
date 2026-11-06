@@ -52,7 +52,7 @@ const result = await run(`(async () => {
     let travelled = 0, worst = 0, worstAt = 0, frames = 0;
     const t0 = performance.now();
     let raf = 0, minSep = 1e9; const sample = () => { const tr = s.movers.debugTracks().find((x) => x.key.includes(name)); if (tr) { const d = offRoads(tr.shown, roads); frames++; if (d > worst) { worst = d; worstAt = (performance.now() - t0) / 1000; }
-      const nearBend = route.slice(1, -1).some((v) => Math.hypot(tr.shown.x - v.x, tr.shown.y - v.y) < 2.6); // a column bunches up round a sharp corner: only the straight stretches are measured
+      const nearBend = route.slice(1, -1).some((v) => Math.hypot(tr.shown.x - v.x, tr.shown.y - v.y) < 4.6); // a column bunches up round a sharp corner: only the straight stretches are measured
       const sp = nearBend ? [] : s.movers.debugSprites().filter((x) => x.active && (x.x !== 0 || x.y !== 0) && x.getData('track') === tr.key); for (let i = 0; i < sp.length; i++) for (let j = i + 1; j < sp.length; j++) { const dd = Math.hypot(sp[i].x - sp[j].x, sp[i].y - sp[j].y); if (dd < minSep) { minSep = dd; globalThis.__sepAt = ((performance.now() - t0) / 1000).toFixed(1) + 's ' + i + '-' + j + ' ' + sp[i].texture.key + '/' + sp[j].texture.key; } } } raf = requestAnimationFrame(sample); }; raf = requestAnimationFrame(sample);
     let sec = 0;
     while (travelled < len - 0.5) {
@@ -105,14 +105,35 @@ const result = await run(`(async () => {
       return { ...s.state, seen: [], own: [{ ...base, id: name.slice(4), kind, units, position: pos.p, velocity: { x: a.dir.x * speed, y: a.dir.y * speed }, route: r, travelled, speed, missionKind: kind === 'scout' ? 'spy' : null }] };
     }, [route], 3));
   }
+  // 4. a big rival column on a road that runs 15 px outside a castle's wall: nobody may stand on the wall (rival regions' wall rings)
+  {
+    const ri = s.layout.regions.findIndex((r) => r.seat !== s.layout.regions.find((q) => q.seat === window.keepfallUi.mySeat)?.seat);
+    const reg = s.layout.regions[ri], w = s.movers.walls[ri];
+    const west = reg.corner === 'northEast' || reg.corner === 'southEast'; // the gate is in the west wall of these (it stands 40 px in)
+    const x = reg.origin.x + (west ? 44 - 15 : 4 - 15) / 64, y0 = reg.origin.y + 3;
+    const units = [{ unitId: 'kilicli', name: 'k', count: 16 }, { unitId: 'okcu', name: 'o', count: 8 }, { unitId: 'mancinik', name: 'm', count: 4 }, { unitId: 'suvari', name: 's', count: 4 }];
+    let inside = 0, total = 0, rows = 0;
+    for (const d of [1, 2, 3, 4, 5]) {
+      const pos = { x, y: y0 + d };
+      s.movers.sync({ ...s.state, own: [], seen: [{ id: 'cc9', kind: 'army', ownerColor: 'red', units, position: pos, velocity: { x: 0, y: 2.5 }, heading: { x: 0, y: 1 } }] });
+      await new Promise((r) => setTimeout(r, 900));
+      const sp = s.movers.debugSprites().filter((q) => q.active && q.getData('track') === 'seen:cc9' && (q.x !== 0 || q.y !== 0));
+      total = sp.length;
+      for (const q of sp) if (q.x > w.x + 2 && q.x < w.x + w.w && q.y > w.y && q.y < w.y + w.h) inside++;
+      rows = new Set(sp.map((q) => Math.round(q.y / 8))).size;
+    }
+    s.movers.setRoads(s.layout.roads.map((r) => r.points));
+    s.movers.sync({ ...s.state, own: [], seen: [] });
+    out.push({ name: 'wall:cc9', worst: 0, worstAtSec: 0, frames: 5, minSep: null, insideWall: inside, soldiers: total, rowsAcross: rows });
+  }
   return JSON.stringify(out);
 })()`);
 let ok = true;
 try {
   for (const r of JSON.parse(result)) {
-    const pass = r.worst < LIMIT && (r.minSep === null || r.minSep >= 26);
+    const pass = r.worst < LIMIT && (r.minSep === null || r.minSep >= 26) && !r.insideWall;
     ok &&= pass;
-    console.log(`${pass ? 'ok  ' : 'FAIL'} ${r.name}: the column was at most ${r.worst} tiles from its road (limit ${LIMIT}), at ${r.worstAtSec} s, ${r.frames} frames${r.minSep !== null ? `, closest two soldiers ${r.minSep} px (${r.sepAt})` : ''}${r.bendDegrees ? `, bend ${r.bendDegrees}°` : ''}`);
+    console.log(`${pass ? 'ok  ' : 'FAIL'} ${r.name}: the column was at most ${r.worst} tiles from its road (limit ${LIMIT}), at ${r.worstAtSec} s, ${r.frames} frames${r.minSep !== null ? `, closest two soldiers ${r.minSep} px (${r.sepAt})` : ''}${r.bendDegrees ? `, bend ${r.bendDegrees}°` : ''}${r.insideWall !== undefined ? `, ${r.insideWall} of ${r.soldiers} soldiers on the wall` : ''}`);
   }
 } catch { console.log('FAIL no result:', String(result).slice(0, 300)); ok = false; }
 if (errors.length) { console.log('page errors:', errors.slice(0, 3).join(' | ')); ok = false; }

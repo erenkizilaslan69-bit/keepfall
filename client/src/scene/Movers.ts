@@ -28,15 +28,15 @@ const RUN: Record<string, { anim: string; scale: number }> = {
   suvari: { anim: 'suvari-run', scale: unitScale('suvari') },
 };
 /** Marching order, front to back. */
-const ORDER = ['suvari', 'kalkanli', 'kilicli', 'mizrakci', 'okcu', 'mancinik', 'kesis'];
+const ORDER = ['kalkanli', 'kilicli', 'mizrakci', 'okcu', 'mancinik', 'kesis', 'suvari']; // shields and blades lead, the catapults march in the middle, the cavalry guards the rear
 const MAX_DRAWN = 30;
 const ROW_GAP = 34; // px: the base distance between two rows (the zone that catches a click sits one row behind the leader)
 /** How much room each kind needs: across the road (px) and along it (px). The catapult is big and the cavalry long; nobody stands on anybody. */
 const FOOT: Record<string, { w: number; d: number }> = {
-  mancinik: { w: 84, d: 92 }, suvari: { w: 54, d: 66 }, kilicli: { w: 44, d: 42 }, kalkanli: { w: 42, d: 42 }, mizrakci: { w: 42, d: 42 }, okcu: { w: 40, d: 40 }, kesis: { w: 38, d: 40 },
+  mancinik: { w: 84, d: 84 }, suvari: { w: 54, d: 60 }, kilicli: { w: 42, d: 34 }, kalkanli: { w: 40, d: 34 }, mizrakci: { w: 40, d: 34 }, okcu: { w: 38, d: 32 }, kesis: { w: 36, d: 34 },
 };
 const FOOT_DEFAULT = { w: 40, d: 40 };
-const ROW_WIDTH = 132; // px: a row is full when its units together would be wider than this
+const ROW_WIDTH = 196; // px: a row is full when its units together would be wider than this (four infantrymen abreast, two catapults, three horsemen)
 
 /** Where each drawn unit stands in the column, in marching order: `back` px behind the leader along the road, `side` px across it. */
 function columnLayout(kinds: string[]): { back: number; side: number }[] {
@@ -132,6 +132,10 @@ export class Movers {
   /** The roads of the map (public, the same for everybody), as polylines in tiles: what others' armies and scouts are walked along between two pictures. */
   setRoads(roads: Vec[][]): void { this.roads = roads; }
   private roads: Vec[][] = [];
+
+  /** The outer edges of the wall rings (scene px): a column outside them keeps off the stone, and squeezes together where the road runs close by. */
+  setWalls(rects: { x: number; y: number; w: number; h: number }[]): void { this.walls = rects; }
+  private walls: { x: number; y: number; w: number; h: number }[] = [];
 
   /** Set by the scene: a battle replay is being played at this place (tiles). The column that walked into it stays hidden meanwhile. */
   inReplay: (at: Vec) => boolean = () => false;
@@ -380,8 +384,10 @@ export class Movers {
     const lead = toWorld(t.shown);
     const h = t.heading, p = { x: -h.y, y: h.x };
     const faceLeft = h.x < -0.1;
+    const fits = new Map<number, { shift: number; scale: number }>(); // per row (its distance back): how the row sits between the walls
     t.sprites.forEach((s, i) => {
-      const at = t.layout[i] ?? { back: 0, side: 0 };
+      const raw = t.layout[i] ?? { back: 0, side: 0 };
+      let at = raw;
       // The column bends with its road: a row stands where the road was its distance back (ours, and now everybody's: the others' walk a road we work out).
       if (t.route && t.shownDist !== undefined && at.back > 0) {
         const want = t.shownDist - at.back / 64;
@@ -389,10 +395,24 @@ export class Movers {
         const first = alongSmooth(t.route, t.cumulative, 0);
         const back = want >= 0 ? alongSmooth(t.route, t.cumulative, want) : { point: { x: first.point.x + first.direction.x * want, y: first.point.y + first.direction.y * want }, direction: first.direction };
         const bp = toWorld(back.point), bn = { x: -back.direction.y, y: back.direction.x };
+        let fit = fits.get(raw.back);
+        if (!fit) {
+          const row = t.layout.filter((l) => l.back === raw.back);
+          fit = this.fitRow(bp, bn, Math.min(...row.map((l) => l.side)) - 22, Math.max(...row.map((l) => l.side)) + 22);
+          fits.set(raw.back, fit);
+        }
+        at = { back: raw.back, side: raw.side * fit.scale + fit.shift };
         const bx = bp.x + bn.x * at.side, by = bp.y + bn.y * at.side;
         s.setPosition(bx, by).setDepth(by).setFlipX(faceLeft);
         return;
       }
+      let fit = fits.get(raw.back);
+      if (!fit) {
+        const row = t.layout.filter((l) => l.back === raw.back);
+        fit = this.fitRow({ x: lead.x - h.x * raw.back, y: lead.y - h.y * raw.back }, p, Math.min(...row.map((l) => l.side)) - 22, Math.max(...row.map((l) => l.side)) + 22);
+        fits.set(raw.back, fit);
+      }
+      at = { back: raw.back, side: raw.side * fit.scale + fit.shift };
       const x = lead.x - h.x * at.back + p.x * at.side;
       const y = lead.y - h.y * at.back + p.y * at.side;
       s.setPosition(x, y).setDepth(y).setFlipX(faceLeft);
@@ -406,6 +426,30 @@ export class Movers {
       html: `<div class="wl-sign"><i class="dot" style="background:${COLOR_CSS[t.color] ?? '#888'}"></i><i class="ico ico-sword"></i><b>${total}</b></div>`,
     });
     t.zone?.setPosition(lead.x - h.x * ROW_GAP, lead.y - h.y * ROW_GAP - 18);
+  }
+
+  /**
+   * A row of soldiers spans from `lo` to `hi` px across the road (negative: to the left). Walls beside the road limit it: the row slides to the side that
+   * is free and, where there is no room even so, closes up (never to less than half). Returns the shift and scale to apply to the row's sideways places.
+   */
+  private fitRow(at: { x: number; y: number }, n: { x: number; y: number }, lo: number, hi: number): { shift: number; scale: number } {
+    if (this.walls.length === 0) return { shift: 0, scale: 1 };
+    const free = (dx: number, dy: number): number => {
+      let best = 160;
+      for (const r of this.walls) {
+        if (at.x > r.x && at.x < r.x + r.w && at.y > r.y && at.y < r.y + r.h) return 160; // inside the ring (coming out of a gate): nothing to keep off
+        const tx = dx === 0 ? [-Infinity, Infinity] : [(r.x - at.x) / dx, (r.x + r.w - at.x) / dx].sort((a, b) => a - b);
+        const ty = dy === 0 ? [-Infinity, Infinity] : [(r.y - at.y) / dy, (r.y + r.h - at.y) / dy].sort((a, b) => a - b);
+        const enter = Math.max(tx[0], ty[0]), leave = Math.min(tx[1], ty[1]);
+        if (enter <= leave && leave > 0 && enter > 0) best = Math.min(best, enter);
+      }
+      return Math.max(0, best - 8);
+    };
+    const right = free(n.x, n.y), left = free(-n.x, -n.y);
+    const lower = -left - lo, upper = right - hi; // the row's middle may move within [lower, upper]
+    if (lower <= upper) return { shift: Math.min(upper, Math.max(lower, 0)), scale: 1 };
+    const scale = Math.max(0.5, (left + right) / (hi - lo));
+    return { shift: (right - left) / 2, scale };
   }
 
   /** Where one of our armies or scouts is drawn now (scene px), for the window that is about it. */
