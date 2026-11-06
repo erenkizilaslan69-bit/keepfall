@@ -87,6 +87,7 @@ export class SiteLayer {
       const state = s.kind === 'chest' ? (s.gone ? ` · ${t('boş')}` : '')
         : s.kind === 'village' ? (s.gone ? ` · ${t('yağmalandı')}` : '')
         : s.gone ? ` · ${t('temizlendi')}` : ` · ≈${bandits}`;
+      if (s.kind === 'chest' && s.gone) { this.labels.remove(`site:${s.id}`); continue; } // a looted chest keeps only a small trace on the ground, no sign
       this.labels.set(`site:${s.id}`, {
         x: p.x, y: p.y + 30, anchor: 'top', minZoom: 0.5,
         html: sign(`<i class="ico ${ICON[s.kind]}"></i><b>${esc(SITE_NAME[s.kind])}</b><span>${state}</span>${note}`, s.gone ? 'wl-gone' : s.kind.endsWith('amp') ? 'wl-fight' : ''),
@@ -227,7 +228,7 @@ export class SiteLayer {
     } else {
       // a heap of gold: the pack's gold stones piled up (with a slow shimmer); looted: only the trampled ground and one dull stone are left
       if (s.gone) {
-        this.scene.add.ellipse(p.x, p.y + 14, 64, 26, 0x6b5a3a, 0.5).setDepth(p.y + DEPTH_LIFT - 1);
+        extras.push(this.scene.add.ellipse(p.x, p.y + 14, 64, 26, 0x6b5a3a, 0.5).setDepth(p.y + DEPTH_LIFT - 1));
         add(p.x + 4, p.y + 14, 'stone2', 0.34, 0, 0.55).setTint(0x6f6a64);
       } else {
         const heap: [number, number, string, number][] = [[-30, 16, 'stone1', 0.46], [28, 14, 'stone4', 0.46], [0, 18, 'stone3', 0.62], [-14, 4, 'stone5', 0.5], [16, 2, 'stone2', 0.5], [0, -10, 'gold-pile', 0.78]];
@@ -239,6 +240,7 @@ export class SiteLayer {
     const zone = this.scene.add.zone(p.x, p.y - 10, s.kind === 'bigCamp' ? 260 : 130, s.kind === 'bigCamp' ? 200 : 110)
       .setDepth(15_000).setInteractive({ useHandCursor: true });
     zone.on('pointerup', () => this.onSelect(s.id));
+    if (s.kind === 'chest' && s.gone) zone.disableInteractive(); // nothing left to open
     if (fresh && s.kind === 'chest' && !s.gone && !reducedEffects()) this.glint(p.x, p.y, extras);
     return { signature, sprites, zone, extras };
   }
