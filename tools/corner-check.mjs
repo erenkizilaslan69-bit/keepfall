@@ -42,6 +42,9 @@ await run(`(async () => { for (let i = 0; i < 120; i++) { if (window.keepfallSce
 
 const result = await run(`(async () => {
   const s = window.keepfallScene; s.apply = () => {}; s.setMap = () => {};
+  const L = await import('/src/scene/layout.ts');
+  const ownRegion = s.layout.regions.find((q) => q.seat === window.keepfallUi.mySeat);
+  const toTile = (x, y) => ({ x: ownRegion.origin.x + x / L.TILE, y: ownRegion.origin.y + y / L.TILE });
   const dist = (p, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy; const t = l2 ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2)) : 0; return Math.hypot(p.x - a.x - dx * t, p.y - a.y - dy * t); };
   const offRoads = (p, roads) => Math.min(...roads.flatMap((pts) => pts.slice(1).map((q, i) => dist(p, pts[i], q))));
   const cumul = (pts) => { const c = [0]; for (let i = 1; i < pts.length; i++) c.push(c[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y)); return c; };
@@ -51,8 +54,13 @@ const result = await run(`(async () => {
     const cum = cumul(route), len = cum[cum.length - 1];
     let travelled = 0, worst = 0, worstAt = 0, frames = 0;
     const t0 = performance.now();
-    let raf = 0, minSep = 1e9; const sample = () => { const tr = s.movers.debugTracks().find((x) => x.key.includes(name)); if (tr) { const d = offRoads(tr.shown, roads); frames++; if (d > worst) { worst = d; worstAt = (performance.now() - t0) / 1000; }
+    let raf = 0, minSep = 1e9, off = 0, checked = 0; const sample = () => { const tr = s.movers.debugTracks().find((x) => x.key.includes(name)); if (tr) { const d = offRoads(tr.shown, roads); frames++; if (d > worst) { worst = d; worstAt = (performance.now() - t0) / 1000; }
       const nearBend = route.slice(1, -1).some((v) => Math.hypot(tr.shown.x - v.x, tr.shown.y - v.y) < 4.6); // a column bunches up round a sharp corner: only the straight stretches are measured
+      const spAll = s.movers.debugSprites().filter((x) => x.active && (x.x !== 0 || x.y !== 0) && x.getData('track') === tr.key);
+      const atEnds = [route[0], route[route.length - 1]].some((v) => Math.hypot(tr.shown.x - v.x, tr.shown.y - v.y) < 7); // (a column is up to 6 tiles long, and the road's two ends are crossings with other roads, or the gate)
+      if (!atEnds && (name.startsWith('seen:cc2') || name.startsWith('seen:cc5'))) for (const q of spAll) { // nobody off the road's lane (the crossings, where four abreast is allowed, are not counted)
+        const tp = toTile(q.x, q.y); const ds = roads.map((r) => Math.min(...r.slice(1).map((b, k) => dist(tp, r[k], b))) * L.TILE); checked++;
+        if (ds.filter((d) => d < 70).length < 2 && Math.min(...ds) > 48) { off++; globalThis.__offAt = Math.round(Math.min(...ds)) + 'px at ' + ((performance.now() - t0) / 1000).toFixed(1) + 's idx ' + spAll.indexOf(q) + ' of ' + spAll.length + ' ' + tr.shown.x.toFixed(1) + ',' + tr.shown.y.toFixed(1); } }
       const sp = nearBend ? [] : s.movers.debugSprites().filter((x) => x.active && (x.x !== 0 || x.y !== 0) && x.getData('track') === tr.key); for (let i = 0; i < sp.length; i++) for (let j = i + 1; j < sp.length; j++) { const dd = Math.hypot(sp[i].x - sp[j].x, sp[i].y - sp[j].y); if (dd < minSep) { minSep = dd; globalThis.__sepAt = ((performance.now() - t0) / 1000).toFixed(1) + 's ' + i + '-' + j + ' ' + sp[i].texture.key + '/' + sp[j].texture.key; } } } raf = requestAnimationFrame(sample); }; raf = requestAnimationFrame(sample);
     let sec = 0;
     while (travelled < len - 0.5) {
@@ -64,7 +72,7 @@ const result = await run(`(async () => {
     }
     cancelAnimationFrame(raf);
     s.movers.sync({ ...s.state, own: [], seen: [] });
-    return { name, worst: Number(worst.toFixed(3)), worstAtSec: Number(worstAt.toFixed(1)), frames, minSep: minSep > 1e8 ? null : Math.round(minSep), sepAt: globalThis.__sepAt };
+    return { name, worst: Number(worst.toFixed(3)), worstAtSec: Number(worstAt.toFixed(1)), frames, minSep: minSep > 1e8 ? null : Math.round(minSep), sepAt: globalThis.__sepAt, offRoad: checked ? off : undefined, offAt: globalThis.__offAt };
   };
   const out = [];
   // 1. our army on a route with sharp corners (the server gives the whole route)
@@ -131,9 +139,9 @@ const result = await run(`(async () => {
 let ok = true;
 try {
   for (const r of JSON.parse(result)) {
-    const pass = r.worst < LIMIT && (r.minSep === null || r.minSep >= 26) && !r.insideWall;
+    const pass = r.worst < LIMIT && (r.minSep === null || r.minSep >= 26) && !r.insideWall && !r.offRoad;
     ok &&= pass;
-    console.log(`${pass ? 'ok  ' : 'FAIL'} ${r.name}: the column was at most ${r.worst} tiles from its road (limit ${LIMIT}), at ${r.worstAtSec} s, ${r.frames} frames${r.minSep !== null ? `, closest two soldiers ${r.minSep} px (${r.sepAt})` : ''}${r.bendDegrees ? `, bend ${r.bendDegrees}°` : ''}${r.insideWall !== undefined ? `, ${r.insideWall} of ${r.soldiers} soldiers on the wall` : ''}`);
+    console.log(`${pass ? 'ok  ' : 'FAIL'} ${r.name}: the column was at most ${r.worst} tiles from its road (limit ${LIMIT}), at ${r.worstAtSec} s, ${r.frames} frames${r.minSep !== null ? `, closest two soldiers ${r.minSep} px (${r.sepAt})` : ''}${r.bendDegrees ? `, bend ${r.bendDegrees}°` : ''}${r.offRoad !== undefined ? `, ${r.offRoad} soldiers off the road's lane (${r.offAt})` : ''}${r.insideWall !== undefined ? `, ${r.insideWall} of ${r.soldiers} soldiers on the wall` : ''}`);
   }
 } catch { console.log('FAIL no result:', String(result).slice(0, 300)); ok = false; }
 if (errors.length) { console.log('page errors:', errors.slice(0, 3).join(' | ')); ok = false; }
