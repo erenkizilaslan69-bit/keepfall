@@ -128,9 +128,16 @@ export class Terrain {
     const o = toWorld({ x: 0, y: 0 }), size = this.N * TILE;
     const strips = [[o.x, o.y, size, TILE], [o.x, o.y + size - TILE, size, TILE], [o.x, o.y + TILE, TILE, size - 2 * TILE], [o.x + size - TILE, o.y + TILE, TILE, size - 2 * TILE]];
     for (const [i, alpha] of [[0, 0.45]] as const)
-      for (const [x, y, w, h] of strips)
-        this.ripples.push(this.scene.add.tileSprite(x, y, w, h, 'kf-ripple').setOrigin(0).setAlpha(alpha).setDepth(DEPTH.ripple + i)
-          .setTilePosition(i * 70, i * 40));
+      for (const [sx, sy, sw, sh] of strips) {
+        // a tile sprite has a texture of its own size: long strips are cut into pieces of at most 2048 px (a bigger map would pass the 4096 px some phones take)
+        const horizontal = sw >= sh, len = horizontal ? sw : sh, pieces = Math.max(1, Math.ceil(len / 2048));
+        for (let k = 0; k < pieces; k++) {
+          const from = (len * k) / pieces, to = (len * (k + 1)) / pieces;
+          const x = horizontal ? sx + from : sx, y = horizontal ? sy : sy + from, w = horizontal ? to - from : sw, h = horizontal ? sh : to - from;
+          this.ripples.push(this.scene.add.tileSprite(x, y, w, h, 'kf-ripple').setOrigin(0).setAlpha(alpha).setDepth(DEPTH.ripple + i)
+            .setTilePosition(i * 70 + (horizontal ? from : 0), i * 40 + (horizontal ? 0 : from)));
+        }
+      }
   }
 
   /**
@@ -149,9 +156,21 @@ export class Terrain {
       const tmp = this.scene.make.sprite({ key: 'foam', frame, add: false }).setScale(MAP_SCALE); // (the coast's tile is as big as the map's)
       const layer: Phaser.GameObjects.RenderTexture[] = [];
       for (const st of strips) {
-        const rt = this.scene.add.renderTexture(st.x, st.y, st.w, st.h).setOrigin(0).setDepth(DEPTH.foam);
-        for (const [tx, ty] of st.tiles) { const p = toWorld({ x: tx + 0.5, y: ty + 0.5 }); tmp.setPosition(p.x - st.x, p.y - st.y); rt.draw(tmp); }
-        layer.push(rt);
+        // A long strip is cut into pieces of at most 2048 px: a bigger map (MAP_SCALE) would otherwise make textures over 4096 px, more than some phones' GPUs take.
+        const along = st.w >= st.h ? 'x' : 'y', len = along === 'x' ? st.w : st.h, pieces = Math.max(1, Math.ceil(len / 2048));
+        for (let k = 0; k < pieces; k++) {
+          const from = (len * k) / pieces, to = (len * (k + 1)) / pieces;
+          const x = along === 'x' ? st.x + from : st.x, y = along === 'y' ? st.y + from : st.y;
+          const w = along === 'x' ? to - from : st.w, h = along === 'y' ? to - from : st.h;
+          const rt = this.scene.add.renderTexture(x, y, w, h).setOrigin(0).setDepth(DEPTH.foam);
+          const reach = 110 * MAP_SCALE; // how far a coast tile's foam reaches past its centre
+          for (const [tx, ty] of st.tiles) {
+            const p = toWorld({ x: tx + 0.5, y: ty + 0.5 });
+            if (p.x < x - reach || p.x > x + w + reach || p.y < y - reach || p.y > y + h + reach) continue;
+            tmp.setPosition(p.x - x, p.y - y); rt.draw(tmp);
+          }
+          layer.push(rt);
+        }
       }
       tmp.destroy();
       this.foams.push(layer);
