@@ -13,6 +13,7 @@ import { toTiles, toWorld } from './world';
 import { TILE } from './layout';
 import { trace } from '../debug-trace';
 import type { Effects } from './Effects';
+import { lowGraphics } from '../prefs';
 
 // Armies and scouts walking on the map: our own (we know their road) and the others the server lets
 // us see (only where they are and which way they go). Every soldier is drawn in its own unit's
@@ -32,8 +33,13 @@ const RUN: Record<string, { anim: string; scale: number }> = {
 };
 /** Marching order, front to back. */
 const ORDER = ['kalkanli', 'kilicli', 'mizrakci', 'okcu', 'mancinik', 'kesis', 'suvari']; // shields and blades lead, the catapults march in the middle, the cavalry guards the rear
-/** Only a part of a big army is drawn (the sign over it says how many there are): up to 10 as they are, then one more for every 8, never more than 14. */
-const drawnOf = (total: number): number => Math.min(14, Math.max(Math.min(total, 10), 10 + Math.floor((total - 10) / 8)));
+/**
+ * Only a part of a big army is drawn (the sign over it says how many there are): up to 10 as they are, then one more for every 4, never more than 22
+ * (low graphics keeps the old thrift: one more for every 8, never more than 14). It depends only on the total the sign already shows.
+ */
+const drawnOf = (total: number): number => lowGraphics()
+  ? Math.min(14, Math.max(Math.min(total, 10), 10 + Math.floor((total - 10) / 8)))
+  : Math.min(22, Math.max(Math.min(total, 10), 10 + Math.floor((total - 10) / 4)));
 const ROW_GAP = 34; // px: the base distance between two rows (the zone that catches a click sits one row behind the leader)
 /** How much room each kind needs: across the road (px) and along it (px). The catapult is big and the cavalry long; nobody stands on anybody. */
 const FOOT: Record<string, { w: number; d: number }> = {
