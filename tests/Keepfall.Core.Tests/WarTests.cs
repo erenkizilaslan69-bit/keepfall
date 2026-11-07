@@ -296,8 +296,8 @@ public class WarTests
         Assert.Empty(game.IncomingWarningsOf(B)); // it is here: no more "coming" warning
 
         // Both sides are told once that it started; nobody else is.
-        Assert.Same(battle, Assert.Single(game.TakeStartedBattles(A)));
-        Assert.Same(battle, Assert.Single(game.TakeStartedBattles(B)));
+        Assert.Same(battle, Assert.Single(game.TakeStartedBattles(A)).Battle);
+        Assert.Same(battle, Assert.Single(game.TakeStartedBattles(B)).Battle);
         Assert.Empty(game.TakeStartedBattles(A));
         Assert.Empty(game.TakeStartedBattles(C));
         Assert.Empty(game.ActiveBattlesOf(C));
