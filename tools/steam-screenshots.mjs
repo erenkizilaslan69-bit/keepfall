@@ -9,7 +9,7 @@
 //    MADE-UP save/result (same technique as tools/shot-progress.mjs / shot-deceptions.mjs): say so if a caption ever claims otherwise;
 //  * store assets are composed in headless Chrome (tools/steam-render.mjs) from clean clip frames + art/promo/keepfall-logo-transparent.png.
 //  --contact writes contact sheets of every clip (art/shots/steam/contact-*.png) to pick still times; the times live in STILLS below.
-// Licence: Tiny Swords Free Pack's use in Steam marketing is NOT confirmed yet (docs/steam-paketleme.md section 4): the output is "publishable after confirmation".
+// Licence: commercial use of Tiny Swords is free, credit recommended (Pixel Frog), the pack itself is not distributed on its own; the output is publishable (docs/steam-paketleme.md).
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -27,31 +27,23 @@ const VIDEO = join(root, 'art', 'video');
 const LOGO = join(root, 'art', 'promo', 'keepfall-logo-transparent.png');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ff = (a) => { const r = spawnSync('ffmpeg', ['-y', '-v', 'error', ...a], { stdio: 'inherit' }); if (r.status !== 0) throw new Error('ffmpeg failed: ' + a.join(' ')); };
-const clipFile = (lang, clip, tag) => join(VIDEO, `clips-${lang}`, `${clip}-${tag}-t1.mp4`);
+const clipFile = (lang, clip, tag) => { const f = join(VIDEO, `clips-${lang}`, `${clip}-${tag}-t1.mp4`); return !existsSync(f) && tag === 'clean' ? join(VIDEO, 'clips-en', `${clip}-${tag}-t1.mp4`) : f; };
 
 // [file name, clip, variant, second of the frame]: chosen by looking at the contact sheets (--contact).
 const STILLS = [
-  ['01-castle-at-work', 'c01', 'ui', 3.0],
-  ['02-forge-and-arming', 'c03', 'ui', 2.6],
-  ['03-fog-and-scout', 'c04', 'ui', 3.0],
-  ['04-scout-report', 'c05', 'ui', 2.8],
-  ['05-envoy-message', 'c06', 'ui', 3.4],
-  ['06-phantom-army', 'c07', 'ui', 3.0],
-  ['07-army-marches', 'c10', 'ui', 3.5],
-  ['08-armies-meet', 'c11', 'ui', 2.0],
-  ['09-gate-battle', 'c12', 'ui', 3.0],
-  ['10-gate-battle-2', 'c12', 'ui', 5.5],
-  ['11-castle-falls', 'c13', 'ui', 2.5],
-  ['12-war-from-above', 'c14', 'ui', 3.5],
-  ['13-victory', 'c15', 'ui', 2.5],
+  // The interface-free ("clean") frames carry no text, so one set serves every language; the "ui" clips show a red dev diagnostics strip and are not store-clean.
+  ['01-castle-at-work', 'c01', 'clean', 3.0],
+  ['02-forge-and-arming', 'c03', 'clean', 2.6],
+  ['03-fog-and-scout', 'c04', 'clean', 3.0],
+  ['04-phantom-army-forest', 'c07', 'clean', 3.0],
 ];
 const CLIPS_WANTED = [...new Set(STILLS.map((s) => s[1]))];
 
 if (args.includes('--contact')) {
   mkdirSync(OUT, { recursive: true });
   for (const lang of LANGS) for (const c of CLIPS_WANTED) {
-    const f = clipFile(lang, c, 'ui'); if (!existsSync(f)) continue;
-    ff(['-i', f, '-vf', 'fps=1/0.5,scale=480:270,drawtext=text=%{pts}:x=6:y=6:fontcolor=white:box=1:boxcolor=black@0.6:fontsize=18,tile=4x4', '-frames:v', '1', join(OUT, `contact-${lang}-${c}.png`)]);
+    for (const v of ['clean', 'ui']) { const f = clipFile(lang, c, v); if (!existsSync(f)) continue;
+    ff(['-i', f, '-vf', 'fps=1/0.5,scale=480:270,drawtext=fontfile=/Windows/Fonts/arial.ttf:text=%{pts}:x=6:y=6:fontcolor=white:box=1:boxcolor=black@0.6:fontsize=18,tile=4x4', '-frames:v', '1', join(OUT, `contact-${lang}-${c}-${v}.png`)]); }
   }
   process.exit(0);
 }
