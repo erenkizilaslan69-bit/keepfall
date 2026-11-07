@@ -24,7 +24,7 @@ const FADE = 0.4; // cross-dissolve between beats (s)
 const FPS = 60;
 
 // beat: [clip | 'still', variant, start s, length s, caption (tr, en) or null, kind]
-const BEATS = [
+let BEATS = [
   { clip: 'c01', tag: 'clean', ss: 0, d: 4, cap: ['Her asker, kaybedilmiş bir işçidir.', 'Every soldier is a worker lost.'] },
   { clip: 'c03', tag: 'ui', ss: 0.3, d: 3, cap: ['Üret. Ya da savaş.', 'Produce. Or fight.'] },
   { clip: 'c04', tag: 'clean', ss: 0, d: 3, cap: ['Sis her şeyi saklar.', 'The fog hides everything.'] },
@@ -39,6 +39,24 @@ const BEATS = [
   { clip: 'still', d: 3.4, cap: ['Kim kimi kandırdı?', 'Who deceived whom?'] },
   { clip: 'c15', tag: 'ui', ss: 0, d: 3.5, cap: null, endCard: true },
 ];
+
+// --partial: shoot-less cut from the clips that exist (the war clips c10-c15 may be missing): beats without a clip are dropped, the "ui" beats fall back to the
+// clean clip of the same shot when only that exists, the end card sits over a calm castle frame and the music crossfade moves to the kingdoms beat.
+if (args.includes('--partial')) {
+  const part = (k, cap) => ({ clip: `c09-part-${k}`, tag: 'clean', ss: 0, d: 3, cap });
+  BEATS = [
+    { clip: 'c01', tag: 'clean', ss: 0, d: 5.5, cap: BEATS[0].cap },
+    { clip: 'c03', tag: 'ui', ss: 0, d: 4, cap: BEATS[1].cap },
+    { clip: 'c04', tag: 'clean', ss: 0, d: 4.5, cap: BEATS[2].cap },
+    { clip: 'c05', tag: 'ui', ss: 0, d: 4, cap: ['Gözcü gönder.', 'Send a scout.'] },
+    { clip: 'c06', tag: 'ui', ss: 0, d: 4, cap: BEATS[3].cap },
+    { clip: 'c07', tag: 'clean', ss: 0, d: 4.5, cap: ['Hayalet ordu gönder.', 'Send a phantom army.'], march: true },
+    { clip: 'c09', tag: 'clean', ss: 0, d: 4, cap: BEATS[4].cap },
+    part('golge', null), part('kahin', null),
+    BEATS.find((b) => b.clip === 'still'),
+    { clip: 'c01', tag: 'clean', ss: 2, d: 3.5, cap: null, endCard: true },
+  ];
+}
 
 const run = (cmd, a, o = {}) => { const r = spawnSync(cmd, a, { stdio: ['ignore', 'inherit', 'inherit'], ...o }); if (r.status !== 0) throw new Error(`${cmd} failed: ${a.slice(0, 12).join(' ')}`); };
 const ffmpeg = (a) => run('ffmpeg', ['-y', '-hide_banner', '-v', 'error', ...a]);
@@ -129,8 +147,8 @@ try {
     const gifStart = starts[BEATS.findIndex((b) => b.march)];
     const palette = join(tmp, `palette-${lang}.png`);
     const gif = join(VIDEO, `keepfall-loop-${lang}.gif`);
-    ffmpeg(['-ss', gifStart.toFixed(2), '-t', '10', '-i', out, '-vf', 'fps=20,scale=960:540:flags=lanczos,palettegen=max_colors=192:stats_mode=diff', palette]);
-    ffmpeg(['-ss', gifStart.toFixed(2), '-t', '10', '-i', out, '-i', palette, '-lavfi', 'fps=20,scale=960:540:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=4', '-loop', '0', gif]);
+    ffmpeg(['-ss', gifStart.toFixed(2), '-t', '10', '-i', out, '-vf', 'fps=12,scale=640:360:flags=lanczos,palettegen=max_colors=192:stats_mode=diff', palette]);
+    ffmpeg(['-ss', gifStart.toFixed(2), '-t', '10', '-i', out, '-i', palette, '-lavfi', 'fps=12,scale=640:360:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5', '-loop', '0', gif]);
     console.log('wrote', gif, (statSync(gif).size / 1e6).toFixed(1) + ' MB');
 
     // ---- contact sheet: a frame every 2.5 s (also what to look at to judge the cut)
