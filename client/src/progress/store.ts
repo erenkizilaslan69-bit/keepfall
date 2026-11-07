@@ -59,7 +59,12 @@ const KEY = 'keepfall_progress_v1';
 /** The default store: this browser's local storage (memory only when the browser blocks it). */
 export class LocalProgressStore implements ProgressStore {
   load(): ProgressData {
-    try { return sanitize(JSON.parse(safeLocal.get(KEY) ?? 'null')); } catch { return emptyProgress(); }
+    const raw = safeLocal.get(KEY);
+    try { return sanitize(JSON.parse(raw ?? 'null')); } catch {
+      // A damaged save starts the player from nothing, but the damaged text is kept aside (it is overwritten by the next save otherwise), so it can be looked at or repaired by hand.
+      if (raw) safeLocal.set(KEY + '_damaged', raw);
+      return emptyProgress();
+    }
   }
   save(data: ProgressData): void { safeLocal.set(KEY, JSON.stringify(data)); }
 }
