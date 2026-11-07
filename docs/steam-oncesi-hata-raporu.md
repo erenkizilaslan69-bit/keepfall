@@ -56,3 +56,7 @@ Yeni testler: `CommandGuardTests` (7), `CommandFuzzTests` (6 tohum × 6000 saniy
 - `node tools/i18n-scan.mjs`: 0 sarılmamış / 0 İngilizcesiz; `node tools/i18n-server-scan.mjs`: 0.
 - İstemci: `tsc --noEmit` temiz, `vite build` (geçici klasöre; `client/dist` Production'ındır) başarılı.
 - Steam: `steam-check` 16/16, `steam-edge-check` tümü geçti.
+
+## 7. 5090 dev-LAN sunucusu
+
+İşin sonunda 5090'da aktif oda/oyuncu yoktu (günlük: `0 rooms, 0 players`; kurulu bağlantı yok). Yeniden derleme **yapılmadı**: sunucuyu durdurma/yeniden başlatma izni otomatik denetimde reddedildi. 5090 hâlâ eski sunucu koduyla çalışıyor (B1/B2 düzeltmeleri yok). Yenilemek için `docs/devir-notu.md` §4c'deki adımlar: önce 5090 işlemini durdur, sonra `dotnet publish src/Keepfall.Server -c Release -o ..\keepfall-dev-lan\server`, `cd client && npx vite build --outDir ../../keepfall-dev-lan/client/dist --emptyOutDir`, `config/challenges.json` kopyası, yeniden başlat.
