@@ -42,12 +42,15 @@ const run = async (expression) => {
   return r.result?.result?.value;
 };
 await send('Runtime.enable');
+await send('Network.enable');
+const byTarget = {}; // SignalR frames by hub method (from the DevTools network events: the payload is read in full here)
+ws.addEventListener('message', (m) => { const d = JSON.parse(m.data); if (d.method !== 'Network.webSocketFrameReceived') return; const text = d.params.response.payloadData ?? ''; for (const part of text.split(String.fromCharCode(30))) { const t = /"target":"(\w+)"/.exec(part)?.[1]; if (!t) continue; const e = (byTarget[t] ??= { n: 0, bytes: 0, max: 0 }); e.n++; e.bytes += part.length; e.max = Math.max(e.max, part.length); } });
 await send('Page.enable');
 await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
 
 // In-page sampler: every frame delta, long tasks, WebSocket traffic. Installed before the page's own scripts run.
 await send('Page.addScriptToEvaluateOnNewDocument', { source: `(() => {
-  const P = window.__perf = { frames: [], long: [], wsIn: 0, wsOut: 0, wsMsgs: 0, wsBig: 0 };
+  const P = window.__perf = { by: {}, frames: [], long: [], wsIn: 0, wsOut: 0, wsMsgs: 0, wsBig: 0 };
   let last = performance.now();
   const loop = () => { const n = performance.now(); P.frames.push(n - last); last = n; requestAnimationFrame(loop); };
   requestAnimationFrame(loop);
@@ -55,7 +58,7 @@ await send('Page.addScriptToEvaluateOnNewDocument', { source: `(() => {
   const NativeWS = window.WebSocket;
   window.WebSocket = function (...a) {
     const s = new NativeWS(...a);
-    s.addEventListener('message', (m) => { const len = typeof m.data === 'string' ? m.data.length : (m.data.byteLength ?? m.data.size ?? 0); P.wsIn += len; P.wsMsgs++; if (len > 20000) P.wsBig++; });
+    s.addEventListener('message', (m) => { const len = typeof m.data === 'string' ? m.data.length : (m.data.byteLength ?? m.data.size ?? 0); P.wsIn += len; P.wsMsgs++; if (len > 20000) P.wsBig++; P.kind = P.kind || (typeof m.data) + '/' + (m.data && m.data.constructor && m.data.constructor.name); const count = (text) => { if (!P.sample && text.length > 300) P.sample = text.slice(0, 200); for (const part of text.split(String.fromCharCode(30))) { const t = /"target":"(\w+)"/.exec(part.slice(0, 160) + part.slice(-200))?.[1]; if (t) { const e = (P.by[t] ??= { n: 0, bytes: 0, max: 0 }); e.n++; e.bytes += part.length; e.max = Math.max(e.max, part.length); } } }; if (typeof m.data === 'string') count(m.data); else if (m.data instanceof ArrayBuffer) count(new TextDecoder().decode(m.data)); else if (m.data.text) m.data.text().then(count); });
     const send = s.send.bind(s); s.send = (d) => { P.wsOut += typeof d === 'string' ? d.length : (d.byteLength ?? 0); send(d); };
     return s;
   };
@@ -86,14 +89,14 @@ const quant = (a, p) => a.length ? a[Math.min(a.length - 1, Math.floor(a.length 
 const stat = (frames) => { const s = [...frames].sort((a, b) => a - b); return { n: s.length, p50: +quant(s, .5).toFixed(1), p95: +quant(s, .95).toFixed(1), p99: +quant(s, .99).toFixed(1), max: Math.round(s.at(-1) ?? 0), over50: s.filter((x) => x > 50).length, over100: s.filter((x) => x > 100).length }; };
 
 const phases = { preparation: [], war: [] }, samples = [];
-let lastProf = '{}', ended = false, tick = 0, prevWs = { in: 0, msgs: 0 };
+let dbg = '', lastBy = '{}', lastProf = '{}', ended = false, tick = 0, prevWs = { in: 0, msgs: 0 };
 const start = Date.now();
 while (!ended && Date.now() - start < Number(MAXREAL) * 1000) {
   const out = await run(`(async () => {
     const s = window.keepfallScene, n = window.keepfallNet, P = window.__perf; const c = s?.state;
     const frames = P.frames.splice(0), long = P.long.splice(0); ${process.env.GC === '1' ? 'if (window.gc) window.gc();' : ''}
     const o = { frames, long, wsIn: P.wsIn, wsMsgs: P.wsMsgs, wsBig: P.wsBig, wsOut: P.wsOut, dom: document.getElementsByTagName('*').length,
-      prof: JSON.stringify(window.__kfProf), heap: performance.memory ? performance.memory.usedJSHeapSize : 0, ended: !!document.querySelector('.screen.end') };
+      prof: JSON.stringify(window.__kfProf), by: JSON.stringify(P.by), dbg: P.kind + ' ' + P.sample, heap: performance.memory ? performance.memory.usedJSHeapSize : 0, ended: !!document.querySelector('.screen.end') };
     if (s) {
       o.hasScene = true; o.children = s.children.length; o.tweens = s.tweens.getTweens().length; o.textures = s.sys.game.textures.getTextureKeys().length; o.anims = s.anims.anims.size;
       o.timers = s.time._active?.length ?? 0; o.listeners = s.events.eventNames().length;
@@ -117,7 +120,7 @@ while (!ended && Date.now() - start < Number(MAXREAL) * 1000) {
     return JSON.stringify(o); })()`);
   let o; try { o = JSON.parse(out); } catch { console.log('bad sample', String(out).slice(0, 200)); await sleep(2000); continue; }
   if (!o.hasScene) { if (samples.length) { ended = true; break; } await sleep(1000); continue; }
-  lastProf = o.prof;
+  lastProf = o.prof; lastBy = o.by; dbg = o.dbg;
   const ph = o.phase === 'war' ? 'war' : 'preparation';
   phases[ph].push(...o.frames);
   const wsDelta = { bytes: o.wsIn - prevWs.in, msgs: o.wsMsgs - prevWs.msgs }; prevWs = { in: o.wsIn, msgs: o.wsMsgs };
@@ -136,13 +139,14 @@ const result = {
   prep: stat(phases.preparation), war: stat(phases.war),
   heapMB: { first: heap[2], max: Math.max(...heap), last: heap.at(-1) }, domMax: Math.max(...samples.map((s) => s.dom)), childrenMax: Math.max(...samples.map((s) => s.children ?? 0)),
   tweensMax: Math.max(...samples.map((s) => s.tweens ?? 0)), texturesLast: total?.textures, longTasks: samples.reduce((a, s) => a + s.longTasks, 0), longMax: Math.max(...samples.map((s) => s.longMax)),
-  wsMB: +((prevWs.in) / 1048576).toFixed(2), wsMsgs: prevWs.msgs, profile: profRows, exceptions: [...new Set(exceptions)].slice(0, 10), samples,
+  wsMB: +((prevWs.in) / 1048576).toFixed(2), wsMsgs: prevWs.msgs, profile: profRows, exceptions: [...new Set(exceptions)].slice(0, 10), messages: Object.entries(byTarget).map(([k, v]) => ({ target: k, n: v.n, avgBytes: Math.round(v.bytes / v.n), maxBytes: v.max, totalKB: Math.round(v.bytes / 1024) })), samples,
 };
 mkdirSync(join(root, 'art', 'shots', 'perf'), { recursive: true });
 writeFileSync(join(root, 'art', 'shots', 'perf', `${LABEL}.json`), JSON.stringify(result, null, 1));
-const { samples: _s, profile, ...brief } = result;
+const { samples: _s, profile, messages, ...brief } = result;
 console.log(JSON.stringify(brief, null, 1));
 console.table(profile);
+console.table(messages);
 console.log('long tasks >=100ms:', samples.flatMap((s) => s.longList.map((l) => `${l}(${s.phase} t${s.t})`)).join(' '));
 console.log('GL:', await run(`(() => { const c = document.createElement('canvas').getContext('webgl'); const e = c?.getExtension('WEBGL_debug_renderer_info'); return e ? c.getParameter(e.UNMASKED_RENDERER_WEBGL) : 'n/a'; })()`));
 ws.close(); chrome.kill(); process.exit(0);
