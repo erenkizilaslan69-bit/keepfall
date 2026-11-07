@@ -5,6 +5,7 @@ import type { BuildingType, Job, JobView } from '../types';
 import type { WorldLabels } from '../ui/world-labels';
 import { UNIT_SCALE, playRandom, unitOriginY } from './assets';
 import { MAP_SCALE } from './mapscale';
+import { bakeGraphics } from './Bake';
 import { GATE, IDLE_AREA, JOB_LOOK, SITES, workSpotsOf, type Point } from './layout';
 import { NO_OFFSET } from './parts';
 import { pathAround, resolveOut, type Foot } from './Blocks';
@@ -72,18 +73,19 @@ export class Workers {
 
   debugSprites(): Phaser.GameObjects.Sprite[] { return this.pawns.map((p) => p.sprite); }
 
-  private pen: Phaser.GameObjects.Graphics | null = null;
+  private pen: Phaser.GameObjects.RenderTexture | null = null;
 
   /** The idle people's pen: trodden dirt with a low picket fence round it, so they are not standing on the road. */
   private drawPen(): void {
     const a = IDLE_AREA, o = this.off, pad = 22;
     const x0 = a.left - pad + o.x, x1 = a.right + pad + o.x, y0 = a.top - 40 + o.y, y1 = a.bottom + 14 + o.y;
-    const g = this.scene.add.graphics().setDepth(-69_000);
-    g.fillStyle(0x7d5e34, 0.55).fillRoundedRect(x0, y0, x1 - x0, y1 - y0, 18);
-    g.fillStyle(0x9a7a48, 0.5).fillRoundedRect(x0 + 6, y0 + 6, x1 - x0 - 12, y1 - y0 - 12, 14);
-    g.lineStyle(3, 0x4a2f1b, 1).strokeRoundedRect(x0, y0, x1 - x0, y1 - y0, 18);
-    for (let x = x0 + 8; x < x1 - 4; x += 22) { g.fillStyle(0x4a2f1b, 1).fillRect(x, y1 - 4, 6, 12); g.fillStyle(0x8a5a34, 1).fillRect(x + 1, y1 - 3, 4, 10); }
-    this.pen = g;
+    // Painted once into a texture (a Graphics object is re-triangulated every frame).
+    this.pen = bakeGraphics(this.scene, { x: x0 - 4, y: y0 - 4, w: x1 - x0 + 8, h: y1 - y0 + 24 }, (g) => {
+      g.fillStyle(0x7d5e34, 0.55).fillRoundedRect(x0, y0, x1 - x0, y1 - y0, 18);
+      g.fillStyle(0x9a7a48, 0.5).fillRoundedRect(x0 + 6, y0 + 6, x1 - x0 - 12, y1 - y0 - 12, 14);
+      g.lineStyle(3, 0x4a2f1b, 1).strokeRoundedRect(x0, y0, x1 - x0, y1 - y0, 18);
+      for (let x = x0 + 8; x < x1 - 4; x += 22) { g.fillStyle(0x4a2f1b, 1).fillRect(x, y1 - 4, 6, 12); g.fillStyle(0x8a5a34, 1).fillRect(x + 1, y1 - 3, 4, 10); }
+    }, -69_000);
   }
 
   destroy(): void {

@@ -7,6 +7,7 @@ import { t, tr } from '../i18n';
 import { CAMP, type Point } from './layout';
 import { NO_OFFSET } from './parts';
 import { lowGraphics } from '../prefs';
+import { bakeGraphics } from './Bake';
 
 // Soldiers wait in front of the castle around a camp fire, a group for each unit type (the groups sit round the fire in the order of
 // the list), all turned toward the flames. Shield bearers always keep their shield raised (Warrior_Guard); swordsmen are Warfare's Swordsman.
@@ -54,17 +55,19 @@ export class Soldiers {
   /** The camp fire: ash and stones, two logs, the animated flames, embers, a thin smoke and a faint glow. */
   private buildFire(): void {
     const x = CAMP.x + this.off.x, y = CAMP.y + this.off.y;
-    const g = this.scene.add.graphics().setDepth(y - 1);
-    g.fillStyle(0x2b2018, 0.55).fillEllipse(x, y + 2, 64, 26);
-    for (let i = 0; i < 9; i++) {
-      const a = (i / 9) * Math.PI * 2;
-      const px = x + Math.cos(a) * 30, py = y + 2 + Math.sin(a) * 12;
-      g.fillStyle(0x4a4f57, 1).fillEllipse(px, py + 1, 14, 9);
-      g.fillStyle(0x9aa3ac, 1).fillEllipse(px, py - 1, 12, 7);
-      g.fillStyle(0xc9d0d6, 1).fillEllipse(px - 2, py - 2, 5, 3);
-    }
-    g.lineStyle(7, 0x4b2e1a, 1).lineBetween(x - 20, y + 5, x + 16, y - 3).lineBetween(x + 20, y + 5, x - 14, y - 4);
-    g.lineStyle(3, 0x7a4c2a, 1).lineBetween(x - 20, y + 4, x + 16, y - 4).lineBetween(x + 20, y + 4, x - 14, y - 5);
+    // Painted once into a texture (a Graphics object would be re-triangulated every frame: some 3000 path commands).
+    const g = bakeGraphics(this.scene, { x: x - 52, y: y - 20, w: 104, h: 48 }, (g) => {
+      g.fillStyle(0x2b2018, 0.55).fillEllipse(x, y + 2, 64, 26);
+      for (let i = 0; i < 9; i++) {
+        const a = (i / 9) * Math.PI * 2;
+        const px = x + Math.cos(a) * 30, py = y + 2 + Math.sin(a) * 12;
+        g.fillStyle(0x4a4f57, 1).fillEllipse(px, py + 1, 14, 9);
+        g.fillStyle(0x9aa3ac, 1).fillEllipse(px, py - 1, 12, 7);
+        g.fillStyle(0xc9d0d6, 1).fillEllipse(px - 2, py - 2, 5, 3);
+      }
+      g.lineStyle(7, 0x4b2e1a, 1).lineBetween(x - 20, y + 5, x + 16, y - 3).lineBetween(x + 20, y + 5, x - 14, y - 4);
+      g.lineStyle(3, 0x7a4c2a, 1).lineBetween(x - 20, y + 4, x + 16, y - 4).lineBetween(x + 20, y + 4, x - 14, y - 5);
+    }, y - 1);
     const glow = this.scene.add.ellipse(x, y - 4, 190, 100, 0xffa63a, 0.09).setDepth(y - 2);
     this.scene.tweens.add({ targets: glow, alpha: 0.17, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     // Two flames out of step (a big one and a smaller one in front) that flicker in height, embers that drift up, and a thin smoke over them.
