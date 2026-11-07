@@ -2,6 +2,7 @@ import { SHOOTERS, bindRowSwap, defaultRows, esc, fmt, rowSelect } from '../form
 import { t as tt, tr } from '../i18n';
 import type { CastleView, Job, Row } from '../types';
 import { Win, type WinContext, type WinData } from './windows';
+import { faceChip, iconChip, mountChips, setChip, weaponChip } from './unit-chips';
 
 // Our own castle: soldiers (arm and disarm, from which job), growth and the defence line-up.
 
@@ -19,7 +20,8 @@ export class CastleWin extends Win {
     const sources = s.jobs.map((j) => `<option value="${j.job}"></option>`).join('');
     const units = s.units.map((u) => `
       <div class="unit-row" data-unit="${u.id}">
-        <div class="unit-head"><b>${esc(tr(u.name))}</b> <span data-f="stock"></span> <small class="muted-ink" data-f="arming"></small></div>
+        <div class="unit-head"><b>${esc(tr(u.name))}</b>
+          <div class="chips">${faceChip(u.id, '', 0, 'home')}${weaponChip(u.id, '', 0, 'wep')}${iconChip('arming', '', 0, 'arm')}${iconChip('away', '', 0, 'away')}</div></div>
         <span class="stepper"><button class="btn" data-act="arm" data-n="1" title="">+1</button><button class="btn" data-act="arm" data-n="5">+5</button>
           <button class="btn btn-red" data-act="disarm" data-n="1" title="${tt('Silahı bırak, boşa dön')}">−1</button></span>
       </div>`).join('');
@@ -63,6 +65,7 @@ export class CastleWin extends Win {
     this.body.addEventListener('click', (e) => void this.click(e));
     this.body.addEventListener('change', (e) => { if ((e.target as HTMLElement).closest('[data-pane="defense"]')) this.defenseTouched = true; });
     this.fillDefense(s);
+    mountChips(this.body, s.color);
     this.update({ castle: s, room: null });
   }
 
@@ -90,8 +93,14 @@ export class CastleWin extends Win {
     }
     for (const u of s.units) {
       const row = this.q(`[data-unit="${u.id}"]`);
-      row.querySelector('[data-f="stock"]')!.textContent = tt('asker {0} · silah {1}', u.soldiers, u.weapons);
-      row.querySelector('[data-f="arming"]')!.textContent = u.arming > 0 ? tt('· kuşanıyor {0}', u.arming) : '';
+      // pictures first: the unit's face ×at home, its weapon ×in the store, and (only when there are some) the hourglass ×being armed and the flag ×away on a march
+      const away = s.war.armies.reduce((n, a) => n + (a.units.find((x) => x.unitId === u.id)?.count ?? 0), 0), name = tr(u.name);
+      setChip(row, 'home', u.soldiers, `${name}: ${tt('Evde {0}', u.soldiers)}`);
+      setChip(row, 'wep', u.weapons, `${name}: ${tt('Depoda silah {0}', u.weapons)}`);
+      setChip(row, 'arm', u.arming, `${name}: ${tt('Kuşanıyor: {0}.', u.arming)}`);
+      setChip(row, 'away', away, `${name}: ${tt('Yürüyüşte {0}', away)}`);
+      row.querySelector('[data-f="arm"]')!.closest('.chip')!.classList.toggle('hidden', u.arming === 0);
+      row.querySelector('[data-f="away"]')!.closest('.chip')!.classList.toggle('hidden', away === 0);
       const wait = s.armSeconds > 0 ? tt('Kuşanması {0} sn sürer (bu sürede çalışmaz, savaşmaz)', fmt(s.armSeconds)) : '';
       for (const b of row.querySelectorAll<HTMLButtonElement>('[data-act="arm"]')) b.title = wait;
       for (const b of row.querySelectorAll<HTMLButtonElement>('[data-act="arm"]')) b.disabled = u.weapons < Number(b.dataset.n) || dead;

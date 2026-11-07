@@ -119,6 +119,8 @@ export class TopBar {
 
     this.q('[data-f="pop"]').textContent = String(s.population);
     this.q('[data-f="soldiers"]').textContent = String(s.soldiers);
+    this.q('.tb-pop').title = [t('Nüfus ve asker sayısı'), ...s.units.filter((u) => u.soldiers > 0).map((u) => `${tr(u.name)} ×${u.soldiers}`)].join('
+');
     const idle = s.jobs.find((j) => j.job === 'idle')?.count ?? 0;
     const warn = this.q('[data-f="idle"]');
     warn.classList.toggle('hidden', idle === 0 || s.eliminated);
