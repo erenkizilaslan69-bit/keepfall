@@ -473,6 +473,7 @@ public sealed class Room
     public CommandResult AddBot(string token, BotDifficulty difficulty) => InLobby(token, p =>
     {
         if (p.Seat != HostSeat) return CommandResult.Fail("Bot eklemek sadece odayı kuran için.");
+        if (!Enum.IsDefined(difficulty)) return CommandResult.Fail("Geçersiz bot zorluğu.");
         if (_players.Count >= Options.MaxPlayers) return CommandResult.Fail("Boş koltuk yok.");
         int seat = Enumerable.Range(1, Options.MaxPlayers).First(s => _players.All(x => x.Seat != s));
         var bot = new RoomPlayer(seat, Tokens.NewPlayerToken(), $"Bot {ColorName((PlayerColor)(seat - 1))}", difficulty);

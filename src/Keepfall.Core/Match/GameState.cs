@@ -511,6 +511,7 @@ public sealed partial class GameState
         if (Phase == MatchPhase.Ended) return CommandResult.Fail("Maç bitti.");
         if (!_players.TryGetValue(playerKey, out var player)) return CommandResult.Fail("Bu maçta böyle bir oyuncu yok.");
         if (_eliminated.ContainsKey(playerKey)) return CommandResult.Fail("Kalen düştü; artık izleyicisin.");
+        if (CommandGuard.Check(command) is { } malformed) return malformed;
         return command switch
         {
             SendScout scout => LaunchScout(playerKey, player, scout),
