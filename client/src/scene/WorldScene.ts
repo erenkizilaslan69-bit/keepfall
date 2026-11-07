@@ -679,7 +679,7 @@ export class WorldScene extends Phaser.Scene {
     const centre = forest ? toWorld(forest.center) : null;
     bakeRoads(this, this.layout.roads, this.layout.size, forest && centre ? { center: centre, radius: forest.radius * TILE } : null, DEPTH_ROAD);
     placeSignposts(this, this.layout.roads, this.seed);
-    this.terrain.roadEdges(this.layout.roads, 28);
+    this.terrain.roadEdges(this.layout.roads, 37);
   }
 
   /** Trees fill the forest, leaving the roads through it clear. Seeded, so everyone sees the same forest. */

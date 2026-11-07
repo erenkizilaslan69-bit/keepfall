@@ -41,7 +41,7 @@ const FOOT: Record<string, { w: number; d: number }> = {
 };
 const FOOT_DEFAULT = { w: 40, d: 40 };
 /** How wide a row may be on a forest path, on a road in the open, and at a crossing or on open ground (px). */
-const LANE_FOREST = 66, LANE_ROAD = 100, LANE_OPEN = 196;
+const LANE_FOREST = 84, LANE_ROAD = 124, LANE_OPEN = 196;
 const ROW_WIDTH = 196; // px: a row is full when its units together would be wider than this (four infantrymen abreast, two catapults, three horsemen)
 
 /** Where each drawn unit stands in the column, in marching order: `back` px behind the leader along the road, `side` px across it. */
@@ -146,7 +146,7 @@ export class Movers {
   private forests: { center: Vec; radius: number }[] = [];
 
   /**
-   * How wide a row of the column may be (px) where it stands: the road is about 50 px wide in the open and 34 in the forest, and the soldiers keep to its lane (a
+   * How wide a row of the column may be (px) where it stands: the road is about 68 px wide in the open and 46 in the forest, and the soldiers keep to its lane (a
    * little wider than the road itself); at a crossing and on open ground there is room for four abreast.
    */
   private laneAt(at: { x: number; y: number }): number {
@@ -161,7 +161,7 @@ export class Movers {
       if (d < 70) roadsNear++;
     }
     if (roadsNear >= 2) return LANE_OPEN; // a crossing
-    if (nearest < 40) return inForest ? LANE_FOREST : LANE_ROAD;
+    if (nearest < 50) return inForest ? LANE_FOREST : LANE_ROAD;
     return inForest ? LANE_FOREST : LANE_OPEN; // open ground (a castle's yard, a clearing); in the trees a path too
   }
 

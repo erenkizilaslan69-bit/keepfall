@@ -13,7 +13,7 @@ const CELL = 4;
 const CHUNK = 512;
 const CELLS = CHUNK / CELL;
 /** Half the width of a road in the open, and in the forest (a path there is narrower and less sure). */
-const HALF_OPEN = 25, HALF_FOREST = 17;
+const HALF_OPEN = 34, HALF_FOREST = 23;
 
 const rgb = (hex: number): [number, number, number] => [(hex >> 16) & 255, (hex >> 8) & 255, hex & 255];
 const DIRT = [rgb(0xdbbb7e), rgb(0xd3b273), rgb(0xcaa869), rgb(0xe3c88e)];
@@ -94,9 +94,9 @@ export function bakeRoads(scene: Phaser.Scene, roads: RoadView[], mapSize: numbe
           const edge = half - d; // 0 at the edge, growing inwards
           let color: [number, number, number] | null = null;
 
-          if (edge < 11) {
+          if (edge < 13) {
             // the crumbling edge: bare rim, with more and more grass showing through towards the outside
-            const bare = Math.pow(edge / 11, 0.9 + f * 0.5);
+            const bare = Math.pow(edge / 13, 0.9 + f * 0.5);
             if (hash(gi, gj, 3) > bare + 0.1) {
               // grass shows: nothing painted (the ground is the grass), now and then a tuft of it grown over the rim
               if (hash(gi, gj, 4) > 0.8) color = TUFT[Math.floor(hash(gi, gj, 5) * TUFT.length)];
@@ -107,9 +107,9 @@ export function bakeRoads(scene: Phaser.Scene, roads: RoadView[], mapSize: numbe
             // the body: three or four tones in soft blotches, a worn lighter strip in the middle
             const blotch = noise(wx, wy, 46, 7) * 0.7 + hash(gi, gj, 8) * 0.3;
             color = DIRT[Math.min(DIRT.length - 1, Math.floor(blotch * DIRT.length))];
-            if (d < 7 && noise(wx, wy, 90, 9) > 0.45 && hash(gi, gj, 10) > 0.35) color = WORN;
+            if (d < 9 && noise(wx, wy, 90, 9) > 0.45 && hash(gi, gj, 10) > 0.35) color = WORN;
             // wheel ruts: two shallow grooves either side of the middle, broken where the ground is firmer
-            const rutAt = Math.abs(d - (9 + f * -2));
+            const rutAt = Math.abs(d - (12 + f * -3));
             if (rutAt < 2.6 && noise(wx, wy, 38, 12 + (side > 0 ? 0 : 20)) > 0.3 && hash(gi, gj, 13) > 0.18) color = RUT[hash(gi, gj, 14) > 0.5 ? 0 : 1];
             // gravel patches and the odd pebble
             const gravel = noise(wx, wy, 64, 15);
