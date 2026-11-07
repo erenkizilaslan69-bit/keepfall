@@ -31,6 +31,12 @@ public sealed class ArmySetup
     public TargetPriority Targeting { get; set; } = TargetPriority.Front;
     /// <summary>The ranged soldiers of this side hit this many times as hard (1.25: the archers behind a wall).</summary>
     public double RangedDamageFactor { get; set; } = 1;
+    /// <summary>The side this one hits first while it still stands (null: its default order). Only in battles of more than two sides.</summary>
+    public int? Foe { get; set; }
+    /// <summary>The order this side looks at enemy sides in (null: from the first side on).</summary>
+    public IReadOnlyList<int>? FoeOrder { get; set; }
+    /// <summary>Each soldier picks its enemy side by chance (a castle's defenders against two besiegers) instead of going down the order.</summary>
+    public bool SpreadFire { get; set; }
 
     public IReadOnlyDictionary<UnitType, int> Counts => _counts;
     public int TotalCount => _counts.Values.Sum();
@@ -94,7 +100,7 @@ public sealed class ArmySetup
     /// <summary>Same composition and formation, with a new name and target priority.</summary>
     public ArmySetup Clone(string name, TargetPriority targeting)
     {
-        var copy = new ArmySetup(name) { Targeting = targeting, RangedDamageFactor = RangedDamageFactor };
+        var copy = new ArmySetup(name) { Targeting = targeting, RangedDamageFactor = RangedDamageFactor, Foe = Foe, FoeOrder = FoeOrder, SpreadFire = SpreadFire };
         foreach (var (type, count) in _counts) copy._counts[type] = count;
         foreach (var (type, row) in _rowOverrides) copy._rowOverrides[type] = row;
         return copy;

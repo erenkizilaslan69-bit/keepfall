@@ -27,51 +27,98 @@ public sealed class BattleSimulator
     /// <param name="recordBattle">A <see cref="BattleRecord"/> of every hit, death and advance, for replaying the battle.</param>
     public BattleResult Simulate(ArmySetup a, ArmySetup b, Random rng, bool recordLog = false, bool recordBattle = false)
     {
+        var m = SimulateMulti([a, b], rng, null, recordLog, recordBattle);
+        var outcome = m.WinnerSide switch { 0 => BattleOutcome.SideAWins, 1 => BattleOutcome.SideBWins, _ => BattleOutcome.Draw };
+        return new BattleResult(outcome, m.DurationSeconds, m.TimedOut, m.Sides[0], m.Sides[1], m.Log, m.Record);
+    }
+
+    /// <summary>
+    /// A battle of any number of sides at once (a siege with two attackers: the defender is side 1, the attackers 0, 2, ...).
+    /// Everything is decided by the random generator and the events, so the same seed and events always tell the same story, and
+    /// a battle can be told again from the start with one more event (a side that joins at a tick, a side that changes its foe):
+    /// what came before that tick comes out exactly as before. With two sides and no events it is the classic duel, draw for draw.
+    /// </summary>
+    public MultiResult SimulateMulti(IReadOnlyList<ArmySetup> initial, Random rng, IReadOnlyList<SimEvent>? events = null,
+        bool recordLog = false, bool recordBattle = false)
+    {
         var log = recordLog ? new List<string>() : null;
-        var sides = new[] { Deploy(a, rng, 0, 0), Deploy(b, rng, 1, a.TotalCount) };
+        var setups = initial.ToList();
+        var sides = new List<List<Soldier>>();
+        int total = 0;
+        foreach (var setup in setups) { sides.Add(Deploy(setup, rng, sides.Count, total)); total += setup.TotalCount; }
         var record = recordBattle
             ? new BattleRecord(sides.SelectMany(s => s).Select(s => new RecordedSoldier(s.Index, s.Side, s.Type, s.Row)).ToList(),
                 _rules.Combat.TickSeconds)
             : null;
-        var setups = new[] { a, b };
+        var pending = (events ?? []).OrderBy(e => e.Tick).ToList();
+        int nextEvent = 0;
         var combat = _rules.Combat;
-        var lastFront = new Row[] { FrontRow(sides[0]), FrontRow(sides[1]) };
+        var lastFront = sides.Select(FrontRow).ToList();
+        var focus = setups.Select(s => s.Foe).ToList();
+        var kills = new List<int>(new int[sides.Count]);
         double dt = combat.TickSeconds;
         int maxTicks = (int)Math.Ceiling(combat.MaxBattleSeconds / dt);
 
         // Reused between attacks to avoid per-attack allocations.
         var candidates = new List<Soldier>();
+        var order = new List<int>();
 
         int tick = 0;
         bool timedOut = false;
         while (true)
         {
-            int aliveA = CountAlive(sides[0]), aliveB = CountAlive(sides[1]);
-            if (aliveA == 0 || aliveB == 0) break;
-            // A side that can no longer hurt anybody (only healers left) is finished: what is left of it is gone.
-            bool dealA = HasDamageDealer(sides[0]), dealB = HasDamageDealer(sides[1]);
-            if (!dealA || !dealB)
+            while (nextEvent < pending.Count && pending[nextEvent].Tick <= tick)
             {
-                for (int side = 0; side < 2; side++)
-                    if (!(side == 0 ? dealA : dealB))
-                        foreach (var gone in sides[side]) if (gone.Alive) { gone.Hp = 0; record?.Death(tick, gone.Index); }
-                break;
+                switch (pending[nextEvent++])
+                {
+                    case JoinEvent join:
+                        sides.Add(Deploy(join.Setup, rng, sides.Count, total));
+                        total += join.Setup.TotalCount;
+                        setups.Add(join.Setup);
+                        lastFront.Add(FrontRow(sides[^1]));
+                        focus.Add(join.Setup.Foe);
+                        kills.Add(0);
+                        record?.AddSoldiers(sides[^1].Select(s => new RecordedSoldier(s.Index, s.Side, s.Type, s.Row)));
+                        break;
+                    case FocusEvent f when f.Side >= 0 && f.Side < sides.Count:
+                        focus[f.Side] = f.Foe;
+                        break;
+                }
             }
+
+            int n = sides.Count;
+            var alive = new int[n];
+            for (int s = 0; s < n; s++) alive[s] = CountAlive(sides[s]);
+            if (alive.Count(x => x > 0) <= 1) break;
+            // A side that can no longer hurt anybody (only healers left) is finished: what is left of it is gone.
+            bool anyGone = false;
+            for (int s = 0; s < n; s++)
+            {
+                if (alive[s] == 0 || HasDamageDealer(sides[s])) continue;
+                foreach (var gone in sides[s]) if (gone.Alive) { gone.Hp = 0; record?.Death(tick, gone.Index); }
+                anyGone = true;
+            }
+            if (anyGone) continue;
             if (tick >= maxTicks) { timedOut = true; break; }
 
             double now = tick * dt;
-            for (int s = 0; s < 2; s++)
+            for (int s = 0; s < n; s++)
                 lastFront[s] = AdvanceReserves(sides[s], lastFront[s], log, record, tick, now, setups[s].Name);
 
-            for (int s = 0; s < 2; s++)
+            var aims = new Aim[n];
+            for (int s = 0; s < n; s++)
             {
-                var enemies = sides[1 - s];
-                var enemyFront = FrontRow(enemies);
-                var aim = new Aim(
-                    enemyFront,
-                    setups[s].Targeting.PreferredType is { } p && HasAliveOfType(enemies, p) ? p : null,
-                    RearRow(enemies), HasAliveSupportBehind(enemies, enemyFront),
-                    _rules.Combat.RangedReachRows > 1 ? ActiveLimit(enemies, _rules.Combat.RangedReachRows) : enemyFront);
+                for (int e = 0; e < n; e++)
+                {
+                    if (e == s || alive[e] == 0) continue;
+                    var enemies = sides[e];
+                    var enemyFront = FrontRow(enemies);
+                    aims[e] = new Aim(
+                        enemyFront,
+                        setups[s].Targeting.PreferredType is { } p && HasAliveOfType(enemies, p) ? p : null,
+                        RearRow(enemies), HasAliveSupportBehind(enemies, enemyFront),
+                        _rules.Combat.RangedReachRows > 1 ? ActiveLimit(enemies, _rules.Combat.RangedReachRows) : enemyFront);
+                }
                 var ownFront = FrontRow(sides[s]);
                 int activeRows = _rules.Combat.MeleeActiveRows;
                 Row lastActiveRow = ownFront;
@@ -101,13 +148,21 @@ public sealed class BattleSimulator
                     if (!soldier.Type.Hurts) { soldier.Cooldown = 0; continue; }
 
                     var target = soldier.Target;
-                    if (target is null || !IsValidTarget(soldier, target, aim))
-                        target = soldier.Target = ChooseTarget(soldier, enemies, aim, candidates, rng);
+                    bool offFocus = target is not null && focus[s] is { } fs && fs != target.Side && fs < n && alive[fs] > 0;
+                    if (target is null || offFocus || !IsValidTarget(soldier, target, aims[target.Side]))
+                    {
+                        FoeOrder(s, n, alive, focus[s], setups[s], rng, order);
+                        target = null;
+                        foreach (int e in order)
+                            if ((target = ChooseTarget(soldier, sides[e], aims[e], candidates, rng)) is not null) break;
+                        soldier.Target = target;
+                    }
                     if (target is null) { soldier.Cooldown = 0; continue; }
 
                     double damage = soldier.Type.Damage * _rules.Counters.Get(soldier.Type, target.Type)
                         * (soldier.Type.Range == AttackRange.Ranged ? setups[s].RangedDamageFactor : 1);
                     target.PendingDamage += damage;
+                    target.LastHitSide = s;
                     soldier.DamageDealt += damage;
                     record?.Hit(tick, soldier.Index, target.Index);
                     soldier.Cooldown += soldier.Type.AttackInterval;
@@ -116,14 +171,15 @@ public sealed class BattleSimulator
                     if (soldier.Type.SplashTargets > 0)
                     {
                         candidates.Clear();
-                        foreach (var e in enemies) if (e != target && IsValidTarget(soldier, e, aim)) candidates.Add(e);
-                        for (int n = 0; n < soldier.Type.SplashTargets && candidates.Count > 0; n++)
+                        foreach (var e in sides[target.Side]) if (e != target && IsValidTarget(soldier, e, aims[target.Side])) candidates.Add(e);
+                        for (int k = 0; k < soldier.Type.SplashTargets && candidates.Count > 0; k++)
                         {
                             int pick = rng.Next(candidates.Count);
                             var extra = candidates[pick];
                             candidates.RemoveAt(pick);
                             double part = soldier.Type.Damage * soldier.Type.SplashFactor * _rules.Counters.Get(soldier.Type, extra.Type);
                             extra.PendingDamage += part;
+                            extra.LastHitSide = s;
                             soldier.DamageDealt += part;
                             record?.Hit(tick, soldier.Index, extra.Index);
                         }
@@ -131,7 +187,7 @@ public sealed class BattleSimulator
                 }
             }
 
-            for (int s = 0; s < 2; s++)
+            for (int s = 0; s < n; s++)
             {
                 foreach (var soldier in sides[s])
                 {
@@ -143,6 +199,7 @@ public sealed class BattleSimulator
                     soldier.PendingDamage = 0;
                     if (soldier.Alive) continue;
                     record?.Death(tick, soldier.Index);
+                    if (soldier.LastHitSide >= 0) kills[soldier.LastHitSide]++;
                     log?.Add(Fmt(now, $"{setups[s].Name}: {soldier.Type.Name} #{soldier.Number} düştü."));
                 }
             }
@@ -150,21 +207,34 @@ public sealed class BattleSimulator
             tick++;
         }
 
-        int finalA = CountAlive(sides[0]), finalB = CountAlive(sides[1]);
-        var outcome = timedOut || (finalA == 0 && finalB == 0) ? BattleOutcome.Draw
-            : finalA > 0 ? BattleOutcome.SideAWins
-            : BattleOutcome.SideBWins;
+        var finals = sides.Select(CountAlive).ToList();
+        int standing = finals.Count(x => x > 0);
+        int? winner = timedOut || standing != 1 ? null : finals.FindIndex(x => x > 0);
         double duration = tick * dt;
         if (record is not null) record.Ticks = tick;
-        log?.Add(Fmt(duration, outcome switch
-        {
-            BattleOutcome.SideAWins => $"{a.Name} kazandı ({finalA}/{a.TotalCount} hayatta).",
-            BattleOutcome.SideBWins => $"{b.Name} kazandı ({finalB}/{b.TotalCount} hayatta).",
-            _ => timedOut ? "Süre doldu: berabere." : "İki ordu da yok oldu: berabere.",
-        }));
+        log?.Add(Fmt(duration, winner is { } w ? $"{setups[w].Name} kazandı ({finals[w]}/{setups[w].TotalCount} hayatta)."
+            : timedOut ? "Süre doldu: berabere." : "Herkes yok oldu: berabere."));
 
-        return new BattleResult(outcome, duration, timedOut,
-            Report(a, sides[0]), Report(b, sides[1]), (IReadOnlyList<string>?)log ?? [], record);
+        return new MultiResult(winner, duration, timedOut,
+            setups.Select((setup, i) => Report(setup, sides[i])).ToList(), kills, (IReadOnlyList<string>?)log ?? [], record);
+    }
+
+    /// <summary>
+    /// The enemy sides a soldier of side <paramref name="s"/> looks at, in order: the chosen foe when it still stands, then the side's own order
+    /// (or every other side from the first). A side that spreads its fire (a castle's defenders) picks one of them by chance, once per new target.
+    /// </summary>
+    private static void FoeOrder(int s, int n, int[] alive, int? focus, ArmySetup setup, Random rng, List<int> order)
+    {
+        order.Clear();
+        bool chosen = focus is { } f && f != s && f < n && alive[f] > 0;
+        if (chosen) order.Add(focus!.Value);
+        if (setup.FoeOrder is { } own) { foreach (int e in own) if (e != s && e < n && alive[e] > 0 && !order.Contains(e)) order.Add(e); }
+        for (int e = 0; e < n; e++) if (e != s && alive[e] > 0 && !order.Contains(e)) order.Add(e);
+        if (!chosen && setup.SpreadFire && order.Count > 1)
+        {
+            int pick = rng.Next(order.Count);
+            (order[0], order[pick]) = (order[pick], order[0]);
+        }
     }
 
     /// <param name="firstIndex">Index of this side's first soldier in the battle record (side A first).</param>
@@ -316,6 +386,8 @@ public sealed class BattleSimulator
         /// <summary>What a healer may still restore this battle (unlimited when the unit has no budget).</summary>
         public double HealLeft { get; set; } = type.HealBudget > 0 ? type.HealBudget : double.PositiveInfinity;
         public Soldier? Target { get; set; }
+        /// <summary>The side that last hurt this soldier (who gets the kill).</summary>
+        public int LastHitSide { get; set; } = -1;
         public double DamageDealt { get; set; }
         public double DamageTaken { get; set; }
         public bool Alive => Hp > 1e-9;

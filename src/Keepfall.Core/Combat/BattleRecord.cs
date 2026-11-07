@@ -17,13 +17,15 @@ public sealed class BattleRecord
     private readonly List<int> _advances = [];
     private readonly List<int> _heals = [];
 
+    private readonly List<RecordedSoldier> _soldiers;
+
     internal BattleRecord(IReadOnlyList<RecordedSoldier> soldiers, double tickSeconds)
     {
-        Soldiers = soldiers;
+        _soldiers = soldiers.ToList();
         TickSeconds = tickSeconds;
     }
 
-    public IReadOnlyList<RecordedSoldier> Soldiers { get; }
+    public IReadOnlyList<RecordedSoldier> Soldiers => _soldiers;
     public double TickSeconds { get; }
     /// <summary>How many ticks the battle lasted.</summary>
     public int Ticks { get; internal set; }
@@ -40,6 +42,8 @@ public sealed class BattleRecord
 
     public int HitCount => _hits.Count / 3;
 
+    /// <summary>A side joined the battle: its soldiers take the next indices.</summary>
+    internal void AddSoldiers(IEnumerable<RecordedSoldier> soldiers) => _soldiers.AddRange(soldiers);
     internal void Hit(int tick, int attacker, int target) { _hits.Add(tick); _hits.Add(attacker); _hits.Add(target); }
     internal void Death(int tick, int soldier) { _deaths.Add(tick); _deaths.Add(soldier); }
     internal void Heal(int tick, int healer, int target) { _heals.Add(tick); _heals.Add(healer); _heals.Add(target); }
