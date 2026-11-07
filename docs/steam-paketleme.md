@@ -63,6 +63,8 @@ Self-contained sunucu 126 MB: ASP.NET'in kırpması (trimming) desteklenmediği 
 
 ## 4. Tiny Swords Free Pack Steam'de — lisans ve risk
 
+> **Karar (Eren, 2026-11-07):** itch.io sayfasındaki lisans metnine göre (varlıklar değiştirilerek kişisel ve TİCARİ projelerde kullanılabilir; kredi gerekli değil ama memnuniyetle karşılanır; dosyalar değiştirilmiş olsa bile yeniden dağıtılamaz/satılamaz/yeniden paketlenemez) ticari kullanım serbest kabul edildi: oyun, ekran görüntüleri ve fragman Free Pack ile yayınlanır. Kredi verilir ("Art: Tiny Swords by Pixel Frog"). Varlık paketi tek başına dağıtılmaz; repoya Free Pack dosyası/medyası girmez (kural aynen). Aşağıdaki sorular engel DEĞİL; Pixel Frog'dan yazılı onay istenmesi hâlâ önerilir (özellikle Steam depo dosyalarında düz PNG olarak okunabilirlik) ama yayını bekletmez.
+
 **Bu bölüm hukuki görüş değildir**; yalnız hangi varlıkların pakete girdiğini ve kullanıcının (Eren) varlık sahibinden/itch.io sayfasından teyit etmesi gereken soruları listeler. Mevcut dayanak: README'ye göre Free Pack'in lisansı **yeniden dağıtıma izin vermediği** için repoda tutulmuyor; itch.io/CrazyGames paketlerinde ise dosyalar oyunla birlikte gidiyor.
 
 ### Pakete ne giriyor (Steam demosu)
@@ -82,7 +84,7 @@ Self-contained sunucu 126 MB: ASP.NET'in kırpması (trimming) desteklenmediği 
 7. **Sahibe doğrudan sormak**: Pixel Frog'a (itch.io mesajı/e-posta) Steam yayını için yazılı onay istemek en sağlamı: onay yazılı olarak saklanmalı; ücretli "Tiny Swords" paketi satın almak/ticari lisans seçeneği var mı?
 8. **Sürüm**: Steam sürümüne girecek paketin hangi sürümü (indirme tarihi, sürüm numarası) kullanıldı: kayda geçirilmeli.
 
-Bu sorular yanıtlanmadan Steam'e **yükleme yapılmamalı** (mağaza sayfası "Yakında" bile varlık içerir). İzin gelmezse yol 5. bölümde.
+Bu sorular (karar notuna göre engel değil, yazılı onay önerisi) yanıtlanmadan Steam'e yükleme yapmak riskli; yine de (mağaza sayfası "Yakında" bile varlık içerir). İzin gelmezse yol 5. bölümde.
 
 ## 5. Değiştirilebilecek varlıklar (kaba liste, oyunun kendi sanatıyla)
 
