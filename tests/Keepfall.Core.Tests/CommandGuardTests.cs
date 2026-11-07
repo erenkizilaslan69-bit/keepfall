@@ -78,6 +78,19 @@ public class CommandGuardTests
     }
 
     [Fact]
+    public void Counts_that_would_overflow_a_sum_are_refused_not_thrown()
+    {
+        var (room, me, other) = Match();
+        var target = Room.CastleKeyOf(other.Seat);
+        // two spellings of one unit, each as large as an int goes: the sum of the army used to throw
+        var table = new Dictionary<string, int> { ["okcu"] = int.MaxValue, ["OKCU"] = int.MaxValue };
+        var ex = Record.Exception(() => Assert.False(room.Execute(me.Token, new SendArmy(target, table, null, null)).Ok));
+        Assert.Null(ex);
+        Assert.False(room.Execute(me.Token, new ArmWorkers("okcu", int.MaxValue, Job.Idle)).Ok);
+        Assert.False(room.Execute(me.Token, new HireMercenary("okcu", int.MaxValue)).Ok);
+    }
+
+    [Fact]
     public void A_bot_cannot_be_added_with_a_made_up_difficulty()
     {
         var room = new Room("GUARD2", Rules, new RoomOptions { MinPlayers = 1 });

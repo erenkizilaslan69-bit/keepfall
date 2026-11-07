@@ -16,6 +16,8 @@ public static class CommandGuard
     public const int MaxEntries = 16;
     /// <summary>Longest id, key or unit name a command may carry.</summary>
     public const int MaxIdLength = 64;
+    /// <summary>Largest number of people, weapons or soldiers any command may name (a castle never holds a thousandth of it); keeps sums of several entries from overflowing an int.</summary>
+    public const int MaxCount = 1_000_000;
 
     private static readonly CommandResult Malformed = CommandResult.Fail("Geçersiz komut.");
 
@@ -25,10 +27,10 @@ public static class CommandGuard
         if (command is null) return Malformed;
         bool ok = command switch
         {
-            MoveWorkers c => Defined(c.From) && Defined(c.To),
-            QueueWeapon c => Id(c.UnitId),
-            ArmWorkers c => Id(c.UnitId) && Defined(c.From),
-            DisarmSoldiers c => Id(c.UnitId),
+            MoveWorkers c => Defined(c.From) && Defined(c.To) && Count(c.Count),
+            QueueWeapon c => Id(c.UnitId) && Count(c.Count),
+            ArmWorkers c => Id(c.UnitId) && Defined(c.From) && Count(c.Count),
+            DisarmSoldiers c => Id(c.UnitId) && Count(c.Count),
             UpgradeBuilding c => Enum.IsDefined(c.Building),
             SendScout c => Id(c.TargetKey) && Defined(c.From),
             SendEnvoy c => Id(c.TargetKey) && Defined(c.From) && OptId(c.AsKey),
@@ -38,10 +40,10 @@ public static class CommandGuard
             SendArmyToSite c => Id(c.SiteId) && Table(c.Units) && Rows(c.Rows) && OptId(c.ArcherPriority),
             RedirectArmy c => OptId(c.TargetKey) && OptId(c.SiteId),
             SetDefense c => Rows(c.Rows) && OptId(c.ArcherPriority),
-            HireMercenary c => Id(c.UnitId),
+            HireMercenary c => Id(c.UnitId) && Count(c.Count),
             SendDecoy c => Id(c.TargetKey) && Table(c.Units),
             SetFakeReport c => Table(c.Units),
-            BribeArmy c => Id(c.ArmyId),
+            BribeArmy c => Id(c.ArmyId) && Count(c.Count),
             HireCamp c => Id(c.SiteId) && Id(c.TargetKey),
             _ => true,
         };
@@ -50,12 +52,14 @@ public static class CommandGuard
 
     private static bool Defined(Job job) => Enum.IsDefined(job);
 
+    private static bool Count(int n) => n <= MaxCount;
+
     private static bool Id(string? s) => s is not null && s.Length <= MaxIdLength;
 
     private static bool OptId(string? s) => s is null || s.Length <= MaxIdLength;
 
     private static bool Table(IReadOnlyDictionary<string, int>? units) =>
-        units is null || (units.Count <= MaxEntries && units.Keys.All(Id));
+        units is null || (units.Count <= MaxEntries && units.All(kv => Id(kv.Key) && Count(kv.Value)));
 
     private static bool Rows(IReadOnlyDictionary<string, Row>? rows) =>
         rows is null || (rows.Count <= MaxEntries && rows.All(kv => Id(kv.Key) && Enum.IsDefined(kv.Value)));
