@@ -43,16 +43,23 @@ let BEATS = [
 // --partial: shoot-less cut from the clips that exist (the war clips c10-c15 may be missing): beats without a clip are dropped, the "ui" beats fall back to the
 // clean clip of the same shot when only that exists, the end card sits over a calm castle frame and the music crossfade moves to the kingdoms beat.
 if (args.includes('--partial')) {
-  const part = (k, cap) => ({ clip: `c09-part-${k}`, tag: 'clean', ss: 0, d: 3, cap });
+  // --rec <file>: a recorded real match (the war, the siege, the fall and the win come from it; times are source seconds). Without it the cut ends after the preparation shots.
+  const rec = opt('--rec', null);
+  const R = (ss, d, cap) => ({ clip: 'rec', src: rec, tag: 'rec', ss, d, cap });
+  const war = rec ? [
+    R(654, 4, null),
+    R(668, 4, BEATS.find((x) => x.clip === 'c10').cap),
+    R(673.5, 5, BEATS.find((x) => x.clip === 'c13').cap),
+    R(727, 5, null),
+    R(741.5, 3.5, null),
+  ] : [];
   BEATS = [
-    { clip: 'c01', tag: 'clean', ss: 0, d: 5.5, cap: BEATS[0].cap },
-    { clip: 'c03', tag: 'ui', ss: 0, d: 4, cap: BEATS[1].cap },
-    { clip: 'c04', tag: 'clean', ss: 0, d: 4.5, cap: BEATS[2].cap },
-    { clip: 'c05', tag: 'ui', ss: 0, d: 4, cap: ['Gözcü gönder.', 'Send a scout.'] },
-    { clip: 'c06', tag: 'ui', ss: 0, d: 4, cap: BEATS[3].cap },
-    { clip: 'c07', tag: 'clean', ss: 0, d: 4.5, cap: ['Hayalet ordu gönder.', 'Send a phantom army.'], march: true },
-    { clip: 'c09', tag: 'clean', ss: 0, d: 4, cap: BEATS[4].cap },
-    part('golge', null), part('kahin', null),
+    { clip: 'c01', tag: 'clean', ss: 0, d: 4, cap: BEATS[0].cap },
+    { clip: 'c03', tag: 'ui', ss: 0, d: 3, cap: BEATS[1].cap },
+    { clip: 'c04', tag: 'clean', ss: 0, d: 3, cap: BEATS[2].cap },
+    { clip: 'c07', tag: 'clean', ss: 0, d: 4, cap: ['Hayalet ordu gönder.', 'Send a phantom army.'], march: true },
+    { clip: 'c09', tag: 'clean', ss: 0, d: 3, cap: BEATS[4].cap },
+    ...war,
     BEATS.find((b) => b.clip === 'still'),
     { clip: 'c01', tag: 'clean', ss: 2, d: 3.5, cap: null, endCard: true },
   ];
@@ -60,7 +67,7 @@ if (args.includes('--partial')) {
 
 const run = (cmd, a, o = {}) => { const r = spawnSync(cmd, a, { stdio: ['ignore', 'inherit', 'inherit'], ...o }); if (r.status !== 0) throw new Error(`${cmd} failed: ${a.slice(0, 12).join(' ')}`); };
 const ffmpeg = (a) => run('ffmpeg', ['-y', '-hide_banner', '-v', 'error', ...a]);
-const clipPath = (lang, b) => (b.tag === 'clean' ? join(VIDEO, 'clips-en', `${b.clip}-clean-t1.mp4`) : join(VIDEO, `clips-${lang}`, `${b.clip}-ui-t1.mp4`));
+const clipPath = (lang, b) => b.src ?? (b.tag === 'clean' ? join(VIDEO, 'clips-en', `${b.clip}-clean-t1.mp4`) : join(VIDEO, `clips-${lang}`, `${b.clip}-ui-t1.mp4`));
 
 const starts = []; let acc = 0;
 BEATS.forEach((b, i) => { starts.push(i === 0 ? 0 : acc - i * FADE + (i === 0 ? 0 : 0)); acc += b.d; });
