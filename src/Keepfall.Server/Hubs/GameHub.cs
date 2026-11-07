@@ -130,9 +130,10 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
         Context.Items.Remove(TokenKey);
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, RoomGroup(code));
         if (seat > 0) await Groups.RemoveFromGroupAsync(Context.ConnectionId, PlayerGroup(code, seat));
-        // Everybody has left a lobby: the room is closed at once (a room in a match stays until it is abandoned, see TickLoop).
+        // Everybody has left a lobby or a finished match: the room is closed at once, so it does not hold one of the server's slots for the abandon time
+        // (a room in a running match stays until it is abandoned, see TickLoop).
         bool empty;
-        lock (bound.Session.Lock) empty = bound.Session.Room.Phase == RoomPhase.Lobby && bound.Session.Room.Players.All(p => p.IsBot || !p.Connected);
+        lock (bound.Session.Lock) empty = bound.Session.Room.Phase is RoomPhase.Lobby or RoomPhase.Ended && bound.Session.Room.Players.All(p => p.IsBot || !p.Connected);
         if (empty) { registry.Remove(code); return new CommandResultView(true, null); }
         await PushRoom(bound.Session);
         return new CommandResultView(true, null);
