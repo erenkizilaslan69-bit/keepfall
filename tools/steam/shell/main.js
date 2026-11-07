@@ -22,6 +22,14 @@ const log = (line) => { if (quietLog) { try { fs.appendFileSync(quietLog, line +
 let server = null, port = 0, quitting = false, mainWindow = null;
 const blocked = [];
 
+// A crash leaves a trace the player can send: <userData>/crash.log (Windows: %APPDATA%\Keepfall). Never throws.
+function crashLog(what, err) {
+  const text = new Date().toISOString() + ' ' + what + ': ' + ((err && (err.stack || err.message)) || String(err)) + '\n';
+  log('crash ' + what);
+  try { fs.appendFileSync(path.join(app.getPath('userData'), 'crash.log'), text); } catch { /* the log is a nicety */ }
+}
+process.on('uncaughtException', (e) => { crashLog('uncaughtException', e); });
+
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.quit(); // a second launch just focuses the first
 app.on('second-instance', () => { if (mainWindow) { if (mainWindow.isMinimized()) mainWindow.restore(); mainWindow.focus(); } });
@@ -131,6 +139,15 @@ function createWindow() {
   win.once('ready-to-show', () => win.show());
   win.on('closed', () => { mainWindow = null; });
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  // The page's process died (out of memory, GPU crash): load it again once instead of leaving a blank window; a second crash within a minute ends the game with a message.
+  let lastGone = 0;
+  win.webContents.on('render-process-gone', (_e, details) => {
+    crashLog('render-process-gone', details && details.reason);
+    const now = Date.now();
+    if (now - lastGone < 60000) { dialog.showErrorBox('Keepfall', 'The game window stopped working (' + (details && details.reason) + ').'); app.quit(); return; }
+    lastGone = now;
+    if (!win.isDestroyed()) win.loadURL('http://' + HOST + '/');
+  });
   win.webContents.on('will-navigate', (e, url) => { if (new URL(url).host !== HOST) e.preventDefault(); });
   win.webContents.on('before-input-event', (e, input) => {
     if (input.type === 'keyDown' && input.key === 'F11') { win.setFullScreen(!win.isFullScreen()); e.preventDefault(); }

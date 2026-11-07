@@ -99,6 +99,24 @@ const pkg = join(exe, '..');
 const logDir = join(pkg, 'server', 'logs');
 check('the client error log (if any) is inside the install folder, not elsewhere', !existsSync(logDir) || readdirSync(logDir).every((f) => /\.log$/.test(f)), existsSync(logDir) ? readdirSync(logDir).join(',') : 'no logs folder');
 
+// ---- the page's process dies: the shell loads the page again (once) ----
+void app.send('Page.crash');
+let reloaded = false;
+for (let i = 0; i < 40 && !reloaded; i++) {
+  await sleep(500);
+  try {
+    const t = (await (await fetch('http://127.0.0.1:9447/json')).json()).find((x) => x.type === 'page' && x.url.includes('keepfall.localhost'));
+    if (t) {
+      const w = new WebSocket(t.webSocketDebuggerUrl);
+      await new Promise((r, rej) => { w.addEventListener('open', r); w.addEventListener('error', rej); });
+      const id = 1;
+      reloaded = await new Promise((res) => { w.addEventListener('message', (m) => { const d = JSON.parse(m.data); if (d.id === id) { res(d.result?.result?.value === true); w.close(); } }); w.send(JSON.stringify({ id, method: 'Runtime.evaluate', params: { expression: "!!document.querySelector('#quick, canvas')", returnByValue: true } })); });
+    }
+  } catch { /* still reloading */ }
+}
+check('after a render crash the shell reloads the game', reloaded);
+check('the crash was written down', /crash render-process-gone/.test(readFileSync(app.log, 'utf8')));
+
 execSync(`taskkill /PID ${app.child.pid} /T /F`, { stdio: 'ignore' });
 for (let i = 0; i < 40 && !servers.every((p) => !alive(p)); i++) await sleep(500);
 check('server gone after the shell is killed', servers.every((p) => !alive(p)));
