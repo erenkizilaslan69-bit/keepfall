@@ -519,3 +519,10 @@ html.in-menu .guide-fab { display: inline-grid; }
 .decree.more::after { content: ''; position: sticky; display: block; bottom: calc(54px * var(--u)); height: calc(30px * var(--u)); margin-top: calc(-30px * var(--u)); pointer-events: none;
   background: linear-gradient(to bottom, rgba(238, 222, 180, 0), rgba(238, 222, 180, .95)); }
 .guide-overlay .decree-x { position: fixed; top: calc(8px + var(--sa-t, 0px)); right: calc(8px + var(--sa-r, 0px)); z-index: 5; width: calc(40px * var(--u)); height: calc(40px * var(--u)); min-width: 44px; min-height: 44px; }
+
+/* The choice of whom to hit at a gate where two armies besiege the same castle. */
+.siege-focus { position: absolute; bottom: calc(64px * var(--u)); left: 50%; transform: translateX(-50%); z-index: 12; padding: calc(6px * var(--u)) calc(10px * var(--u)); text-align: center; background: rgba(40, 28, 18, 0.88); border: 2px solid #c9a25b; border-radius: calc(6px * var(--u)); color: #f4e6c4; }
+.siege-focus.hidden { display: none; }
+.siege-focus-title { font-size: calc(13px * var(--u)); margin-bottom: calc(4px * var(--u)); }
+.siege-focus-row { display: flex; gap: calc(6px * var(--u)); justify-content: center; flex-wrap: wrap; }
+.siege-focus .btn.on { outline: 2px solid #ffd76a; }

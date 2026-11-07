@@ -134,6 +134,9 @@ export type BattleKind = 'siege' | 'field' | 'camp';
 export interface IncomingView { fromSeat: number; fromName: string; fromColor: PlayerColor; arrivesInSeconds: number }
 export interface BattleLineView { unitId: string; name: string; count: number; lost: number }
 export interface BattleReportView {
+  /** The other army that besieged the same gate (0 = none), as we are told it. */
+  rivalSeat?: number;
+  rivalName?: string | null;
   id: number;
   at: number;
   attacking: boolean;
@@ -336,6 +339,9 @@ export interface BattleStartedView {
   /** [tick, soldier] … */ advances: number[];
   winner: 'attacker' | 'defender' | 'draw';
   /** [tick, healer, patient] … */ heals?: number[];
+  /** Somebody joined a battle already sent (or a side chose a new foe): this is the whole battle again, the same up to `fromTick`. */
+  update?: boolean;
+  fromTick?: number;
 }
 
 // What a fallen player watches (see the server's SpectatorViews): the whole map without fog, a fixed delay behind the game.

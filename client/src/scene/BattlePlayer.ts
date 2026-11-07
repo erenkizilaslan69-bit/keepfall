@@ -21,6 +21,7 @@ import { toWorld } from './world';
 const APPROACH_SECONDS = 2.5;
 const MAX_DRAWN = 40; // per side
 const PER_LINE = 8;
+const SIDE_GAP = 2.6; // tiles: two besiegers at one gate stand this far to either side of the middle
 const COL = 0.75, LINE = 0.55; // tiles between soldiers across and along
 const ACTIVE_MELEE_ROWS = 2, SECOND_GAP = 0.8; // mirrors config combat.meleeActiveRows; tiles between the first and second melee row
 /** The hand-over from the marching column: a fighter that came out of a column slides to its place in the line over this many simulation seconds. */
@@ -114,6 +115,7 @@ export class BattlePlayer {
   }
 
   start(view: BattleStartedView): void {
+    if (view.update && this.replays.has(view.id)) { this.applyUpdate(view); return; }
     if (this.replays.has(view.id) || this.played.has(view.id)) { trace('battle-replay-duplicate', view.id, 'the server announced it again'); return; } // (each battle is replayed once: a repeat of the news must not play it again)
     this.played.add(view.id);
     {
@@ -122,57 +124,9 @@ export class BattlePlayer {
       trace('battle-replay-start', view.id, `${view.kind} lag ${(now - view.startedAt).toFixed(1)} game s, fight ${view.fightSeconds.toFixed(1)} s, sides ${view.sides.map((s) => s.soldiers.length).join('v')}`);
       for (const s of view.sides) if (s.seat) trace('battle-involves', `seat:${s.seat}`, view.id);
     }
-    const f = normalise(view.facing);
-    const p = { x: -f.y, y: f.x };
-    // At a castle the fight is in front of the gate, on the road the attackers came along.
-    const centre = view.kind === 'siege' ? { x: view.at.x - f.x * 1.6, y: view.at.y - f.y * 1.6 } : view.at;
     const fighters: (Fighter | null)[] = [];
     try {
-    view.sides.forEach((side, s) => {
-      const sign = s === 0 ? -1 : 1; // side A stands behind the centre, side B in front of it
-      // The side's rows, front to back (one unit type each): the first stands up front, the others behind it, one step further each.
-      const rowKeys = [...new Set(side.soldiers.map((x) => x.row))].sort((p, q) => ROW_ORDER.indexOf(p) - ROW_ORDER.indexOf(q));
-      const groups = rowKeys.map((key, r) => ({ r, list: side.soldiers.map((x, i) => ({ ...x, i })).filter((x) => x.row === key) }));
-      const place = (k: number, n: number, depth: number): Point => {
-        const line = Math.floor(k / PER_LINE), inLine = Math.min(PER_LINE, n - line * PER_LINE);
-        const across = ((k % PER_LINE) - (inLine - 1) / 2) * COL;
-        const along = sign * (depth + line * LINE);
-        return toWorld({ x: centre.x + f.x * along + p.x * across, y: centre.y + f.y * along + p.y * across });
-      };
-      const courtyard = view.kind === 'siege' && s === 1 ? this.courtyardOf(side.seat) : null;
-      // The column that walked into the battle: its soldiers become the fighters (a soldier of the same kind first), so the armies do not vanish and reappear.
-      const column = courtyard ? null : [...(this.claimColumn?.(side.color, view.at) ?? [])];
-      const take = (unit: string): Point | undefined => {
-        if (!column || column.length === 0) return undefined;
-        const i = column.findIndex((c) => c.kind === unit);
-        const c = column.splice(i >= 0 ? i : 0, 1)[0];
-        return { x: c.x, y: c.y };
-      };
-      let drawn = 0;
-      for (const { r, list } of groups) {
-        const isFront = r === 0, behind = BACK + Math.max(0, r - 1) * ROW_STEP;
-        list.forEach((x, k) => {
-          if (drawn >= MAX_DRAWN) { fighters[offset(view, s) + x.i] = null; return; }
-          drawn++;
-          const look = LOOK[x.unitId] ?? LOOK.kilicli;
-          const ranged = STAYS_BACK.has(x.unitId);
-          // Melee soldiers of the first ACTIVE_MELEE_ROWS rows fight (combat.meleeActiveRows): the second row closes in right behind the first.
-          const second = !isFront && !ranged && r < ACTIVE_MELEE_ROWS;
-          const front = place(k, list.length, second ? FRONT_MEET + SECOND_GAP : ranged || !isFront ? FRONT_START : FRONT_MEET);
-          const start = place(k, list.length, isFront ? FRONT_START : behind);
-          const back = place(k, list.length, isFront ? BACK : behind);
-          const from = take(x.unitId);
-          const at = courtyard ?? from ?? (isFront ? start : back);
-          let key = colorKey(side.color, this.ownColor, look.run);
-          if (!this.scene.textures.exists(key)) key = colorKey(side.color, this.ownColor, LOOK.kilicli.run); // (never the black square)
-          const sprite = this.scene.add.sprite(at.x, at.y, key).setScale(look.scale).setOrigin(0.5, unitOriginY(look.run));
-          sprite.setFlipX(sign > 0 ? f.x > 0 : f.x < 0).setDepth(at.y).setData('replay', view.id);
-          playRandom(sprite, key);
-          fighters[offset(view, s) + x.i] = { sprite, side: s, unit: x.unitId, ranged, front, start, back, inFront: isFront || second, dead: false, from };
-          if (courtyard) this.walk(sprite, isFront ? start : back, 1.6); // down from the courtyard to the gate
-        });
-      }
-    });
+      view.sides.forEach((side, s) => this.buildSide(view, side, s, fighters));
     } catch (e) {
       // A replay that cannot be built leaves nothing behind (the soldiers made so far are deleted) and the battle shows as a cloud.
       for (const f of fighters) if (f?.sprite.active) { this.scene.tweens.killTweensOf(f.sprite); f.sprite.destroy(); }
@@ -183,7 +137,131 @@ export class BattlePlayer {
     }
     sfx.play('battleStart');
     try { this.onStart?.(view, this.clock().speed); } catch { /* the clip is optional */ }
-    this.replays.set(view.id, { view, fighters, hit: 0, death: 0, advance: 0, heal: 0, gate: toWorld(view.at), ended: false });
+    const replay: Replay = { view, fighters, hit: 0, death: 0, advance: 0, heal: 0, gate: toWorld(view.at), ended: false };
+    this.replays.set(view.id, replay);
+    this.catchUp(replay);
+  }
+
+  /** A battle joined late (a reconnect, or one already going on): what happened before now is not played again, the fallen are simply not there. */
+  private catchUp(r: Replay): void {
+    const v = r.view, { now } = this.clock();
+    const tick = ((now - v.startedAt) * v.playback) / v.tickSeconds;
+    if (tick * v.tickSeconds < 1.5) return; // (just begun: play it all)
+    r.hit = skipTo(v.hits, 3, tick);
+    r.heal = skipTo(v.heals ?? [], 3, tick);
+    for (r.advance = 0; r.advance < v.advances.length && v.advances[r.advance] <= tick; r.advance += 2) {
+      const f = r.fighters[v.advances[r.advance + 1]];
+      if (f) { f.inFront = true; f.start = f.front; }
+    }
+    for (r.death = 0; r.death < v.deaths.length && v.deaths[r.death] <= tick; r.death += 2) {
+      const f = r.fighters[v.deaths[r.death + 1]];
+      if (!f) continue;
+      f.dead = true;
+      if (f.sprite.active) { this.scene.tweens.killTweensOf(f.sprite); f.sprite.destroy(); }
+    }
+  }
+
+  /** Where a battle's line-up is centred, and which way it faces: at a castle the fight is in front of the gate, on the road the attackers came along. */
+  private frame(view: BattleStartedView): { f: Vec; p: Vec; centre: Vec } {
+    const f = normalise(view.facing);
+    return { f, p: { x: -f.y, y: f.x }, centre: view.kind === 'siege' ? { x: view.at.x - f.x * 1.6, y: view.at.y - f.y * 1.6 } : view.at };
+  }
+
+  /** Sideways (tiles) where a side stands: at a gate with two besiegers they stand next to each other, the castle in the middle. */
+  private lateral(view: BattleStartedView, s: number): number {
+    return view.kind === 'siege' && view.sides.length >= 3 && s !== 1 ? (s === 0 ? -SIDE_GAP : SIDE_GAP) : 0;
+  }
+
+  /** Draws one side's soldiers into `fighters` (at their record indices). */
+  private buildSide(view: BattleStartedView, side: BattleStartedView['sides'][number], s: number, fighters: (Fighter | null)[]): void {
+    const { f, p, centre } = this.frame(view);
+    const lateral = this.lateral(view, s);
+    const sign = s === 1 ? 1 : -1; // the castle stands in front of the centre, every attacker behind it
+    // The side's rows, front to back (one unit type each): the first stands up front, the others behind it, one step further each.
+    const rowKeys = [...new Set(side.soldiers.map((x) => x.row))].sort((p, q) => ROW_ORDER.indexOf(p) - ROW_ORDER.indexOf(q));
+    const groups = rowKeys.map((key, r) => ({ r, list: side.soldiers.map((x, i) => ({ ...x, i })).filter((x) => x.row === key) }));
+    const place = (k: number, n: number, depth: number): Point => {
+      const line = Math.floor(k / PER_LINE), inLine = Math.min(PER_LINE, n - line * PER_LINE);
+      const across = ((k % PER_LINE) - (inLine - 1) / 2) * COL + lateral;
+      const along = sign * (depth + line * LINE);
+      return toWorld({ x: centre.x + f.x * along + p.x * across, y: centre.y + f.y * along + p.y * across });
+    };
+    const courtyard = view.kind === 'siege' && s === 1 ? this.courtyardOf(side.seat) : null;
+    // The column that walked into the battle: its soldiers become the fighters (a soldier of the same kind first), so the armies do not vanish and reappear.
+    const column = courtyard ? null : [...(this.claimColumn?.(side.color, view.at) ?? [])];
+    const take = (unit: string): Point | undefined => {
+      if (!column || column.length === 0) return undefined;
+      const i = column.findIndex((c) => c.kind === unit);
+      const c = column.splice(i >= 0 ? i : 0, 1)[0];
+      return { x: c.x, y: c.y };
+    };
+    let drawn = 0;
+    for (const { r, list } of groups) {
+      const isFront = r === 0, behind = BACK + Math.max(0, r - 1) * ROW_STEP;
+      list.forEach((x, k) => {
+        if (drawn >= MAX_DRAWN) { fighters[offset(view, s) + x.i] = null; return; }
+        drawn++;
+        const look = LOOK[x.unitId] ?? LOOK.kilicli;
+        const ranged = STAYS_BACK.has(x.unitId);
+        // Melee soldiers of the first ACTIVE_MELEE_ROWS rows fight (combat.meleeActiveRows): the second row closes in right behind the first.
+        const second = !isFront && !ranged && r < ACTIVE_MELEE_ROWS;
+        const front = place(k, list.length, second ? FRONT_MEET + SECOND_GAP : ranged || !isFront ? FRONT_START : FRONT_MEET);
+        const start = place(k, list.length, isFront ? FRONT_START : behind);
+        const back = place(k, list.length, isFront ? BACK : behind);
+        const from = take(x.unitId);
+        const at = courtyard ?? from ?? (isFront ? start : back);
+        let key = colorKey(side.color, this.ownColor, look.run);
+        if (!this.scene.textures.exists(key)) key = colorKey(side.color, this.ownColor, LOOK.kilicli.run); // (never the black square)
+        const sprite = this.scene.add.sprite(at.x, at.y, key).setScale(look.scale).setOrigin(0.5, unitOriginY(look.run));
+        sprite.setFlipX(sign > 0 ? f.x > 0 : f.x < 0).setDepth(at.y).setData('replay', view.id);
+        playRandom(sprite, key);
+        fighters[offset(view, s) + x.i] = { sprite, side: s, unit: x.unitId, ranged, front, start, back, inFront: isFront || second, dead: false, from };
+        if (courtyard) this.walk(sprite, isFront ? start : back, 1.6); // down from the courtyard to the gate
+      });
+    }
+  }
+
+  /**
+   * Somebody joined a battle already being replayed (or one of its sides chose a new foe): the server sends the whole battle again, the same
+   * up to `fromTick`. The newcomer's soldiers are drawn (its marching column becomes them), the first attacker makes room at the gate,
+   * and the replay goes on from where it is on the new story.
+   */
+  private applyUpdate(view: BattleStartedView): void {
+    const r = this.replays.get(view.id);
+    if (!r || r.ended) return;
+    const old = r.view;
+    try {
+      if (old.sides.length < 3 && view.sides.length >= 3) this.makeRoom(r, view, 0);
+      for (let s = old.sides.length; s < view.sides.length; s++) this.buildSide(view, view.sides[s], s, r.fighters);
+      trace('battle-replay-update', view.id, `from tick ${view.fromTick ?? 0}, sides ${view.sides.map((x) => x.soldiers.length).join('v')}`);
+    } catch (e) {
+      reportError('battle-replay', e, { source: `updating battle ${view.id}` });
+      return;
+    }
+    r.view = view;
+    // Go on on the new story: what already happened stays shown, what the new story says has happened since falls now.
+    const { now } = this.clock();
+    const tick = ((now - view.startedAt) * view.playback) / view.tickSeconds;
+    r.hit = skipTo(view.hits, 3, tick);
+    r.heal = skipTo(view.heals ?? [], 3, tick);
+    r.advance = skipTo(view.advances, 2, tick);
+    const d = view.deaths;
+    let i = 0;
+    for (; i < d.length && d[i] <= tick; i += 2) this.fall(r.fighters[d[i + 1]], 1);
+    r.death = i;
+  }
+
+  /** The first attacker steps aside to make room for the second one: its whole line shifts sideways. */
+  private makeRoom(r: Replay, view: BattleStartedView, s: number): void {
+    const { p } = this.frame(view);
+    const o = toWorld({ x: 0, y: 0 }), d = toWorld({ x: p.x * this.lateral(view, s), y: p.y * this.lateral(view, s) });
+    const dx = d.x - o.x, dy = d.y - o.y;
+    for (const f of r.fighters) {
+      if (!f || f.side !== s || f.dead) continue;
+      for (const pt of [f.start, f.front, f.back]) { pt.x += dx; pt.y += dy; }
+      if (f.from) { f.from.x += dx; f.from.y += dy; }
+      if (f.sprite.active && f.settled) this.walk(f.sprite, { x: f.sprite.x + dx, y: f.sprite.y + dy }, 0.8);
+    }
   }
 
   update(): void {
@@ -296,12 +374,12 @@ export class BattlePlayer {
         onComplete: () => {
           shadow?.destroy(); this.fx.stick(arrow, stone);
           if (!stone) sfx.play('arrowHit', this.loudness(to.x, to.y) * 0.8);
-          if (stone) { this.fx.stoneLanding(to.x, to.y + 24); sfx.play(r.view.kind === 'siege' && a.side === 0 ? 'castleHit' : 'stone', this.loudness(to.x, to.y)); } // a stone at the gate is a blow on the gate
+          if (stone) { this.fx.stoneLanding(to.x, to.y + 24); sfx.play(r.view.kind === 'siege' && a.side !== 1 ? 'castleHit' : 'stone', this.loudness(to.x, to.y)); } // a stone at the gate is a blow on the gate
         },
       });
     }
     // at a gate the attackers' blows raise wall dust (the catapult's stones every time, the others now and then)
-    if (r.view.kind === 'siege' && a.side === 0 && (a.unit === 'mancinik' || Math.random() < 0.2)) {
+    if (r.view.kind === 'siege' && a.side !== 1 && (a.unit === 'mancinik' || Math.random() < 0.2)) {
       this.fx.dust(r.gate.x + Phaser.Math.Between(-30, 30), r.gate.y + Phaser.Math.Between(-50, 20), a.unit === 'mancinik' ? 1.1 : 0.7, 0xb8a888);
     }
     if (b && b.sprite.active) this.fx.hit(b.sprite.x, b.sprite.y - 22, a.ranged ? 'arrow' : look.attack ? 'melee' : 'shield');
@@ -386,7 +464,16 @@ export class BattlePlayer {
 
 /** Index of side <paramref name="s"/>'s first soldier in the record (side A first). */
 function offset(view: BattleStartedView, s: number): number {
-  return s === 0 ? 0 : view.sides[0].soldiers.length;
+  let n = 0;
+  for (let i = 0; i < s; i++) n += view.sides[i].soldiers.length;
+  return n;
+}
+
+/** Index of the first entry (groups of `stride`) whose tick is after `tick`. */
+function skipTo(list: readonly number[], stride: number, tick: number): number {
+  let i = 0;
+  while (i < list.length && list[i] <= tick) i += stride;
+  return i;
 }
 
 function normalise(v: Vec): Vec {

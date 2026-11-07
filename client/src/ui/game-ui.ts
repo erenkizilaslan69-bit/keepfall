@@ -13,6 +13,7 @@ import { ForestWin, SiteWin } from './forest-window';
 import { WindowManager, sameTarget, type Target, type Win, type WinContext } from './windows';
 import { Notifications, type NoteKind } from './notifications';
 import { ReportTags } from './reports';
+import { SiegeFocus } from './siege-focus';
 import { GENITIVE, scoutKey, scoutReportHtml } from './scout-report';
 import { t, tr } from '../i18n';
 import { TopBar } from './topbar';
@@ -54,6 +55,8 @@ export class GameUi {
   private readonly kingdom: KingdomUi;
   private readonly ctx: WinContext;
   private scene: WorldScene | null = null;
+  private siegeFocus: SiegeFocus | null = null;
+  private readonly net: GameConnection;
   private castle: CastleView | null = null;
   private room: RoomView | null = null;
   private phase: CastleView['phase'] | null = null;
@@ -82,6 +85,7 @@ export class GameUi {
   constructor(root: HTMLElement, net: GameConnection, seat: number, home: () => void) {
     root.innerHTML = '';
     this.root = root;
+    this.net = net;
     this.mySeat = seat;
     // The signs on the map get a layer of their own UNDER the minimap (z-index 2) and under the top bar, the buttons and the windows (the UI layer, 10),
     // so nothing on the map can ever be drawn over the HUD.
@@ -210,6 +214,8 @@ export class GameUi {
   /** The map the windows are anchored on. */
   attach(scene: WorldScene): void {
     this.scene = scene;
+    this.siegeFocus?.destroy();
+    this.siegeFocus = new SiegeFocus(this.root, this.net, this.mySeat, () => scene.battleViews(), (m) => this.notes.push(m, 'battle', 4000));
     scene.onSelect = (t) => this.open(t);
     scene.onDeselect = () => this.windows.close();
     scene.labels = this.labels;
@@ -254,6 +260,7 @@ export class GameUi {
     this.kingdom.destroy();
     this.notes.destroy();
     this.reports.destroy();
+    this.siegeFocus?.destroy();
   }
 
   update(s: CastleView): void {

@@ -216,6 +216,8 @@ export class GameConnection {
   recallArmy = (armyId: number) => { trace('recall', `own:${armyId}`); return this.call('RecallArmy', armyId); };
   /** A new order for an army on the road: another castle (`targetSeat`) or a place in the forest (`siteId`). */
   redirectArmy = (armyId: number, targetSeat: number | null, siteId: string | null) => { trace('redirect', `own:${armyId}`, `to ${targetSeat ?? siteId}`); return this.call('RedirectArmy', armyId, targetSeat, siteId); };
+  /** At a gate with two besiegers: whom our side hits first (a seat), 0 = the default. */
+  setSiegeFocus = (seat: number) => this.call('SetSiegeFocus', seat);
   setDefense = (rows: Record<string, Row>, archerPriority: string | null) => this.call('SetDefense', rows, archerPriority);
   setSpeed = (speed: number) => this.call('SetSpeed', speed);
 

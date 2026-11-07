@@ -43,8 +43,12 @@ export function reportHtml(b: BattleReportView): string {
       ${side(b.attacking ? t('Senin ordun') : t('Saldıran'), b.attackerUnits)}
       ${side(b.attacking ? t('Savunan') : t('Senin savunman'), b.defenderUnits)}
     </div>
-    <p class="rep-note">${b.raid ? (b.attacking ? t('<b>Süvari baskını kazandı:</b> tarlalar yandı, kale düşmedi.') : t('<b>Süvari baskını:</b> tarlaların yandı, yemek üretimin bir süre yarıya iner.')) : b.defenderEliminated ? t('<b>Kale düştü!</b>') : b.attacking ? (b.youWon ? t('Savunma yenilemedi.') : t('Kale ayakta kaldı.')) : (b.youWon ? t('Saldırıyı püskürttün, kalen ayakta.') : t('Kale ayakta kaldı.'))}</p>${lootLine(b)}`;
+    ${rivalLine(b)}<p class="rep-note">${b.raid ? (b.attacking ? t('<b>Süvari baskını kazandı:</b> tarlalar yandı, kale düşmedi.') : t('<b>Süvari baskını:</b> tarlaların yandı, yemek üretimin bir süre yarıya iner.')) : b.defenderEliminated ? t('<b>Kale düştü!</b>') : b.attacking ? (b.youWon ? t('Savunma yenilemedi.') : t('Kale ayakta kaldı.')) : (b.youWon ? t('Saldırıyı püskürttün, kalen ayakta.') : t('Kale ayakta kaldı.'))}</p>${lootLine(b)}`;
 }
+
+/** Another army besieged the same gate at the same time. */
+const rivalLine = (b: BattleReportView): string =>
+  b.rivalSeat ? `<p class="rep-note">${t('Kapıda aynı anda {0} de vardı: üç taraf birden savaştı.', `<b>${esc(tr(b.rivalName ?? '?'))}</b>`)}</p>` : '';
 
 /** "Ganimet: +120 yemek, +40 altın, +4 kişi, +3 esir" for the report of a castle that fell (only the attacker takes any). */
 const lootLine = (b: BattleReportView): string => {

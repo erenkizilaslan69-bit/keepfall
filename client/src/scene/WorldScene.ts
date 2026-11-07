@@ -273,6 +273,11 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
+  /** The battles being replayed right now (the choice of whom to hit at a gate reads them). */
+  battleViews(): BattleStartedView[] {
+    return this.battles?.active ?? [];
+  }
+
   /** A battle we fight in: replayed on the map from its record. */
   playBattle(battle: BattleStartedView): void {
     trace('battle-received', battle.id, `${battle.kind} started at ${battle.startedAt.toFixed(1)}, now ${this.gameNow().now.toFixed(1)}`);
