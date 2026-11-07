@@ -23,7 +23,11 @@ const MAX_DRAWN = 40; // per side
 const PER_LINE = 8;
 const COL = 0.75, LINE = 0.55; // tiles between soldiers across and along
 const ACTIVE_MELEE_ROWS = 2, SECOND_GAP = 0.8; // mirrors config combat.meleeActiveRows; tiles between the first and second melee row
-const FRONT_START = 1.7, FRONT_MEET = 0.6, BACK = 2.4, ROW_STEP = 0.9; // tiles from the centre
+/** The hand-over from the marching column: a fighter that came out of a column slides to its place in the line over this many simulation seconds. */
+const HANDOFF_SECONDS = 0.7;
+/** The run in starts this many simulation seconds after the battle begins, and the line stands ready this long before the first blow. */
+const RUN_DELAY = 0.3, READY_SECONDS = 0.6;
+const FRONT_START = 1.3, FRONT_MEET = 0.6, BACK = 2.4, ROW_STEP = 0.9; // tiles from the centre
 const ROW_ORDER = ['first', 'second', 'third', 'fourth'];
 
 const LOOK: Record<string, { run: string; attack: string | null; scale: number }> = {
@@ -50,6 +54,10 @@ interface Fighter {
   dead: boolean;
   /** Squashing from a blow right now. */
   hurt?: boolean;
+  /** Where it stood in the marching column that walked into this battle (it slides from there to its place in the line). */
+  from?: Point;
+  /** It has stopped running and stands in its idle pose. */
+  settled?: boolean;
 }
 
 interface Replay {
@@ -85,6 +93,8 @@ export class BattlePlayer {
   /** A replay began (the clip recorder listens). */
   onStart: ((view: BattleStartedView, speed: number) => void) | null = null;
   onSiege: ((seat: number, progress: number, attackerWins: boolean, done: boolean) => void) | null = null;
+  /** Set by the scene: where the soldiers of the column of this colour at this place (tiles) stand, so that they are not drawn anew somewhere else. */
+  claimColumn: ((color: PlayerColor, at: Vec) => { kind: string; x: number; y: number }[] | null) | null = null;
 
   /**
    * <paramref name="clock"/>: the server's game time right now (seconds) and the game speed.
@@ -130,6 +140,14 @@ export class BattlePlayer {
         return toWorld({ x: centre.x + f.x * along + p.x * across, y: centre.y + f.y * along + p.y * across });
       };
       const courtyard = view.kind === 'siege' && s === 1 ? this.courtyardOf(side.seat) : null;
+      // The column that walked into the battle: its soldiers become the fighters (a soldier of the same kind first), so the armies do not vanish and reappear.
+      const column = courtyard ? null : [...(this.claimColumn?.(side.color, view.at) ?? [])];
+      const take = (unit: string): Point | undefined => {
+        if (!column || column.length === 0) return undefined;
+        const i = column.findIndex((c) => c.kind === unit);
+        const c = column.splice(i >= 0 ? i : 0, 1)[0];
+        return { x: c.x, y: c.y };
+      };
       let drawn = 0;
       for (const { r, list } of groups) {
         const isFront = r === 0, behind = BACK + Math.max(0, r - 1) * ROW_STEP;
@@ -143,13 +161,14 @@ export class BattlePlayer {
           const front = place(k, list.length, second ? FRONT_MEET + SECOND_GAP : ranged || !isFront ? FRONT_START : FRONT_MEET);
           const start = place(k, list.length, isFront ? FRONT_START : behind);
           const back = place(k, list.length, isFront ? BACK : behind);
-          const at = courtyard ?? (isFront ? start : back);
+          const from = take(x.unitId);
+          const at = courtyard ?? from ?? (isFront ? start : back);
           let key = colorKey(side.color, this.ownColor, look.run);
           if (!this.scene.textures.exists(key)) key = colorKey(side.color, this.ownColor, LOOK.kilicli.run); // (never the black square)
           const sprite = this.scene.add.sprite(at.x, at.y, key).setScale(look.scale).setOrigin(0.5, unitOriginY(look.run));
           sprite.setFlipX(sign > 0 ? f.x > 0 : f.x < 0).setDepth(at.y).setData('replay', view.id);
           playRandom(sprite, key);
-          fighters[offset(view, s) + x.i] = { sprite, side: s, unit: x.unitId, ranged, front, start, back, inFront: isFront || second, dead: false };
+          fighters[offset(view, s) + x.i] = { sprite, side: s, unit: x.unitId, ranged, front, start, back, inFront: isFront || second, dead: false, from };
           if (courtyard) this.walk(sprite, isFront ? start : back, 1.6); // down from the courtyard to the gate
         });
       }
@@ -188,11 +207,20 @@ export class BattlePlayer {
     const tick = t / v.tickSeconds;
 
     // The melee of both front rows closes in during the approach.
-    const k = Math.min(1, Math.max(0, t / APPROACH_SECONDS));
+    // The melee runs in at a steady pace and is there a little before the first blow is due (the simulator's approach time), then stands ready: it no longer
+    // wades in slowly for the whole approach and stops mid-stride.
+    const k = Math.min(1, Math.max(0, (t - RUN_DELAY) / (APPROACH_SECONDS - RUN_DELAY - READY_SECONDS))), charge = k;
+    const handoff = Math.min(1, Math.max(0, t / HANDOFF_SECONDS)), glide = handoff * handoff * (3 - 2 * handoff);
     for (const f of r.fighters) {
-      if (!f || f.dead || !f.sprite.active || f.ranged || !f.inFront || this.scene.tweens.isTweening(f.sprite)) continue;
-      f.sprite.setPosition(f.start.x + (f.front.x - f.start.x) * k, f.start.y + (f.front.y - f.start.y) * k).setDepth(f.sprite.y);
-      if (k >= 1 && f.sprite.anims.isPlaying && f.sprite.anims.currentAnim?.key.endsWith('-run')) f.sprite.anims.stop();
+      if (!f || f.dead || !f.sprite.active || this.scene.tweens.isTweening(f.sprite)) continue;
+      const melee = !f.ranged && f.inFront;
+      // where it belongs now: the melee closes in, the others stand where they were put
+      const rest: Point = melee ? { x: f.start.x + (f.front.x - f.start.x) * charge, y: f.start.y + (f.front.y - f.start.y) * charge } : f.inFront ? f.start : f.back;
+      if (f.from && handoff < 1) f.sprite.setPosition(f.from.x + (rest.x - f.from.x) * glide, f.from.y + (rest.y - f.from.y) * glide).setDepth(f.sprite.y);
+      else if (melee) f.sprite.setPosition(rest.x, rest.y).setDepth(f.sprite.y);
+      else if (f.from) { f.sprite.setPosition(rest.x, rest.y).setDepth(f.sprite.y); f.from = undefined; }
+      // standing: the running stops where the movement stops (an archer that does not walk never runs)
+      if (!f.settled && (melee ? k >= 1 : handoff >= 1 || !f.from)) this.settle(f);
     }
 
     const h = v.hits;
@@ -291,6 +319,15 @@ export class BattlePlayer {
         });
       }
     }
+  }
+
+  /** The fighter stops running and stands in its idle pose (a frozen frame of the run is what it showed before: a statue in mid-stride). */
+  private settle(f: Fighter): void {
+    f.settled = true;
+    if (!f.sprite.anims.isPlaying || !f.sprite.anims.currentAnim?.key.endsWith('-run')) return;
+    const run = f.sprite.anims.currentAnim.key, idle = run.replace(/(\w+)-run$/, '$1-idle');
+    if (idle !== run && this.scene.anims.exists(idle)) playRandom(f.sprite, idle);
+    else f.sprite.anims.stop();
   }
 
   /** A monk heals: it raises its arms and a green sparkle rises round the one it heals. */

@@ -204,6 +204,7 @@ export class WorldScene extends Phaser.Scene {
     this.movers.setEffects(this.fx);
     this.chimneys = new Chimneys(this);
     this.battles = new BattlePlayer(this, this.color, () => this.gameNow(), (seat) => this.courtyardOf(seat), this.fx);
+    this.battles.claimColumn = (color, at) => this.movers.claimColumn(color, at);
     this.battles.onSiege = (seat, progress, wins, done) => this.siegeFx(seat, progress, wins, done);
     clipReset();
     this.battles.onStart = (v, speed) => clipBattleStarted(this.game.canvas, v.kind === 'siege' ? (v.winner === 'attacker' ? 3 : 2) : 1, v.fightSeconds / Math.max(1, speed));

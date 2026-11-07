@@ -79,6 +79,8 @@ const MAX_AHEAD_TICKS = 6;
 /** The column catches up at most this fast (tiles a second) when the news puts it farther ahead than a glide covers: it is seen running, not teleported. */
 const CATCH_UP_TILES_PER_SECOND = 14;
 
+interface ColumnMemo { color: PlayerColor; at: Vec; ms: number; soldiers: { kind: string; x: number; y: number }[] }
+
 interface Track {
   key: string;
   color: PlayerColor;
@@ -193,6 +195,7 @@ export class Movers {
       const t = this.track(`own:${o.id}`, this.ownColor, o.kind !== 'army', o.units, o.position, o.kind === 'envoy');
       if (t.receivedAt > 0 && t.key === `own:${o.id}`) this.corrections.push({ key: t.key, tiles: Math.hypot(t.shown.x - o.position.x, t.shown.y - o.position.y), speed: this.gameSpeed, ageMs: now - t.receivedAt, shown: { ...t.shown }, position: { ...o.position }, velocity: { ...o.velocity }, before: { ...t.position }, beforeVelocity: { ...t.velocity }, onRoad: true, fighting: t.fighting || o.fighting });
       if (o.fighting !== t.fighting) trace(o.fighting ? 'fight-flag-on' : 'fight-flag-off', t.key);
+      if (o.fighting && !t.fighting) this.remember(t); // it has walked into a battle: where its soldiers stand is where the replay's begin
       t.position = o.position;
       t.velocity = o.velocity;
       if (o.route.length === 0) o.route = [o.position]; // a road always has at least where the army stands
@@ -231,6 +234,7 @@ export class Movers {
       if (alive.has(key)) continue;
       // Out of sight (or home): it simply is not there any more.
       trace('track-removed', key, t.fighting ? 'while fighting' : '');
+      this.remember(t);
       for (const s of t.sprites) s.destroy();
       this.labels.remove(`army:${key}`);
       t.zone?.destroy();
@@ -316,6 +320,37 @@ export class Movers {
         this.remove(t);
       }
     }
+  }
+
+  /** Where the soldiers of a column that has just gone into a battle stood (scene px): the replay's fighters start from there instead of popping up in a line. */
+  private lastColumns: ColumnMemo[] = [];
+  private remember(t: Track): void {
+    if (t.scout || t.envoy) return;
+    const soldiers = t.sprites.map((s, i) => ({ kind: t.kinds[i], x: s.x, y: s.y, active: s.active })).filter((s) => s.active && s.kind).map(({ kind, x, y }) => ({ kind, x, y }));
+    if (soldiers.length === 0) return;
+    this.lastColumns.push({ color: t.color, at: t.shown, ms: performance.now(), soldiers });
+    if (this.lastColumns.length > 8) this.lastColumns.shift();
+  }
+
+  /**
+   * The soldiers of the column of this colour that is (or, a moment ago, was) at this place (tiles): the battle replay takes its starting places from them.
+   * Only what is drawn on the map already (which units stand where in a column), nothing the player could not see. Null when there is none.
+   */
+  claimColumn(color: PlayerColor, at: Vec): { kind: string; x: number; y: number }[] | null {
+    let best: { soldiers: { kind: string; x: number; y: number }[]; d: number; old: ColumnMemo | null } | null = null;
+    const now = performance.now();
+    for (const t of this.tracks.values()) {
+      if (t.scout || t.envoy || t.color !== color || t.sprites.length === 0) continue;
+      const d = Math.hypot(t.shown.x - at.x, t.shown.y - at.y);
+      if (d < 4 && (!best || d < best.d)) best = { soldiers: t.sprites.map((s, i) => ({ kind: t.kinds[i], x: s.x, y: s.y, active: s.active })).filter((s) => s.active && s.kind).map(({ kind, x, y }) => ({ kind, x, y })), d, old: null };
+    }
+    for (const c of this.lastColumns) {
+      const d = Math.hypot(c.at.x - at.x, c.at.y - at.y);
+      if (now - c.ms < 4000 && c.color === color && d < 4 && (!best || d < best.d)) best = { soldiers: c.soldiers, d, old: c };
+    }
+    if (!best || best.soldiers.length === 0) return null;
+    if (best.old) this.lastColumns.splice(this.lastColumns.indexOf(best.old), 1);
+    return best.soldiers;
   }
 
   /** A column that cannot be drawn is taken off the map; the next server tick makes a fresh one. */
