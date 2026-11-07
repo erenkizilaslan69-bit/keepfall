@@ -147,6 +147,13 @@ export class ChallengeScreen {
       </div>`;
     parent.appendChild(root);
     const error = root.querySelector<HTMLElement>('#ch-error')!;
+    let starting = false;
+    // Esc goes back to the menu, like the "back" button (not while a challenge is being started; an open settings or guide window takes the key first)
+    const onKey = (e: KeyboardEvent): void => {
+      if (!root.isConnected) { window.removeEventListener('keydown', onKey); return; }
+      if (e.key === 'Escape' && !starting) actions.back();
+    };
+    window.addEventListener('keydown', onKey);
     root.addEventListener('click', async (e) => {
       const el = e.target as HTMLElement;
       if (el.closest('[data-back]')) { actions.back(); return; }
@@ -154,7 +161,9 @@ export class ChallengeScreen {
       if (!play) return;
       const buttons = root.querySelectorAll<HTMLButtonElement>('button');
       buttons.forEach((b) => (b.disabled = true));
+      starting = true;
       error.textContent = tr((await actions.play(play.dataset.play!)) ?? '');
+      starting = false;
       buttons.forEach((b) => (b.disabled = false));
     });
   }

@@ -51,6 +51,12 @@ export class ProgressScreen {
       const banner = el.closest<HTMLElement>('[data-banner]');
       if (banner) { const [k, d] = banner.dataset.banner!.split(':'); setBannerPick(k as KingdomId, d); this.render(); }
     });
+    // Esc goes back to the menu, like the "back" button (a settings or guide window that is open takes the key first: it stops it in the capture phase)
+    const onKey = (e: KeyboardEvent): void => {
+      if (!this.root.isConnected) { window.removeEventListener('keydown', onKey); return; }
+      if (e.key === 'Escape') actions.back();
+    };
+    window.addEventListener('keydown', onKey);
     this.render();
   }
 
