@@ -32,10 +32,11 @@ const a = await snap();
 console.log('start', JSON.stringify(a));
 
 // (1) the line breaks (the transport is closed with an error: the library reconnects)
-await js("keepfallNet.hub.connection.stop(new Error('test cut')); 1");
+// (the first retry comes at once, so 500 ms later the line may already be back: the library's own "reconnecting" event is what shows the cut was noticed)
+await js("window.__reconnecting = 0; keepfallNet.hub.onreconnecting(() => { window.__reconnecting++; }); keepfallNet.hub.connection.stop(new Error('test cut')); 1");
 await sleep(500);
 const mid = await snap();
-ok(mid.state !== 'Connected', `cut: state is ${mid.state}`);
+ok(mid.state !== 'Connected' || (await js('window.__reconnecting')) > 0, `cut: noticed (state ${mid.state})`);
 ok(await waitFor("keepfallNet.hub.state === 'Connected'", 20), 'cut: connected again by itself');
 const b = await snap();
 ok(b.seat === a.seat && b.room === a.room && b.game, `cut: same seat ${b.seat} and room ${b.room}, still in the match`);

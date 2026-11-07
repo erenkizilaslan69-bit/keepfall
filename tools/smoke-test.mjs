@@ -110,6 +110,13 @@ check('only the Shadow can send phantoms or set a false report', await refused(o
 check('only the Merchant can bribe or hire a camp', await refused(other('tuccar'), 'BribeArmy', 'abc', 2) && await refused(other('tuccar'), 'HireCamp', 'x', 1));
 check('only the Schemer can go under another name', await refused(other('entrikaci'), 'SendEnvoyAs', 1, 2, 0, 0, 0, 0, 'hi', 'idle')
   && await refused(other('entrikaci'), 'SendArmyAs', 1, 2, { kilicli: 1 }, null, null, 'attack'));
+// numbers that are no job / building / corner / row / mode, and tables far too big: refused with an answer, never an error that kills the call (a row of 99 once broke the battle of whoever was attacked)
+const hugeTable = Object.fromEntries(Array.from({ length: 300 }, (_, i) => [`u${i}`, 1]));
+check('made-up enum numbers and huge tables are refused cleanly',
+  await refused(B, 'MoveWorkers', 99, 'farmer', 1) && await refused(B, 'UpgradeBuilding', 77) && await refused(B, 'SendExplore', 12, 'idle')
+  && await refused(B, 'SetDefense', { okcu: 99 }, null) && await refused(B, 'SetDefense', { okcu: -4 }, null)
+  && await refused(B, 'SendArmy', 1, hugeTable, null, null, 'attack') && await refused(B, 'SendArmy', 1, { okcu: 1 }, null, null, 9)
+  && await refused(B, 'BribeArmy', 'x'.repeat(5000), 1));
 check('host sets ×20', (await A.call('SetSpeed', 20)).ok);
 
 // ---- B builds an army and keeps bows in storage; A forges swords; A scouts B -----------------
@@ -608,13 +615,15 @@ check('the frame is public: the other player sees it in the lobby', K.of('RoomSt
 check('the match starts', (await H.call('StartMatch')).ok);
 check('the host sets ×20', (await H.call('SetSpeed', 20)).ok);
 // The humans do nothing; the bots scout them, find them undefended and take their gates.
+// (looks through every room picture received, not just the last: at ×20 the bots can finish each other within one poll, and the "all humans out" picture was still sent)
 const allOut = await (async () => {
-  for (let i = 0; i < 300; i++) {
-    const r = H.of('RoomState').at(-1);
-    if (r?.allHumansOut || r?.phase === 'ended') return r;
-    await sleep(500);
+  for (let i = 0; i < 600; i++) {
+    const seen = H.of('RoomState').find((r) => r.allHumansOut);
+    if (seen) return seen;
+    if (H.of('RoomState').at(-1)?.phase === 'ended') break;
+    await sleep(250);
   }
-  return null;
+  return H.of('RoomState').find((r) => r.allHumansOut) ?? H.of('RoomState').at(-1) ?? null;
 })();
 check('once every human has fallen the room says so', !!allOut?.allHumansOut, JSON.stringify(allOut?.phase));
 if (allOut?.allHumansOut) {

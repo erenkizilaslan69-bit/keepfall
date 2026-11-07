@@ -8,7 +8,9 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const port = 5081;
+// KF_SMOKE_PORT: another port (when 5081 is taken by someone else's dev server). KF_SMOKE_EXE: a published Keepfall.Server.exe to run instead of `dotnet run`
+// (a running Debug server locks the Debug build, so a second session publishes to a scratch folder).
+const port = Number(process.env.KF_SMOKE_PORT ?? 5081);
 const text = readFileSync(join(root, 'config', 'balance.json'), 'utf8').replace(/^﻿/, '');
 if (!/"shortModeMinutes":\s*15\b/.test(text)) throw new Error('config/balance.json: shortModeMinutes is no longer 15, update tools/run-smoke.mjs');
 const dir = mkdtempSync(join(tmpdir(), 'kf-smoke-'));
@@ -22,9 +24,13 @@ writeFileSync(configPath, text.replace(/("shortModeMinutes":\s*)15\b/, '$127').r
 // the challenge definitions sit beside the balance file (the server looks there), so the temporary copy needs them too
 writeFileSync(join(dir, 'challenges.json'), readFileSync(join(root, 'config', 'challenges.json')));
 
-const server = spawn('dotnet', ['run', '--project', join(root, 'src', 'Keepfall.Server'), '--no-launch-profile', '--urls', `http://localhost:${port}`], {
-  cwd: root, stdio: 'ignore', env: { ...process.env, ASPNETCORE_ENVIRONMENT: 'Development', Keepfall__BalancePath: configPath },
-});
+const server = process.env.KF_SMOKE_EXE
+  ? spawn(process.env.KF_SMOKE_EXE, ['--urls', `http://localhost:${port}`], {
+    cwd: dirname(process.env.KF_SMOKE_EXE), stdio: 'ignore', env: { ...process.env, ASPNETCORE_ENVIRONMENT: 'Development', Keepfall__BalancePath: configPath, Keepfall__AllowSpeedControl: 'true', Keepfall__AllowSoloStart: 'true' },
+  })
+  : spawn('dotnet', ['run', '--project', join(root, 'src', 'Keepfall.Server'), '--no-launch-profile', '--urls', `http://localhost:${port}`], {
+    cwd: root, stdio: 'ignore', env: { ...process.env, ASPNETCORE_ENVIRONMENT: 'Development', Keepfall__BalancePath: configPath },
+  });
 const stop = () => { spawnSync('taskkill', ['/pid', String(server.pid), '/T', '/F'], { stdio: 'ignore' }); };
 process.on('exit', stop);
 process.on('SIGINT', () => { stop(); process.exit(130); });
