@@ -34,7 +34,10 @@ Eleştirinin ana bulguları: (1) çok oyunculu oyun boş lobiyle çıkarsa ölü
 - Yeni 4 sıralı düzen sonrası okçu/deste/bot ölçümleri (`docs/` altında tablo), öneri sunulur, onayla uygulanır.
 - İlk maçlar için "başlangıç" modu: krallık yetenekleri kapalı, daha az sistem.
 
-### F. Steam paketleme (kullanıcı kararı gereken kısım)
+### F. Steam paketleme — HAZIRLIK YAPILDI 2026-11-07, kullanıcı kararı bekliyor (hesap, fiyat/tarih, lisans)
+- **Yapıldı (hesapsız)**: Electron kabuğu + gömülü self-contained sunucuyla çevrimdışı demo prototipi (`node tools/pack-steam.mjs`, doğrulama `tools/steam-check.mjs`; kabuk seçimi ve ölçümler `docs/steam-paketleme.md`), `SteamProgressStore` + zengin durum taslağı (app id yoksa kapalı), mağaza taslağı ve fragman/ekran görüntüsü planı (`docs/steam-magaza.md`, `tools/shot-steam.mjs`, `tools/steam-trailer.mjs`), Tiny Swords lisans soruları ve değiştirilebilir varlık listesi (`docs/steam-paketleme.md` §4–5).
+- **Bekleyen (kullanıcı)**: Steamworks hesabı + 100 USD (app id), fiyat ve tarih, Tiny Swords Free Pack'in Steam'de ticari kullanım/yeniden dağıtım teyidi, yapay zekâ içerik beyanı. Gerçek SDK ile başarım/bulut/Rich Presence denenmedi.
+- Özgün plan:
 - Masaüstü kabuğu (Electron veya Tauri) + Steamworks (başarımlar, bulut kayıt, zengin durum). Oyun şimdiki gibi sunucu ister; demo için **tek kişilik modun sunucusu istemciyle birlikte yerelde** çalışabilir (çevrimdışı demo).
 - Mağaza sayfası: tek cümle "Her asker, kaybedilmiş bir işçidir.", 30–45 sn fragman, ekran görüntüleri, açıklama (TR/EN).
 - Demo: A'dan 6–8 meydan okuma + hızlı oyna; Next Fest'e uygun.
