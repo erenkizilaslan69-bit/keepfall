@@ -16,7 +16,7 @@ const files = [];
   for (const f of readdirSync(dir)) {
     const p = join(dir, f);
     if (statSync(p).isDirectory()) walk(p);
-    else if (/\.ts$/.test(f) && !p.includes('i18n')) files.push(p);
+    else if (/\.ts$/.test(f) && !p.includes('i18n') && f !== 'banner-lab.ts') files.push(p); // banner-lab: a dev-only preview page
   }
 })(ROOT);
 
@@ -71,10 +71,12 @@ function literals(src) {
   return out;
 }
 
-const IGNORE = new Set(['Türkçe', 'Tiny Swords simgeleri yüklenemedi.', 'yaklaşıyor', 'bot-end hidden', "Mavi'den", "Kırmızı'dan", "Sarı'dan", "Mor'dan", "Mavi'nin", "Kırmızı'nın", "Sarı'nın", "Mor'un", '/art/mancinik.png', 'golge:forge', 'golge:lumberCamp', 'tuccar:forge']);
+const IGNORE = new Set(['Türkçe', 'Tiny Swords arayüz parçaları kurulamadı.', 'Tiny Swords simgeleri yüklenemedi.', 'yaklaşıyor', 'bot-end hidden', "Mavi'den", "Kırmızı'dan", "Sarı'dan", "Mor'dan", "Mavi'nin", "Kırmızı'nın", "Sarı'nın", "Mor'un", '/art/mancinik.png', 'golge:forge', 'golge:lumberCamp', 'tuccar:forge']);
 const looksLikeText = (s) => {
   if (IGNORE.has(s)) return false;
   if (s.includes('/oda/')) return false;
+  if (/^[.#\[][\w\-="{}\[\]]*$/.test(s)) return false; // a CSS selector, not text
+
   const plain = s.replace(/<[^>]*>/g, ' ').replace(/&[a-z]+;/g, ' ').replace(/\{\d+\}/g, ' ');
   if (TR.test(plain)) return true;
   return WORDS.test(plain) && /[A-Za-z]{3}/.test(plain) && !/^[a-z-]+$/.test(plain);

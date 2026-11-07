@@ -104,6 +104,8 @@ export const EN_SERVER: Record<string, string> = {
   "Maçı sadece odayı kuran bitirebilir.": "Only the host can finish the match.",
   "Maç, sadece tüm insan oyuncular elendikten sonra bitirilebilir.": "The match can only be finished once all human players are eliminated.",
   "Bu odada değilsin.": "You are not in this room.",
+  "Geçersiz komut.": "Invalid command.",
+  "Geçersiz bot zorluğu.": "Invalid bot difficulty.",
   "Bu komut sadece lobide kullanılabilir.": "This command can only be used in the lobby.",
   "Oda bulunamadı.": "Room not found. Check the code and try again.",
   "Oda dolu.": "The room is full.",

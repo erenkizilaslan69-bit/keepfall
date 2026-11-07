@@ -16,8 +16,8 @@ const FILES = [];
     else if (/\.cs$/.test(f)) FILES.push(p);
   }
 })(ROOT);
-// Texts that never reach a player: configuration errors for whoever edits balance.json, the developer log, the browser error log.
-const SKIP_FILES = /(BalanceConfig|ClientErrorLog|TickLoop|RoomRegistry|Program|EnvoyMessage)\.cs$/;
+// Texts that never reach a player (Challenges.cs: file-validation errors for whoever edits challenges.json; its names and descriptions carry both languages): configuration errors for whoever edits balance.json, the developer log, the browser error log.
+const SKIP_FILES = /(BalanceConfig|ClientErrorLog|TickLoop|RoomRegistry|Program|EnvoyMessage|Challenges)\.cs$/;
 // fragments of an interpolation the scan cannot parse (the whole text is entered by hand in the dictionary)
 const SKIP_TEXT = /^(\)\?\.|Maskeler düştü: \{0\}$|\+120 yemek)/; // the loot line ("+120 yemek, ...") is translated word by word in tr()
 const TR = /[çğıöşüÇĞİÖŞÜ]/;
