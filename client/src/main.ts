@@ -41,6 +41,7 @@ import { startFpsMeter } from './ui/fps-meter';
 import { armTutorial, disarmTutorial, tutorialDone } from './ui/tutorial';
 import { CRAZY } from './crazy';
 import { FEATURE_PRIVATE_ROOM } from './features';
+import { initSteam, steamStatus } from './steam';
 import { crazyGameplay, crazyInstant, crazyInviteRoom, crazyLoaded, crazyRoom, crazyUsername, crazyVictory, initCrazy, onCrazyJoin, watchCrazySettings } from './crazy';
 import { countMatch, newPlayer, playsFullRules, setSiteChatOff } from './prefs';
 import { guarded, installErrorReporting } from './error-report';
@@ -203,11 +204,23 @@ function onRoom(r: RoomView): void {
   // The site (CrazyGames) learns which room we are in, and that friends may join only while it is a lobby.
   crazyRoom(r.code, r.phase === 'lobby' && !soloRoom);
   crazyGameplay(screen === 'game' && !lastCastle?.eliminated);
+  roomEnded = r.phase === 'ended'; roomChallenge = !!r.challengeId;
+  announce();
+}
+
+/** Steam friends list ("Rich Presence"): what this player is doing now; does nothing without Steam. */
+let roomEnded = false, roomChallenge = false;
+function announce(): void {
+  if (screen === 'home' || screen === 'challenges' || screen === 'progress' || screen === 'lobby' || screen === 'none') { steamStatus('menu'); return; }
+  if (screen === 'end' || roomEnded) { steamStatus('ended'); return; }
+  if (lastCastle?.eliminated) { steamStatus('spectating'); return; }
+  const war = lastCastle?.phase === 'war';
+  steamStatus(roomChallenge ? (war ? 'challenge_war' : 'challenge_prep') : war ? 'war' : 'prep');
 }
 
 function onCastle(c: CastleView): void {
   lastCastle = c;
-  if (screen === 'game') crazyGameplay(!c.eliminated); // an eliminated player only watches: the site is told the play has stopped
+  if (screen === 'game') { crazyGameplay(!c.eliminated); announce(); } // an eliminated player only watches: the site is told the play has stopped
   if (c.summary) { summary = c.summary; end?.setSummary(c.summary); }
   if (screen === 'game') {
     if (musicInGame) music.scene(c.phase === 'war' ? 'war' : 'prep'); // the lively track for the war, the calm one before it (once the clouds have parted)
@@ -282,6 +295,7 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
   clear();
   document.documentElement.classList.add('in-menu');
   screen = 'home';
+  announce();
   new HomeScreen(app, { name: loadName() || siteName, code: defaults.code ?? '', error: defaults.error }, {
     create: async (name) => {
       saveName(name);
@@ -659,6 +673,7 @@ async function main(): Promise<void> {
   applyCalm(); // "Efektleri azalt" / low graphics: the interface's small movements are off
   // CrazyGames build only: loading starts here, before anything is fetched: the site's SDK (nothing happens anywhere else); loadingStop comes when the lobby is up.
   const onSite = await initCrazy();
+  await initSteam(); // Steam build with Steam running: progress goes through Steamworks (achievements, cloud); otherwise nothing happens
   if (onSite) {
     siteName = (await crazyUsername()) ?? '';
     watchCrazySettings((s) => { setSiteChatOff(s.disableChat); sfx.setSiteMuted(s.muteAudio); });

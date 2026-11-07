@@ -23,10 +23,10 @@ const serverPids = () => {
   try { return execSync('tasklist /FI "IMAGENAME eq Keepfall.Server.exe" /FO CSV /NH', { encoding: 'utf8' }).split(/\r?\n/).filter((l) => l.includes('Keepfall.Server')).map((l) => Number(l.split('","')[1])); } catch { return []; }
 };
 
-async function launch(label, cdpPort) {
+async function launch(label, cdpPort, steamAppId = '') {
   const log = join(userData, `${label}.log`);
   writeFileSync(log, '');
-  const child = spawn(exe, [`--remote-debugging-port=${cdpPort}`, `--user-data-dir=${userData}`], { stdio: 'ignore', env: { ...process.env, KEEPFALL_SHELL_LOG: log, KEEPFALL_STEAM_APPID: '' } });
+  const child = spawn(exe, [`--remote-debugging-port=${cdpPort}`, `--user-data-dir=${userData}`], { stdio: 'ignore', env: { ...process.env, KEEPFALL_SHELL_LOG: log, KEEPFALL_STEAM_APPID: steamAppId } });
   let target;
   for (let i = 0; i < 120 && !target; i++) {
     await sleep(500);
@@ -93,6 +93,15 @@ execSync(`taskkill /PID ${app.child.pid} /F`, { stdio: 'ignore' });
 let gone = false;
 for (let i = 0; i < 40 && !gone; i++) { await sleep(500); gone = second.every((p) => !alive(p)); }
 check('server stops even when the shell is killed', gone, `pid ${second.join(',')}`);
+
+// ---- third launch: an app id is set but Steam is not running (the usual case on a machine without the client): the game must still start, Steam stays off ----
+app = await launch('third', 9446, '480');
+check('with an app id but no running Steam the game still starts', await app.waitFor(`!!document.querySelector('#quick')`));
+const steamLine = readFileSync(app.log, 'utf8').split(/\r?\n/).find((l) => l.startsWith('steam ')) ?? '';
+check('shell reports Steam state (on, or off with a reason)', /^steam (on|off)/.test(steamLine), steamLine);
+const third = serverPids().filter((p) => !before.has(p));
+execSync(`taskkill /PID ${app.child.pid} /F`, { stdio: 'ignore' });
+for (let i = 0; i < 40 && !third.every((p) => !alive(p)); i++) await sleep(500);
 
 console.log(failures ? `\n${failures} check(s) FAILED` : '\nAll checks passed');
 process.exit(failures ? 1 : 0);

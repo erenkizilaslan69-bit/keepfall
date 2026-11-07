@@ -1,0 +1,31 @@
+"lang"
+{
+	// Steamworks partner site -> Community & Marketing -> Rich Presence: upload this file. The game sets the key "steam_display" to one of the tokens
+	// (client/src/steam.ts, SteamStatus); Steam shows the text in each friend's own language.
+	"english"
+	{
+		"tokens"
+		{
+			"#Status_Menu"          "In the main menu"
+			"#Status_Prep"          "Preparing the castle"
+			"#Status_War"           "At war"
+			"#Status_ChallengePrep" "Challenge: preparing the castle"
+			"#Status_ChallengeWar"  "Challenge: at war"
+			"#Status_Spectating"    "Watching the battle (castle fallen)"
+			"#Status_Ended"         "Looking at the match result"
+		}
+	}
+	"turkish"
+	{
+		"tokens"
+		{
+			"#Status_Menu"          "Ana menüde"
+			"#Status_Prep"          "Kalesini hazırlıyor"
+			"#Status_War"           "Savaşta"
+			"#Status_ChallengePrep" "Meydan Okuma: kalesini hazırlıyor"
+			"#Status_ChallengeWar"  "Meydan Okuma: savaşta"
+			"#Status_Spectating"    "Savaşı izliyor (kalesi düştü)"
+			"#Status_Ended"         "Maç sonucuna bakıyor"
+		}
+	}
+}
