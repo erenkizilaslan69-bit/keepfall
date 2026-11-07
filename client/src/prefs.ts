@@ -18,8 +18,10 @@ function load(): Prefs {
 let prefs = load();
 
 /** "Efektleri azalt": no camera shake, no sparks and arrow trails. Also on when the system asks for less motion. */
+// (Asked many times a frame: the media query is made once, a MediaQueryList always holds the current answer.)
+const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
 export function reducedEffects(): boolean {
-  return prefs.reduceEffects || (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
+  return prefs.reduceEffects || (reducedMotion?.matches ?? false);
 }
 
 export function userReducesEffects(): boolean {
@@ -48,12 +50,13 @@ export function setShowFps(on: boolean): void {
 const fpsListeners = new Set<() => void>();
 export function onShowFpsChange(f: () => void): void { fpsListeners.add(f); }
 
+const lowByUrl = new URLSearchParams(location.search).get('low') === '1'; // (read once: it is asked every frame)
 /**
  * "Düşük grafik": no particles (dust, sparks, smoke, embers), no chimney smoke, a third of the map's ornaments, and the fog without its smooth rim,
  * redrawn less often. The particles stop at once; the ornaments and the fog are built when the map is, so the page is loaded again to change them.
  */
 export function lowGraphics(): boolean {
-  return prefs.lowGraphics || new URLSearchParams(location.search).get('low') === '1';
+  return prefs.lowGraphics || lowByUrl;
 }
 
 export function setLowGraphics(on: boolean): void {
