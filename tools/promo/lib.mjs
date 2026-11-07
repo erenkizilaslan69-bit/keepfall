@@ -6,10 +6,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-export const CLIPS = fileURLToPath(new URL('../../art/promo/clips/', import.meta.url)).split('\\').join('/');
+// KF_PROMO_CLIPS: another output folder (the Steam media tools shoot into art/video/clips-<lang>/); KF_PROMO_LANG / KF_PROMO_URL: interface language and the client to shoot.
+export const CLIPS = (process.env.KF_PROMO_CLIPS ? process.env.KF_PROMO_CLIPS.split('\\').join('/').replace(/\/?$/, '/') : fileURLToPath(new URL('../../art/promo/clips/', import.meta.url)).split('\\').join('/'));
 mkdirSync(CLIPS, { recursive: true });
 
-export async function launch({ url = 'http://localhost:5174/', lang = 'en', name = 'Eren' } = {}) {
+export async function launch({ url = process.env.KF_PROMO_URL || 'http://localhost:5174/', lang = process.env.KF_PROMO_LANG || 'en', name = 'Eren' } = {}) {
   const port = 9700 + Math.floor(Math.random() * 200);
   const chrome = spawn('C:/Program Files/Google/Chrome/Application/chrome.exe', [`--remote-debugging-port=${port}`, `--user-data-dir=${mkdtempSync(join(tmpdir(), 'kf-promo-'))}`,
     '--kiosk', '--window-position=0,0', '--window-size=1920,1080', '--no-first-run', '--disable-infobars', '--hide-scrollbars', '--force-device-scale-factor=1',

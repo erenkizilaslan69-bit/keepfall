@@ -4,7 +4,7 @@ import { Director, sleep } from './director.mjs';
 import { until } from './war.mjs';
 const args = process.argv.slice(2);
 const takes = Number(args[args.indexOf('--takes') + 1] || 2);
-for (let i = 1; i <= takes; i++) for (const tag of ['clean', 'ui']) {
+for (let i = 1; i <= takes; i++) for (const tag of ['clean', 'ui'].filter((t) => !process.env.KF_PROMO_TAGS || process.env.KF_PROMO_TAGS.split(',').includes(t))) {
   for (let attempt = 1; attempt <= 3; attempt++) {
     const d = await Director.open();
     try {

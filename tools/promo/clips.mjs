@@ -99,7 +99,7 @@ Object.assign(CLIPSET, {
       await d.js(`keepfallScene.select({ kind: 'enemy', seat: ${r} }); 1`); await sleep(900);
       await d.js(`(() => { const i = document.querySelector('.win input[placeholder], .win textarea'); const all = [...document.querySelectorAll('.win input, .win textarea')]; const m = all.find((e) => /message|mesaj/i.test(e.placeholder || '')) ?? all[all.length - 1]; m.scrollIntoView({ block: 'center', behavior: 'smooth' }); m.focus(); return 1; })()`);
       await sleep(500);
-      for (const ch of 'Truce until the famine?') { await d.b.send('Input.insertText', { text: ch }); await sleep(95); }
+      for (const ch of (process.env.KF_PROMO_LANG === 'tr' ? 'Kıtlığa kadar ateşkes?' : 'Truce until the famine?')) { await d.b.send('Input.insertText', { text: ch }); await sleep(95); }
     } },
   // c07 (5 s) Shadow Kingdom: the phantom army marches on the rival
   c07: { seconds: 5, reuse: false, setup: async (d) => {
@@ -131,7 +131,7 @@ let d = null; let kept = null;
 for (const name of wanted) {
   const c = CLIPSET[name]; if (!c) { console.log('no such clip', name); continue; }
   for (let i = 0; i < takes; i++) {
-    for (const tag of (c.tags ?? ['clean', 'ui'])) {
+    for (const tag of (c.tags ?? ['clean', 'ui']).filter((t) => !process.env.KF_PROMO_TAGS || process.env.KF_PROMO_TAGS.split(',').includes(t))) { // KF_PROMO_TAGS=ui: only the interface versions (another language)
       for (let attempt = 1; ; attempt++) {
         try {
           if (!d || !c.reuse || kept !== name) { if (d) d.close(); d = await Director.open(); await c.setup(d, i); kept = name; }
