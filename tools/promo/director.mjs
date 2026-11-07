@@ -39,7 +39,7 @@ export class Director {
   /** UI hidden (the clean version) or shown. */
   async ui(on) {
     await this.js(`(() => { let s = document.getElementById('promo-hide'); if (!s) { s = document.createElement('style'); s.id = 'promo-hide'; document.head.appendChild(s); }
-      s.textContent = '.tb-speed, .dev-only, .kf-debug, [data-dev], .kf-fps, body > pre { display: none !important; }' + ${on ? "''" : "' .ui-root, .guide-fab, .settings-fab, .lang-fab, .kf-minimap, body > div:not(#app), .kingdom-decree, .tut-frame, .tut-card, .cloud-curtain, .rotate-screen, .hint-card { display: none !important; }'"}; })()`);
+      s.textContent = '.tb-speed, .dev-only, .kf-debug, [data-dev], .kf-fps, body > pre, body > div[style*="9999"] { display: none !important; }' + ${on ? "''" : "' .ui-root, .guide-fab, .settings-fab, .lang-fab, .kf-minimap, body > div:not(#app), .kingdom-decree, .tut-frame, .tut-card, .cloud-curtain, .rotate-screen, .hint-card { display: none !important; }'"}; })()`);
   }
   /** A room with the given bots, our deck, started; returns when the map is up and the decree closed. */
   async match({ bots = ['easy', 'easy', 'easy'], deck = null, kingdom = null, tries = 12, guided = true } = {}) {
@@ -73,7 +73,7 @@ export class Director {
     const stop = startRecording(file);
     await sleep(1500);
     const t0 = Date.now();
-    await action();
+    try { await action(); } catch (e) { clearInterval(keep); try { rmSync(await stop()); } catch { /* */ } throw e; } // a failed action must not leave the recorder running
     const used = (Date.now() - t0) / 1000;
     await sleep(Math.max(0, seconds - used) * 1000);
     const raw = await stop();

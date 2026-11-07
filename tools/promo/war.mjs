@@ -2,7 +2,7 @@
 import { Director, sleep } from './director.mjs';
 export const DECK = ['kilicli', 'okcu', 'mancinik', 'suvari'];
 export const ARMY = { kilicli: 8, okcu: 6, mancinik: 2, suvari: 4 };
-export const ROWS = { kilicli: 'first', suvari: 'first', okcu: 'fourth', mancinik: 'fourth' };
+export const ROWS = { kilicli: 'first', suvari: 'second', okcu: 'third', mancinik: 'fourth' };
 
 export async function until(d, expr, sec = 30, speed = 20) { await d.speed(speed); const t0 = Date.now(); let ok = false; while (Date.now() - t0 < sec * 1000) { if (await d.js(`!!(${expr})`)) { ok = true; break; } await sleep(300); } await d.speed(1); return ok; }
 export async function must(d, call) { const r = await d.js(`${call}.then(JSON.stringify)`).then(JSON.parse); if (!r.ok) throw new Error(`${call} -> ${r.error}`); return r; }
