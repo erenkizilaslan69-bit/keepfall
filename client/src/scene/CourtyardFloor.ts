@@ -66,6 +66,15 @@ function dirtCover(x: number, y: number): number {
   return best;
 }
 
+// The tracks are the same in every castle: a cell's cover is worked out once per page (it was 280 ms of the match start with four castles).
+const coverCache = new Map<number, Float32Array>();
+function cachedCover(i: number, j: number, w: number): number {
+  let grid = coverCache.get(w);
+  if (!grid) { grid = new Float32Array(w * Math.ceil(REGION_H / CELL)).fill(NaN); coverCache.set(w, grid); }
+  const k = j * w + i;
+  return Number.isNaN(grid[k]) ? (grid[k] = dirtCover(i * CELL, j * CELL)) : grid[k];
+}
+
 export class CourtyardFloor {
   private image: Phaser.GameObjects.Image | null = null;
   private fallen = false;
@@ -123,7 +132,7 @@ export class CourtyardFloor {
           if (hash(col, row, seed + 6) > 0.96 && c !== MORTAR) c = EARTH[1];
         } else {
           // grass shows through; dirt where a track or patch covers (ragged edge, a darker rim)
-          const cover = dirtCover(i * CELL, j * CELL) + (noise(i * CELL, j * CELL, 26, seed + 13) - 0.5) * 0.5 + (hash(i, j, seed + 14) - 0.5) * 0.12;
+          const cover = cachedCover(i, j, w) + (noise(i * CELL, j * CELL, 26, seed + 13) - 0.5) * 0.5 + (hash(i, j, seed + 14) - 0.5) * 0.12;
           if (cover < 0.04) continue;
           c = EARTH[Math.floor(hash(i, j, seed) * EARTH.length)];
           if (cover < 0.16) c = EARTH_DARK;

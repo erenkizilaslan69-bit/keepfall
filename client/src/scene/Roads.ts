@@ -66,6 +66,9 @@ export function bakeRoads(scene: Phaser.Scene, roads: RoadView[], mapSize: numbe
       const mid = { x: x0 + CHUNK / 2, y: y0 + CHUNK / 2 };
       const near = segments.filter((s) => distanceToSegment(mid, { x: s.ax, y: s.ay }, { x: s.bx, y: s.by }) < reach);
       if (near.length === 0) continue;
+      // A cell farther than HALF_OPEN + 8 from a segment's bounding box is farther than that from the segment: skip those without the square roots.
+      const R = HALF_OPEN + 8;
+      const boxes = near.map((s) => ({ s, x0: Math.min(s.ax, s.bx) - R, x1: Math.max(s.ax, s.bx) + R, y0: Math.min(s.ay, s.by) - R, y1: Math.max(s.ay, s.by) + R }));
 
       const key = `kf-road-${cx}-${cy}`;
       const canvas = scene.textures.createCanvas(key, CHUNK, CHUNK)!;
@@ -79,7 +82,8 @@ export function bakeRoads(scene: Phaser.Scene, roads: RoadView[], mapSize: numbe
           const wx = x0 + i * CELL + CELL / 2, wy = y0 + j * CELL + CELL / 2;
           // the nearest road, and which side of it the cell is on
           let d = Infinity, side = 1;
-          for (const s of near) {
+          for (const { s, x0: bx0, x1: bx1, y0: by0, y1: by1 } of boxes) {
+            if (wx < bx0 || wx > bx1 || wy < by0 || wy > by1) continue;
             const dx = s.bx - s.ax, dy = s.by - s.ay, len2 = dx * dx + dy * dy;
             const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((wx - s.ax) * dx + (wy - s.ay) * dy) / len2));
             const qx = s.ax + dx * t, qy = s.ay + dy * t, dist = Math.hypot(wx - qx, wy - qy);
