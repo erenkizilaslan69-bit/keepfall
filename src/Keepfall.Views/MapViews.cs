@@ -68,7 +68,10 @@ public sealed record BattleSideView(int Seat, PlayerColor Color, string Name, bo
 public sealed record BattleStartedView(
     string Id, BattleKind Kind, VecView At, VecView Facing, double StartedAt, double Playback, double TickSeconds, int Ticks,
     double FightSeconds, IReadOnlyList<BattleSideView> Sides,
-    IReadOnlyList<int> Hits, IReadOnlyList<int> Deaths, IReadOnlyList<int> Advances, BattleWinner Winner, IReadOnlyList<int>? Heals = null);
+    IReadOnlyList<int> Hits, IReadOnlyList<int> Deaths, IReadOnlyList<int> Advances, BattleWinner Winner, IReadOnlyList<int>? Heals = null,
+    // Somebody joined a battle already going on: Update is true and this is the whole battle again, told from the start;
+    // everything before FromTick is as it was sent before, from there on it is new (an extra attacker is side 2, 3...).
+    bool Update = false, int FromTick = 0);
 
 public static class MapViewMapper
 {
@@ -132,7 +135,7 @@ public static class MapViewMapper
     private const int MaxHits = 20_000;
 
     /// <summary>The full battle; only ever for a player who fights in it.</summary>
-    public static BattleStartedView BattleOf(Room room, GameState game, ActiveBattle b, string? viewer = null)
+    public static BattleStartedView BattleOf(Room room, GameState game, ActiveBattle b, string? viewer = null, int? updateFromTick = null)
     {
         var record = b.Record;
         BattleSideView Side(int side, string key, bool attacker)
@@ -144,16 +147,19 @@ public static class MapViewMapper
             return new BattleSideView(p?.Seat ?? 0, p?.Color ?? PlayerColor.Blue, p?.Name ?? "?", attacker,
                 record.Soldiers.Where(s => s.Side == side).Select(s => new BattleSoldierView(s.Type.Id, s.Row)).ToList());
         }
+        var sides = new List<BattleSideView> { Side(0, game.AttackerShownTo(b, viewer), true), Side(1, b.Defender, false) };
+        for (int i = 1; i < b.Attackers.Count; i++) sides.Add(Side(b.SideOfAttacker(i), game.AttackerShownTo(b, viewer, i), true));
         return new BattleStartedView(
             b.PublicId, b.Kind, VecView.Of(b.Position), VecView.Of(b.Facing), b.StartedAt, game.Rules.War.BattlePlayback,
             record.TickSeconds, record.Ticks, b.FightSeconds,
-            [Side(0, game.AttackerShownTo(b, viewer), true), Side(1, b.Defender, false)],
-            record.HitCount > MaxHits ? [] : record.Hits, record.Deaths, record.Advances, b.Winner, record.Heals);
+            sides,
+            record.HitCount > MaxHits ? [] : record.Hits, record.Deaths, record.Advances, b.Winner, record.Heals,
+            updateFromTick is not null, updateFromTick ?? 0);
     }
 
     /// <summary>Battles <paramref name="player"/> fights in that started since the last call.</summary>
     public static List<BattleStartedView> StartedBattlesOf(Room room, RoomPlayer player) =>
-        room.Game is { } game ? game.TakeStartedBattles(player.CastleKey).Select(b => BattleOf(room, game, b, player.CastleKey)).ToList() : [];
+        room.Game is { } game ? game.TakeStartedBattles(player.CastleKey).Select(s => BattleOf(room, game, s.Battle, player.CastleKey, s.UpdateFromTick)).ToList() : [];
 
     /// <summary>Every battle <paramref name="player"/> is fighting right now (after a reconnect).</summary>
     public static List<BattleStartedView> ActiveBattlesOf(Room room, RoomPlayer player) =>

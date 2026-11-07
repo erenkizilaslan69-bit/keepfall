@@ -50,7 +50,7 @@ public static class SpectatorMapper
         return new SpectatorStateView(
             game.ElapsedSeconds, castles, movers,
             game.ActiveBattles.Select(b => new BattleMarkerView(b.PublicId, VecView.Of(b.Position))).ToList(),
-            game.TakeAllStartedBattles().Select(b => MapViewMapper.BattleOf(room, game, b)).ToList(),
+            game.TakeAllStartedBattles().Select(s => MapViewMapper.BattleOf(room, game, s.Battle, null, s.UpdateFromTick)).ToList(),
             game.AllSites.Select(s => new SiteView(s.Site.Id, s.Site.Kind, VecView.Of(s.Site.Position), s.Site.Spur.Select(VecView.Of).ToList(),
                 s.Site.Quadrant, s.Gone, Units(s.Bandits), 0, game.ElapsedSeconds,
                 s.Site.Kind == SiteKind.Village ? game.Rules.Forest.Village.MinSoldiers : 0)).ToList());

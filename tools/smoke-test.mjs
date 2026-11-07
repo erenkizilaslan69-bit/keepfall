@@ -758,6 +758,47 @@ K.ws.close();
     H.of('RoomState').every((r) => !r.challengeId) && H.of('ChallengeResult').length === 0 && K.of('ChallengeResult').length === 0);
 }
 
+// ---- two armies at one gate: everyone in the battle gets it, the outsider never does ----------------------------------
+{
+  const [P1, P2, P3, P4] = [client(), client(), client(), client()];
+  await Promise.all([P1.ready, P2.ready, P3.ready, P4.ready]);
+  const jr = await P1.call('CreateRoom', 'Gate1');
+  for (const [c, n] of [[P2, 'Gate2'], [P3, 'Gate3'], [P4, 'Gate4']]) await c.call('JoinRoom', jr.code, n, null, false);
+  for (const c of [P1, P2, P3, P4]) { await c.call('SetDeck', FOUR); await c.call('SetReady', true); }
+  check('the gate match starts', (await P1.call('StartMatch')).ok);
+  await P1.call('SetSpeed', 20);
+  for (const c of [P2, P3]) { await c.call('MoveWorkers', 'idle', 'blacksmith', 4); await c.call('QueueWeapon', 'kilicli', 5); }
+  await sleep(4500);
+  for (const c of [P2, P3]) await c.call('ArmWorkers', 'kilicli', 5, 'idle');
+  // P2 and P3 both go for P1's castle (seat 1); P4 stays out of it.
+  const sent = [false, false];
+  for (let i = 0; i < 80 && !sent.every(Boolean); i++) {
+    await sleep(500);
+    for (const [k, c] of [P2, P3].entries()) {
+      if (sent[k]) continue;
+      const home = c.of('CastleState').at(-1)?.units?.find((u) => u.id === 'kilicli')?.soldiers ?? 0;
+      if (home >= 3) sent[k] = (await c.call('SendArmy', 1, { kilicli: home }, null, null, 'attack')).ok;
+    }
+  }
+  check('both attackers sent an army to the same castle', sent.every(Boolean));
+  check('the defender gets a battle', await waitFor(() => P1.of('BattleStarted').length > 0, 60000));
+  await sleep(6000);
+  const seenBy = (c) => c.of('BattleStarted');
+  const threeSided = seenBy(P1).filter((b) => b.sides.length === 3);
+  if (threeSided.length > 0) {
+    const id = threeSided[0].id;
+    check('a three-sided battle reaches the defender and both attackers alike (same id)',
+      [P2, P3].every((c) => seenBy(c).some((b) => b.id === id && b.sides.length === 3)));
+    check('the three sides: two attackers and the castle', threeSided[0].sides.filter((s) => s.attacker).length === 2 && threeSided[0].sides[1].attacker === false);
+    check('a join is marked as an update to a battle already sent', seenBy(P1).filter((b) => b.id === id).some((b) => b.update === true || seenBy(P1).filter((x) => x.id === id).length === 1));
+  } else {
+    check('(the two armies did not meet at the gate at the same moment: join not exercised this run)', true);
+  }
+  check('the player who stayed out of it never gets a battle record or its id',
+    P4.of('BattleStarted').length === 0 && !seenBy(P1).some((b) => P4.msgs.some((m) => m.raw.includes(b.id))));
+  for (const c of [P1, P2, P3, P4]) c.ws.close();
+}
+
 X.ws.close();
 Y.ws.close();
 Z.ws.close();

@@ -89,7 +89,10 @@
     "raidBurnSeconds": 60,
     "raidBurnFactor": 0.5,
     // Bir savaş en az bu kadar oyun saniyesi oynatılır (boş kaleye saldırı da görülsün: ordu kapıya yürür, sonra kale düşer).
-    "minBattleSeconds": 4
+    "minBattleSeconds": 4,
+    // Kapıda kuşatma sürerken oraya varan ordu beklemez, savaşa katılır (üç taraflı savaş). false = eski bekleme.
+    "joinSiege": true,
+    "siegeMaxAttackers": 3
   },
 
   // Altın (ormandan gelir: sandık, köy, haydut kampı): kale penceresinde birim başına bu fiyata anında asker kiralanır.

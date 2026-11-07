@@ -51,7 +51,9 @@ public sealed record BattleReportView(
     int Id, double At, bool Attacking, int OpponentSeat, string OpponentName, PlayerColor OpponentColor,
     IReadOnlyList<BattleLineView> AttackerUnits, IReadOnlyList<BattleLineView> DefenderUnits,
     BattleWinner Winner, bool YouWon, bool DefenderEliminated,
-    BattleKind Kind, LootView? Loot = null, bool Raid = false);
+    BattleKind Kind, LootView? Loot = null, bool Raid = false,
+    /// <summary>The other army that besieged the gate with this one (0 = none), as the viewer is told.</summary>
+    int RivalSeat = 0, string? RivalName = null);
 /// <summary>What the army that brought a castle down took from it.</summary>
 public sealed record LootView(int Food, int Wood, int Iron, int Gold, int People, int Prisoners = 0);
 public sealed record DefenseView(IReadOnlyDictionary<string, Row> Rows, string? ArcherPriority);
@@ -253,11 +255,13 @@ public static class ViewMapper
                 bool attacking = b.Attacker == player.CastleKey;
                 var opponent = Other(attacking ? b.Defender : game.AttackerSeenBy(b, player.CastleKey));
                 bool bandits = b.Kind == BattleKind.Camp;
+                var rival = Other(game.RivalSeenBy(b, player.CastleKey));
                 bool youWon = attacking ? b.Winner == BattleWinner.Attacker : b.Winner == BattleWinner.Defender;
                 return new BattleReportView(b.Id, b.At, attacking, opponent?.Seat ?? 0, bandits ? "Haydutlar" : opponent?.Name ?? "?",
                     bandits ? PlayerColor.Black : opponent?.Color ?? PlayerColor.Blue, Lines(b.AttackerUnits), Lines(b.DefenderUnits), b.Winner, youWon,
                     b.DefenderEliminated, b.Kind,
-                    b.Loot is { } l ? new LootView(l.Food, l.Wood, l.Iron, l.Gold, l.People, l.Prisoners) : null, b.Raid);
+                    b.Loot is { } l ? new LootView(l.Food, l.Wood, l.Iron, l.Gold, l.People, l.Prisoners) : null, b.Raid,
+                    rival?.Seat ?? 0, rival?.Name);
             }).ToList(),
             new DefenseView(c.DefenseRows.ToDictionary(kv => kv.Key.Id, kv => kv.Value), c.DefensePriority?.Id));
     }

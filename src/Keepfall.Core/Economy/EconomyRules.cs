@@ -35,7 +35,9 @@ public sealed record WarRules(
     double PrisonerShare = 0,
     double RaidBurnSeconds = 60,
     double RaidBurnFactor = 0.5,
-    double MinBattleSeconds = 0);
+    double MinBattleSeconds = 0,
+    bool JoinSiege = true,
+    int SiegeMaxAttackers = 3);
 
 /// <summary>
 /// The wall round every castle: it always stands (a castle falls when its attacker wins at the gate). <see cref="ArcherDefenseBonus"/>:

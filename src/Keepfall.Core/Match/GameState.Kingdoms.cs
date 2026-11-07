@@ -67,13 +67,22 @@ public sealed partial class GameState
     }
 
     /// <summary>The attacker of a battle as <paramref name="viewer"/> is told (null viewer: the truth).</summary>
-    public string AttackerShownTo(ActiveBattle b, string? viewer) => viewer is null ? b.Attacker.From : ShownOwner(b.Attacker, viewer);
+    public string AttackerShownTo(ActiveBattle b, string? viewer, int attackerIndex = 0) =>
+        viewer is null ? b.Attackers[attackerIndex].From : ShownOwner(b.Attackers[attackerIndex], viewer);
 
     /// <summary>The attacker named in a battle report as <paramref name="viewer"/> is told.</summary>
     public string AttackerSeenBy(BattleReport r, string viewer)
     {
         if (!_disguises.TryGetValue(r.Id, out var d) || viewer == r.Attacker || IsFaction(viewer, Factions.Oracle)) return r.Attacker;
         return ElapsedSeconds >= d.RevealAt || d.RevealedTo.Contains(viewer) ? r.Attacker : d.Shown;
+    }
+
+    /// <summary>The other besieger named in a siege report, as <paramref name="viewer"/> is told (it may be disguised); null when there was none.</summary>
+    public string? RivalSeenBy(BattleReport r, string viewer)
+    {
+        if (r.Rival is null) return null;
+        var theirs = _battles.FirstOrDefault(x => x.Kind == BattleKind.Siege && x.Defender == r.Defender && x.Attacker == r.Rival && Math.Abs(x.At - r.At) < 1e-9);
+        return theirs is null ? r.Rival : AttackerSeenBy(theirs, viewer);
     }
 
     private void RecordDisguise(BattleReport report, ArmyMarch a)

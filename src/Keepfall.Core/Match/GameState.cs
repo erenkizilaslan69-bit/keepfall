@@ -52,9 +52,9 @@ public sealed partial class GameState
     private readonly List<ArmyMarch> _armies = [];
     private readonly List<BattleReport> _battles = [];
     private readonly List<ActiveBattle> _active = [];
-    private readonly Dictionary<string, List<ActiveBattle>> _startedBattles = [];
+    private readonly Dictionary<string, List<StartedBattle>> _startedBattles = [];
     /// <summary>Every battle that began since the spectator feed last asked (for fallen players, who watch all of them).</summary>
-    private readonly List<ActiveBattle> _startedForSpectators = [];
+    private readonly List<StartedBattle> _startedForSpectators = [];
     /// <summary>The ground scouts walked over that is still in view: where, whose, and until when (null = to the end).</summary>
     private readonly List<TrailPoint> _trail = [];
     // The ground our armies walked over (picture only: cells of WalkedCell tiles, each opened with the army's sight radius) and where rival armies were last seen.
@@ -401,11 +401,11 @@ public sealed partial class GameState
     public IReadOnlyList<ActiveBattle> ActiveBattles => _active;
 
     /// <summary>Battles this player became part of since the last call; each is returned once.</summary>
-    public IReadOnlyList<ActiveBattle> TakeStartedBattles(string playerKey) =>
+    public IReadOnlyList<StartedBattle> TakeStartedBattles(string playerKey) =>
         _startedBattles.Remove(playerKey, out var list) ? list : [];
 
     /// <summary>Battles that began since the last call, whoever fights them; each is returned once. Only the spectator feed uses this.</summary>
-    public IReadOnlyList<ActiveBattle> TakeAllStartedBattles()
+    public IReadOnlyList<StartedBattle> TakeAllStartedBattles()
     {
         var list = _startedForSpectators.ToList();
         _startedForSpectators.Clear();
@@ -525,6 +525,7 @@ public sealed partial class GameState
             BribeArmy bribe => Bribe(playerKey, player, bribe),
             HireCamp camp => RentCamp(playerKey, player, camp),
             RecallArmy recall => Recall(playerKey, recall.ArmyId),
+            SetSiegeFocus focus => FocusSiege(playerKey, focus.TargetKey),
             RedirectArmy redirect => Redirect(playerKey, redirect),
             SetDefense defense when RowsLocked => player.Castle.Execute(defense with { Rows = null }),
             _ => player.Castle.Execute(command),
@@ -950,6 +951,37 @@ public sealed partial class GameState
         return CommandResult.Success;
     }
 
+    /// <summary>The player's side in the siege it fights at hits <paramref name="targetKey"/> first from now on (the battle is told again with that change).</summary>
+    private CommandResult FocusSiege(string player, string? targetKey)
+    {
+        var b = _active.FirstOrDefault(x => x.Kind == BattleKind.Siege && x.Involves(player));
+        if (b is null) return CommandResult.Fail("Şu an bir kapı savaşında değilsin.");
+        if (b.Attackers.Count < 2) return CommandResult.Fail("Kapıda seçecek başka taraf yok.");
+        if (b.Events.Count >= 40) return CommandResult.Fail("Bu savaşta çok fazla hedef değişti.");
+        int side = b.Defender == player ? 1 : b.SideOfAttacker(b.Attackers.FindIndex(x => x.From == player));
+        int? foe = null;
+        if (targetKey is not null)
+        {
+            // The player names who they see: the castle's owner, or a besieger as they are told it (a disguised army is named by its disguise).
+            if (targetKey == b.Defender) foe = 1;
+            else
+            {
+                int i = b.Attackers.FindIndex(x => ShownOwner(x, player) == targetKey);
+                if (i >= 0) foe = b.SideOfAttacker(i);
+            }
+            if (foe is null || foe == side) return CommandResult.Fail("Bu savaşta böyle bir hedef yok.");
+        }
+        double simNow = (ElapsedSeconds - b.StartedAt) * Rules.War.BattlePlayback;
+        int tick = Math.Max(0, (int)Math.Ceiling(simNow / b.Record.TickSeconds - 1e-9));
+        if (tick > b.Record.Ticks) return CommandResult.Fail("Savaş neredeyse bitti.");
+        b.Events.RemoveAll(e => e is FocusEvent f && f.Side == side && f.Tick == tick);
+        b.Events.Add(new FocusEvent(tick, side, foe));
+        Resimulate(b);
+        foreach (var p in b.Attackers.Select(x => x.From).Append(b.Defender).Distinct().Where(_players.ContainsKey)) MarkStarted(p, b, tick);
+        MarkStartedForSpectators(b, tick);
+        return CommandResult.Success;
+    }
+
     private CommandResult Recall(string player, int armyId)
     {
         var a = _armies.FirstOrDefault(x => x.Id == armyId && x.From == player);
@@ -1000,14 +1032,19 @@ public sealed partial class GameState
             if ((a.Decoy || a.ShownAs is not null) && IsFaction(a.Target, Factions.Oracle)) LogDeception(DeceptionKind.OracleSawIncoming, a.From, a.Target, a.ShownAs, detail: a.Decoy ? "decoy" : "disguise");
         }
 
-        // Armies at their target's gate lay siege one at a time per castle, earliest sent first; the rest wait.
+        // Armies at their target's gate lay siege, earliest sent first. One that finds a siege going on joins it (everybody fights at once);
+        // it waits only when it cannot (the same player is there already, or joining is switched off).
         foreach (var a in _armies.Where(a => a.State == ArmyState.Marching && a.Battle is null && a.Out.Arrived).OrderBy(a => a.Id).ToList())
         {
             if (Phase == MatchPhase.Ended) return;
             if (a.Decoy) { _armies.Remove(a); LogDeception(DeceptionKind.DecoyFaded, a.From, a.Target); continue; } // a phantom fades away at the gate
             if (a.Site is not null) { ArriveAtSite(a); continue; }
             if (_eliminated.ContainsKey(a.Target)) { SendHome(a, a.Units); continue; } // nothing left to attack
-            if (_active.Any(b => b.Kind == BattleKind.Siege && b.Defender == a.Target)) continue;
+            if (_active.FirstOrDefault(b => b.Kind == BattleKind.Siege && b.Defender == a.Target) is { } siege)
+            {
+                TryJoinSiege(siege, a);
+                continue;
+            }
             StartSiege(a);
         }
 
@@ -1149,7 +1186,8 @@ public sealed partial class GameState
 
     /// <summary>
     /// The army fights whoever is at home in the target castle right now; they come down to the gate
-    /// and are held there until it is over. If the army wins, the castle falls.
+    /// and are held there until it is over. If the army wins, the castle falls. Another army that reaches the gate
+    /// while this goes on joins the battle (<see cref="TryJoinSiege"/>): then everyone fights at once.
     /// </summary>
     private void StartSiege(ArmyMarch a)
     {
@@ -1159,14 +1197,73 @@ public sealed partial class GameState
         var battle = new ActiveBattle(_nextId++, NewPublicId(), BattleKind.Siege, Map.RegionOf(_corners[a.Target]).Gate,
             a.Out.Direction, ElapsedSeconds, a, null, a.Target);
 
-        // The archers at the gate shoot from behind the wall.
+        // The archers at the gate shoot from behind the wall; with several besiegers the defenders pick whom to hit by chance.
         var defendSetup = new ArmySetup("Savunan") { Targeting = castle.DefensePriority is { } d ? TargetPriority.Prefer(d) : TargetPriority.Front,
-            RangedDamageFactor = 1 + Rules.Walls.ArcherDefenseBonus };
+            RangedDamageFactor = 1 + Rules.Walls.ArcherDefenseBonus, SpreadFire = true };
         foreach (var (type, n) in defenders) defendSetup.Add(type, n);
         foreach (var (type, row) in castle.DefenseRows) defendSetup.PlaceIn(type, row);
-        Fight(battle, defendSetup, defenders);
+        battle.Seed = _rng.Next();
+        battle.Setups.Add(SiegeAttackerSetup(a));
+        battle.Setups.Add(defendSetup);
+        Resimulate(battle);
 
         Begin(battle);
+    }
+
+    /// <summary>An attacking army of a siege: it hits the castle (side 1) first; only when that is gone, or by its owner's choice, the other besieger.</summary>
+    private ArmySetup SiegeAttackerSetup(ArmyMarch a)
+    {
+        var setup = new ArmySetup("Saldıran") { Targeting = a.ArcherPriority is { } p ? TargetPriority.Prefer(p) : TargetPriority.Front, FoeOrder = [1] };
+        foreach (var (type, n) in a.Walking) if (n > 0) setup.Add(type, n);
+        foreach (var (type, row) in a.Rows) setup.PlaceIn(type, row);
+        return setup;
+    }
+
+    /// <summary>
+    /// An army reached a gate where a siege is on. It joins at once, at this very moment of the fight (the battle is told again from the start with
+    /// the newcomer added: all that came before stays as it was). False when it has to wait: the same player already fights there, the gate is full,
+    /// or the fight is over in the simulation and only its replay is still running.
+    /// </summary>
+    private bool TryJoinSiege(ActiveBattle b, ArmyMarch a)
+    {
+        if (!Rules.War.JoinSiege || b.Attackers.Count >= Rules.War.SiegeMaxAttackers || b.Attackers.Any(x => x.From == a.From)) return false;
+        double simNow = (ElapsedSeconds - b.StartedAt) * Rules.War.BattlePlayback;
+        int tick = Math.Max(0, (int)Math.Ceiling(simNow / b.Record.TickSeconds - 1e-9));
+        if (tick > b.Record.Ticks) return false;
+
+        var setup = SiegeAttackerSetup(a);
+        b.Setups.Add(setup);
+        b.Events.Add(new JoinEvent(tick, setup));
+        b.Attackers.Add(a);
+        Resimulate(b);
+        a.Battle = b;
+
+        // The newcomer gets the whole battle; those who were in it already, and spectators, get what changes from the join on.
+        string newcomer = a.From;
+        foreach (var p in b.Attackers.Select(x => x.From).Append(b.Defender).Distinct().Where(_players.ContainsKey))
+            MarkStarted(p, b, p == newcomer ? null : tick);
+        MarkStartedForSpectators(b, tick);
+        return true;
+    }
+
+    /// <summary>Tells the battle again from its seed and events: losses, survivors, who wins, the record to replay and how long it takes.</summary>
+    private void Resimulate(ActiveBattle b)
+    {
+        var m = _simulator.SimulateMulti(b.Setups.Take(2).ToList(), new Random(b.Seed), b.Events, recordBattle: true); // the others come in by their events
+        var units = b.Setups.Select(s => s.Counts.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value)).ToList();
+        var survivors = m.Sides.Select(sd => sd.ByType.Where(t => t.Survivors > 0).ToDictionary(t => t.Type, t => t.Survivors)).ToList();
+        b.AttackerUnits = units[0];
+        b.DefenderUnits = units[1];
+        b.AttackerSurvivors = survivors[0];
+        b.DefenderSurvivors = survivors[1];
+        b.ExtraUnits = units.Skip(2).Select(u => (IReadOnlyDictionary<UnitType, int>)u).ToList();
+        b.ExtraSurvivors = survivors.Skip(2).Select(u => (IReadOnlyDictionary<UnitType, int>)u).ToList();
+        b.KillsBySide = m.KillsBySide;
+        // An empty castle does not fight back: the one army that came takes it.
+        b.WinnerSide = b.Setups[1].TotalCount == 0 && b.Attackers.Count == 1 ? 0 : m.WinnerSide;
+        b.Winner = b.WinnerSide switch { null => BattleWinner.Draw, 1 => BattleWinner.Defender, _ => BattleWinner.Attacker };
+        b.Record = m.Record!;
+        b.FightSeconds = Math.Max(Rules.War.MinBattleSeconds, m.DurationSeconds / Rules.War.BattlePlayback);
     }
 
     /// <summary>Simulates the battle between its attacking army (side A) and <paramref name="sideB"/>, with a record to replay.</summary>
@@ -1182,13 +1279,13 @@ public sealed partial class GameState
         battle.DefenderUnits = sideBUnits.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
         battle.AttackerSurvivors = result.SideA.ByType.Where(t => t.Survivors > 0).ToDictionary(t => t.Type, t => t.Survivors);
         battle.DefenderSurvivors = result.SideB.ByType.Where(t => t.Survivors > 0).ToDictionary(t => t.Type, t => t.Survivors);
-        battle.Winner = sideB.TotalCount == 0 ? BattleWinner.Attacker // an empty castle does not fight back
-            : result.Outcome switch
+        battle.Winner = result.Outcome switch
             {
                 BattleOutcome.SideAWins => BattleWinner.Attacker,
                 BattleOutcome.SideBWins => BattleWinner.Defender,
                 _ => BattleWinner.Draw,
             };
+        if (sideB.TotalCount == 0) battle.Winner = BattleWinner.Attacker; // an empty camp does not fight back
         battle.Record = result.Record!;
         battle.FightSeconds = Math.Max(Rules.War.MinBattleSeconds, result.DurationSeconds / Rules.War.BattlePlayback);
     }
@@ -1198,18 +1295,34 @@ public sealed partial class GameState
         battle.Attacker.Battle = battle;
         if (battle.Opponent is { } o) o.Battle = battle;
         _active.Add(battle);
-        _startedForSpectators.Add(battle);
-        foreach (var p in new[] { battle.Attacker.From, battle.Defender }.Distinct().Where(_players.ContainsKey))
-        {
-            if (!_startedBattles.TryGetValue(p, out var list)) _startedBattles[p] = list = [];
-            list.Add(battle);
-        }
+        MarkStartedForSpectators(battle, null);
+        foreach (var p in battle.Attackers.Select(x => x.From).Append(battle.Defender).Distinct().Where(_players.ContainsKey))
+            MarkStarted(p, battle, null);
+    }
+
+    /// <summary>The player is to be sent the battle: all of it (<paramref name="updateFromTick"/> null) or only what changes from that tick on.</summary>
+    private void MarkStarted(string player, ActiveBattle b, int? updateFromTick)
+    {
+        if (!_startedBattles.TryGetValue(player, out var list)) _startedBattles[player] = list = [];
+        AddStarted(list, b, updateFromTick);
+    }
+
+    private void MarkStartedForSpectators(ActiveBattle b, int? updateFromTick) => AddStarted(_startedForSpectators, b, updateFromTick);
+
+    private static void AddStarted(List<StartedBattle> list, ActiveBattle b, int? updateFromTick)
+    {
+        int i = list.FindIndex(s => s.Battle == b);
+        if (i < 0) { list.Add(new StartedBattle(b, updateFromTick)); return; }
+        // Not sent yet: one message with the latest story (a whole battle stays whole; two updates start from the earlier tick).
+        var old = list[i].UpdateFromTick;
+        list[i] = new StartedBattle(b, old is null || updateFromTick is null ? null : Math.Min(old.Value, updateFromTick.Value));
     }
 
     /// <summary>The battle is over: losses, castle damage, the report and (maybe) a fallen castle.</summary>
     private void FinishBattle(ActiveBattle b)
     {
         if (b.Kind == BattleKind.Camp) { FinishCampBattle(b); return; }
+        if (b.Kind == BattleKind.Siege) { FinishSiege(b); return; }
         _active.Remove(b);
         var a = b.Attacker;
         a.Battle = null;
@@ -1221,41 +1334,72 @@ public sealed partial class GameState
         attacker.Stats.EnemiesKilled += defendLost.Values.Sum();
         defender.Stats.EnemiesKilled += attackLost.Values.Sum();
 
-        bool fell = false, raid = false;
-        if (b.Opponent is { } o)
-        {
-            o.Battle = null;
-            if (!o.Rented) defender.ArmyLost(defendLost);
-        }
-        if (b.Kind == BattleKind.Siege)
-        {
-            defender.DefendersBack(b.DefenderSurvivors, defendLost);
-            // An attacker that won with nothing but raiders left (cavalry) cannot take the castle: it burns the fields and rides home.
-            raid = b.Winner == BattleWinner.Attacker && b.AttackerSurvivors.Where(kv => kv.Value > 0).All(kv => kv.Key.Raider);
-            fell = b.Winner == BattleWinner.Attacker && !raid;
-            if (raid)
-            {
-                defender.Scorch(Rules.War.RaidBurnSeconds);
-                Notify(b.Defender, new GameNotification(NotificationKind.FieldsBurned, a.From, ElapsedSeconds));
-            }
-        }
+        var o = b.Opponent!;
+        o.Battle = null;
+        if (!o.Rented) defender.ArmyLost(defendLost);
 
-        var prisoners = fell && !a.Rented ? TakePrisoners(b, attacker) : new Dictionary<UnitType, int>();
-        var loot = fell ? PlunderFallen(a, defender, prisoners.Values.Sum()) : null;
         var report = new BattleReport(b.Id, ElapsedSeconds, a.From, b.Defender,
-            Lines(b.AttackerUnits, attackLost), Lines(b.DefenderUnits, defendLost), b.Winner, fell, b.Kind, loot, raid);
+            Lines(b.AttackerUnits, attackLost), Lines(b.DefenderUnits, defendLost), b.Winner, false, b.Kind);
         _battles.Add(report);
         RecordDisguise(report, a);
         Notify(a.From, new GameNotification(NotificationKind.BattleFought, b.Defender, ElapsedSeconds, BattleId: report.Id));
         Notify(b.Defender, new GameNotification(NotificationKind.BattleFought, ShownOwner(a, b.Defender), ElapsedSeconds, BattleId: report.Id));
 
-        if (a.Rented && b.Kind == BattleKind.Siege) LogDeception(DeceptionKind.RentedFought, a.From, b.Defender, detail: fell ? "fell" : "held");
-        if (a.Rented && b.Kind == BattleKind.Siege) FinishRented(a);
-        else if (b.Kind == BattleKind.Siege) SendHome(a, Merge(b.AttackerSurvivors, prisoners));
-        else
+        GoOn(a, b.AttackerSurvivors);
+        GoOn(o, b.DefenderSurvivors);
+    }
+
+    /// <summary>
+    /// The fight at a gate is over. Whoever is left standing alone has won: if that is a besieger, the castle falls to it (its prisoners, its spoils),
+    /// unless only riders are left (a raid). Every besieger gets a report of its own; the ones that did not win ride home with what is left of them.
+    /// </summary>
+    private void FinishSiege(ActiveBattle b)
+    {
+        _active.Remove(b);
+        var defender = _players[b.Defender].Castle;
+        var defendLost = Lost(b.DefenderUnits, b.DefenderSurvivors);
+        defender.DefendersBack(b.DefenderSurvivors, defendLost);
+        defender.Stats.EnemiesKilled += b.KillsBySide[1];
+
+        int winnerIndex = b.WinnerSide is { } w && w != 1 ? (w == 0 ? 0 : w - 1) : -1;
+        for (int i = 0; i < b.Attackers.Count; i++)
         {
-            GoOn(a, b.AttackerSurvivors);
-            GoOn(b.Opponent!, b.DefenderSurvivors);
+            var army = b.Attackers[i];
+            army.Battle = null;
+            var castle = _players[army.From].Castle;
+            if (!army.Rented) castle.ArmyLost(Lost(b.UnitsOf(i), b.SurvivorsOf(i)));
+            castle.Stats.EnemiesKilled += b.KillsBySide[b.SideOfAttacker(i)];
+        }
+
+        var winner = winnerIndex >= 0 ? b.Attackers[winnerIndex] : null;
+        bool raid = winner is not null && b.SurvivorsOf(winnerIndex).Where(kv => kv.Value > 0).All(kv => kv.Key.Raider);
+        bool fell = winner is not null && !raid;
+        if (raid)
+        {
+            // Nothing but riders left: it cannot take the castle, it burns the fields and rides home.
+            defender.Scorch(Rules.War.RaidBurnSeconds);
+            Notify(b.Defender, new GameNotification(NotificationKind.FieldsBurned, winner!.From, ElapsedSeconds));
+        }
+        var prisoners = fell && !winner!.Rented ? TakePrisoners(b, _players[winner.From].Castle) : new Dictionary<UnitType, int>();
+        var loot = fell ? PlunderFallen(winner!, defender, prisoners.Values.Sum()) : null;
+
+        for (int i = 0; i < b.Attackers.Count; i++)
+        {
+            var army = b.Attackers[i];
+            bool won = i == winnerIndex;
+            var rival = b.Attackers.Where((_, k) => k != i).Select(x => x.From).FirstOrDefault();
+            var report = new BattleReport(i == 0 ? b.Id : _nextId++, ElapsedSeconds, army.From, b.Defender,
+                Lines(b.UnitsOf(i), Lost(b.UnitsOf(i), b.SurvivorsOf(i))), Lines(b.DefenderUnits, defendLost),
+                won ? BattleWinner.Attacker : b.WinnerSide == 1 ? BattleWinner.Defender : BattleWinner.Draw,
+                won && fell, BattleKind.Siege, won ? loot : null, won && raid, rival);
+            _battles.Add(report);
+            RecordDisguise(report, army);
+            Notify(army.From, new GameNotification(NotificationKind.BattleFought, b.Defender, ElapsedSeconds, BattleId: report.Id));
+            Notify(b.Defender, new GameNotification(NotificationKind.BattleFought, ShownOwner(army, b.Defender), ElapsedSeconds, BattleId: report.Id));
+
+            if (army.Rented) LogDeception(DeceptionKind.RentedFought, army.From, b.Defender, detail: won && fell ? "fell" : "held");
+            if (army.Rented) FinishRented(army);
+            else SendHome(army, won ? Merge(b.SurvivorsOf(i), prisoners) : b.SurvivorsOf(i));
         }
         if (fell) Eliminate(b.Defender);
     }

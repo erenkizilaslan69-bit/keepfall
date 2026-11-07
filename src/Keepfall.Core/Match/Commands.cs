@@ -70,6 +70,12 @@ public sealed record SendArmyToSite(
 /// </summary>
 public sealed record RedirectArmy(int ArmyId, string? TargetKey = null, string? SiteId = null) : GameCommand;
 
+/// <summary>
+/// At a gate where several fight at once: choose whom our side hits first (the castle or the other besieger, by the player's key as the player is
+/// told it; null = back to the default). A besieger hits the castle by default, a castle's defenders pick by chance.
+/// </summary>
+public sealed record SetSiegeFocus(string? TargetKey) : GameCommand;
+
 /// <summary>Call one of our armies home from wherever it is on the road (not while it is fighting).</summary>
 public sealed record RecallArmy(int ArmyId) : GameCommand;
 

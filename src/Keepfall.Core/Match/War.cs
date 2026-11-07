@@ -137,7 +137,9 @@ public sealed record BattleReport(
     bool DefenderEliminated,
     BattleKind Kind = BattleKind.Siege,
     FallLoot? Loot = null,
-    bool Raid = false);
+    bool Raid = false,
+    /// <summary>The other army that besieged the same gate at the same time (its owner), if any.</summary>
+    string? Rival = null);
 
 /// <summary>Place 1 is the winner (several players can share it on a tie).</summary>
 public sealed record RankedPlayer(string Player, int Place, int Population, bool Eliminated, double? EliminatedAt);

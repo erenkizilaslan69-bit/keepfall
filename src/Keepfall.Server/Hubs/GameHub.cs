@@ -267,6 +267,10 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     public Task<CommandResultView> RedirectArmy(int armyId, int? targetSeat, string? siteId) =>
         Economy(new RedirectArmy(armyId, targetSeat is { } seat ? Room.CastleKeyOf(seat) : null, siteId));
 
+    /// <summary>At a gate with two besiegers: whom our side hits first (a seat), or 0 for the default.</summary>
+    public Task<CommandResultView> SetSiegeFocus(int seat) =>
+        Economy(new SetSiegeFocus(seat > 0 ? Room.CastleKeyOf(seat) : null));
+
     public Task<CommandResultView> SetDefense(Dictionary<string, Row>? rows, string? archerPriority) =>
         Economy(new SetDefense(rows, archerPriority));
 

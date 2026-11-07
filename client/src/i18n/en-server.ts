@@ -145,6 +145,11 @@ export const EN_SERVER: Record<string, string> = {
   "Hayalet ordu yeni emir almaz.": "A phantom army does not take new orders.",
   "Yeni bir hedef seçmedin.": "You did not pick a new target.",
   "Savaştaki ordu geri çağrılamaz.": "An army in battle cannot be called back.",
+  "Şu an bir kapı savaşında değilsin.": "You are not in a battle at a gate right now.",
+  "Kapıda seçecek başka taraf yok.": "There is no other side at the gate to choose from.",
+  "Bu savaşta çok fazla hedef değişti.": "The targets in this battle have changed too often.",
+  "Bu savaşta böyle bir hedef yok.": "There is no such target in this battle.",
+  "Savaş neredeyse bitti.": "The battle is almost over.",
   "Bu ordu zaten eve dönüyor.": "This army is already going home.",
 
   "Başkasının adıyla yalnız Entrikacılar gönderebilir.": "Only the Schemers can send in someone else's name.",

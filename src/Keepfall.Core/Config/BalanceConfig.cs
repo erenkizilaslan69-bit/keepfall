@@ -213,6 +213,10 @@ public sealed class WarConfig
     public double RaidBurnFactor { get; set; } = 0.5;
     /// <summary>Shortest a battle plays (real game seconds): even an empty castle is walked up to, so the fight is always seen.</summary>
     public double MinBattleSeconds { get; set; } = 0;
+    /// <summary>An army that reaches a gate where a siege is on joins the fight (three-sided battle); false = it waits for the first to end.</summary>
+    public bool JoinSiege { get; set; } = true;
+    /// <summary>Most armies that can besiege one gate together.</summary>
+    public int SiegeMaxAttackers { get; set; } = 3;
 }
 
 public sealed class DeckConfig
@@ -460,6 +464,7 @@ public static class BalanceConfigLoader
         if (w.FamineFoodMultiplier < 0 || w.FamineFoodMultiplier > 1) errors.Add("war.famineFoodMultiplier 0 ile 1 arasında olmalı.");
         if (w.PrisonerShare < 0 || w.PrisonerShare > 1) errors.Add("war.prisonerShare 0 ile 1 arasında olmalı.");
         if (w.BattlePlayback <= 0) errors.Add("war.battlePlayback sıfırdan büyük olmalı.");
+        if (w.SiegeMaxAttackers < 1) errors.Add("war.siegeMaxAttackers en az 1 olmalı.");
         if (w.EncounterRadius <= 0) errors.Add("war.encounterRadius sıfırdan büyük olmalı.");
 
         var sc = config.Scouting;
@@ -560,7 +565,7 @@ public static class BalanceConfigLoader
                     i + 1, l.Capacity, l.Multiplier, l.UpgradeWood, l.UpgradeIron, l.UpgradeSeconds)).ToList()),
             new ScoutingRules(sc.ReportError, sc.MaxScouts, sc.NoScoutLastPrepSeconds),
             new WarRules(w.FamineStart, w.FamineFoodMultiplier,
-                w.BattlePlayback, w.EncounterRadius, w.FallLootShare, w.FallWorkerShare, w.FamineStartSeconds, w.PrisonerShare, w.RaidBurnSeconds, w.RaidBurnFactor, w.MinBattleSeconds),
+                w.BattlePlayback, w.EncounterRadius, w.FallLootShare, w.FallWorkerShare, w.FamineStartSeconds, w.PrisonerShare, w.RaidBurnSeconds, w.RaidBurnFactor, w.MinBattleSeconds, w.JoinSiege, w.SiegeMaxAttackers),
             new MapRules(mp.ArmySpeed, mp.ScoutSpeed, mp.Vision.Castle, mp.Vision.Army, mp.Vision.Scout, mp.ScoutTrailSeconds, mp.Scale, mp.LastSeenSeconds),
             config.Mercenary,
             new ForestRules(fo.ChestsPerCorner, fo.VillagesPerCorner, fo.CampsPerCorner, fo.MinSpacing, fo.HubClearing, fo.FootMin, fo.FootMax,
