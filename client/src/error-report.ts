@@ -40,8 +40,15 @@ export function reportError(kind: string, error: unknown, extra: { source?: stri
  * The error is reported (once) and the step is simply skipped this time.
  */
 export function guarded(kind: string, step: () => void, source?: string): void {
+  const prof = (window as unknown as { __kfProf?: Record<string, { ms: number; n: number; max: number }> }).__kfProf;
   try {
-    step();
+    if (prof) { // profiling run (tools/perf-run.mjs): time per step, no cost otherwise
+      const t0 = performance.now();
+      try { step(); } finally {
+        const dt = performance.now() - t0, k = `${kind}:${source ?? ''}`, e = prof[k] ??= { ms: 0, n: 0, max: 0 };
+        e.ms += dt; e.n++; if (dt > e.max) e.max = dt;
+      }
+    } else step();
   } catch (e) {
     reportError(kind, e, { source });
   }

@@ -176,6 +176,7 @@ startDiagnostics({ game: () => game, scene: () => scene, net });
 
 // Dev only: lets the console (and browser tests) send commands as this tab's player.
 if (import.meta.env.DEV) (window as unknown as { keepfallNet: GameConnection }).keepfallNet = net;
+if (import.meta.env.DEV) (window as unknown as { keepfallLeave: () => Promise<void> }).keepfallLeave = () => leaveToMenu(); // (tools/perf-loop.mjs)
 if (import.meta.env.DEV) (window as unknown as { keepfallAudio: unknown }).keepfallAudio = { sfx, music };
 if (import.meta.env.DEV) (window as unknown as { keepfallCrazy: unknown }).keepfallCrazy = { victory: crazyVictory };
 
