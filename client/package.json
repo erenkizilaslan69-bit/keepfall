@@ -8,6 +8,7 @@
     "build": "tsc --noEmit && vite build",
     "build:itch": "tsc --noEmit && vite build --mode itch --base ./ --outDir dist-itch --emptyOutDir",
     "build:crazy": "tsc --noEmit && vite build --mode crazy --base ./ --outDir dist-crazy --emptyOutDir",
+    "build:steam": "tsc --noEmit && vite build --mode steam --outDir dist-steam --emptyOutDir",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

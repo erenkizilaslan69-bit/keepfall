@@ -50,3 +50,8 @@ keepfall-crazygames-next.zip
 docs/ui-audit*.json
 
 audio-inbox/
+
+# Steam demo build and package (contain the Tiny Swords files and a self-contained server: never commit)
+client/dist-steam/
+steam-build/
+tools/steam/shell/node_modules/

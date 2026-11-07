@@ -89,4 +89,16 @@ if (Directory.Exists(clientDist))
         FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(clientDist),
     });
 
+// The desktop shell of the offline Steam demo starts this server and names itself in KEEPFALL_PARENT_PID: if that process is gone (killed, crashed)
+// the server stops too, so no orphan keeps running. Unset everywhere else (Render, Production, tests).
+if (int.TryParse(Environment.GetEnvironmentVariable("KEEPFALL_PARENT_PID"), out var parentPid) && parentPid > 0)
+{
+    try
+    {
+        var parent = System.Diagnostics.Process.GetProcessById(parentPid);
+        _ = parent.WaitForExitAsync().ContinueWith(_ => app.Lifetime.StopApplication());
+    }
+    catch (ArgumentException) { app.Lifetime.StopApplication(); } // the parent is already gone
+}
+
 app.Run();
