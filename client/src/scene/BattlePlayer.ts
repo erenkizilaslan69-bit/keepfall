@@ -345,26 +345,6 @@ export class BattlePlayer {
       fx.play({ key: 'monk-heal-fx', timeScale: Math.min(3, speed) });
       fx.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => fx.destroy());
     }
-    // A green plus rises from the one who is healed (kept with reduced effects: it is the clear "this is healing" sign).
-    if (p && !p.dead && p.sprite.active) {
-      const plus = this.scene.add.image(p.sprite.x + (Math.random() - 0.5) * 10, p.sprite.y - 46, this.healPlusTexture()).setScale(1.1).setDepth(p.sprite.y + 20_000).setAlpha(0.95);
-      this.scene.tweens.add({ targets: plus, y: plus.y - 34, alpha: 0, duration: 900 / Math.min(3, speed), ease: 'Sine.easeOut', onComplete: () => plus.destroy() });
-    }
-  }
-
-  /** A small green cross with a dark outline, drawn once. */
-  private healPlusTexture(): string {
-    const key = 'heal-plus';
-    if (this.scene.textures.exists(key)) return key;
-    const c = document.createElement('canvas');
-    c.width = c.height = 16;
-    const g = c.getContext('2d')!;
-    const cross = (x: number, y: number, w: number, h: number) => g.fillRect(x, y, w, h);
-    g.fillStyle = '#12301a'; cross(5, 1, 6, 14); cross(1, 5, 14, 6);
-    g.fillStyle = '#4ee06a'; cross(6, 2, 4, 12); cross(2, 6, 12, 4);
-    g.fillStyle = '#b8ffc6'; cross(7, 3, 2, 5); cross(3, 7, 5, 2);
-    this.scene.textures.addCanvas(key, c);
-    return key;
   }
 
   private fall(f: Fighter | null | undefined, speed: number): void {
