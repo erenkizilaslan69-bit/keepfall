@@ -10,7 +10,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const exe = join(root, 'steam-build', 'Keepfall', 'Keepfall.exe');
+const exe = join(process.env.KEEPFALL_PACKAGE_DIR ?? join(root, 'steam-build', 'Keepfall'), 'Keepfall.exe');
 if (!existsSync(exe)) { console.error('Run node tools/pack-steam.mjs first.'); process.exit(1); }
 const OUT = process.argv[2] ?? join(root, 'art', 'shots', 'steam', 'check');
 mkdirSync(dirname(OUT), { recursive: true });

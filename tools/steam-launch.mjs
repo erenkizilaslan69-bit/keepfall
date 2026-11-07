@@ -7,7 +7,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const root = fileURLToPath(new URL('..', import.meta.url));
-export const exe = join(root, 'steam-build', 'Keepfall', 'Keepfall.exe');
+// KEEPFALL_PACKAGE_DIR: check another package folder (e.g. a clean one made with `pack-steam.mjs --out steam-build/audit`)
+export const exe = join(process.env.KEEPFALL_PACKAGE_DIR ?? join(root, 'steam-build', 'Keepfall'), 'Keepfall.exe');
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export const userDataDir = () => mkdtempSync(join(tmpdir(), 'kf-steam-'));
 
