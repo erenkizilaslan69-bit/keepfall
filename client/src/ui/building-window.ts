@@ -2,6 +2,7 @@ import { esc } from '../format';
 import { t, tr } from '../i18n';
 import type { BuildingType, BuildingView, CastleView, Job, Resource } from '../types';
 import { Win, type WinContext, type WinData } from './windows';
+import { setChip, weaponChip } from './unit-chips';
 
 // A building's window: how many people work in it, what it makes, what the next level gives and
 // costs. The forge also holds the weapon orders. Updated in place on every state so that a click is
@@ -102,7 +103,7 @@ export class BuildingWin extends Win {
       this.unitsBuilt = true;
       this.q('[data-f="units"]').innerHTML = s.units.map((u) => `
         <div class="unit-row" data-unit="${u.id}">
-          <div class="unit-head"><b>${esc(tr(u.name))}</b> <span data-f="stock"></span></div>
+          <div class="unit-head">${weaponChip(u.id, '', u.weapons, 'wstock')}<b>${esc(tr(u.name))}</b></div>
           <div class="unit-cost">${cost('ico-wood', u.wood)} ${cost('ico-iron', u.iron)} <small>${t('{0} sn', u.buildSeconds)}</small></div>
           <span class="stepper"><button class="btn" data-act="queue" data-n="1">+1</button><button class="btn" data-act="queue" data-n="5">+5</button></span>
         </div>`).join('');
@@ -110,7 +111,7 @@ export class BuildingWin extends Win {
     this.q('[data-f="speed"]').textContent = s.rates.forgeSpeed > 0 ? t('hız ×{0}', s.rates.forgeSpeed.toFixed(2)) : t('(demirci yok)');
     for (const u of s.units) {
       const row = this.q(`[data-unit="${u.id}"]`);
-      row.querySelector('[data-f="stock"]')!.textContent = t('depoda {0} · asker {1}', u.weapons, u.soldiers);
+      setChip(row, 'wstock', u.weapons, `${tr(u.name)}: ${t('depoda {0} · asker {1}', u.weapons, u.soldiers)}`);
       for (const btn of row.querySelectorAll<HTMLButtonElement>('[data-act="queue"]')) {
         const n = Number(btn.dataset.n);
         btn.disabled = s.resources.wood + 1e-6 < u.wood * n || s.resources.iron + 1e-6 < u.iron * n || s.eliminated;
@@ -122,7 +123,7 @@ export class BuildingWin extends Win {
     if (key !== this.queueKey) {
       this.queueKey = key;
       queue.innerHTML = s.queue.length === 0 ? `<p class="muted-ink">${t('Üretim sırası boş.')}</p>` : s.queue.map((o, i) => `
-        <div class="order"><span>${o.remaining} × ${esc(tr(o.name))}</span>
+        <div class="order">${weaponChip(o.unitId, esc(tr(o.name)), o.remaining)}
           <div class="gbar"><div class="fill"></div></div>
           <button class="btn-round btn-red" data-act="cancel" data-n="${i}" title="${t('Kalanları iptal et, kaynakları geri al')}">×</button></div>`).join('');
     }

@@ -239,6 +239,18 @@ html.in-menu .guide-fab { display: inline-grid; }
 .unit-cost { grid-column: 1; font-size: max(var(--fs-xs, 0px), .9em); }
 .unit-row .stepper { grid-column: 2; grid-row: 1 / span 2; }
 .unit-row .btn { min-height: calc(30px * var(--u)); padding: 0 calc(2px * var(--u)); }
+/* picture-and-number chips (castle and forge windows): a unit's face or weapon and "×8" */
+.chips { display: flex; flex-wrap: wrap; align-items: center; gap: calc(4px * var(--u)) calc(8px * var(--u)); }
+.chip { display: inline-flex; align-items: center; gap: calc(3px * var(--u)); padding: calc(1px * var(--u)) calc(7px * var(--u)) calc(1px * var(--u)) calc(2px * var(--u)); border-radius: 999px; background: rgba(90, 66, 34, .14); border: 1px solid rgba(90, 66, 34, .3); line-height: 1; }
+.chip b { font-size: max(var(--fs-sm, 0px), 1.05em); color: var(--ink, #3b2a1a); font-variant-numeric: tabular-nums; }
+.chip canvas { width: calc(30px * var(--u)); height: calc(30px * var(--u)); image-rendering: pixelated; flex: none; }
+.chip .wicon { width: calc(26px * var(--u)); height: calc(26px * var(--u)); flex: none; margin: calc(2px * var(--u)); }
+.chip .ico { width: calc(18px * var(--u)); height: calc(18px * var(--u)); margin: calc(3px * var(--u)); }
+.chip-zero { opacity: .45; }
+.chip-arming b { color: #9a5b00; } .chip-away b { color: #8a2f25; }
+.unit-head .chip { margin-right: calc(6px * var(--u)); vertical-align: middle; }
+.order .chip { flex: none; }
+@media (max-height: 560px) { .chip canvas { width: calc(26px * var(--u)); height: calc(26px * var(--u)); } .chip .wicon { width: calc(19px * var(--u)); height: calc(19px * var(--u)); } }
 .queue { margin-top: calc(6px * var(--u)); }
 .order { display: grid; grid-template-columns: auto 1fr auto; gap: calc(8px * var(--u)); align-items: center; padding: calc(2px * var(--u)) 0; }
 .order .gbar { min-width: calc(60px * var(--u)); }
