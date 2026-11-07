@@ -252,6 +252,8 @@ export class GameUi {
     this.labels.destroy();
     this.labelRoot.remove();
     this.kingdom.destroy();
+    this.notes.destroy();
+    this.reports.destroy();
   }
 
   update(s: CastleView): void {

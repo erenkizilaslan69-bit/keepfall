@@ -28,6 +28,7 @@ export class ReportTags {
   private pinned = false;
   private readonly toggle: HTMLButtonElement;
   private sig = '';
+  private timer = 0;
 
   constructor(parent: HTMLElement) {
     this.tags = document.createElement('div');
@@ -36,7 +37,7 @@ export class ReportTags {
     this.toggle.className = 'report-toggle hit hidden';
     this.toggle.title = tt('Savaş raporlarının hepsini göster / gizle');
     this.toggle.addEventListener('click', () => { this.pinned = !this.pinned; this.render(); });
-    window.setInterval(() => this.render(), 400);
+    this.timer = window.setInterval(() => this.render(), 400);
     this.modal = document.createElement('div');
     this.modal.className = 'modal-shade hidden hit';
     parent.append(this.tags, this.toggle, this.modal);
@@ -49,6 +50,9 @@ export class ReportTags {
       if (e.target === this.modal || (e.target as HTMLElement).closest('[data-close]')) this.close();
     });
   }
+
+  /** The match screen is gone: stop the refresh timer. */
+  destroy(): void { window.clearInterval(this.timer); }
 
   get isOpen(): boolean { return !this.modal.classList.contains('hidden'); }
 

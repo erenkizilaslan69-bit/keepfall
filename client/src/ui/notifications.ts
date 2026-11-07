@@ -17,13 +17,21 @@ export class Notifications {
   private incoming: IncomingView[] = [];
   private incomingAt = 0;
   private speed = 1;
+  private timer = 0;
 
   constructor(parent: HTMLElement) {
     this.el = document.createElement('div');
     this.el.className = 'notes';
     parent.appendChild(this.el);
     // The countdown runs between server ticks too.
-    window.setInterval(() => { this.renderIncoming(); this.avoidWindows(); }, 250);
+    this.timer = window.setInterval(() => { this.renderIncoming(); this.avoidWindows(); }, 250);
+  }
+
+  /** The match screen is gone: stop the countdown (it kept running on a detached element for every earlier match). */
+  destroy(): void {
+    window.clearInterval(this.timer);
+    window.clearInterval(this.holdTimer);
+    this.el.remove();
   }
 
   /**

@@ -208,7 +208,7 @@ export class WorldScene extends Phaser.Scene {
     this.battles.onSiege = (seat, progress, wins, done) => this.siegeFx(seat, progress, wins, done);
     clipReset();
     this.battles.onStart = (v, speed) => clipBattleStarted(this.game.canvas, v.kind === 'siege' ? (v.winner === 'attacker' ? 3 : 2) : 1, v.fightSeconds / Math.max(1, speed));
-    if (import.meta.env.DEV) {
+    if (import.meta.env.DEV && !location.search.includes('nodebug')) {
       setTraceClock(() => this.gameNow().now);
       this.debug = new DebugLayer(this, this.movers, this.battles,
         () => [...this.workers.debugSprites(), ...this.soldiers.debugSprites(), this.lord.debugSprite(), ...this.sites.debugSprites(), ...[...this.regions.values()].flatMap((r) => r.debugSprites())],
@@ -834,7 +834,9 @@ export class WorldScene extends Phaser.Scene {
     const endDrag = () => { drag = null; };
     window.addEventListener('pointerup', endDrag);
     window.addEventListener('blur', endDrag);
-    this.events.once('shutdown', () => { window.removeEventListener('pointerup', endDrag); window.removeEventListener('blur', endDrag); });
+    const unhook = () => { window.removeEventListener('pointerup', endDrag); window.removeEventListener('blur', endDrag); };
+    this.events.once('shutdown', unhook);
+    this.events.once('destroy', unhook); // (game.destroy() ends a scene with 'destroy' only: without this each match left two window listeners and the whole scene behind)
     this.input.on('wheel', (p: Phaser.Input.Pointer, _over: unknown, _dx: number, dy: number) => {
       const before = cam.getWorldPoint(p.x, p.y);
       cam.setZoom(Phaser.Math.Clamp(cam.zoom * (dy > 0 ? 0.88 : 1.14), this.minZoom(), MAX_ZOOM));
