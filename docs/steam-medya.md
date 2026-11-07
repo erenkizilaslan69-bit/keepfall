@@ -1,6 +1,6 @@
 # Steam mağaza medyası (2026-11-07)
 
-Durum: **9 ekran görüntüsü (TR + EN) ve KISMİ İngilizce fragman hazır (39,4 sn, 1920x1080, 60 fps, H.264+AAC)**. Savaş/kuşatma/kale düşüşü klipleri (c10–c15) yok, Türkçe fragman ve Steam kapsül görselleri üretilmedi. Nedenleri "Bilinen eksikler" bölümünde. Planın kendisi: `docs/steam-magaza.md`.
+Durum: **13 ekran görüntüsü (EN; TR'de 9) ve İngilizce fragman hazır (41 sn, 1920x1080, 60 fps, H.264+AAC)**. Savaş, kuşatma, kale düşüşü ve zafer görüntüleri Eren'in kendi oynadığı kayıttan alındı (aşağıda). Türkçe fragman ve Steam kapsül görselleri üretilmedi.
 
 ## Üretilen dosyalar (hepsi git dışı; `art/shots/` ve `art/video/` .gitignore'da)
 `art/shots/steam/<tr|en>/` (1920x1080 PNG):
@@ -21,11 +21,16 @@ Oyun içi sahnelerin temiz kareleri metin içermez; bu yüzden TR ve EN setinde 
 
 Klipler (ham çekim, kullanıcı makinesinde): `art/video/clips-en/` (c01, c03–c07, c09; temiz + arayüzlü) ve `clips-tr/` (c01, c03–c07; yalnız arayüzlü).
 
-## Fragman (kısmi, yalnız EN)
-- `art/video/keepfall-trailer-en.mp4` (39,4 sn, 71 MB), `art/video/keepfall-loop-en.gif` (10 sn, 640x360, 16 MB), temas sayfası `art/video/trailer-frames-en.png`, örnek kareler `art/shots/steam/trailer-frame-en-{3,13,25,32}.png`.
-- Akış: çalışan işçiler → demirci/silah → sis → gözcü → ulak mesajı → hayalet ordu → dört krallığın kaleleri (Gölge, Kâhin) → "Who deceived whom?" → bitiş kartı (logo, "Wishlist on Steam", "Art: Tiny Swords by Pixel Frog"). Başlıklar İngilizce; müzik CC0 (`client/public/audio`).
-- Kontrol: ffprobe (60 fps, 2364 kare, ses 39,4 sn), `blackdetect` 0 siyah kare.
-- Üretim: `node tools/steam-trailer.mjs --lang en --partial` (eldeki kliplerden). Tam akış (`--lang both`, savaş klipleriyle 30–45 sn) c10–c15 gelince.
+## Fragman (yalnız EN)
+- `art/video/keepfall-trailer-en.mp4` (41,0 sn, 69 MB), `art/video/keepfall-loop-en.gif` (10 sn, 640x360, 15 MB), temas sayfası `art/video/trailer-frames-en.png`.
+- Akış: çalışan işçiler → demirci/silah → sis → hayalet ordu → dört krallığın kaleleri → ordu yürüyüşü → kapıda savaş ("One gate, one battle.") → kale düşer ("A castle falls in a single blow.") → ikinci kuşatma → "You won!" → "Who deceived whom?" → bitiş kartı ("Wishlist on Steam", "Art: Tiny Swords by Pixel Frog"). Müzik CC0.
+- Kontrol: ffprobe 60 fps, 2460 kare, ses 41 sn; `blackdetect` ve `freezedetect` bulgu vermedi.
+- Üretim: `node tools/steam-trailer.mjs --lang en --partial --rec "<kayıt.mp4>"`. Savaş bölümü kayıttan, kaynak saniyeleri: yürüyüş 654–658, kapıda savaş 668–672, kale düşüşü 673,5–678,5 (Bot Yellow elenir), ikinci kuşatma 727–732 (Bot Purple), zafer paneli 741,5–745. Kaynak 30 fps; çıktıya 60 fps'e kare çoğaltılarak uyarlandı. Kayıt: `C:/Users/Eren/Downloads/Kayıt 2026-11-07 222704.mp4` (12 dk 35 sn, 30 fps; repoya/çıktıya KOPYALANMADI). Oyuncu adı kayıtta genel "Player 1 (you)"; kişisel ad görünmüyor. Fare imleci 07 ve 08 karelerinde ve bazı fragman karelerinde görünüyor.
+- Üç taraflı kapı kuşatması kayıtta YOK (iki ordu aynı anda aynı kapıya gelmiyor); ayrı çekim gerekir.
+- Maç sonu "Who deceived whom?" karesi sahnelenmiş (kurgusal adlar), kayıttaki gerçek maçla aynı değil.
+
+## Ekran görüntüleri (kayıttan, EN)
+`art/shots/steam/en/05-army-marches` (t=659), `06-gate-battle` (672), `07-castle-siege` (677; kale yanıyor), `08-victory` (743,5; "You won!"). Hepsi 1920x1080, canlı oyun karesi.
 
 ## Yeniden üretme
 Hepsi tek komutla: `node tools/steam-screenshots.mjs [--lang tr|en|both] [--only stills|menus|assets] [--contact]`.
@@ -44,7 +49,7 @@ Akıcı 60 fps sahne çekimi başsız Chrome ile mümkün değil (bu makinede ba
 Elle alternatif: OBS veya Windows Game Bar ile 1080p60 kayıt.
 
 ## Bilinen eksikler
-- **Fragman kısmi**: savaş klipleri c10–c15 (ordu yürüyüşü, savaş, kale düşüşü, zafer) çekilemedi. İlk deneme savaş betiğindeki eski sıra adları ("front"/"back"; sunucu artık first…fourth bekliyor, düzeltildi) ve disk dolması yüzünden bozuldu; sonra kullanıcı makinede oynadığı için pencereli çekim bırakıldı. İkinci denemede sıra adları da sorunluydu (iki birlik aynı sıraya konamaz; `ROWS` şimdi first/second/third/fourth) ve başarısız bir çekimde ffmpeg durmayıp saatlerce kaydetti (düzeltildi: `Director.take`). Düzeltmeler commit'li ama savaş klipleri bu düzeltmelerle HENÜZ çekilmedi. Mağaza kapsül görseli bileşimi (`--only assets`, c10 gerektirir) denenmedi. Üç taraflı kapı kuşatması klibi (iki ordu aynı kapıya) için betik yok.
+- Savaş klipleri c10–c15 (pencereli GPU çekimi) hâlâ çekilmedi; savaş bölümü kayıttan geldi. Çekim betikleri (ordu yürüyüşü, savaş, kale düşüşü, zafer) çekilemedi. İlk deneme savaş betiğindeki eski sıra adları ("front"/"back"; sunucu artık first…fourth bekliyor, düzeltildi) ve disk dolması yüzünden bozuldu; sonra kullanıcı makinede oynadığı için pencereli çekim bırakıldı. İkinci denemede sıra adları da sorunluydu (iki birlik aynı sıraya konamaz; `ROWS` şimdi first/second/third/fourth) ve başarısız bir çekimde ffmpeg durmayıp saatlerce kaydetti (düzeltildi: `Director.take`). Düzeltmeler commit'li ama savaş klipleri bu düzeltmelerle HENÜZ çekilmedi. Mağaza kapsül görseli bileşimi (`--only assets`, c10 gerektirir) denenmedi. Üç taraflı kapı kuşatması klibi (iki ordu aynı kapıya) için betik yok.
 - Savaş, kuşatma, kale düşüşü ve krallık yeteneği oyun içi görüntüleri henüz yok (menü ve hazırlık ekranları var).
 - Eski çekimdeki "arayüzlü" klipler altta kırmızı bir geliştirici tanılama şeridi gösteriyordu; şerit artık gizleniyor (`Director.ui`), son çekimin arayüzlü klipleri (c03, c05, c06) temiz. Görüntüler bu yüzden temiz (arayüzsüz) karelerden alındı; oyunun arayüzü yalnızca menü görüntülerinde görünür. Sonraki çekimde tanılama şeridi gizlenmeli.
 - TR çekim: arayüzlü klipler var, temiz klipler yok (temiz kareler dilden bağımsız olduğu için EN klibi kullanıldı).
