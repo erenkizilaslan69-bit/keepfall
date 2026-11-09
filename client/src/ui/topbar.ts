@@ -1,6 +1,7 @@
 import { gearSvg, toggleSettings } from './settings';
 import { guideClicked, markGuideClicked, toggleGuide } from './guide';
-import { lang, t, toggleLang, tr } from '../i18n';
+import { t, tr } from '../i18n';
+import { langLabel, langTitle, toggleLangMenu } from './lang-menu';
 import { botMark, clock, esc, fmt, rate } from '../format';
 import type { CastleView, PlayerView, RoomView } from '../types';
 import { asset } from '../env';
@@ -51,7 +52,7 @@ export class TopBar {
         <div class="ribbon tb-clock hit ribbon-blue" data-f="clock"><b></b><small></small></div>
         <div class="strip hit tb-icons">
           <button class="btn-round" data-settings title="${t('Ayarlar')}" aria-label="${t('Ayarlar')}">${gearSvg()}</button>
-          <button class="btn-round" data-lang title="${lang === 'tr' ? 'English' : 'Türkçe'}" aria-label="${lang === 'tr' ? 'English' : 'Türkçe'}"><b>${lang === 'tr' ? 'EN' : 'TR'}</b></button>
+          <button class="btn-round" data-lang title="${langTitle()}" aria-label="${langTitle()}"><b>${langLabel()}</b></button>
           <button class="btn-round" data-guide title="${t('Nasıl oynanır?')}" aria-label="${t('Nasıl oynanır?')}"><b>?</b></button>
         </div>
         <div class="strip hit tb-speed hidden" data-f="speed"></div>
@@ -67,7 +68,7 @@ export class TopBar {
     }
     guideBtn.addEventListener('click', () => toggleGuide());
     this.q('[data-settings]').addEventListener('click', toggleSettings);
-    this.q('[data-lang]').addEventListener('click', toggleLang);
+    { const lb = this.q('[data-lang]'); lb.addEventListener('click', () => toggleLangMenu(lb)); }
     this.el.addEventListener('click', (e) => {
       const t = e.target as HTMLElement;
       const speed = t.closest<HTMLElement>('[data-speed]');

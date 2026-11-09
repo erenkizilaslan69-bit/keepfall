@@ -3,7 +3,8 @@ import { restartTutorial } from './tutorial';
 import { CRAZY } from '../crazy';
 import { playsFullRules, setFullRules, lowGraphics, setLowGraphics, setShowHints, showsHints, setReduceEffects, setShowFps, setShowMessages, showsFps, userReducesEffects, userShowsMessages } from '../prefs';
 import { toggleGuide } from './guide';
-import { lang, t, toggleLang } from '../i18n';
+import { setLang, t, type Lang } from '../i18n';
+import { langLabel, langSelectHtml, langTitle, toggleLangMenu } from './lang-menu';
 
 // The settings window (gear button, in the menus and in the game): the two volumes, "reduce effects", a way to the guide and "About the game".
 // Sound and effect choices take hold at once and are kept by their own modules.
@@ -78,6 +79,10 @@ export function toggleSettings(): void {
           <div class="set-row"><label for="set-mute">${t('Sesi kapat')}</label><input id="set-mute" type="checkbox" class="set-check"></div>
         </section>
         <section>
+          <h3>${t('Dil')} · Language</h3>
+          <div class="set-row"><label for="set-lang">${t('Dil')}</label>${langSelectHtml()}</div>
+        </section>
+        <section>
           <h3>${t('Görünüm')}</h3>
           <div class="set-row"><label for="set-fx">${t('Efektleri azalt')} <small>${t('(kamera sarsıntısı, kıvılcım ve ok izleri)')}</small></label><input id="set-fx" type="checkbox" class="set-check"></div>
           <div class="set-row"><label for="set-low">${t('Düşük grafik')} <small>${t('(parçacık efektleri, duman, harita süsleri ve sis yumuşatması azalır; yavaş bilgisayarlar için)')}</small></label><input id="set-low" type="checkbox" class="set-check"></div>
@@ -112,6 +117,7 @@ export function toggleSettings(): void {
     </div>`;
   const q = <T extends HTMLElement>(sel: string) => overlay.querySelector<T>(sel)!;
   const music_ = q<HTMLInputElement>('#set-music'), sfx_ = q<HTMLInputElement>('#set-sfx'), mute = q<HTMLInputElement>('#set-mute'), fx = q<HTMLInputElement>('#set-fx'), low = q<HTMLInputElement>('#set-low'), fps = q<HTMLInputElement>('#set-fps'), msg = q<HTMLInputElement>('#set-msg'), hintsBox = q<HTMLInputElement>('#set-hints'), fullBox = q<HTMLInputElement>('#set-full');
+  q<HTMLSelectElement>('#set-lang').addEventListener('change', (e) => { setLang((e.target as HTMLSelectElement).value as Lang); });
   const show = () => {
     music_.value = String(Math.round(sfx.musicVolume * 100));
     sfx_.value = String(Math.round(sfx.volume * 100));
@@ -173,14 +179,15 @@ export function mountSettingsButton(): void {
   document.body.appendChild(b);
 }
 
-/** The language switch for the menus (TR / EN; in the game it sits in the top bar): shows the language it switches to. */
+/** The language button for the menus (in the game it sits in the top bar): shows the current language and opens the list of the 15. */
 export function mountLangButton(): void {
   const b = document.createElement('button');
   b.className = 'btn-round lang-fab';
-  b.title = lang === 'tr' ? 'English' : 'Türkçe';
+  b.dataset.lang = '';
+  b.title = langTitle();
   b.setAttribute('aria-label', b.title);
-  b.innerHTML = `<b>${lang === 'tr' ? 'EN' : 'TR'}</b>`;
-  b.addEventListener('click', toggleLang);
+  b.innerHTML = `<b>${langLabel()}</b>`;
+  b.addEventListener('click', () => toggleLangMenu(b));
   document.body.appendChild(b);
 }
 

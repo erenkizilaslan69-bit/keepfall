@@ -1,0 +1,6 @@
+/* The language menu (ui/lang-menu.ts): a short wooden list of the 15 languages, each in its own name. */
+.lang-menu { position: fixed; z-index: 400; display: flex; flex-direction: column; gap: 2px; padding: calc(6px * var(--u, 1)); max-height: calc(100vh - 16px); overflow-y: auto; min-width: calc(190px * var(--u, 1)); }
+.lang-item { font: 600 max(var(--fs-xs, 0px), calc(15px * var(--u, 1))) / 1.2 var(--font-pixel); text-align: left; padding: calc(7px * var(--u, 1)) calc(12px * var(--u, 1)); min-height: var(--tap, 0px); border: 2px solid transparent; border-radius: 6px; background: none; color: var(--kf-wood-lo); cursor: pointer; }
+.lang-item:hover, .lang-item:focus-visible { background: rgba(224, 176, 64, .35); border-color: var(--kf-gold-lo); outline: none; }
+.lang-item.on { background: var(--kf-navy); color: var(--kf-cream); }
+.set-select { font: inherit; padding: calc(4px * var(--u, 1)) calc(8px * var(--u, 1)); min-height: var(--tap, 0px); max-width: 60%; }

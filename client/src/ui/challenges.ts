@@ -1,5 +1,5 @@
 import { clock, esc } from '../format';
-import { lang, t, tr } from '../i18n';
+import { pickText, t, tr } from '../i18n';
 import { emblemHtml } from './emblem';
 import { safeLocal } from './safe-storage';
 import { logoHtml } from '../screens';
@@ -47,7 +47,7 @@ export function nextOf(card: ChallengeCard, list: ChallengeList): ChallengeCard 
   return card.daily ? null : list.challenges.find((c) => c.order === card.order + 1) ?? null;
 }
 
-export const pick = (x: { tr: string; en: string }): string => (lang === 'en' ? x.en : x.tr);
+export const pick = (x: { tr: string; en: string }): string => pickText(x);
 
 /** One goal as a sentence. */
 export function goalText(type: string, value: number): string {

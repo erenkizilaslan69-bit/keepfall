@@ -1,5 +1,5 @@
 import { esc } from '../format';
-import { isEnglish, numLocale, t, tr } from '../i18n';
+import { numLocale, percentText, t, tr } from '../i18n';
 import { emblemHtml } from './emblem';
 import { serverUrl } from '../env';
 import { safeLocal } from './safe-storage';
@@ -67,7 +67,7 @@ const minutes = (s: number) => t('{0} dk', Math.round(s / 60));
 const num = (n: number) => numLocale(n);
 const range = (r: Range) => (r.min === r.max ? num(r.min) : `${num(r.min)}–${num(r.max)}`);
 const has = (r: Range) => r.max > 0;
-const percent = (x: number) => (isEnglish ? `${Math.round(x * 100)}%` : `%${Math.round(x * 100)}`);
+const percent = (x: number) => percentText(x);
 const counts = (list: Count[]) => list.map((c) => `${c.count} ${tr(c.name)}`).join(', ');
 
 /** What the decree says: short lists under small headings. */

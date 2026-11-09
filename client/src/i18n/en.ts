@@ -1,6 +1,8 @@
 // English texts of the interface (key: the Turkish original). See i18n/index.ts.
 // The file is one plain object literal (tools/i18n-scan.mjs reads it without compiling): keep it that way.
 export const EN: Record<string, string> = {
+  "Dil": "Language",
+  "Dili değiştir": "Change language",
   "Meydan Okuma": "Challenges",
   "(tek kişilik, hedefli maçlar)": "(solo matches with goals)",
   "Bu sunucuda meydan okuma yok.": "This server has no challenges.",
