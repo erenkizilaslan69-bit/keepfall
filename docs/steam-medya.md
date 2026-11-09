@@ -30,3 +30,9 @@ Eksikler: üç taraflı kapı kuşatması kayıtta yoktu; Türkçe fragman ve St
 ## Lisans ve yapay zekâ notu
 - Tiny Swords (Pixel Frog): ticari kullanım serbest, kredi önerilir (Pixel Frog), varlık paketi tek başına dağıtılmaz. Bu yüzden medya yayımlanabilir; bitiş kartında kredi var. Paketten türeyen görüntüler repoya girmez (`art/steam/` .gitignore'da).
 - Yeni çıktılarda yapay zekâ ile üretilmiş görsel/logo YOK: görüntüler oyunun gerçek kareleri, bitiş kartı düz tipografi.
+
+## Mağaza paketi (2026-11-10): ekran görüntüleri ve kapaklar
+Ayrıntı ve karar listesi `docs/steam-magaza.md` §8–§9. Yeniden üretme (dev sunucu 5081 `Keepfall__MaxRooms=0` + Vite 5174 açık):
+- `node tools/steam-shots.mjs art/steam/new [--only castle-l3,map,gate,siege3,fall,envoy,kingdom,forge,end] [--lang en|tr]`: 1920x1080, arayüz temiz, gerçek istemci (dev kancaları; kuşatma, kale düşüşü, maç sonu özeti elle kurulur).
+- `node tools/steam-capsules.mjs [--skip-capture]`: logo (şeffaf), iki arka plan (arayüzsüz, 3840x2160) ve tüm kapak boyutları × 2 seçenek + `comparison.png` → `art/steam/capsule/`.
+- Seçilen 8 görüntü `art/steam/store/` (ilk 4 en güçlü). Hepsi git dışı (Tiny Swords içerir). Yapay zekâ görseli ve Red Lion aslanı kullanılmaz.

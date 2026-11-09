@@ -71,7 +71,7 @@ Self-contained sunucu 126 MB: ASP.NET'in kırpması (trimming) desteklenmediği 
 
 - `client/public/assets/tiny-swords/**` (Free Pack): birimler (işçi, asker, gözcü), mavi/kırmızı/sarı/mor binalar, ağaç/çalı/kaya, su/kum/çayır karoları, arayüz parçaları (kağıt, ribbon, düğme, çubuk, simgeler), efekt kareleri. Bunlar `dist-steam` içinde (`client/dist-steam/assets`) ve dolayısıyla Steam deposunda.
 - Oyunun kendi sanatı / CC0 / OFL: `art/` altından üretilen krallık kale ve bina görselleri (`client/public/art/kingdoms*`), arayüz çizimleri (`art/ui`, orman yerleri, harita süsleri, süvari atı, mancınık, amblemler, zafer/yenilgi görselleri), `client/public/cc0/` (Tiny Swords "TS_old version_CC0": taş sur, tabelalar), sesler (Kenney, RandomMind: CC0), yazı tipleri (Pixelify Sans, Atkinson Hyperlegible: OFL; lisans dosyaları `licenses/` ile gider).
-- Dikkat: krallık görselleri "Gemini ile üretilmiş" kaynaklardan temizlenmiş görüntüler (`art/inbox`): Steam'in **yapay zekâ içerik beyanı** formunda bu doğru şekilde beyan edilmeli (kod yardımcıları muaf; oyuncunun gördüğü AI üretimi görsel beyan edilir). Devir notu "AI görselleri kaldırıyoruz" diyor; hangilerinin kaldığı/kaldırıldığı güncellenmeli.
+- **Güncelleme (2026-11-10):** Aşağıdaki "oyunun kendi sanatı" maddesi ve bu "Gemini" notu ESKİDİR: yapay zekâ görselleri 5–6 Kasım görsel geçişinde kaldırıldı; yapıda yalnız Tiny Swords, CC0 ses, OFL yazı tipi ve kodla çizilenler var. Güncel durum ve beyan taslağı: `docs/steam-magaza.md` §6.
 
 ### Eren'in teyit etmesi gereken somut sorular
 
