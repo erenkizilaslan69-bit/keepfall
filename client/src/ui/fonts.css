@@ -1,0 +1,21 @@
+/* Fonts of the scripts beyond Latin (docs/yazi-tipi-lisanslari.md).
+   - Cyrillic (ru, uk): Pixelify Sans's Cyrillic subset lacks О, П, І (checked with tools/i18n-tofu.mjs), so Cyrillic text uses Fusion Pixel Font (OFL) as a whole; the plain text font, Atkinson, has no Cyrillic either: Noto Sans (OFL).
+   - Chinese, Japanese, Korean: Fusion Pixel Font 12px proportional (OFL-1.1; one file per language so the Han forms are the right ones).
+   A browser downloads a @font-face file only when text uses it, and only the font of the picked language is ever in the stack (html[data-script], set by i18n/index.ts), so the others never load. */
+@font-face { font-family: 'KF Pixel Cyr'; font-display: swap; src: url(../fonts/fusion-pixel/fusion-pixel-12px-proportional-latin.otf.woff2) format('woff2'); }
+@font-face { font-family: 'KF Han SC'; font-display: swap; src: url(../fonts/fusion-pixel/fusion-pixel-12px-proportional-zh_hans.otf.woff2) format('woff2'); }
+@font-face { font-family: 'KF Han TC'; font-display: swap; src: url(../fonts/fusion-pixel/fusion-pixel-12px-proportional-zh_tw.otf.woff2) format('woff2'); }
+@font-face { font-family: 'KF Han JA'; font-display: swap; src: url(../fonts/fusion-pixel/fusion-pixel-12px-proportional-ja.otf.woff2) format('woff2'); }
+@font-face { font-family: 'KF Han KO'; font-display: swap; src: url(../fonts/fusion-pixel/fusion-pixel-12px-proportional-ko.otf.woff2) format('woff2'); }
+:root { --font-cjk: system-ui; }
+html[data-script="cyrillic"] { --font-cjk: 'KF Pixel Cyr'; }
+html[data-script="sc"] { --font-cjk: 'KF Han SC'; }
+html[data-script="tc"] { --font-cjk: 'KF Han TC'; }
+html[data-script="ja"] { --font-cjk: 'KF Han JA'; }
+html[data-script="ko"] { --font-cjk: 'KF Han KO'; }
+:root {
+  --font-pixel: 'Keepfall Digits', 'Pixelify Sans', var(--font-cjk), system-ui, sans-serif;
+  --font-text: 'Atkinson Hyperlegible Next', 'Noto Sans', var(--font-cjk), system-ui, sans-serif;
+}
+/* Pixel CJK is drawn on a 12 px grid: keep the glyphs sharp (no smoothing of the edges) and give the lines a little more room than Latin text needs. */
+html[data-script="sc"] body, html[data-script="tc"] body, html[data-script="ja"] body, html[data-script="ko"] body { line-height: 1.35; -webkit-font-smoothing: none; }
