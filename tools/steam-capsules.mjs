@@ -39,8 +39,8 @@ const SIZES = [
   { id: 'header-920x430', w: 920, h: 430, logo: 'word', lw: 0.5, pos: ['50%', '82%'], fx: '56%', fy: '30%' },
   { id: 'small-462x174', w: 462, h: 174, logo: 'word', lw: 0.62, pos: ['50%', '72%'], fx: '56%', fy: '28%' },
   { id: 'main-1232x706', w: 1232, h: 706, logo: 'word', lw: 0.4, pos: ['50%', '84%'], fx: '56%', fy: '30%' },
-  { id: 'vertical-748x896', w: 748, h: 896, logo: 'word', lw: 0.86, pos: ['50%', '86%'], fx: '62%', fy: '30%' },
-  { id: 'library-capsule-600x900', w: 600, h: 900, logo: 'word', lw: 0.86, pos: ['50%', '86%'], fx: '62%', fy: '30%' },
+  { id: 'vertical-748x896', w: 748, h: 896, logo: 'word', lw: 0.86, pos: ['50%', '86%'], fx: '46%', fy: '30%' },
+  { id: 'library-capsule-600x900', w: 600, h: 900, logo: 'word', lw: 0.86, pos: ['50%', '86%'], fx: '46%', fy: '30%' },
   { id: 'library-hero-3840x1240', w: 3840, h: 1240, logo: null, lw: 0, pos: null, fx: '56%', fy: '38%' },
 ];
 // the staged scenes of tools/steam-hero.mjs: the gate clash, and the King close in front
@@ -52,8 +52,9 @@ const html = (size, opt) => `<!doctype html><meta charset="utf-8"><style>
   html, body { margin: 0; background: #000; } .cap { position: relative; width: ${size.w}px; height: ${size.h}px; overflow: hidden; }
   .bg { position: absolute; inset: 0; background: url('${pathToFileURL(`${OUT}/${opt.bg}`).href}') ${size.fx} ${size.fy} / cover no-repeat; image-rendering: pixelated; }
   .shade { position: absolute; inset: 0; background: ${size.logo ? 'linear-gradient(to bottom, rgba(8,14,24,.18), rgba(8,14,24,0) 22%, rgba(8,14,24,0) 44%, rgba(8,14,24,.62) 74%, rgba(8,14,24,.86))' : 'linear-gradient(to bottom, rgba(8,14,24,.10), rgba(8,14,24,0) 30%, rgba(8,14,24,0) 70%, rgba(8,14,24,.22))'}; }
+  .sides { position: absolute; inset: 0; background: linear-gradient(to right, rgba(40,100,255,.26), rgba(40,100,255,0) 42%, rgba(230,50,40,0) 58%, rgba(230,50,40,.26)); }
   .logo { position: absolute; left: ${size.pos?.[0] ?? '50%'}; top: ${size.pos?.[1] ?? '50%'}; width: ${size.lw * 100}%; height: auto; transform: translate(-50%, -50%); filter: drop-shadow(0 3px 0 rgba(30,16,6,.8)) drop-shadow(0 0 14px rgba(0,0,0,.7)); image-rendering: auto; }
-</style><div class="cap"><div class="bg"></div><div class="shade"></div>${size.logo ? `<img class="logo" src="${pathToFileURL(`${OUT}/_logo-${size.logo}.png`).href}">` : ''}</div>`;
+</style><div class="cap"><div class="bg"></div><div class="shade"></div>${opt.id.startsWith('b-') ? '<div class="sides"></div>' : ''}${size.logo ? `<img class="logo" src="${pathToFileURL(`${OUT}/_logo-${size.logo}.png`).href}">` : ''}</div>`;
 
 const b = await launch({ width: 920, height: 430, dpr: 1 });
 const results = [];

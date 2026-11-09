@@ -181,7 +181,7 @@ Yaş derecelendirmesi (IARC) tahmini: PEGI 7 / ESRB E10+ düzeyi (fantezi şidde
 - Geliştirici ve yayıncı: **Red Lion Games**. Mağaza sayfasındaki adres/vergi bilgisi Steamworks'te Eren'in hesabından.
 - Kredi satırı (oyunda ve sayfada önerilir): *Art: Tiny Swords by Pixel Frog.* Lisans: ticari kullanım serbest, isim zorunlu değil, **varlık paketi ayrı dağıtılmaz** (kapakta oyunun tanıtımı için kullanım bu kuralı bozmaz). Pixel Frog'dan yazılı teyit **önerilir, bloklamaz** (`docs/steam-paketleme.md` §4).
 
-## 8. Ekran görüntüleri (8; ilk 4 en güçlü)
+## 8. Ekran görüntüleri (7; ilk 4 en güçlü)
 
 Hepsi 1920×1080, arayüz temiz (geliştirici hız düğmeleri, FPS, hata katmanı, bildirimler, öğretici yok), PNG. Dosyalar `art/steam/store/`; adaylar `art/steam/store/alt/`. **Gerçek** = Eren'in 7 Kasım maç kaydından kare (fare imleci silindi); **Sahneli** = oyunun kendi istemcisiyle, gerçek çizimle ama elle kurulmuş an (bir savaş ya da özet bu şekilde beklemeden gösterilir); ikisi de oyunun gerçek görüntüsüdür, sahte arayüz/çizim yok.
 
@@ -194,9 +194,8 @@ Hepsi 1920×1080, arayüz temiz (geliştirici hız düğmeleri, FPS, hata katman
 | 5 | `05-secret-kingdoms.png` | Entrikacılar paneli: sahte ulak, kılık değiştirme | Sahneli (gerçek panel) | Four secret kingdoms |
 | 6 | `06-the-map.png` | Bütün harita: dört kale, ortada orman | Sahneli (izleyici görünümü, sis kapalı) | A map for four players |
 | 7 | `07-your-castle.png` | Seviye 4 kale ve binalar, işçiler, kamp | Sahneli (seviye 4) | Build and upgrade your castle |
-| 8 | `08-three-way-siege.png` | Aynı kapıda üç taraf; "Kime vurulsun?" seçimi | Sahneli, **canlı görülmedi** | Up to three armies at one gate |
 
-**Karar (Eren, 10 Kasım):** üç taraflı kuşatma ilk 4'ten çıkarıldı (gerçek bir maçta görülene kadar); yerine gerçek maç kareleri 2 ve 3'e kondu. Sekizinci sırada duruyor; gerçek maçta görülmezse göndermeden at ya da sahneli olduğunu bilerek kullan. Diğer sahneliler (4–7) kalabilir.
+**Karar (Eren, 10 Kasım):** üç taraflı kuşatma listeden çıkarıldı (dosya `art/steam/store/alt/three-way-siege-staged.png`); gerçek maçta canlı görülünce geri eklenecek. Sahneli 4–7 kalır.
 
 Adaylar (`alt/`): `forge-window.png` (demirci penceresi), `envoy-letter.png` (ulak mektubu), `gate-battle-staged.png`, `end-top.png` (maç sonu üst). Eren'in eski çekimleri `art/steam/01…08-*.png` yerinde duruyor.
 
@@ -208,6 +207,7 @@ Klasör `art/steam/capsule/` (git dışı), tek sayfa karşılaştırma `compari
 
 **Yön (Eren, 10 Kasım):** ekran görüntüsü değil, kurgulanmış tek sahne: yanan kale kapısında mavi ordu (sol) kırmızı ordu ve Kral'a (sağ) karşı; arkada soluk "hayalet ordu" (blöf ve ihanet hissi); az ve büyük birim (kamera zoom 3,6–5, iki kat çözünürlükte çekim, en yakın komşu örnekleme); alt kısımda koyu degrade üstünde `KEEPFALL` logosu.
 
+- **Son düzeltmeler:** alevler Tiny Swords `Particle FX/Fire_03` karelerinden (üst üste dizilmiş tek kareler); hayalet ordu yarı saydam (~%45), mavi tonlu, ince açık dış çizgili; vuruş izi büyük beyaz kıvrık şekil çıkarıldı (swing karesi yerine hazırlık kareleri); b-king'de taraflar renkle ayrılır (yer elipsleri + sol mavi / sağ kırmızı ton), Kral kırmızı tarafta.
 - **Seçenek a-gate:** kapıdaki çarpışma, tüm sahne. **Seçenek b-king:** aynı an, Kral önde ve çok büyük (dikey kapsüllerde daha iyi).
 
 | Görsel | Boyut | Dosyalar | Not |
@@ -231,13 +231,12 @@ Yapılmadı (Eren kendisi ayarlayacak; referans `Downloads\keepfall-trailer-1080
 
 ## 11. Eren'in vermesi gereken kararlar
 
-Verildi (10 Kasım): çok oyunculu kalır; yapay zekâ metin beyanı yapılır; logo büyük harf; üç taraflı kuşatma ilk 4'ten çıktı; kapak yönü a (kuşatma).
+Verildi (10 Kasım): kapak seçimi (yatay a-gate, dikey b-king); çok oyunculu kalır; yapay zekâ metin beyanı yapılır; logo büyük harf; üç taraflı kuşatma ilk 4'ten çıktı; kapak yönü a (kuşatma).
 
 Açık:
-1. **Kapak seçimi:** a-gate mi b-king mi (her boyut için aynı olması şart değil; öneri: yatay boyutlarda a, dikeylerde b).
-2. **Fiyat ve çıkış tarihi** (Coming Soon'da "TBD" bırakılabilir) ve **Pixel Frog yazılı teyidi** (önerilir).
-3. **Üç taraflı kuşatma:** gerçek maçta görülünce 4'lüğe girer mi, yoksa 8. sırada sahneli mi kalsın?
-4. Sahneli kareler (4–7) kabul mü, yoksa gerçek maçtan yeniden mi?
+1. **Fiyat ve çıkış tarihi** (Coming Soon'da "TBD" bırakılabilir) ve **Pixel Frog yazılı teyidi** (önerilir).
+2. **Üç taraflı kuşatma:** gerçek maçta görülünce listeye geri eklenecek.
+3. Sahneli kareler (4–7) kabul mü, yoksa gerçek maçtan yeniden mi?
 
 ## 12. Sayfayı göndermeden önce kontrol listesi
 
