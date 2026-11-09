@@ -61,7 +61,7 @@ const avatar = (seat: number) =>
 export function logoHtml(): string {
   let variant = new URLSearchParams(location.search).get('logo') ?? '';
   try { variant ||= localStorage.getItem('keepfall_logo') ?? ''; } catch { /* storage may be blocked */ }
-  const word = `<div class="kf-logo-word"><span class="keep" data-t="Keep">Keep</span><span class="fall" data-t="fall">fall</span></div>`;
+  const word = `<div class="kf-logo-word"><span class="keep" data-t="KEEP">KEEP</span><span class="fall" data-t="FALL">FALL</span></div>`;
   if (variant === 'b') return `<div class="kf-logo" role="img" aria-label="Keepfall"><div class="kf-logo-plate"><i class="ico ico-sword"></i>${word}<i class="ico ico-shield"></i></div></div>`;
   return `<div class="kf-logo" role="img" aria-label="Keepfall"><img class="kf-logo-castle" src="${ART}Buildings/Blue%20Buildings/Castle.png" alt="" draggable="false">${word}</div>`;
 }

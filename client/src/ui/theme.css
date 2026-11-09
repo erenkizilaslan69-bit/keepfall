@@ -286,7 +286,7 @@
 .kf-logo { display: flex; flex-direction: column; align-items: center; gap: 0; margin: calc(-6px * var(--u, 1)) auto calc(6px * var(--u, 1)); user-select: none; }
 .kf-logo-crest { width: calc(72px * var(--u, 1)); height: auto; margin-bottom: calc(-6px * var(--u, 1)); filter: drop-shadow(0 calc(3px * var(--u, 1)) 0 rgba(44, 26, 12, .8)); }
 .kf-logo-word {
-  display: flex; font: 700 calc(58px * var(--u, 1)) / 1 'Pixelify Sans', var(--font-pixel); letter-spacing: .02em;
+  display: flex; font: 700 calc(58px * var(--u, 1)) / 1 'Pixelify Sans', var(--font-pixel); letter-spacing: .05em;
   /* the dark outline: the silhouette of the letters shifted a few pixels every way, then the slab under them */
   filter: drop-shadow(calc(3px * var(--u, 1)) 0 0 var(--kf-wood-edge)) drop-shadow(calc(-3px * var(--u, 1)) 0 0 var(--kf-wood-edge))
     drop-shadow(0 calc(-3px * var(--u, 1)) 0 var(--kf-wood-edge)) drop-shadow(0 calc(3px * var(--u, 1)) 0 var(--kf-wood-edge))

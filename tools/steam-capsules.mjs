@@ -31,58 +31,28 @@ if (!SKIP) {
     b.close();
   }
 
-  // ---- two scenes without any interface, at 3840x2160 (1920x1080 at 2x) ---------------------------------------------------------------------------------------------------------------
-  {
-    const b = await launch({ width: 1920, height: 1080, dpr: 2, init: "try{localStorage.setItem('keepfall_name','Eren')}catch(e){}" });
-    await b.goto(URL + '?fx=0'); await b.waitFor("document.querySelector('#quick')", 40);
-    await b.js(`(async () => { const n = keepfallNet; let r = await n.createRoom('Eren'); for (const l of ['medium', 'easy', 'medium']) await n.addBot(l); await n.setGuided(true); await n.setReady(true); r = await n.startMatch(); return r.ok; })()`);
-    await b.waitFor("document.documentElement.classList.contains('in-game') && !!keepfallScene.state && keepfallScene.ready", 90);
-    await sleep(2500);
-    await b.js(`(() => { const s = document.createElement('style'); s.textContent = '.ui-root, .notes, .kf-fps, body > pre, body > div[style*="9999"], .tb-speed, #kingdom-decree, .kf-lowfps, .siege-focus { display: none !important; }'; document.head.appendChild(s); return 1; })()`);
-    const shot = async (name) => { await sleep(1000); await b.shot(`${OUT}/${name}.png`); console.log('saved', name); };
-    // scene A: our castle with every building at level 4, fog off
-    await b.js(`(async () => { const s = keepfallScene; const o = s.setState.bind(s); s.setState = (st) => o({ ...st, buildings: st.buildings.map((x) => ({ ...x, level: 4, upgradeRemaining: null })) }); s.setState(s.state);
-      s.fog.draw = () => {}; s.fog.setVisible(false); s.cameras.main.removeBounds?.(); s.centerOnCastle(); s.cameras.main.setZoom(1.25); return 1; })()`);
-    await shot('_bg-castle');
-    // scene B: a siege at a rival's gate (the other regions drawn as a spectator sees them)
-    await b.js(`(async () => {
-      const s = keepfallScene, { RegionDisplay } = await import('/src/scene/RegionDisplay.ts'), { toWorld } = await import('/src/scene/world.ts'), A = await import('/src/scene/assets.ts');
-      await new Promise((r) => A.loadSpectatorAssets(s, s.otherColors, r));
-      for (const r of s.layout.regions) { if (r.seat === s.mySeat || r.seat === null) continue; const d = new RegionDisplay(s, s.labels, r.seat, toWorld(r.origin), r.color || 'red', s.color);
-        d.sync({ seat: r.seat, buildings: s.state.buildings.map((x) => ({ ...x, level: 3, upgradeRemaining: null })), jobs: [], units: [], eliminated: false }); }
-      const now = s.gameNow().now, mk = (side) => ({ seat: side[0], color: side[1], name: side[2], attacker: side[3], soldiers: Array.from({ length: side[4] }, (_, i) => ({ unitId: i % 4 === 0 ? 'okcu' : i % 4 === 1 ? 'mizrakci' : 'kilicli', row: i % 4 === 0 ? 'second' : 'first' })) });
-      const region = s.layout.regions.find((r) => r.seat !== s.mySeat && r.seat !== null);
-      const gate = region.gate ?? { x: region.origin.x + region.width / 2, y: region.origin.y + region.height };
-      const hits = [], deaths = [];
-      for (let t = 1; t < 60; t++) for (let i = 0; i < 6; i++) { hits.push(t * 2, i, 14 + ((i + t) % 10)); hits.push(t * 2, 14 + i, (i + t) % 6); }
-      deaths.push(30, 2, 34, 15, 40, 1, 48, 17);
-      s.playBattle({ id: 'cap1', kind: 'siege', at: gate, facing: { x: 0, y: -1 }, startedAt: now, playback: 1, tickSeconds: 0.5, ticks: 120, fightSeconds: 60,
-        sides: [mk([s.mySeat, 'blue', 'Eren', true, 16]), mk([region.seat, 'red', 'Bot', false, 12])], hits, deaths, advances: [], winner: 'attacker' });
-      s.cameras.main.removeBounds?.(); s.cameras.main.setZoom(1.7); s.lookAt(gate); return 1; })()`);
-    await sleep(3500);
-    await shot('_bg-siege');
-    b.close();
-  }
+  // (the scenes are staged by tools/steam-hero.mjs)
 }
 
 // ---- compose: every size, two options -------------------------------------------------------------------------------------------------------------------------------------------
 const SIZES = [
-  { id: 'header-920x430', w: 920, h: 430, logo: 'word', lw: 0.62, pos: ['50%', '73%'] },
-  { id: 'small-462x174', w: 462, h: 174, logo: 'word', lw: 0.78, pos: ['50%', '56%'] },
-  { id: 'main-1232x706', w: 1232, h: 706, logo: 'word', lw: 0.58, pos: ['50%', '74%'] },
-  { id: 'vertical-748x896', w: 748, h: 896, logo: 'word', lw: 0.88, pos: ['50%', '82%'] },
-  { id: 'library-capsule-600x900', w: 600, h: 900, logo: 'word', lw: 0.9, pos: ['50%', '82%'] },
-  { id: 'library-hero-3840x1240', w: 3840, h: 1240, logo: null, lw: 0, pos: null },
+  { id: 'header-920x430', w: 920, h: 430, logo: 'word', lw: 0.5, pos: ['50%', '82%'], fx: '56%', fy: '30%' },
+  { id: 'small-462x174', w: 462, h: 174, logo: 'word', lw: 0.62, pos: ['50%', '72%'], fx: '56%', fy: '28%' },
+  { id: 'main-1232x706', w: 1232, h: 706, logo: 'word', lw: 0.4, pos: ['50%', '84%'], fx: '56%', fy: '30%' },
+  { id: 'vertical-748x896', w: 748, h: 896, logo: 'word', lw: 0.86, pos: ['50%', '86%'], fx: '62%', fy: '30%' },
+  { id: 'library-capsule-600x900', w: 600, h: 900, logo: 'word', lw: 0.86, pos: ['50%', '86%'], fx: '62%', fy: '30%' },
+  { id: 'library-hero-3840x1240', w: 3840, h: 1240, logo: null, lw: 0, pos: null, fx: '56%', fy: '38%' },
 ];
+// the staged scenes of tools/steam-hero.mjs: the gate clash, and the King close in front
 const OPTS = [
-  { id: 'a-siege', bg: '_bg-siege.png', focus: '50% 52%' },
-  { id: 'b-castle', bg: '_bg-castle.png', focus: '50% 48%' },
+  { id: 'a-gate', bg: '_bg-hero-gate.png' },
+  { id: 'b-king', bg: '_bg-hero-king.png' },
 ];
 const html = (size, opt) => `<!doctype html><meta charset="utf-8"><style>
   html, body { margin: 0; background: #000; } .cap { position: relative; width: ${size.w}px; height: ${size.h}px; overflow: hidden; }
-  .bg { position: absolute; inset: 0; background: url('${pathToFileURL(`${OUT}/${opt.bg}`).href}') ${opt.focus} / cover no-repeat; image-rendering: auto; }
-  .shade { position: absolute; inset: 0; background: ${size.logo ? 'radial-gradient(ellipse at 50% 50%, rgba(8,14,24,.50) 0%, rgba(8,14,24,.18) 48%, rgba(8,14,24,.36) 100%), linear-gradient(to bottom, rgba(8,14,24,.28), rgba(8,14,24,0) 30%, rgba(8,14,24,0) 66%, rgba(8,14,24,.46))' : 'linear-gradient(to bottom, rgba(8,14,24,.10), rgba(8,14,24,0) 30%, rgba(8,14,24,0) 70%, rgba(8,14,24,.22))'}; }
-  .logo { position: absolute; left: ${size.pos?.[0] ?? '50%'}; top: ${size.pos?.[1] ?? '50%'}; width: ${size.lw * 100}%; height: auto; transform: translate(-50%, -50%); filter: drop-shadow(0 4px 0 rgba(30,16,6,.75)) drop-shadow(0 0 18px rgba(0,0,0,.55)); image-rendering: auto; }
+  .bg { position: absolute; inset: 0; background: url('${pathToFileURL(`${OUT}/${opt.bg}`).href}') ${size.fx} ${size.fy} / cover no-repeat; image-rendering: pixelated; }
+  .shade { position: absolute; inset: 0; background: ${size.logo ? 'linear-gradient(to bottom, rgba(8,14,24,.18), rgba(8,14,24,0) 22%, rgba(8,14,24,0) 44%, rgba(8,14,24,.62) 74%, rgba(8,14,24,.86))' : 'linear-gradient(to bottom, rgba(8,14,24,.10), rgba(8,14,24,0) 30%, rgba(8,14,24,0) 70%, rgba(8,14,24,.22))'}; }
+  .logo { position: absolute; left: ${size.pos?.[0] ?? '50%'}; top: ${size.pos?.[1] ?? '50%'}; width: ${size.lw * 100}%; height: auto; transform: translate(-50%, -50%); filter: drop-shadow(0 3px 0 rgba(30,16,6,.8)) drop-shadow(0 0 14px rgba(0,0,0,.7)); image-rendering: auto; }
 </style><div class="cap"><div class="bg"></div><div class="shade"></div>${size.logo ? `<img class="logo" src="${pathToFileURL(`${OUT}/_logo-${size.logo}.png`).href}">` : ''}</div>`;
 
 const b = await launch({ width: 920, height: 430, dpr: 1 });
@@ -104,6 +74,21 @@ for (const size of SIZES) for (const opt of OPTS) {
   const r = await b.send('Page.captureScreenshot', { format: 'png', fromSurface: true });
   writeFileSync(`${OUT}/library-logo-1280x720.png`, Buffer.from(r.result.data, 'base64')); console.log('saved library-logo-1280x720.png');
 }
+// the page background (1438x810: quiet, dimmed, no logo) and the community/client icons (the logo's castle: 184x184 and 32x32)
+{
+  const castle = pathToFileURL(resolve('client/public/assets/tiny-swords/Tiny Swords (Free Pack)/Buildings/Blue Buildings/Castle.png')).href;
+  const jobs = [
+    { name: 'page-background-1438x810', w: 1438, h: 810, html: `<div style="width:1438px;height:810px;background:linear-gradient(rgba(10,16,26,.78),rgba(10,16,26,.86)),url('${pathToFileURL(`${OUT}/_bg-hero-gate.png`).href}') 50% 30% / cover;filter:saturate(.55) blur(2px)"></div>` },
+    { name: 'icon-184x184', w: 184, h: 184, html: `<div style="width:184px;height:184px;background:radial-gradient(circle at 50% 40%,#2b4a6b,#101a28);display:flex;align-items:center;justify-content:center"><img src="${castle}" style="width:164px;image-rendering:pixelated;filter:drop-shadow(0 3px 0 rgba(0,0,0,.6))"></div>` },
+    { name: 'icon-32x32', w: 32, h: 32, html: `<div style="width:32px;height:32px;background:#16263a;display:flex;align-items:center;justify-content:center"><img src="${castle}" style="width:30px;image-rendering:auto"></div>` },
+  ];
+  for (const j of jobs) {
+    const file = `${OUT}/_page.html`; writeFileSync(file, `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;background:#000}</style>${j.html}`);
+    await b.send('Emulation.setDeviceMetricsOverride', { width: j.w, height: j.h, deviceScaleFactor: 1, mobile: false });
+    await b.send('Page.navigate', { url: pathToFileURL(file).href }); await sleep(1000);
+    await b.shot(`${OUT}/${j.name}.png`); console.log('saved', j.name);
+  }
+}
 b.close();
 
 // ---- one page to compare them --------------------------------------------------------------------------------------------------------------------------------------------------
@@ -114,7 +99,7 @@ const cmp = `<!doctype html><meta charset="utf-8"><style>
   img { display: block; border: 1px solid #3a4658; background: #0e1218; } .tr { background: repeating-conic-gradient(#2a3140 0% 25%, #202632 0% 50%) 50% / 24px 24px; }
 </style><h1>Keepfall — Steam capsule drafts (2 options per size; game's own pictures only; no AI art)</h1>
 ${SIZES.map((sz) => `<h2>${sz.id}</h2><div class="row">${OPTS.map((o) => { const sc = Math.min(1, sz.w > 1500 ? 920 / sz.w : sz.h > 800 ? 0.62 : sz.w > 1000 ? 0.62 : 1); return `<figure><img src="${pathToFileURL(`${OUT}/${sz.id}-${o.id}.png`).href}" width="${Math.round(sz.w * sc)}"><figcaption>${o.id} (${sz.w}x${sz.h}${sc < 1 ? `, shown at ${Math.round(sc * 100)}%` : ''})</figcaption></figure>`; }).join('')}
-  ${sz.id.startsWith('small') ? `<figure><img src="${pathToFileURL(`${OUT}/${sz.id}-a-siege.png`).href}" width="462"><figcaption>real size 1:1 (a) — the name must read here</figcaption></figure>` : ''}</div>`).join('')}
+  ${sz.id.startsWith('small') ? `<figure><img src="${pathToFileURL(`${OUT}/${sz.id}-a-gate.png`).href}" width="462"><figcaption>real size 1:1 (a) — the name must read here</figcaption></figure>` : ''}</div>`).join('')}
 <h2>library-logo-1280x720 (transparent)</h2><div class="row"><figure><img class="tr" src="${pathToFileURL(`${OUT}/library-logo-1280x720.png`).href}" width="640"><figcaption>transparent PNG, 1280x720</figcaption></figure></div>`;
 const cb = await launch({ width: 1950, height: 800, dpr: 1 });
 writeFileSync(`${OUT}/_compare.html`, cmp);

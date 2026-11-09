@@ -4,7 +4,7 @@ Durum: **"Coming Soon" sayfasını göndermeye hazır** (Steamworks onayı gelin
 
 Geliştirici / yayıncı: **Red Lion Games**. Oyun adı: **Keepfall**. Tek cümle: **"Every soldier is a worker lost." / "Her asker, kaybedilmiş bir işçidir."**
 
-> **Çok oyunculu uyarısı (karar: Eren).** Aşağıdaki metinler ve etiketler "2–4 oyunculu çok oyunculu" olarak yazıldı (talimat öyle). Çok oyunculu kod var (oda kodu + davet), ama Steam'de çevrimiçi sunucu barındırma kararı henüz yok (`docs/steam-paketleme.md`). Sunucu hazır olmayacaksa `[MP]` ile işaretli cümleleri ve Multiplayer / PvP etiketlerini çıkar; geri kalan metin botlarla tek kişilik oyun olarak da doğru kalır.
+> **Karar (Eren, 10 Kasım): çok oyunculu sayfada KALIR.** `[MP]` satırları, Multiplayer / PvP etiketleri ve oda kodu cümleleri olduğu gibi gönderilir (`[MP]` işaretlerini silerek). Çevrimiçi sunucu barındırma ayrı iş (`docs/steam-paketleme.md`); sayfa buna göre yazıldı. Demo için §2 sonundaki "çevrimdışı, botlara karşı" notu eklendi.
 
 ## 1. Kısa açıklama (≤ 300 karakter)
 
@@ -103,7 +103,10 @@ Kolay, Orta ya da Zor botlara karşı tek başına oyna; her biri tek bir fikri 
 Sanat: Tiny Swords, Pixel Frog.
 ```
 
-(Göndermeden önce `[MP]` etiketlerini sil; sunucu yoksa ilgili satırları da.)
+(Göndermeden önce yalnız `[MP]` işaretlerini sil; satırlar kalır: karar verildi.)
+
+**Demo notu (Steam demo sayfası / demo uzun açıklamasının başına; EN):** `[b]Demo:[/b] plays offline against bots; no account or internet connection needed. Multiplayer rooms are part of the full game.`
+**TR:** `[b]Demo:[/b] çevrimdışı, botlara karşı oynanır; hesap ya da internet gerekmez. Çok oyunculu odalar tam oyunun parçasıdır.`
 
 ## 3. Sistem gereksinimleri (Steam formu)
 
@@ -136,7 +139,7 @@ Sıra (ilk 5 en önemli):
 
 Devamı: 6 Base Building ✔ · 7 Real-Time Strategy ✔ · 8 PvP ✔ `[MP]` · 9 Resource Management ✔ · 10 Singleplayer ✔ · 11 Cute ✔ · 12 Tactical ✔ · 13 Replay Value ✔ · 14 Fog Of War ? · 15 Bluffing ? · 16 Hidden Information ? (yoksa "Psychological" / "Strategy RPG" yerine **Casual** ya da **Short** deneme) · 17 Online PvP ? `[MP]` · 18 Co-op yok (oyunda yok).
 
-Tür: Strateji. Alt tür: RTS, kale yönetimi. Çok oyunculu etiketi (Multiplayer, PvP) yalnız sunucu kararı verilirse; aksi halde 2. sıraya **Singleplayer** gelir.
+Tür: Strateji. Alt tür: RTS, kale yönetimi. Çok oyunculu etiketleri (Multiplayer, PvP) kalır (karar: Eren, 10 Kasım).
 
 ## 5. İçerik anketi (Steam "Content Survey") cevapları
 
@@ -168,10 +171,10 @@ Yaş derecelendirmesi (IARC) tahmini: PEGI 7 / ESRB E10+ düzeyi (fantezi şidde
 
 **Kod yardımcıları (muaf):** oyun kodunun büyük kısmı bir yapay zekâ kod yardımcısıyla (Claude Code) yazıldı; Valve kuralına göre beyan gerekmez, ama istenirse "geliştirme sürecinde kullanıldı" notu eklenebilir.
 
-**Taslak beyan (form metni, EN):**
-> No AI-generated content is shipped with the game or its store page: all art is by Pixel Frog (Tiny Swords, licensed) or drawn in code, audio is CC0 recordings, and the game generates nothing with AI at runtime. AI coding assistants were used during development (code only).
+**Taslak beyan (form metni, EN) — karar: oyun içi metinler beyan edilir:**
+> No AI-generated art, audio or music is shipped with the game or its store page: all art is by Pixel Frog (Tiny Swords, licensed) or drawn in code, and audio is CC0 recordings. The game generates nothing with AI at runtime. The English and Turkish in-game and store text was drafted with AI assistance and reviewed by the developer. AI coding assistants were used during development (code only).
 
-**Gri alan → Eren karar verir:** oyun içi **Türkçe/İngilizce metinler** (arayüz, rehber, başarım adları, mağaza açıklaması) bir yapay zekâ asistanıyla yazıldı/çevrildi. Metin, "oyuncunun gördüğü içerik" sayılabilir. Seçenekler: (a) Steam formunda "metin/yerelleştirme yapay zekâ yardımıyla hazırlandı" diye beyan et (en güvenlisi), (b) metinleri kendin gözden geçirip yeniden yaz. Önerim: (a), kısa bir cümleyle ("Text and localization were drafted with AI assistance and reviewed by the developer").
+**Karar (Eren, 10 Kasım):** oyun içi Türkçe/İngilizce metinlerin yapay zekâ yardımıyla yazıldığı kısa ve dürüst biçimde beyan edilir (yukarıdaki metin). Steam formunda "metin" kutusu varsa işaretle; yoksa bu cümle serbest metin alanına girer.
 
 ## 7. Geliştirici / yayıncı, krediler
 
@@ -185,38 +188,42 @@ Hepsi 1920×1080, arayüz temiz (geliştirici hız düğmeleri, FPS, hata katman
 | # | Dosya | Ne gösterir | Tür | Önerilen başlık (EN) |
 |---|---|---|---|---|
 | 1 | `01-gate-battle.png` | Süvari + mancınık + piyade kapıda kuşatma | Gerçek | One battle at the gate |
-| 2 | `02-three-way-siege.png` | Aynı kapıda üç taraf; "Kime vurulsun?" seçimi | Sahneli | Up to three armies at one gate |
-| 3 | `03-who-deceived-whom.png` | Maç sonu "kim kimi kandırdı?" zaman çizelgesi | Sahneli (uydurma olaylar) | Who deceived whom? |
-| 4 | `04-castle-falls.png` | Kale yanıyor, düşmek üzere | Gerçek | A castle falls in a single blow |
+| 2 | `02-castle-falls.png` | Kale yanıyor, düşmek üzere | Gerçek | A castle falls in a single blow |
+| 3 | `03-fog-and-forest.png` | Sis, orman, sandık, köy, haydut kampı | Gerçek | Fog hides the forest's loot |
+| 4 | `04-who-deceived-whom.png` | Maç sonu "kim kimi kandırdı?" zaman çizelgesi | Sahneli (uydurma olaylar) | Who deceived whom? |
 | 5 | `05-secret-kingdoms.png` | Entrikacılar paneli: sahte ulak, kılık değiştirme | Sahneli (gerçek panel) | Four secret kingdoms |
 | 6 | `06-the-map.png` | Bütün harita: dört kale, ortada orman | Sahneli (izleyici görünümü, sis kapalı) | A map for four players |
 | 7 | `07-your-castle.png` | Seviye 4 kale ve binalar, işçiler, kamp | Sahneli (seviye 4) | Build and upgrade your castle |
-| 8 | `08-fog-and-forest.png` | Sis, orman, sandık, köy, haydut kampı | Gerçek | Fog hides the forest's loot |
+| 8 | `08-three-way-siege.png` | Aynı kapıda üç taraf; "Kime vurulsun?" seçimi | Sahneli, **canlı görülmedi** | Up to three armies at one gate |
+
+**Karar (Eren, 10 Kasım):** üç taraflı kuşatma ilk 4'ten çıkarıldı (gerçek bir maçta görülene kadar); yerine gerçek maç kareleri 2 ve 3'e kondu. Sekizinci sırada duruyor; gerçek maçta görülmezse göndermeden at ya da sahneli olduğunu bilerek kullan. Diğer sahneliler (4–7) kalabilir.
 
 Adaylar (`alt/`): `forge-window.png` (demirci penceresi), `envoy-letter.png` (ulak mektubu), `gate-battle-staged.png`, `end-top.png` (maç sonu üst). Eren'in eski çekimleri `art/steam/01…08-*.png` yerinde duruyor.
 
-Notlar: gerçek karelerin sıkıştırma izi var (video karesi); daha keskin istenirse aynı sahneler `tools/steam-shots.mjs` ile yeniden çekilir. **Üç taraflı kuşatma sahneli**: gerçek bir maçta henüz gözle görülmedi (duman testi tetiklemedi, `docs/devir-notu.md`); mağazada "canlı maç" gibi sunma. Kaleler ve maç sonu özeti İngilizce arayüzle; Türkçe set istenirse `--lang tr`.
+Notlar: gerçek karelerin sıkıştırma izi var (video karesi); daha keskin istenirse aynı sahneler `tools/steam-shots.mjs` ile yeniden çekilir. **Üç taraflı kuşatma (08) sahneli**: gerçek bir maçta henüz gözle görülmedi (duman testi tetiklemedi, `docs/devir-notu.md`); mağazada "canlı maç" gibi sunma. Kaleler ve maç sonu özeti İngilizce arayüzle; Türkçe set istenirse `--lang tr`.
 
-## 9. Mağaza grafikleri (TASLAK, 2 seçenek)
+## 9. Mağaza grafikleri (TASLAK v2, 2 seçenek)
 
-Klasör `art/steam/capsule/` (git dışı), tek sayfa karşılaştırma `comparison.png`. Yalnız oyunun kendi sahneleri + oyunun logosu; **yazı yok** (Steam kapsül kuralı: logo dışında metin olmaz); yapay zekâ görseli yok; Red Lion aslanı yok.
+Klasör `art/steam/capsule/` (git dışı), tek sayfa karşılaştırma `comparison.png`. Yalnız oyunun kendi sprite'ları (Tiny Swords + Warfare) ve oyunun logosu; arayüz öğesi yok (minimap, etiket, sayı yok); yapay zekâ görseli yok; Red Lion aslanı yok.
+
+**Yön (Eren, 10 Kasım):** ekran görüntüsü değil, kurgulanmış tek sahne: yanan kale kapısında mavi ordu (sol) kırmızı ordu ve Kral'a (sağ) karşı; arkada soluk "hayalet ordu" (blöf ve ihanet hissi); az ve büyük birim (kamera zoom 3,6–5, iki kat çözünürlükte çekim, en yakın komşu örnekleme); alt kısımda koyu degrade üstünde `KEEPFALL` logosu.
+
+- **Seçenek a-gate:** kapıdaki çarpışma, tüm sahne. **Seçenek b-king:** aynı an, Kral önde ve çok büyük (dikey kapsüllerde daha iyi).
 
 | Görsel | Boyut | Dosyalar | Not |
 |---|---|---|---|
-| Header capsule | 920×430 | `header-920x430-a-siege.png`, `-b-castle.png` | |
-| Small capsule | 462×174 | `small-462x174-a-siege.png`, `-b-castle.png` | 1:1'de okunaklı mı diye bakıldı: "Keepfall" okunuyor |
+| Header capsule | 920×430 | `header-920x430-a-gate.png`, `-b-king.png` | |
+| Small capsule | 462×174 | `small-462x174-a-gate.png`, `-b-king.png` | 1:1 bakıldı: `KEEPFALL` okunuyor |
 | Main capsule | 1232×706 | `main-1232x706-*.png` | |
 | Vertical capsule | 748×896 | `vertical-748x896-*.png` | |
 | Library capsule | 600×900 | `library-capsule-600x900-*.png` | |
 | Library hero | 3840×1240 | `library-hero-3840x1240-*.png` | yazısız |
 | Library logo | 1280×720 şeffaf | `library-logo-1280x720.png` | kale + yazı, şeffaf PNG |
-| Library header capsule | 920×430 | header ile aynı dosya | |
-| Page background (isteğe bağlı) | 1438×810 | yapılmadı | |
-| Client icon 32×32 / community icon 184×184 | | yapılmadı | masaüstü `.ico` ayrı iş |
+| Page background | 1438×810 | `page-background-1438x810.png` | sade, kısık ton (sahnenin soluk hali) |
+| Community icon / client icon | 184×184 / 32×32 | `icon-184x184.png`, `icon-32x32.png` | logodaki mavi kale; masaüstü `.ico` ayrı iş |
 
-- **Seçenek a-siege:** kapıda kuşatma sahnesi (kırmızı kaleye saldıran mavi ordu). **Seçenek b-castle:** seviye 4 mavi kale, sakin ve kendinden emin.
-- Yazı ve boyut sorunu: logonun yazı tipi (Pixelify Sans) "Keepfall" içindeki `f` harfini büyük `F` gibi çiziyor ve `e` harfi küçükte `c`/`o`'ya kayabiliyor; 462×174'te okunur ama "KeepFall" gibi görünür. **Karar: Eren** (logoyu olduğu gibi mi kullanalım, yazıya dokunalım mı).
-- Yeniden üretme: `node tools/steam-capsules.mjs` (dev sunucu 5081 + Vite 5174 açık olmalı; `--skip-capture` yalnız yeniden birleştirir).
+- **Logo:** artık tamamen büyük harf `KEEPFALL` (oyun içi logo dahil: `client/src/screens.ts`, harf aralığı biraz açıldı). Eski "f/F, e/c" okunurluk sorunu bitti.
+- Yeniden üretme: `node tools/steam-hero.mjs` (sahneler) ve `node tools/steam-capsules.mjs [--skip-capture]` (logo + birleştirme + arka plan + simgeler + karşılaştırma). Dev sunucu 5081 ve Vite 5174 açık olmalı.
 
 ## 10. Fragman
 
@@ -224,12 +231,13 @@ Yapılmadı (Eren kendisi ayarlayacak; referans `Downloads\keepfall-trailer-1080
 
 ## 11. Eren'in vermesi gereken kararlar
 
-1. **Çok oyunculu** sayfada geçsin mi? (Sunucu kararı; §2/§4'te `[MP]` işaretli satırlar.)
-2. **Yapay zekâ beyanı:** oyun içi metinleri beyan ediyor muyuz? (§6, önerim: evet, kısa cümleyle.)
-3. **Kapak seçimi:** a-siege mi b-castle mı (her boyut için aynı seçeneği kullanmak şart değil).
-4. **Logo yazısı** "Keepfall" yazı tipi (f/F, e) sorunu: olduğu gibi mi? (§9)
-5. **Fiyat ve çıkış tarihi** (Coming Soon sayfasında "TBD" bırakılabilir) ve **Pixel Frog yazılı teyidi** (önerilir).
-6. Ekran görüntülerinde "sahneli" olanlar (2, 3, 5, 6, 7) kabul mü, yoksa gerçek maçtan yeniden mi çekilsin?
+Verildi (10 Kasım): çok oyunculu kalır; yapay zekâ metin beyanı yapılır; logo büyük harf; üç taraflı kuşatma ilk 4'ten çıktı; kapak yönü a (kuşatma).
+
+Açık:
+1. **Kapak seçimi:** a-gate mi b-king mi (her boyut için aynı olması şart değil; öneri: yatay boyutlarda a, dikeylerde b).
+2. **Fiyat ve çıkış tarihi** (Coming Soon'da "TBD" bırakılabilir) ve **Pixel Frog yazılı teyidi** (önerilir).
+3. **Üç taraflı kuşatma:** gerçek maçta görülünce 4'lüğe girer mi, yoksa 8. sırada sahneli mi kalsın?
+4. Sahneli kareler (4–7) kabul mü, yoksa gerçek maçtan yeniden mi?
 
 ## 12. Sayfayı göndermeden önce kontrol listesi
 
