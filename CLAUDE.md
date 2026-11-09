@@ -44,6 +44,9 @@ Bot dengesi: `BattleSim bot --mac 400 --zorluk karisik|bekleyen|orta|zor-orta` (
 - **Başlangıç modu** (tek insanlı oda): krallık yok, klasik deste, savaş sırası kilitli (`GameState.RowsLocked`, istemcide `html.kf-starter` sıra seçicileri gizler). Hızlı oyna'nın ilk 3 maçı + Meydan Okuma ilk iki kart (`starter: true`); ayarlarda "Tam kurallarla oyna" (`prefs.fullRules`, hub `StartChallengeFullRules`) kapatır. Çok insanlı oda etkilenmez. Hub'a isteğe bağlı parametre EKLEME (SignalR reddeder), ayrı metot aç.
 - **Sıra sonrası denge**: `docs/denge-sira-sonrasi.md` (deste sd 7,6→12,4, en iyi %73; Zor vs Orta %70). `combat.meleeActiveRows: 2` UYGULANDI (balance.json, kullanıcı onayı 2026-11-07; ikinci sıra da vurur, oynatma da gösterir). Sonrası: sd 9,2, en iyi %75, Zor vs Orta %69,9; okçu hasarı 8 önerisi yapılmadı.
 
+## Üç taraflı kapı kuşatması (2026-11-07)
+- Kapıda kuşatma sürerken gelen ikinci ordu beklemez, savaşa katılır (savunan + 2 saldıran); kale yalnız ayakta kalan son saldırana düşer, esir/ganimet ona gider. `war.joinSiege` (true) kapatılırsa eski bekleme kuralı geri gelir; `war.siegeMaxAttackers` 3. Plan/ölçüm: `docs/uc-tarafli-kusatma-plani.md`, `docs/uc-tarafli-kusatma-olcum.md`. Test sayısı artık ~375. Güncel genel durum ve Steam işleri: `docs/devir-notu.md` bölüm 0A.
+
 ## Bilinen açık konular
 - **Okçu hâlâ biraz güçlü**: deste turnuvalarında Okçulu desteler ortalama ~%52 ve en iyi 5 deste içinde her turda; tam çözülmedi (hasar 9, can 68'e inmişti). Yeni ayar turunda önce okçu içeren desteleri izle.
 - **Zor bot Orta karşısında ≈%59** (hedef %75–85). Kuşanma süresi (15 sn) ve süvari/keşiş eklenmesinden sonra yeniden ayarlanmadı; kullanıcı "dokunma" dedi, isterse `docs/bot-zor-tablo.md` yöntemiyle yeniden ölç.

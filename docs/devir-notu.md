@@ -1,7 +1,36 @@
-# Keepfall — Devir Notu (2026-11-05)
+# Keepfall — Devir Notu (güncel: 2026-11-10; bölüm 0A en yeni durumdur, altındakiler 2026-11-05 tarihli)
 
 Bu belge, yeni bir oturumun / yeni bir asistanın projeye kaldığı yerden devam edebilmesi için yazıldı.
-Kural kaynağı yine `CLAUDE.md`; ayrıntılı teknik plan `docs/sonraki-plan.md`.
+Kural kaynağı yine `CLAUDE.md`; ayrıntılı teknik plan `docs/sonraki-plan.md`. **Önce bölüm 0A'yı oku; altındaki bölümlerde "8 dk hazırlık", "AI görselleri kaldırılacak", "fragman yeniden çekilmeli" gibi eski ifadeler geçebilir, 0A bunları geçersiz kılar.**
+
+---
+
+## 0A. EN GÜNCEL DURUM (2026-11-07 → 11-10)
+
+**Hedef:** ücretsiz **Steam demosu**, sonra tam sürüm. Plan ve aşama durumu: `docs/steam-plani.md` (A–F). Karar yetkisi Claude'da ("patron sensin, takılırsan sor"); Eren'e yalnız hesap, para, yayın ve geri dönüşsüz kararlar sorulur. Dal: `dev` (hepsi push'lu, son commit `fe869e9` + bu not). `main` ve Render hâlâ donuk, deploy yok.
+
+**Bitenler (hepsi dev'de):**
+- **A Meydan Okuma** (8 görev + günlük, `config/challenges.json`, `docs/meydan-okuma.md`); yıldız eşikleri insanla ölçülmedi.
+- **B Elenme sonrası döngü** (5 sn sonra kalan maç hızlı oynatılır, "Maçı izle / Yeni maç / Menü"); **"ajan" fikri** yalnız tasarım (`docs/ajan-fikri.md`), Eren'in kararı bekliyor, kod yok.
+- **C İlerleme** (30 başarım, krallık ustalığı, kozmetik, soyut `ProgressStore`; `docs/ilerleme.md`, `docs/basarimlar.md`).
+- **D "Kim kimi kandırdı?"** maç sonu özeti (`docs/kandirma-ozeti.md`).
+- **E Denge:** `combat.meleeActiveRows: 2` UYGULANDI (Eren onayı 2026-11-07; ikinci sıra da vurur, istemci oynatması `BattlePlayer.ts` ACTIVE_MELEE_ROWS). Ölçümler `docs/denge-sira-sonrasi.md`. Başlangıç modu (ilk maçlarda krallık yok, sıra kilitli) var.
+- **F Steam paketleme HAZIRLIĞI:** Electron çevrimdışı demo kabuğu (`tools/pack-steam.mjs`, `steam-check`), `SteamProgressStore` taslağı (app id yoksa kapalı), mağaza taslağı `docs/steam-magaza.md`, paketleme/lisans `docs/steam-paketleme.md`. Gerçek Steamworks SDK ile başarım/bulut/rich presence DENENMEDİ (app id yok).
+- **Arkadaş testi düzeltmeleri:** yollar genişledi, ordu sayısı daha görünür, ordular karşılaşınca bekleme animasyonu düzeldi, demircide silah ikonu+adet, kalede asker portresi+adet, keşiş silah ikonu yeşil artı.
+- **Üç taraflı kapı kuşatması** (`docs/uc-tarafli-kusatma-plani.md`, ölçüm `docs/uc-tarafli-kusatma-olcum.md`): kapıda kuşatma sürerken gelen ikinci ordu artık BEKLEMEZ, savaşa katılır (savunan + 2 saldıran). Saldıranlar varsayılan önce kaleye vurur, "diğer saldıran" seçilebilir; kale yalnız ayakta kalan son saldırana düşer, esir/ganimet ona gider. Simülatör N taraflı (`SimulateMulti`), `war.joinSiege` (true) / `war.siegeMaxAttackers` (3) anahtarları (kapatınca eski bekleme). Bot dengesi önce/sonra aynı (hata payı içinde). **Canlı üç taraflı savaş gözle görülmedi, 1280x720/1920x1080 önce/sonra görüntü alınmadı**; duman testinde katılım tetiklenmedi (yalnız birim testleri `SiegeJoinTests`).
+- **Steam öncesi denetim** (`docs/steam-oncesi-hata-raporu.md`, `docs/steam-oncesi-performans.md`): hub'a elle yazılmış geçersiz enum maçı donduruyordu (düzeldi, fuzz testleri), maç başına bellek sızıntısı (düzeldi), kamp ateşi/işçi çiti her karede çiziliyordu (düzeldi), başlangıç hızlandı. Testler en son: ~375 birim testi, duman ~268 denetim, tsc temiz (alt oturum bildirdi).
+
+**Açık / yarım işler:**
+1. **Steam mağaza medyası: YAPILMADI.** Yapay zekâ içeren ve gereksiz eski medya silindi (`art/video`, `art/shots/steam`, `art/promo` klipleri/logoları/kapakları; `art/shots/turc-*`, `turd-*`). Kalanlar: `art/steam/` içinde 8 ekran görüntüsü (Eren'in 7 Kas maç kaydından, `Downloads\Kayıt 2026-11-07 222704.mp4`), tek betik `tools/steam-*.mjs` + `docs/steam-medya.md` (nasıl yeniden üretilir). Üretilen fragman Eren beğenmedi ve silindi; **fragmanı Eren kendisi ayarlayacak** (referans: Eren'in eski yapımı `Downloads\keepfall-trailer-1080p.mp4`, 61 sn: kale açılışı, "Every soldier…", "SCOUT.", "DECEIVE.", "…one castle falls.", logo kartı). Yeni fragmanda yapay zekâ görsel/logo YOK (bitiş kartı: oyunun kendi yazısı + "Art: Tiny Swords by Pixel Frog"). Logo yapay zekâ üretimiydi; Steam yapay zekâ beyanı kararı Eren'de. Üç taraflı kuşatma fragman/görüntülerde yok.
+2. **5090** (arkadaş testi, dev derlemesi, `http://192.168.1.3:5090/`) üç taraflı kuşatma dahil güncel; Eren arkadaşlarla deneyecek, geri bildirim bekleniyor.
+3. **Kök klasördeki 3 zip** (`keepfall-itchio.zip`, `keepfall-crazygames*.zip`) ve `client/dist-itch`, `dist-crazy`: eski AI görselli sürümü içerebilir; silinsin mi Eren'e soruldu, cevap yok.
+4. `art/promo/brand/redlion*` (Eren'in marka görselleri): AI olup olmadığı bilinmiyor, dokunulmadı.
+5. Bilinen riskler: doku belleği ~315 MB (zayıf GPU'da zorlar), maç başlangıcında ~1 sn takılma, `SpectatorFeed.Capture` saniyelik maliyeti, çevrimiçi sunucuda IP başına oda sınırı yok, `army-check` ara sıra tek "0 drawn" uyarısı, F11 tam ekran ve kod imzalama (SmartScreen) denenmedi, Steam sayfasına "D3D11 destekli ekran kartı" gereksinimi yazılmalı (kartsız makinede ~8 FPS).
+6. Önceki okçu / Zor bot açık konuları `CLAUDE.md` "Bilinen açık konular"ta aynen duruyor.
+
+**Eren'in vermesi gereken kararlar:** Steamworks hesabı + 100 USD (app id), fiyat (öneri 8–12 USD) ve tarih, Pixel Frog'dan yazılı lisans teyidi (önerilir, bloklamaz; ticari kullanım Eren kararıyla kabul: `docs/steam-paketleme.md` §4), bayrak/flama tasarım seçimi (`client/banner-lab.html`), "ajan" fikri, `kaynaklar.txt` bağlantıları, Meydan Okuma yıldız eşikleri denemesi, zip/dist temizliği, fragman.
+
+**Çalışma notları:** Alt oturumlar aynı klasörü paylaşır; her biri yalnız kendi yollarını `git add` eder. `balance.json` onaysız değişmez (Eren'in "ölçümle kalibre et" demesi ya da açık onayı gerekir; meleeActiveRows onaylıydı). 5090'ı yenilerken önce `Get-NetTCPConnection -LocalPort 5090 -State Established` ile açık oyuncu olmadığını kontrol et. Eren oyun oynarken ağır işleri (render, ffmpeg, başsız Chrome) başlatma. Silme işlemlerinden önce hedefi göster; kullanıcı dosyalarına (`Downloads`) dokunma.
 
 ---
 

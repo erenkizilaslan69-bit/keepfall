@@ -1,5 +1,7 @@
 # Sonraki güncelleme planı: mobil ve davetli çok oyunculu
 
+> **Not (2026-11-10):** Mobil/davet işi bekliyor; güncel öncelik Steam demosu. En yeni durum için `docs/devir-notu.md` bölüm 0A ve `docs/steam-plani.md`.
+
 **Durum (2026-11-04):** CrazyGames'e şimdilik **masaüstü + mevcut sağlam özelliklerle** başvuruluyor. Mobil/dokunmatik ve davetli çok oyunculu iş **iptal değil, sonraki güncellemeye kaldı**.
 Hiçbir şey silinmedi: crazy yapısında yalnız bayrakla kapalı (bkz. "Bayraklar ve geri açma"). itch.io ve yerel yapıda her şey açık.
 
