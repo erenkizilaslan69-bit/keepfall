@@ -64,6 +64,7 @@ export async function tofu(root, LANG, languages, SOURCE) {
     for (const [k, v] of Object.entries(LANG[l] ?? {})) for (const ch of String(v)) {
       const c = ch.codePointAt(0);
       if (c < 0x20 || c === 0xa0 || c === 0x200b || (c >= 0xfe00 && c <= 0xfe0f)) continue; // controls, no-break space, zero-width, variation selectors
+      if (k.includes(ch)) continue; // a symbol of the Turkish source itself (✓ ⚠ ≈ ...): the base game draws it from a system font in every language
       if (!stack.some((s) => s.has(c))) { if (!bad.has(ch)) bad.set(ch, k); }
     }
     if (bad.size) { any = true; console.log(`${l}: ${bad.size} character(s) no font draws: ${[...bad.keys()].join(' ')}`); for (const [ch, k] of [...bad].slice(0, 5)) console.log(`   ${ch}  U+${ch.codePointAt(0).toString(16).toUpperCase()}  in ${JSON.stringify(k)}`); }

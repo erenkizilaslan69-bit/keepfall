@@ -1,0 +1,1048 @@
+1	İlk Zafer	First Victory
+2	Tek bir rakip, kolay bir bot. İşçilerini üretime, ardından askere ver: her asker kaybedilmiş bir işçidir. Rakibin kalesini düşür.	One rival, an easy bot. Put your workers to work, then into armour: every soldier is a worker lost. Bring the rival's castle down.
+3	Önce çiftçi ve oduncu, sonra demirci. Ordun rakibinkinden büyükse saldır.	Farmers and woodcutters first, then the smith. Attack when your army is bigger than theirs.
+4	Gözcü ve Rapor	Scout and Report
+5	Sis her şeyi saklar. Gözcü gönder, raporu oku, ordunu rakibin gücüne göre kur. Kör saldırmak kaybetmenin en kısa yolu.	Fog hides everything. Send scouts, read their reports and build your army to match the rival's. Attacking blind is the shortest way to lose.
+6	Rapor yaklaşıktır (yaklaşık ±%20). Birden çok rapor topla.	A report is approximate (about ±20%). Gather more than one.
+7	Ulak ve Blöf	Envoys and Bluffs
+8	Bir rakibe ulakla altın ya da erzak yolla: hediye alan bot seni bir süre rahat bırakır. İki düşmanla birden uğraşmak yerine birini oyala.	Send a rival gold or food by envoy: a bot that receives a gift leaves you alone for a while. Do not fight two enemies at once; keep one busy.
+9	Ulak yakalanmaz ve iz bırakmaz. Mesajına ne yazarsan yaz, rakip gerçeği bilmez.	An envoy cannot be caught and leaves no trail. Whatever you write, the rival cannot know the truth.
+10	Orman Yağması	Plunder the Forest
+11	Ormanda köyler, haydut kampları ve sandıklar var. Gözcüyle bölgeyi keşfet, süvarinle köy yağmala, kampları temizle. Ganimet ordunu besler.	The forest holds villages, bandit camps and chests. Explore it with a scout, plunder villages with your cavalry and clear the camps. The loot feeds your army.
+12	Köy yağmalamak için en az 3 asker gerekir. Sandığı önce ulaşan alır.	Plundering a village takes at least 3 soldiers. Whoever reaches a chest first takes it.
+13	Hayalet Ordu	Phantom Army
+14	Gölge Krallığı: rakibe gerçekten yürüyen ama savaşa girince dağılan bir hayalet ordu gönder, sahte bir ordu tablosu yaz. Rakip seni olduğundan güçlü sanıp ürkecek.	The Shadow Kingdom: send a phantom army that really marches but fades when it fights, and write a false army table. Your rivals will think you stronger than you are.
+15	Hayalet ordu altın harcar, asker harcamaz. Rakibin gözcüsü sahte tabloyu okur.	A phantom costs gold, not soldiers. A rival's scout reads the false table.
+16	Altının Gücü	The Power of Gold
+17	Tüccar Cumhuriyeti: yaklaşan düşman ordusundan askerlerin bir kısmına rüşvet ver, bulduğun bir haydut kampını kirala ve rakibe saldırt.	The Merchant Republic: bribe some of an approaching enemy army, then hire a bandit camp you have found and send it at a rival.
+18	Rüşvet için ordunun sana yaklaşırken görüş alanında olması gerekir. Önce kampı keşfet.	To bribe, the army must be in your sight on its way to you. Find the camp first.
+19	Kâhinin Gözü	The Oracle's Eye
+20	Kâhinler herkesin krallığını ve destesini bilir, savaşın kazanç şansını görür. Bilgi sende: yalnız kazanacağın savaşlara gir.	The Oracle knows every kingdom and deck and sees the odds of a fight. The knowledge is yours: enter only the battles you will win.
+21	Kazanma aralığı geniş ya da düşükse saldırma. Hileleri (hayalet ordu, kılık) işaretli görürsün.	If the range of the odds is low or wide, hold back. You see tricks (phantoms, disguises) marked as such.
+22	Maskeli Balo	Masquerade
+23	Entrikacılar: ordunu başka bir oyuncunun renginde gönder, sahte bir ulak yolla. Rakipler birbirini suçlarken sen kalenin yolunu aç.	The Schemers: send your army in another player's colour, and a false envoy. While your rivals blame each other, you clear the road to the castle.
+24	Kılık değiştirmenin bekleme süresi var. Gerçek kimlik ilk savaştan bir süre sonra ya da gözcü raporuyla ortaya çıkar.	Disguise has a cooldown. The truth comes out some time after the first battle, or through a scout report.
+25	Günün Meydan Okuması	Daily Challenge
+26	Krallığının gücünü kullan, rakiplerin krallığını tahmin et.	Use your kingdom's power and guess your rivals' kingdoms.
+27	Dil	Language
+28	Dili değiştir	Change language
+29	Meydan Okuma	Challenges
+30	(tek kişilik, hedefli maçlar)	(solo matches with goals)
+31	Bu sunucuda meydan okuma yok.	This server has no challenges.
+32	Tekrar dene	Try again
+33	Sonraki meydan okuma	Next challenge
+34	Meydan okumalar	Challenges
+35	Kazan	Win
+36	Savaş başladıktan sonra {0} içinde kazan	Win within {0} of the war's start
+37	En çok {0} asker kaybet	Lose at most {0} soldiers
+38	Hiç savaş kaybetme	Lose no battle
+39	En çok {0} savaş kaybet	Lose at most {0} battles
+40	Nüfusun en az {0} olsun	End with a population of at least {0}
+41	En az {0} savaş kazan	Win at least {0} battles
+42	En az {0} kale düşür	Bring down at least {0} castles
+43	En az {0} düşman öldür	Kill at least {0} enemies
+44	En az {0} altın kazan	Gain at least {0} gold
+45	En az {0} köy yağmala	Plunder at least {0} villages
+46	En az {0} haydut kampı temizle	Clear at least {0} bandit camps
+47	En az {0} sandık al	Take at least {0} chests
+48	En az {0} gözcü gönder	Send at least {0} scouts
+49	En az {0} gözcü raporu al	Bring home at least {0} scout reports
+50	En az {0} ulak ulaştır	Deliver at least {0} envoys
+51	En az {0} hayalet ordu gönder	Send at least {0} phantom armies
+52	Sahte bir ordu tablosu yaz	Write a false army table
+53	En az {0} askere rüşvet ver	Bribe at least {0} soldiers
+54	En az {0} haydut kampı kirala	Hire at least {0} bandit camps
+55	Kılık değiştirerek en az {0} kez gönder	Send in disguise at least {0} times
+56	{0} / 3 yıldız	{0} / 3 stars
+57	1 rakip bot	1 rival bot
+58	{0} rakip bot	{0} rival bots
+59	Günlük	Daily
+60	Önceki meydan okumayı geçince açılır	Opens when you beat the previous challenge
+61	Krallığın	Your kingdom
+62	Deste	Deck
+63	Tekrar oyna	Play again
+64	Başla	Start
+65	Önceki meydan okumayı bir yıldızla geçince açılır.	Opens when you beat the previous challenge with a star.
+66	Tek kişilik, sabit maçlar: her biri tek bir fikri öğretir. Hedefleri yap, yıldız topla.	Solo matches, fixed for everyone: each teaches one idea. Reach the goals, collect stars.
+67	Bu sefer olmadı — tekrar dene!	Not this time — try again!
+68	Üç yıldız! Kusursuz.	Three stars! Flawless.
+69	{0} yıldız kazandın.	You earned {0} stars.
+70	Yeni en iyi sonucun!	A new best for you!
+71	İpucu	Tip
+72	Ana menüye dön	Back to Main Menu
+73	Bot	Bot
+74	Mavi	Blue
+75	Kırmızı	Red
+76	Sarı	Yellow
+77	Mor	Purple
+78	Siyah	Black
+79	bağlanıyor…	connecting…
+80	bağlı	connected
+81	bağlantı koptu, yeniden deneniyor…	connection lost, retrying…
+82	bağlantı yok — sunucu çalışıyor mu?	no connection — is the server running?
+83	oda kapandı	room closed
+84	Sunucuyla bağlantı yok. Sayfayı yenileyince kaldığın yere dönersin.	No connection to the server. Reload the page to get back to where you were.
+85	Oda kapanmış (sunucu yeniden başlamış olabilir). Ana menüye dönmek için buraya tıkla.	The room has closed (the server may have restarted). Click here to go back to the main menu.
+86	Oda kodu 6 harf olmalı.	The room code must be 6 letters.
+87	Sunucuya bağlanılamadı.	Could not connect to the server.
+88	çalışıyor mu?	running?
+89	Odaya katılınamadı.	Could not join the room.
+90	Mini harita: tıkladığın yere bakar	Minimap: click to look there
+91	Yükseltiliyor	Upgrading
+92	Seviye {0}	Level {0}
+93	İşçi	Workers
+94	Sandık	Chest
+95	Köy	Village
+96	Haydut kampı	Bandit Camp
+97	Büyük haydut kampı	Great Bandit Camp
+98	{0} dk önce	{0}m ago
+99	{0} sn önce	{0}s ago
+100	boş	empty
+101	yağmalandı	plundered
+102	temizlendi	cleared
+103	Kuşanıyor	Arming
+104	{0} kişi boşta!	{0} idle {0:worker|workers}!
+105	Görseller bulunamadı.	Images not found.
+106	Tiny Swords Free Pack'i client/public/assets/tiny-swords/ içine aç (README).	Unpack the Tiny Swords Free Pack into client/public/assets/tiny-swords/ (see the README).
+107	Savaş	Battle
+108	(düştü)	(fallen)
+109	Kale	Castle
+110	2–4 kişilik kale savunma ve fetih oyunu	2–4 player castle defense & conquest game
+111	Adın	Your Name
+112	Oyuncu	Player
+113	Oda kur	Private Room
+114	ya da	or
+115	Oda kodu	Room Code
+116	Odaya katıl	Join Room
+117	Oda	Room
+118	Oda kodunu kopyala	Copy Code
+119	Bağlantıyı kopyala	Copy Link
+120	Destem	My Deck
+121	Seçilen birlik	Selected units
+122	Maçta yalnız seçtiğin 4 birliği üretebilirsin. Kartı çevirmek için tıkla; seçmek için <b>Seç</b>'e bas ya da çift tıkla. Rakip destene yalnız gözcü raporu bakar; seçmezsen rastgele verilir.	In the match you can only make the 4 units you pick. Click a card to flip it; press <b>Select</b> or double-click to pick it. Rivals only learn your deck from a scout report; if you pick nothing, a random deck is given.
+123	Odadan çık	Leave Room
+124	Maçı başlat	Start Match
+125	Kopyalandı!	Copied!
+126	Kopyalanamadı	Could not copy
+127	Saldırmaz; her {0} sn'de en yaralı dostuna {1} can verir. Arka sırada durur.	Does not attack; every {0}s it gives {1} health to the most wounded ally. Stands in the back row.
+128	Düşmanın arka sırasını döver, iki hedefe sıçrar. Kuşanırken {0} kişi harcar.	Hits the enemy's back row and splashes onto two targets. Arming one takes {0} {0:worker|workers}.
+129	Arkadaki okçu, mancınık ve keşişe dalar. ×{0} hızlı; tek başına tarla yakar.	Dives at the archers, catapults and monks in the back. ×{0} speed; alone it burns fields.
+130	Arka sıradan ateş eder; öndekiler onu korur.	Shoots from the back row; the front line protects it.
+131	Ön sırada dövüşür ve arkadakileri korur.	Fights in the front row and protects those behind.
+132	destek	support
+133	baskıncı	raider
+134	kuşatma	siege
+135	menzilli	ranged
+136	yakın dövüş	melee
+137	Kartı çevir	Flip the card
+138	Çevir	Flip
+139	Seç	Select
+140	Can	Health
+141	İyileştirme	Heal
+142	Hasar	Damage
+143	{0} / {1} sn	{0} / {1}s
+144	{0} / sn	{0} / s
+145	Yener	Beats
+146	Korkar	Fears
+147	Geri	Back
+148	Seçili	Selected
+149	(sen)	(you)
+150	bot · {0}	bot · {0}
+151	kolay	easy
+152	zor	hard
+153	orta	medium
+154	Bot çıkar	Remove Bot
+155	oda sahibi	host
+156	bağlantı yok	offline
+157	hazır	ready
+158	bekliyor	waiting
+159	Boş yer {0}	Empty slot {0}
+160	Bot ekle:	Add Bot:
+161	Kolay	Easy
+162	Orta	Medium
+163	Zor	Hard
+164	Tek başına mı test ediyorsun? Boş yerlerin yanındaki <b>Kolay / Orta / Zor</b> düğmeleriyle bot (yapay zekâ) ekleyebilirsin!	Testing on your own? Use the <b>Easy / Medium / Hard</b> buttons next to the empty slots to add a bot (AI)!
+165	Hazırım ✓	Ready ✓
+166	Hazırım	Ready
+167	Herkes hazır olunca oda sahibi maçı başlatır.	The host starts the match once everyone is ready.
+168	En az {0} oyuncu gerekiyor. Oda kodunu paylaş.	Need at least {0} players to start. Share the room code.
+169	{0} oyuncu henüz hazır değil.	Waiting for {0} {0:player|players}…
+170	Herkes hazır.	Everyone is ready.
+171	Olmadı.	Something went wrong.
+172	Maç bitti	Match over
+173	Özet hazırlanıyor…	Preparing the summary…
+174	Lobiye dön	Back to Lobby
+175	Zafer	Victory
+176	Yenilgi	Defeat
+177	Senin özetin	Your summary
+178	Berabere — zaferi paylaştın!	A draw — you share the victory!
+179	Kazandın!	You won!
+180	Kazanan: {0}	Winner: {0}
+181	Son ayakta kalan kale kazandı.	The last castle standing won.
+182	Süre bitti: en yüksek nüfus kazandı.	Time is up: the highest population won.
+183	Kazanan	Winner
+184	elendi	eliminated
+185	nüfus {0}	pop {0}
+186	özet	summary
+187	Aynı oyuncularla yeni bir hazırlık için lobiye dön.	Go back to the lobby to prepare a new match with the same players.
+188	Oda sahibi lobiye dönünce yeni maç kurulabilir.	A new match can be set up once the host returns to the lobby.
+189	{0}: {1} asker, {2} silah depoda	{0}: {1} {1:soldier|soldiers}, {2} {2:weapon|weapons} in stock
+190	Asker yok.	No soldiers.
+191	{0} Sv {1}	{0} Lv {1}
+192	Nüfus	Pop
+193	(en yüksek {0}, {1} doğum)	(peak {0}, {1} born)
+194	Üretilen	Produced
+195	{0} yemek · {1} odun · {2} demir	{0} food · {1} wood · {2} iron
+196	Elde kalan	Remaining
+197	Silah	Weapons
+198	{0} üretildi	{0} made
+199	Ordu	Army
+200	Meslekler	Jobs
+201	Binalar	Buildings
+202	Açlık	Hunger
+203	{0} sn	{0}s
+204	Boşta	Idle
+205	{0} işçi-dakika (ortalama {1} kişi boşta)	{0} idle worker-minutes (about {1} idle at a time)
+206	{0} saldırı · {1} düşman öldürüldü · {2} asker kaybı	{0} {0:attack|attacks} · {1} {1:enemy|enemies} killed · {2} {2:soldier|soldiers} lost
+207	kale düştü	castle fell
+208	kale ayakta	castle standing
+209	Nüfus ve yemek grafiği	Population and food chart
+210	nüfus (en çok {0})	pop (peak {0})
+211	yemek (en çok {0})	food (peak {0})
+212	yemek	food
+213	odun	wood
+214	demir	iron
+215	Üretim	Production
+216	Bir işçiyi boşa al	Take one worker off the job
+217	Çalışan	Workers
+218	Boştan bir işçi ata	Assign one idle worker
+219	Silah üretimi	Weapon production
+220	Sv {0}	Lv {0}
+221	Boştaki işçi: {0}	Idle workers: {0}
+222	Boşta işçi yok	No idle workers
+223	+{0} {1}/dk	+{0} {1}/min
+224	hız ×{0}	speed ×{0}
+225	demirci yok, sıra duruyor	no blacksmith, the queue is stalled
+226	Kapasite {0} · çarpan ×{1}	Capacity {0} · multiplier ×{1}
+227	Yükseliyor… {0} sn	Upgrading… {0}s
+228	En üst seviye	Max level
+229	Yetmiyor: {0}	Not enough: {0}
+230	 ve 	 and 
+231	Yükselt	Upgrade
+232	(demirci yok)	(no blacksmith)
+233	depoda {0} · asker {1}	stock {0} · soldiers {1}
+234	Üretim sırası boş.	The production queue is empty.
+235	Kalanları iptal et, kaynakları geri al	Cancel the rest and get the resources back
+236	+%{0} silah hızı	+{0}% weapon speed
+237	+0 {0}/dk (işçi yok)	+0 {0}/min (no workers)
+238	Askerler	Soldiers
+239	Kirala	Hire
+240	Büyüme	Growth
+241	Savunma	Defense
+242	Silahı bırak, boşa dön	Lay down the weapon and become idle
+243	ön sıra	front row
+244	arka sıra	back row
+245	önce {0}	{0} first
+246	Hangi meslekten	From which job
+247	Silah verilen kişi hangi meslekten alınsın	Which job the person to be armed is taken from
+248	Kasadaki altın	Gold in the treasury
+249	Paralı asker anında gelir, işçiden eksilmez ve nüfusa sayılır; yemek yer ve bir daha işçi olamaz. Altın ormandan (sandık, köy, haydut kampı) gelir.	Mercenaries arrive at once, do not come out of your workers and count towards the population; they eat food and can never become workers again. Gold comes from the forest (chests, villages, bandit camps).
+250	Yeni kişi	New person
+251	Çizgi: korunan rezerv, çubuğun sonu: yeni kişinin doğacağı yemek miktarı	Line: the reserve that is kept; end of the bar: the food at which a new person is born
+252	Kale saldırıya uğrayınca evdeki askerler böyle dizilir. Kapıdaki okçular surun arkasından %25 fazla hasar verir; savaşı kaybedersen kale düşer.	When the castle is attacked the soldiers at home line up like this. Archers at the gate deal 25% more damage from behind the wall; if you lose the fight the castle falls.
+253	Okçu hedefi	Archer target
+254	Mancınık hedefi	Catapult target
+255	Kaydet	Save
+256	Kalen	Your Castle
+257	asker {0} · silah {1}	soldiers {0} · weapons {1}
+258	· kuşanıyor {0}	· arming {0}
+259	Kuşanması {0} sn sürer (bu sürede çalışmaz, savaşmaz)	Arming takes {0}s (during that time they neither work nor fight)
+260	{0} paralı asker işçiye dönemez	Mercenaries ({0}) cannot become workers
+261	kiralanan {0}	hired {0}
+262	Asker {0} / nüfus {1}. Silahı demirhanede üret, burada işçiye ver.	Soldiers {0} / population {1}. Make weapons at the blacksmith and give them to workers here.
+263	Silah kuşanmak {0} sn sürer; paralı asker anında gelir.	Arming takes {0}s; mercenaries arrive at once.
+264	Kuşanıyor: {0}.	Arming: {0}.
+265	Evde {0}	At home: {0}
+266	Depoda silah {0}	Weapons in store: {0}
+267	Yürüyüşte {0}	On the march: {0}
+268	Yemek {0} altına inmezse büyür.	Grows as long as food does not fall below {0}.
+269	Büyüme kapalı.	Growth is off.
+270	Büyüme: açık	Growth: on
+271	Büyüme: kapalı	Growth: off
+272	Paralı asker geldi.	The mercenary has arrived.
+273	Savunma dizilişi kaydedildi.	Defense line-up saved.
+274	Kuzeybatı	Northwest
+275	Kuzeydoğu	Northeast
+276	Güneybatı	Southwest
+277	Güneydoğu	Southeast
+278	şimdi görüldü	seen just now
+279	{0} dk önce görüldü	seen {0}m ago
+280	boşalmış	emptied
+281	altın ve demir var	holds gold and iron
+282	yağmalanmış	plundered
+283	yağmalanabilir	can be plundered
+284	temizlenmiş	cleared
+285	≈{0} haydut	≈{0} {0:bandit|bandits}
+286	Bölge	Region
+287	Gözcü hangi meslekten çıksın	Which job the scout is taken from
+288	Gözcü bölgenin yolunu yürür, yakındaki yerleri bulur ve döner (ortadaki büyük kamp da görünür)	The scout walks the road of the region, finds the places nearby and comes back (the great camp in the middle shows too)
+289	Bu bölgeyi keşfet	Explore this region
+290	Bulunanlar	Found
+291	Bir yer ancak gözcün yakınından geçince bulunur ve harita üzerinde kalır. Başkası bir yeri boşaltırsa, onu tekrar görene kadar eski haliyle görürsün.	A place is found only when your scout passes close to it, and it stays on the map. If someone else empties a place, you keep seeing it as it was until you see it again.
+292	Orman · {0}	Forest · {0}
+293	Senin bölgen	Your region
+294	Boş köşe	Empty corner
+295	Gözcü turda · {0} sn	Scout on tour · {0}s
+296	Keşfedildi	Explored
+297	Henüz keşfedilmedi · tur {0} sn	Not explored yet · tour {0}s
+298	Yeniden keşfet	Explore again
+299	Henüz bir şey bulunmadı.	Nothing found yet.
+300	Gözcü gönderilemedi.	The scout could not be sent.
+301	Gözcü ormana çıktı.	The scout has gone into the forest.
+302	Bir eksik	One less
+303	{0} sayısı	{0} count
+304	Bir fazla	One more
+305	ön	front
+306	arka	back
+307	Yağmala	Plunder
+308	Saldır	Attack
+309	Hızlı doldur	Quick fill
+310	Her türden kaledeki tüm askerleri yaz	Fill in every soldier of each type that is in the castle
+311	Tümü	All
+312	Her türden kaledeki askerin yarısını yaz	Fill in half of the soldiers of each type that are in the castle
+313	Yarısı	Half
+314	Birlik	Unit
+315	Gönder	Send
+316	Sıra	Row
+317	Gözcü	Scout
+318	Gözcü sandığı alır ve altını eve getirir	The scout takes the chest and brings the gold home
+319	Gözcü gönder	Send Scout
+320	bu bilgi eski olabilir	this information may be out of date
+321	Sandık bir kez alınır; ilk gelen alır. Altın ve demir, gözcü eve dönünce kasaya girer.	A chest can be taken only once; the first to arrive gets it. The gold and iron go into the treasury when the scout gets home.
+322	Savaşsız yağmalanır: altın, yemek ve birkaç kişi, ordu eve dönünce gelir. En az {0} asker gerekir; yağmalanınca köy yok olur.	Plundered without a fight: gold, food and a few people come home with the army. Needs at least {0} {0:soldier|soldiers}; a plundered village is gone.
+323	Görünür bir savaş olur. Kazanırsan altın, odun ve hazır silahlar ordu eve dönünce gelir; kaybedersen kamp kalan haydutlarla kalır.	A visible battle takes place. If you win, gold, wood and ready weapons arrive when the army gets home; if you lose, the camp stays with the remaining bandits.
+324	Gözcü {0} · {1} sn	Scout {0} · {1}s
+325	altınla dönüyor	returning with the gold
+326	yolda	on the way
+327	kalede {0}	in castle {0}
+328	Gönderilecek askeri seç.	Pick the soldiers to send.
+329	En az {0} asker gerekir.	Needs at least {0} {0:soldier|soldiers}.
+330	{0} asker	{0} {0:soldier|soldiers}
+331	Kalen düştü; izleyicisin.	Your castle has fallen; you are a spectator.
+332	Bu köy yağmalanmış görünüyor.	This village looks plundered.
+333	Bu kamp temizlenmiş görünüyor.	This camp looks cleared.
+334	Gözcü sandığa gidiyor.	The scout is heading for the chest.
+335	Ordu gönderilemedi.	The army could not be sent.
+336	Ordu yola çıktı.	The army has set out.
+337	{0}. sıra	Row {0}
+338	Mavi'den	Blue
+339	Kırmızı'dan	Red
+340	Sarı'dan	Yellow
+341	Mor'dan	Purple
+342	Siyah'tan	Black
+343	Bir rakipten	a rival
+344	Mavi'nin	Blue's
+345	Kırmızı'nın	Red's
+346	Sarı'nın	Yellow's
+347	Mor'un	Purple's
+348	Siyah'ın	Black's
+349	Bir rakibin	A rival's
+350	Bir oyuncu	A player
+351	Bot {0}	Bot {0}
+352	Oyuncu {0}	Player {0}
+353	Karşı taraf	The other side
+354	Haydutlar	Bandits
+355	Okçu	Archer
+356	Kılıçlı	Swordsman
+357	Mızrakçı	Spearman
+358	Kalkanlı	Shieldbearer
+359	Keşiş	Monk
+360	Mancınık	Catapult
+361	Süvari	Cavalry
+362	Çiftçi	Farmer
+363	Oduncu	Lumberjack
+364	Madenci	Miner
+365	Demirci	Blacksmith
+366	Tarla	Farm
+367	Oduncu kampı	Lumber Camp
+368	Maden	Mine
+369	Demirhane	Blacksmith
+370	{0}: {1} #{2} düştü.	{0}: {1} #{2} fell.
+371	{0} kazandı ({1}/{2} hayatta).	{0} won ({1}/{2} alive).
+372	Süre doldu: berabere.	Time is up: a draw.
+373	İki ordu da yok oldu: berabere.	Both armies were wiped out: a draw.
+374	{0}: {1} yedek birlik ön sıraya geçti.	{0}: {1} reserve {1:unit|units} moved to the front row.
+375	En az bir asker seçmelisin.	You must pick at least one soldier.
+376	Asker sayısı negatif olamaz.	The number of soldiers cannot be negative.
+377	Sayı en az 1 olmalı.	The number must be at least 1.
+378	Kaynak ve hedef meslek aynı.	The source and target jobs are the same.
+379	{0} olarak sadece {1} kişi var.	Only {1} {1:person is|people are} working as {0}.
+380	{0} dolu: kapasite {1}, şu an {2} kişi.	{0} is full ({2}/{1} workers).
+381	{0} {1} silahı için {2} odun ve {3} demir gerekiyor.	Making {0} {1} needs {2} wood and {3} iron.
+382	Böyle bir sipariş yok.	There is no such order.
+383	Depoda sadece {0} {1} silahı var.	Only {0} {1} {0:weapon|weapons} in stock.
+384	{0} olarak sadece {1} kişi var ({2} için {3} kişi gerekir).	Not enough {0}: you have {1}, {2} needs {3}.
+385	{0} askerlerinin {1} tanesi paralı asker; işçiye dönemez (en fazla {2}).	{1} of those {0} soldiers are mercenaries and cannot go back to work (max {2}).
+386	{0} zaten yükseltiliyor.	{0} is already being upgraded.
+387	{0} en üst seviyede.	{0} is at the top level.
+388	Yükseltme için {0} odun ve {1} demir gerekiyor.	The upgrade needs {0} wood and {1} iron.
+389	{0} {1} için {2} altın gerekiyor (kasada {3}).	{0} {1} cost {2} gold; you have {3}.
+390	{0} gözcüsü kaleni gözetledi.	{0} scout spied on your castle.
+391	{0} bir ordu yaklaşıyor!	An army from {0} is approaching!
+392	Kalen düştü, elendin. Artık izleyicisin.	Your castle has fallen, you are eliminated. You are a spectator now.
+393	{0} ({1}) elendi.	{0} ({1}) has been eliminated.
+394	{0} ulağı kaleye geldi: yük ve mesaj fermanda.	{0} envoy has reached the castle: the cargo and message are in the decree.
+395	Ulağın ulaştı.	Your envoy has arrived.
+396	{0} süvarileri tarlalarını yaktı!	{0} cavalry burned your fields!
+397	Ordunun {0} askeri yolda rüşvet alıp geri döndü!	{0} {0:soldier|soldiers} of your army took a bribe on the road and turned back!
+398	Maskeler düştü: {0} adıyla gelen ordunun gerçek sahibi {1} çıktı!	Masks off: the army that came in {0} name was really {1}'s!
+399	{0} aldığın ganimet kaleye ulaştı: {1}.	The loot you took from {0} has reached the castle: {1}.
+400	Savaş oldu.	A battle was fought.
+401	Haydut kampını temizledin! Ödül ordun eve dönünce gelir.	You cleared the bandit camp! The reward comes when your army gets home.
+402	Haydut kampıyla savaş berabere bitti.	The fight with the bandit camp ended in a draw.
+403	Haydut kampına yenildin.	You lost to the bandit camp.
+404	Yolda {0} ordusuyla çarpıştın: berabere.	You clashed with {0}'s army on the road: a draw.
+405	Yolda {0} ordusunu yendin!	You beat {0}'s army on the road!
+406	Yolda {0} ordusuna yenildin.	You lost to {0}'s army on the road.
+407	Süvari baskının {0} kalesinde kazandı: tarlaları yaktın (kale düşmez).	Your cavalry raid won at {0}'s castle: you burned the fields (the castle does not fall).
+408	{0} süvarileri kapıda kazandı ve tarlalarını yaktı: yemek üretimin bir süre yarıya iner.	{0}'s cavalry won at the gate and burned your fields: your food production is halved for a while.
+409	{0} kalesine saldırın kazandı: kaleyi düşürdün!	Your attack on {0}'s castle won: you took the castle!
+410	{0} kalesine saldırın püskürtüldü.	Your attack on {0}'s castle was repelled.
+411	{0} kalesine saldırı berabere bitti.	The attack on {0}'s castle ended in a draw.
+412	{0} saldırısı savunmanı yendi: kalen düştü.	{0}'s attack beat your defense: your castle has fallen.
+413	{0} saldırısını püskürttün!	You repelled {0}'s attack!
+414	{0} saldırısı berabere bitti.	{0}'s attack ended in a draw.
+415	Maç başladı, yeni oyuncu katılamaz.	The match has already started.
+416	Bu maçta deste yok.	There are no decks in this match.
+417	Destede tam {0} farklı birlik olmalı.	The deck must hold exactly {0} different units.
+418	Maçı sadece odayı kuran başlatabilir.	Only the host can start the match.
+419	En az {0} oyuncu gerekiyor (botlar da sayılır).	You need at least {0} players to start (bots count).
+420	Herkes hazır değil.	Not everyone is ready.
+421	Bot eklemek sadece odayı kuran için.	Only the host can add bots.
+422	Boş koltuk yok.	There is no empty seat.
+423	Botu sadece odayı kuran çıkarabilir.	Only the host can remove a bot.
+424	Bu komut sadece maç sırasında kullanılabilir.	This command can only be used during a match.
+425	Hız ayarı kapalı.	Speed control is off.
+426	Hızı sadece odayı kuran değiştirebilir.	Only the host can change the speed.
+427	Hız sadece maç sırasında değiştirilebilir.	The speed can only be changed during a match.
+428	Geçersiz hız.	Invalid speed.
+429	Lobiye ancak maç bitince dönülebilir.	You can only go back to the lobby when the match is over.
+430	Lobiye dönüşü sadece odayı kuran başlatabilir.	Only the host can send everyone back to the lobby.
+431	Maçı sadece odayı kuran bitirebilir.	Only the host can finish the match.
+432	Maç, sadece tüm insan oyuncular elendikten sonra bitirilebilir.	The match can only be finished once all human players are eliminated.
+433	Bu odada değilsin.	You are not in this room.
+434	Geçersiz komut.	Invalid command.
+435	Geçersiz bot zorluğu.	Invalid bot difficulty.
+436	Bu komut sadece lobide kullanılabilir.	This command can only be used in the lobby.
+437	Oda bulunamadı.	Room not found. Check the code and try again.
+438	Oda dolu.	The room is full.
+439	Çok fazla deneme. Bir dakika bekle.	Too many tries. Wait a minute and try again.
+440	Yalnız oda sahibi rehberli maç isteyebilir.	Only the host can ask for the guided match.
+441	Yalnız oda sahibi başlangıç kipi isteyebilir.	Only the host can ask for starter rules.
+442	Bu rehberli maçta savaşın ilk dakikalarında rakipler saldırmaz.	In this guided match nobody attacks you in the first minutes of the war.
+443	Sunucu dolu, birazdan tekrar dene.	The servers are full right now. Try again in a minute.
+444	Önce bir odaya katılmalısın.	You must join a room first.
+445	Bu bağlantı zaten bir odada.	This connection is already in a room.
+446	Mesajda geçersiz karakter var.	The message has an invalid character.
+447	Mesajda satır sonu, denetim ya da görünmez karakter olamaz.	The message cannot hold line breaks, control or invisible characters.
+448	Mesaj en fazla {0} karakter olabilir.	A message can be at most {0} characters long.
+449	Bu maçta böyle bir oyuncu yok.	There is no such player in this match.
+450	Kalen düştü; artık izleyicisin.	Your castle has fallen; you are a spectator now.
+451	Hazırlığın son {0} saniyesinde gözcü gönderilemez; savaş başlayınca gönderilebilir.	Scouts cannot leave in the last {0}s of preparation. Try again once the war starts.
+452	Gözcün henüz dönmedi (yaklaşık {0} sn).	Your scout has not returned yet (about {0}s).
+453	Kendi kaleni gözetleyemezsin.	You cannot spy on your own castle.
+454	Böyle bir rakip yok.	There is no such rival.
+455	Bu rakibe zaten bir gözcün gidiyor.	A scout of yours is already on its way to this rival.
+456	Böyle bir sandık bilmiyorsun.	You do not know of such a chest.
+457	Bu bir sandık değil.	This is not a chest.
+458	Bu sandık boşalmış görünüyor.	This chest looks emptied.
+459	Bu sandığa zaten bir gözcün gidiyor.	A scout of yours is already on its way to this chest.
+460	Bu bölgeye zaten bir gözcün gidiyor.	A scout of yours is already on its way to this region.
+461	Kendine ulak gönderemezsin.	You cannot send an envoy to yourself.
+462	Yük negatif olamaz.	The cargo cannot be negative.
+463	Ulak en fazla {0} yük taşır.	An envoy carries at most {0} cargo.
+464	Ulağın taşıyacak bir şeyi yok: yük ya da mesaj ekle.	Your envoy has nothing to carry: add cargo or a message.
+465	Saldırı sadece savaş fazında yapılabilir.	Attacks can only be made in the war phase.
+466	Kendi kalene saldıramazsın.	You cannot attack your own castle.
+467	Böyle bir yer bilmiyorsun.	You do not know of such a place.
+468	Sandık için gözcü gönderilir, ordu değil.	A scout is sent for a chest, not an army.
+469	Köyü yağmalamak için en az {0} asker gerekir.	You need at least {0} {0:soldier|soldiers} to plunder the village.
+470	Böyle bir ordun yok.	You have no such army.
+471	Hayalet ordu yeni emir almaz.	A phantom army does not take new orders.
+472	Yeni bir hedef seçmedin.	You did not pick a new target.
+473	Savaştaki ordu geri çağrılamaz.	An army in battle cannot be called back.
+474	Şu an bir kapı savaşında değilsin.	You are not in a battle at a gate right now.
+475	Kapıda seçecek başka taraf yok.	There is no other side at the gate to choose from.
+476	Bu savaşta çok fazla hedef değişti.	The targets in this battle have changed too often.
+477	Bu savaşta böyle bir hedef yok.	There is no such target in this battle.
+478	Savaş neredeyse bitti.	The battle is almost over.
+479	Bu ordu zaten eve dönüyor.	This army is already going home.
+480	Başkasının adıyla yalnız Entrikacılar gönderebilir.	Only the Schemers can send in someone else's name.
+481	Kendi adınla ya da alıcının adıyla gönderilmez.	It cannot be sent in your own name or in the receiver's name.
+482	Bu oyuncunun adıyla gönderemezsin.	You cannot send in this player's name.
+483	Kılık değiştirme için {0} sn beklemelisin.	You must wait {0}s to disguise again.
+484	Sahte rapor yalnız Gölge Krallığı'nın.	False reports belong to the Shadow Kingdom alone.
+485	Sayı 0 ile 999 arasında olmalı.	The number must be between 0 and 999.
+486	Hayalet ordu yalnız Gölge Krallığı'nın.	Phantom armies belong to the Shadow Kingdom alone.
+487	Hayalet ordu savaş fazında yürür.	A phantom army marches in the war phase.
+488	Kendi kalene gönderilmez.	It cannot be sent to your own castle.
+489	Hayalet ordunda kimse yok.	Your phantom army has nobody in it.
+490	Hayalet ordu en fazla {0} kişilik olabilir.	A phantom army can hold at most {0} soldiers.
+491	Gölgeler dinleniyor: {0} sn.	The shadows are resting: {0}s.
+492	Aynı anda en fazla {0} hayalet ordu yürüyebilir.	At most {0} phantom armies can march at a time.
+493	Hayalet ordu için {0} altın gerekiyor.	A phantom army needs {0} gold.
+494	Rüşvet yalnız Tüccar Cumhuriyeti'nin.	Bribery belongs to the Merchant Republic alone.
+495	Rüşvet verebileceğin, sana yaklaşan bir ordu görmüyorsun.	You see no approaching army you could bribe.
+496	Bu ordu rüşvet için çok küçük.	This army is too small to bribe.
+497	{0} asker için {1} altın gerekiyor.	{0} {0:soldier|soldiers} cost {1} gold.
+498	Kamp kiralamak yalnız Tüccar Cumhuriyeti'nin.	Hiring camps belongs to the Merchant Republic alone.
+499	Kiralanan haydutlar savaş fazında saldırır.	Hired bandits attack in the war phase.
+500	Kendi kalene saldırtılmaz.	They cannot be set on your own castle.
+501	Bu bir haydut kampı değil.	This is not a bandit camp.
+502	Bu kamp boşalmış görünüyor.	This camp looks emptied.
+503	Kampı kiralamak için {0} altın gerekiyor.	Hiring the camp costs {0} gold.
+504	Gölge Krallığı	Shadow Kingdom
+505	Sisin ardındakiler	Those behind the fog
+506	Gölgeler yürür, ama gerçek değildir. Rakipler seni olduğundan güçlü sanır.	Shadows march, but they are not real. Rivals take you for stronger than you are.
+507	Sahte ordu	Decoy army
+508	Rakibe doğru gerçek gibi yürüyen hayalet bir ordu gönderirsin. Rakip onu görür ve uyarılır; savaşa girince dağılır. Altın harcar, bekleme süresi ve sınırı vardır.	You send a phantom army that marches on a rival like a real one. The rival sees it and is warned; it scatters when it fights. It costs gold and has a cooldown and a limit.
+509	Sahte rapor	False report
+510	Rakibin gözcüsü kaleni gözetlerse, önceden yazdığın yanlış ordu tablosunu görür. Kâhinler hariç.	If a rival's scout spies on your castle it sees the false army table you wrote in advance. Oracles excepted.
+511	Tüccar Cumhuriyeti	Merchant Republic
+512	Altının efendileri	Masters of gold
+513	Her şeyin bir fiyatı var: askerin sadakati de, haydutun kılıcı da.	Everything has a price: a soldier's loyalty, a bandit's sword.
+514	Rüşvet	Bribe
+515	Görüş alanındaki, sana yaklaşan düşman ordusuna altın ödeyip askerlerinin bir kısmını geri döndürürsün. Asker başına altın.	You pay gold to an approaching enemy army in your sight and turn some of its soldiers back. Gold per soldier.
+516	Kamp kiralama	Camp hire
+517	Keşfettiğin bir haydut kampını kiralar, haydutları seçtiğin kaleye saldırtırsın. Kale düşerse ganimetin bir kısmı sana gelir. Kamp boşalır.	You hire a bandit camp you have found and set the bandits on a castle of your choice. If the castle falls part of the loot comes to you. The camp is emptied.
+518	Kâhinler	The Oracles
+519	Gelecek yazılıdır	The future is written
+520	Taşlar konuşur: herkesin krallığını ve destesini bilirsin, hileleri görürsün.	The stones speak: you know everyone's kingdom and deck, and you see through tricks.
+521	Her şeyi bilen	All-knowing
+522	Maç başında tüm rakiplerin krallığını ve destesini bilirsin.	At the start of the match you know every rival's kingdom and deck.
+523	Savaş tahmini	Battle forecast
+524	Her rakip için, bildiklerine dayanarak (belirsizlik payıyla) saldırıda kazanma şansını görürsün.	For each rival you see your chance to win an attack, based on what you know (with a margin of uncertainty).
+525	Hileleri sezme	Sensing tricks
+526	Gölge'nin sahte ordularını ve sahte raporlarını, Entrikacı'nın kılık değiştirmesini ve sahte ulaklarını görür, işaretli olarak gösterilirler.	You see through the Shadow's decoy armies and false reports and the Schemer's disguises and fake envoys; they are shown marked.
+527	Entrikacılar	The Schemers
+528	Maskelerin ustaları	Masters of masks
+529	Kim kimin adına konuşuyor? Sen bilirsin, başkası bilmez.	Who speaks in whose name? You know, nobody else does.
+530	Sahte ulak	Fake envoy
+531	Başka bir oyuncunun adıyla ve renginde ulak ya da mesaj gönderirsin; alıcı gerçek göndereni göremez (Kâhin hariç).	You send an envoy or a message in another player's name and colour; the receiver cannot see the real sender (Oracles excepted).
+532	Kılık değiştirme	Disguise
+533	Ordunu başka bir oyuncunun renginde gönderirsin: haritada, uyarıda ve savaş raporunda o oyuncu saldırıyor görünür. Gerçek kimlik savaştan bir süre sonra ya da gözcü raporuyla ortaya çıkar. Bekleme süresi vardır.	You send your army in another player's colour: on the map, in the warning and in the battle report that player appears to attack. The real identity comes out some time after the battle or through a scout report. It has a cooldown.
+534	Aynı sıraya iki birlik konamaz.	Two unit types cannot share a row.
+535	Meydan okumayı yalnız oda sahibi başlatabilir.	Only the room's host can start a challenge.
+536	Meydan okuma tek kişiliktir.	A challenge is for one player.
+537	Meydan okuma tanımı geçersiz.	This challenge is not valid.
+538	Böyle bir meydan okuma yok.	There is no such challenge.
+539	Bilinmeyen çerçeve.	Unknown frame.
+540	Bilinmeyen flama.	Unknown banner.
+541	Kalen düştü	Your castle has fallen
+542	İzleme {0} sn sonra başlıyor	Spectating begins in {0}s
+543	Artık izleyicisin: tüm haritayı sissiz, kalelerin içiyle birlikte izlersin.	You are a spectator now: you see the whole map without fog, and inside the castles.
+544	Maçı izle	Watch the match
+545	Yeni maç	New match
+546	Menü	Menu
+547	Yeni oda	New room
+548	Maçta sadece botlar kaldı. İzleyebilir ya da hemen yeni bir maça geçebilirsin.	Only bots are left in the match. Watch it, or jump straight into a new one.
+549	Tüm insanlar elendi, maçta sadece botlar kaldı.	All human players are out; only bots are left in the match.
+550	Tüm insanlar elendi. Maçı oda sahibi bitirir ya da izlemeye devam edersin.	All human players are out. The host can end the match, or you keep watching.
+551	Maç diğer oyuncular için sürüyor. Haritayı izleyebilir ya da odadan çıkabilirsin.	The match goes on for the other players. Watch the map, or leave the room.
+552	Tüm insanlar elendi	All human players are out
+553	Maçta sadece botlar kaldı.	Only bots are left in the match.
+554	İzlemeye devam edebilir ya da kalan süreyi hızlıca oynatıp maç sonu ekranına geçebilirsin.	Keep watching, or fast-forward the rest of the match to the results screen.
+555	İzlemeye devam	Keep Watching
+556	Maçı bitir	Finish Match
+557	Maç bitirilemedi.	The match could not be finished.
+558	Hız değişmedi.	Could not change the speed.
+559	Kamerayı kalene getirir (boşluk tuşu)	Brings the camera to your castle (space bar)
+560	Kaleme dön	My Castle
+561	Kamerayı ormanın ortasına getirir	Brings the camera to the middle of the forest
+562	Orman	Forest
+563	Gözcün döndü: {0} raporu	Your scout is back: {0} report
+564	+{0} altın kasaya girdi	+{0} gold added to the treasury
+565	Keşif bitti: ormanın bu bölgesindeki yerler haritada	Exploration done: the places of this part of the forest are on the map
+566	Açlık! Yemek bitti, tüm üretim yarıya indi.	Hunger! The food has run out, all production is halved.
+567	Kalen düştü — elendin. Artık sadece izleyicisin.	Your castle has fallen. You are out, but you can keep watching.
+568	Savaş başladı! Orduların yola çıkabilir.	The war has begun! Your armies can set out.
+569	Kalen düştü!	Your castle has fallen!
+570	Kapat (Esc)	Close (Esc)
+571	Henüz gözcü raporu yok. Gözcüyü rakip kalenin penceresinden gönderirsin.	No scout report yet. Send a scout from the rival castle's window.
+572	Kale penceresi	Castle window
+573	İzleyici: tüm harita, oyundan {0} sn geride	Spectator: whole map, {0}s behind the game
+574	İzleyici: tüm harita, canlı	Spectator: whole map, live
+575	Kamerayı {0} kalesine götürür	Takes the camera to {0}'s castle
+576	Hızlı başlangıç	Quick start
+577	1. Ekonomi &amp; Üretim	1. Economy &amp; Production
+578	İşçileri tarla, oduncu, maden ve demirhaneye dağıt; kaynaklarını topla, binalarını yükselt.	Assign workers to the farm, lumber camp, mine and blacksmith; gather resources and upgrade your buildings.
+579	2. Ordu Kur	2. Raise an Army
+580	Demirhanede silah üret, işçileri askere çevir ve ordunu taktiğine göre hazırla.	Forge weapons at the blacksmith, turn workers into soldiers and ready your army for your tactics.
+581	3. Keşfet &amp; Fethet	3. Explore &amp; Conquer
+582	Gözcüyle savaş sisini aç, düşman kalelerini bul; kapıda kazanırsan kale düşer!	Lift the fog of war with a scout, find the enemy castles; win at the gate and the castle falls!
+583	{0} dk	{0} min
+584	Amaç	Goal
+585	2–4 kişi oynar, herkesin tek bir kalesi vardır. <b>Son ayakta kalan kale kazanır</b>; süre dolarsa en yüksek nüfus kazanır.	2–4 people play and everyone has a single castle. <b>The last castle standing wins</b>; if time runs out the highest population wins.
+586	<b>Hazırlık</b> ({0}): ekonomi, silah, orman. <b>Savaş</b> ({1}): ordular yola çıkar. {2} ve {3} modu var.	<b>Preparation</b> ({0}): economy, weapons, forest. <b>War</b> ({1}): armies set out. Modes: {2} or {3}.
+587	Kale tek seferde düşer: bir ordu kapıdaki savaşı kazanırsa (tek askeri kalsa bile) o kale elenir ve oyuncu izleyici olur. Kapıdaki okçular surun arkasından %{0} fazla hasar verir.	A castle falls in one blow: if an army wins the fight at the gate (even with one soldier left), that castle is eliminated and its owner becomes a spectator. Archers at the gate deal {0}% more damage from behind the wall.
+588	Ekonomi: işçi mi asker mi?	Economy: workers or soldiers?
+589	Her işçi çiftçi, oduncu, madenci ya da demirci olur. Boşta duran üretmez ama yemek yer. Kişi başı dakikada: yemek {0}, odun {1}, demir {2}.	Every worker becomes a farmer, lumberjack, miner or blacksmith. An idle one produces nothing but still eats. Per person per minute: food {0}, wood {1}, iron {2}.
+590	Herkes yemek yer: işçi {0}, asker {1} dakikada. <b>Her asker üretimden bir işçi eksiltir</b>: ordu büyüdükçe yemek ve silah azalır.	Everyone eats: a worker {0}, a soldier {1} per minute. <b>Every soldier takes one worker out of production</b>: the bigger the army, the less food and weapons.
+591	Yeni kişi yemekle doğar (ilk kişi {0} yemek, sonra her kişi {1} pahalı). Savaş başlayınca {2} sonra kıtlık başlar ve maç sonuna kadar sürer: yemek üretimi ×{3}.	New people are born from food (the first costs {0} food, each next one {1} more). A famine hits {2} after the war starts and lasts to the end of the match: food production −{3}.
+592	Binalar ve silah	Buildings and weapons
+593	Çiftlik, kereste, maden ve demirci: her birinde en çok {0} kişi çalışır. Yükseltince {1} kişi, üretim {2}.	Farm, lumber camp, mine and blacksmith each employ up to {0} workers. Fully upgraded: {1} workers, production {2}.
+594	ve	and
+595	Yükseltme bedeli: {0} odun + {1} demir{2}; {3} sn sürer.	Upgrade cost: {0} wood + {1} iron{2}; takes {3} s.
+596	sonra	then
+597	en üst seviye	top level
+598	Demirci demir ve odundan <b>silah</b> yapar; silahı askere çevirirsin, asker işçiye de geri dönebilir.	The blacksmith makes <b>weapons</b> from iron and wood; you turn a weapon into a soldier, and a soldier can go back to being a worker.
+599	Deste, keşiş, mancınık, süvari	Deck, monk, catapult, cavalry
+600	Maç başında {0} birlikten <b>{1}</b> tanesini seçersin (lobide); yalnız onları üretir, kuşanır ve kiralarsın. Rakibin destesini yalnız gözcü raporunda görürsün.	In the lobby you pick <b>{1}</b> of the {0} units; only those can be built, armed or hired. A rival's deck shows only in a scout report.
+601	<b>{0}</b>: arka sırada durur, saldırmaz; her {1} sn'de ordusundaki en yaralı dostuna {2} can verir. Okçuların öncelikli hedefi olarak seçilebilir.	<b>{0}</b>: stays in the back row and does not attack; every {1}s it heals the most wounded ally in its army for {2} health. Archers can be set to target it first.
+602	<b>{0}</b>: savaşın başından itibaren düşmanın <b>arka sırasına</b> vurur, hedefin yanındaki {1} kişiye de yarım hasar; {2} kişi harcar. Yakın dövüşte çok zayıftır.	<b>{0}</b>: from the first moment it hits the enemy's <b>back row</b>, with half damage splashing onto {1} units next to the target; arming one takes {2} workers. Weak in melee.
+603	<b>{0}</b>: arka sırada okçu, mancınık ya da keşiş yaşadıkça ön sırayı aşıp onlara dalar; mızrakçıdan korkar. Haritada ×{1} hızlıdır. <b>Yalnız süvariden oluşan ordu</b> kapıda kazanırsa kale düşmez, rakibin tarlaları yanar (yemek üretimi {2} sn yarıya iner).	<b>{0}</b>: while archers, catapults or monks stand in the back row, it charges past the front line at them; fears the spearman. ×{1} faster on the map. If an <b>all-cavalry army</b> wins at the gate the castle does not fall, but the rival's fields burn (food production halved for {2}s).
+604	Krallıklar	Kingdoms
+605	Maç başında her oyuncuya <b>rastgele bir krallık</b> verilir (aynı maçta ikisi aynı olmaz); seçmezsin. Ne olduğunu başta bir fermanla öğrenirsin, düğmeleri sol üstteki krallık panelinde bulursun. Yetenekler bir kuralı değiştirir, sayı bonusu vermez.	At the start every player gets a <b>random kingdom</b> (no two the same in one match); you do not choose. You learn which one in a decree at the start and find the buttons in the kingdom panel at the top left. Abilities bend a rule; they do not give a number bonus.
+606	Rakibin kalesinin krallık süsleri (bayrak, sancaklar, minik eşyalar) <b>yalnız kalesi canlı görüşündeyken</b> ya da gözcü raporunda görünür; sisin altında kale sade çizilir.	A rival castle's kingdom decorations (flag, banners, small props) show <b>only while its castle is in live sight</b> or in a scout report; under the fog the castle is drawn plain.
+607	Aynı anda en çok {0} gözcü. Bir rakibe gönder: dönünce <b>rapor</b> gelir (asker sayıları ±{1}% şaşabilir). Rakip gözetlendiğini öğrenir.	You can have {0} {0:scout|scouts} out at a time. Send one to a rival and you get a <b>report</b> when it returns (soldier counts can be off by ±{1}%). The rival learns they were spied on.
+608	Gözcü ormanın bir çeyreğini de gezer: bulduğu yerler haritada kalır. Hızı {0} karo/sn; ordu {1}.	A scout can also tour a quarter of the forest; the places it finds stay on the map. Speed: {0} tiles/s (army: {1}).
+609	Orman: sandık, köy, kamp	Forest: chests, villages, camps
+610	Her köşenin çeyreğinde {0} sandık, {1} köy, {2} haydut kampı; ortada büyük kamp. Yerler gözcü yakınından geçince bulunur.	Each forest quarter has {0} {0:chest|chests}, {1} {1:village|villages} and {2} bandit {2:camp|camps}, plus a great camp in the middle. A scout finds places by passing near them.
+611	<b>Sandık</b> (gözcü alır): {0} altın{1}.	<b>Chest</b> (a scout takes it): {0} gold{1}.
+612	<b>Köy</b> (en az {0} asker, savaşsız): {1} altın{2}, {3} kişi.	<b>Village</b> (needs {0}+ soldiers, no fight): {1} gold{2}, {3} people.
+613	<b>Haydut kampı</b> (savaş: {0}): {1} altın{2}{3}. <b>Büyük kamp</b> daha güçlü ({4}), ödülü {5} altın.	<b>Bandit camp</b> (fight: {0}): {1} gold{2}{3}. The <b>great camp</b> is stronger ({4}), its reward is {5} gold.
+614	silah	weapons
+615	Yerler bir kez boşaltılır. Ganimet, ordu ya da gözcü <b>eve dönünce</b> gelir.	A place can be emptied only once. The loot arrives when the army or scout is <b>back home</b>.
+616	Paralı asker	Mercenary
+617	Altınla anında asker: {0} altın.	Hire soldiers instantly: {0} gold each.
+618	İşçiden düşmez, nüfusa sayılır ve yemek yer; işçiye dönüştürülemez.	Mercenaries do not use up your workers, count towards the population and eat food; they cannot be turned into workers.
+619	Saldırı ve önünü kes	Attack and intercept
+620	Savaş fazında rakip kalenin penceresinden birlik sayılarını (<b>Tümü / Yarısı</b> tek tıkla doldurur), sırayı ve okçu hedefini seç.	In the war phase pick the unit counts from the rival castle's window (<b>All / Half</b> fills them in one click), the row and the archer target.
+621	Ordular yollardan yürür. Yolda karşılaşan düşman ordular savaşır. Kapıya varınca savunanlarla savaşılır; kazanırsan kale düşer: depodaki yemek, odun, demir ve altının {0}'i ile işçilerin {1}'ü ordunla eve gelir; ayrıca savunan ordunun {2}'i <b>esir</b> olur, senin askerin olarak eve döner.	Armies walk along the roads. Enemy armies that meet on the road fight. At the gate you fight the defenders; if you win, the castle falls: {0} of the food, wood, iron and gold in the store and {1} of the workers come home with your army; also {2} of the defending army become <b>prisoners</b> and come home as your soldiers.
+622	<b>Önünü kes</b>: ordu yolda karşılaştığı ilk orduyla savaşıp eve döner; rakip bunu bilemez.	<b>Intercept</b>: the army fights the first army it meets on the road and goes home; the rival cannot tell.
+623	<b>Yeni emir</b>: yürüyen ordunu haritada tıkla; başka bir kaleye ya da ormandaki bir yere yönlendir ya da geri çağır. Rakipler yalnız yönünü görür, hedefini değil.	<b>New order</b>: click your marching army on the map; send it to another castle or a place in the forest, or call it back. Rivals only see its direction, not its target.
+624	Birlikler: kim kimi yener	Units: who beats whom
+625	Kale düşünce	When a castle falls
+626	Kalen düşerse elenirsin; haritayı izleyici olarak izlersin.	If your castle falls you are eliminated; you watch the map as a spectator.
+627	Kaleyi düşüren ordu, depodaki yemek, odun, demir ve altının <b>{0}</b>'ini ve hayatta kalan işçilerin <b>{1}</b>'ünü (boşta) eve getirir.	The army that took the castle brings home <b>{0}</b> of the food, wood, iron and gold in the store and <b>{1}</b> of the surviving workers (idle).
+628	Hasar/sn	Damage/s
+629	Bedel	Cost
+630	Daha iyi vurur	Hits better
+631	Daha zayıf vurur	Hits weaker
+632	uzaktan	ranged
+633	yakın	melee
+634	{0} demir, {1} odun	{0} iron, {1} wood
+635	Dört sıra vardır, her birliğe ayrı bir sıra: 1. sıra önce vurulur; arkadakiler öndekiler düşene kadar hasar almaz (yakın dövüşçüler sıraları gelene kadar yedektir).	There are four rows, one per unit type: row 1 is hit first; those behind take no damage until the ones in front have fallen (melee fighters wait as reserves until their row comes).
+636	Nasıl oynanır	How to Play
+637	Kapat	Close
+638	Yükleniyor…	Loading…
+639	Anladım, Savaşa Başla!	Got it, Start Battle!
+640	Anladım!	Got it!
+641	Rehber şu an yüklenemedi. Biraz sonra tekrar dene.	The guide could not be loaded right now. Try again in a moment.
+642	Nasıl oynanır?	How to play?
+643	Ferman	Decree
+644	Yeteneklerin düğmeleri sol üstteki <b>{0}</b> düğmesindeki panelde.	The buttons of your abilities are in the panel of the <b>{0}</b> button at the top left.
+645	Anladım	Got it
+646	Rakibe yürüyen hayalet ordu: rakip onu gerçek sanır, savaşa girince dağılır. En çok {0} kişilik, kişi başı {1} altın.	A phantom army marches on a rival, who takes it for real; it scatters when it fights. Up to {0} soldiers, {1} gold each.
+647	Hedef	Target
+648	Hayalet gönder	Send Phantom
+649	Rakip gözcüsü kaleni gözetlerse bu tabloyu okur (Kâhin hariç). Boş bırakırsan gerçeği görür.	A rival scout spying on your castle reads this table (Oracles see through it). Leave it empty and they see the truth.
+650	Raporu ayarla	Set Report
+651	Görüş alanındaki, sana yaklaşan ordunun en çok %{0}'i geri döner; asker başına {1} altın.	Up to {0}% of an approaching army in your sight turns back. Costs {1} gold per soldier.
+652	Keşfettiğin bir haydut kampını (küçük {0}, büyük {1} altın) kiralar, haydutları bir kaleye saldırtırsın; kale düşerse ganimetin %{2}'i sana gelir. Kamp boşalır. Yalnız savaşta.	Hire a bandit camp you have found (small {0}, great {1} gold) and send the bandits against a castle; if it falls, {2}% of the loot is yours. The camp is emptied. War only.
+653	Rakipler	Rivals
+654	Sezdiklerin	What you sense
+655	Şu an sahte bir şey görmüyorsun.	You see nothing fake right now.
+656	Ulak başka bir oyuncunun adıyla ve renginde varır; alıcı gerçek göndereni göremez.	The envoy arrives under another player's name and colour; the receiver cannot see the real sender.
+657	Alıcı	Receiver
+658	Adına	In the name of
+659	Mesaj	Message
+660	En az bir mesaj yaz	Write a message
+661	Sahte ulak gönder	Send Fake Envoy
+662	Ordun başka bir oyuncunun renginde saldırır; gerçek kimlik ilk savaştan {0} sn sonra ya da gözcü raporuyla çıkar. Gönderdiğin birlikler evdeki askerlerinden.	Your army attacks in another player's colour. Your real identity comes out {0}s after the first battle, or through a scout report. Units are taken from your soldiers at home.
+663	Kılıkta gönder	Send in Disguise
+664	bekle {0} sn	wait {0}s
+665	{0} · {1}/{2} yolda	{0} · {1}/{2} out
+666	kurulu: {0}	set: {0}
+667	kapalı	off
+668	({0} altın)	({0} gold)
+669	Şu an gördüğün bir ordu yok.	You see no army right now.
+670	{0} ordusu · {1} asker	{0}'s army · {1} {1:soldier|soldiers}
+671	Rüşvet ({0} asker, {1} altın)	Bribe ({0} {0:soldier|soldiers}, {1} gold)
+672	Keşfettiğin bir kamp yok (gözcü gönder).	No camps found yet (send a scout).
+673	Büyük kamp	Great Camp
+674	~{0} haydut	~{0} {0:bandit|bandits}
+675	Kirala ({0} altın)	Hire ({0} gold)
+676	SAHTE · {0} {1} görünüyor, gerçekte {2}	FAKE · {0} appears to be {1}'s, in truth {2}'s
+677	ordu	army
+678	ulak	envoy
+679	gözcü raporu gerek	scout report needed
+680	(raporu sahteydi, gerçeği görüyorsun)	(its report was false, you see the truth)
+681	Deste:	Deck:
+682	Kazanma şansın (evdeki askerlerle):	Your chance to win (with the soldiers at home):
+683	Rakip yok.	No rivals.
+684	Yapıldı.	Done.
+685	savaşta	in battle
+686	eve dönüyor	returning home
+687	önünü kesiyor	intercepting
+688	saldırıya gidiyor	marching to attack
+689	Durum	Status
+690	Yeni emir	New order
+691	Ordu bulunduğu yerden yeni hedefe yol ağı üzerinden yürür	The army walks from its current position to the new target along the roads
+692	Ordu bulunduğu yerden yeni hedefe yürür; rakipler yalnız yönünü görür, hedefini değil	The army walks from where it stands to the new target; rivals only see its direction, not its target
+693	Yeni hedefe gönder	Send to New Target
+694	Bulunduğu yerden aynı yoldan eve döner	Goes home by the same road from where it stands
+695	Geri çağır	Call Back
+696	Önünü kesen ordun	Your intercepting army
+697	Ordun	Your army
+698	Savaş sürüyor.	The battle is going on.
+699	{0} sn sonra evde	home in {0}s
+700	{0} sn sonra geri döner	turns back in {0}s
+701	{0} sn sonra varır	arrives in {0}s
+702	İlk yol savaşından sonra (sağ kalırsa) eve döner; kimseyle karşılaşmazsa yolun yarısından döner.	After its first road battle (if it survives) it heads home; if it meets nobody, it turns back halfway.
+703	Savaştaki ordu geri çağrılamaz	An army in battle cannot be called back
+704	Zaten eve dönüyor	Already going home
+705	Saldır: {0}	Attack: {0}
+706	(savaşta açılır)	(opens when the war starts)
+707	Yağmala: {0}	Plunder: {0}
+708	(en az {0} asker)	(needs {0}+ soldiers)
+709	Savaştaki ordu yeni emir alamaz.	An army in battle cannot take a new order.
+710	Gidilecek yer yok.	Nowhere to go.
+711	Yeni emir verilemedi.	The new order could not be given.
+712	Ordu yeni hedefe yöneldi.	The army is heading for the new target.
+713	Geri çağrılamadı.	Could not be called back.
+714	Ordu geri çağrıldı.	The army has been called back.
+715	Gözcün	Your scout
+716	bölgeyi dolaşıyor	touring the region
+717	Gözcü ormanın bu bölgesinin yolunu yürür, yakınındaki yerleri bulur ve eve döner.	The scout walks the road of this part of the forest, finds the places near it and comes home.
+718	sandığa gidiyor	heading for the chest
+719	Sandığı alır ve altını eve getirir; altın gözcü dönünce kasaya girer.	Takes the chest and brings the gold home; the gold goes into the treasury when the scout is back.
+720	gözetledi, dönüyor	spied, returning
+721	hedefe gidiyor	heading for the target
+722	Gözcü hedefin kapısına yürür, orada bakar ve raporla birlikte eve döner. Görevdeki gözcü çalışmaz ama yemek yer.	The scout walks to the target's gate, looks around and comes home with the report. A scout on a mission does not work but still eats.
+723	Tıkla: raporu aç	Click: open the report
+724	⚠ {0} bir ordu yaklaşıyor! {1} sn	⚠ An army from {0} is approaching! {1}s
+725	berabere	a draw
+726	kazandın	you won
+727	kaybettin	you lost
+728	Kalede asker yoktu.	There were no soldiers in the castle.
+729	Senin ordun	Your army
+730	Kamp temizlendi: altın ve silahlar ordu eve dönünce gelir.	The camp is cleared: gold and weapons arrive when the army gets home.
+731	Kamp kalan haydutlarla yerinde duruyor.	The camp stays where it is, with the remaining bandits.
+732	Yolda {0} ile çarpışma	Clash with {0} on the road
+733	Onların ordusu	Their army
+734	{0} kalesine saldırı	Attack on {0}'s castle
+735	{0} saldırdı	{0} attacked
+736	Saldıran	Attacker
+737	Savunan	Defender
+738	Senin savunman	Your defense
+739	<b>Süvari baskını kazandı:</b> tarlalar yandı, kale düşmedi.	<b>The cavalry raid won:</b> the fields burned, the castle did not fall.
+740	<b>Süvari baskını:</b> tarlaların yandı, yemek üretimin bir süre yarıya iner.	<b>Cavalry raid:</b> your fields burned, your food production is halved for a while.
+741	<b>Kale düştü!</b>	<b>The castle fell!</b>
+742	Savunma yenilemedi.	The defense held.
+743	Kale ayakta kaldı.	The castle still stands.
+744	Kapıda aynı anda {0} de vardı: üç taraf birden savaştı.	{0} was at the gate at the same time: all three sides fought at once.
+745	Kapıdaki savaş	The battle at the gate
+746	Kime vurulsun?	Who do we hit?
+747	Varsayılan	Default
+748	Rakip ordu	Rival army
+749	Saldırıyı püskürttün, kalen ayakta.	You repelled the attack; your castle stands.
+750	altın	gold
+751	kişi	people
+752	esir	prisoners
+753	Ganimet (ordu eve dönünce gelir)	Loot (arrives when the army gets home)
+754	Düşüren ordunun aldığı	Taken by the army that captured it
+755	Savaş raporlarının hepsini göster / gizle	Show / hide all battle reports
+756	Raporlar	Reports
+757	Savaş raporunu aç	Open the battle report
+758	Ulak geldi	An envoy has arrived
+759	Kimden:	From:
+760	Yük yok, yalnız mesaj.	No cargo, only a message.
+761	Tamam	OK
+762	Ulak	Envoy
+763	Savaş başlayınca gönderilebilir	Can be sent once the war starts
+764	{0} dönüyor · {1} sn	{0} returning · {1}s
+765	az önce	just now
+766	Son gözcü raporu	Latest scout report
+767	Gözcü raporu:	Scout report:
+768	gözcü dönünce teslim edildi	delivered when the scout returned
+769	(yaklaşık)	(approximate)
+770	Gözcü yalnızca asker türlerini (sayılar ±%20 sapabilir) ve bina seviyelerini görür; işçi, kaynak ve silah deposu görünmez.	A scout only sees the soldier types (counts can be off by ±20%) and building levels; workers, resources and the weapon store are not visible.
+771	Görseller	Artwork
+772	Tiny Swords (Free Pack) — Pixel Frog (pixelfrog-assets.itch.io/tiny-swords). Lisansı yeniden dağıtıma izin vermediği için oyunun deposunda yoktur. Sur taşı ve tabelalar aynı yapımcının CC0 paketinden. Krallık kaleleri ve binaları, arayüz çerçeveleri, orman yerleri, harita süsleri, süvari atı ve mancınık yapay zekâ (Google Gemini) ile üretilip bu oyun için düzenlendi; kamp ateşi koddan çizildi.	Tiny Swords (Free Pack) — Pixel Frog (pixelfrog-assets.itch.io/tiny-swords). Its licence does not allow redistribution, so it is not in the game's repository. The wall stone and signposts are from the same author's CC0 pack. The kingdom castles and buildings, interface frames, forest places, map decorations, the cavalry horse and the catapult were generated with AI (Google Gemini) and edited for this game; the camp fire is drawn in code.
+773	Sesler	Sounds
+774	Kenney — Interface Sounds ve Impact Sounds (CC0). Müzik: RandomMind — "The Old Tower Inn" ve "Medieval: Minstrel Dance" (CC0).	Kenney — Interface Sounds and Impact Sounds (CC0). Music: RandomMind — "The Old Tower Inn" and "Medieval: Minstrel Dance" (CC0).
+775	Yazı tipleri	Fonts
+776	Pixelify Sans ve Atkinson Hyperlegible Next — SIL Open Font License 1.1.	Pixelify Sans and Atkinson Hyperlegible Next — SIL Open Font License 1.1.
+777	Yazılım	Software
+778	Phaser 3 (MIT), Microsoft SignalR ve ASP.NET Core (MIT).	Phaser 3 (MIT), Microsoft SignalR and ASP.NET Core (MIT).
+779	Maçtan ayrıl	Leave the match
+780	Maçtan ayrılıyorsun	You are leaving the match
+781	Maçtan ayrılırsan kalen savunmasız kalır. Aynı oda koduyla istediğin zaman geri dönebilirsin.	If you leave the match your castle is left undefended. You can come back any time with the same room code.
+782	Ayrıl	Leave
+783	Vazgeç	Cancel
+784	Ayarlar	Settings
+785	Ses	Sound
+786	Müzik	Music
+787	Efektler	Effects
+788	Sesi kapat	Mute
+789	Görünüm	Display
+790	Düşük grafik	Low graphics
+791	(parçacık efektleri, duman, harita süsleri ve sis yumuşatması azalır; yavaş bilgisayarlar için)	(fewer effects, less smoke and scenery, a sharper fog edge; for slow computers)
+792	FPS göster	Show FPS
+793	(köşede kare hızı ve sunucu gecikmesi)	(frame rate and server delay in the corner)
+794	Oyun yavaş çalışıyor (saniyede 30 kareden az). Ayarlardaki "Düşük grafik" efektleri, haritadaki süsleri ve sis yumuşatmasını azaltır; sayfa yeniden yüklenir, maçına geri dönersin.	The game is running slowly (under 30 frames a second). "Low graphics" in the settings cuts effects, scenery and the soft fog edge. The page reloads and you come back to your match.
+795	Düşük grafiğe geç	Switch to low graphics
+796	Şimdi değil	Not now
+797	Hızlı oyna	Quick Match
+798	(3 bota karşı, hemen)	(vs 3 bots, instantly)
+799	ya da arkadaşlarınla	or with friends
+800	Aynı oyuncularla yeni maç	Play again with this group
+801	Ulak mesajlarını göster	Show envoy messages
+802	(kapalıyken gelen mesajlar gizlenir ve mesaj kutusu çıkmaz)	(when off, incoming messages are hidden and there is no message box)
+803	Mesaj gizlendi (ayarlarda mesajlar kapalı).	Message hidden (messages are off in the settings).
+804	Boşta işçi kalmadı: önce başka bir binada − düğmesine bas.	No idle workers left: press − in another building first.
+805	Tarlana tıkla: yemek buradan gelir.	Click your farm — food comes from here.
+806	Boştaki bir işçiyi tarlaya ver: +	Put an idle worker on the farm: press +
+807	Şimdi oduncu kampına tıkla.	Now click the lumber camp.
+808	Oduncu kampına bir işçi ekle: +	Add a worker to the lumber camp: press +
+809	Madene tıkla: demir buradan gelir.	Click the mine — iron comes from here.
+810	Madene bir işçi ekle: +	Add a worker to the mine: press +
+811	Demirhaneye tıkla: silahlar burada yapılır.	Click the blacksmith — weapons are made here.
+812	Demirciye bir işçi ekle: +	Add a worker to the blacksmith: press +
+813	Demirhaneye yine tıkla ve bir silah sırala.	Click the blacksmith again to order a weapon.
+814	Bir silah üret: bu satırdaki +1'e bas.	Make a weapon: press +1 on this row.
+815	Silah hazırlanıyor… hazır olunca onu askere çevireceksin.	The weapon is being forged… next you'll turn it into a soldier.
+816	Silahın yanındaki +1'e bas: işçi asker olur.	Press +1 next to your weapon — a worker becomes a soldier.
+817	Kaleye tıkla: işçiyi askere çevireceğiz.	Click your castle to turn a worker into a soldier.
+818	Yükseltmek için biraz odun ve demir biriktir…	Gather a little wood and iron to upgrade…
+819	Yükselt düğmesine bas.	Press the Upgrade button.
+820	Bir binayı yükselt: ona tıkla.	Upgrade a building: click it.
+821	Gözcü için boşta bir işçi gerekir: bir binadan − ile işçi al.	A scout needs an idle worker: press − in a building to free one.
+822	Gözcü göndermek için "Bu bölgeyi keşfet"e bas.	Press "Explore this region" to send a scout.
+823	Ormana tıkla: gözcü gönderip yağma yerlerini bulacağız.	Click the forest — a scout will find places to loot.
+824	Hazırlık sürüyor. Savaşa {0} kaldı: üretmeye ve geliştirmeye devam et!	Preparing… the war starts in {0}. Keep building!
+825	Saldırmak için önce kaleden asker çıkar: kale penceresinde +1.	To attack you need soldiers first: press +1 in the castle window.
+826	Şimdi Saldır'a bas!	Now press Attack!
+827	Atla	Skip
+828	Harika! Rehber bitti. İyi şanslar!	Nice work! Tutorial complete. Good luck!
+829	Adım {0} / {1}	Step {0} / {1}
+830	Savaş başladı! Bir rakip kalenin penceresinden ordularını yola çıkarabilirsin.	The war has begun! Send armies from a rival castle's window.
+831	Gözcün döndü: rapora tıklayıp rakibin ordusunu gör.	Your scout is back — open its report to see the rival's army.
+832	Bir düşman ordusu geliyor! Kale penceresinden işçileri askere çevir (kuşan) ve Savunma sekmesine bak.	An enemy army is coming! Arm soldiers in the castle window and check the Defense tab.
+833	{0} işçin boşta: yemek yerler ama üretmezler. Bir binaya + ile işçi ata.	{0} idle {0:worker|workers}: they eat but produce nothing. Assign them with + in a building.
+834	Yemek azalıyor: tarlaya işçi ekle, yoksa açlık başlar.	Food is running low — add workers to the farm or hunger will hit.
+835	İpuçlarını göster	Show hints
+836	Tam kurallarla oyna	Play with full rules
+837	(ilk maçlarda ve ilk meydan okumalarda da krallık yetenekleri ve savaş sırası seçimi açık olur)	(kingdom abilities and battle-row choice are on in the first matches and challenges too)
+838	(boşta işçi, yemek azalması, yaklaşan ordu gibi anlarda kısa uyarılar)	(short tips when workers sit idle, food runs low, an army approaches…)
+839	Rehberi tekrar başlat	Restart Tutorial
+840	Rehber yeniden başladı.	Tutorial restarted.
+841	Rehber, bir sonraki "Hızlı oyna" ile başlar.	The tutorial starts with your next Quick Match.
+842	Düşman orduları yolda! Kale penceresinden asker kuşan, sonra saldır.	Enemy armies are on the way! Arm soldiers in the castle window, then attack.
+843	Silah için odun ve demir bekleniyor… ({0}/{1} asker)	Waiting for wood and iron to forge more weapons… ({0}/{1} soldiers)
+844	Silahlar üretiliyor… ({0}/{1} asker)	Weapons are being forged… ({0}/{1} soldiers)
+845	Silah sırala: +{0}	Order weapons: press +{0}
+846	Silahları askere çevirmek için +{0}'e bas.	Press +{0} to turn weapons into soldiers.
+847	Silahları askere çevir ({0}/{1}): kaleye tıkla.	Turn weapons into soldiers ({0}/{1}): click your castle.
+848	Savaşa en az {1} asker lazım ({0}/{1}): demirhaneye tıkla, silah sırala.	You need at least {1} soldiers for the war ({0}/{1}): click the blacksmith and order weapons.
+849	Askerlerin hazırlanıyor… birazdan saldırabilirsin.	Your soldiers are getting ready… you can attack in a moment.
+850	Herkesi doyurmak için tarlaya yine tıkla ({0}/{1} çiftçi).	Click the farm again to feed everyone ({0}/{1} farmers).
+851	Tarlaya bir işçi daha ekle: + ({0}/{1} çiftçi)	Add another worker to the farm: press + ({0}/{1} farmers)
+852	Önce "Tümü"ne bas: asker ne kadar çoksa saldırı o kadar güçlü.	First press "All" — the more soldiers, the stronger the attack.
+853	Savaş başladı! Bir rakip kaleye tıkla; daha çok asker, daha güçlü saldırı demek.	The war is on! Click a rival castle — more soldiers mean a stronger attack.
+854	Saldırı geri püskürtüldü. Bir sonraki dalgayı biriktir: daha çok silah üret, askere çevir, sonra yeniden saldır.	Your attack was beaten back. Build up the next wave: forge more weapons, arm more soldiers, then attack again.
+855	Sunucuya bağlanılıyor...	Connecting to server...
+856	Bağlanılamadı.	Could not connect.
+857	Yeniden dene	Retry
+858	Yeniden bağlanılıyor...	Reconnecting...
+859	Boş yerleri botla doldur	Fill empty seats with bots
+860	Bot zorluğu	Bot difficulty
+861	Boş yerler botla dolacak.	Empty seats will be filled with bots.
+862	Cihazını yatay çevir	Rotate your device
+863	Keepfall yatay ekranda oynanır.	Keepfall is played in landscape.
+864	Kartı seçmek için dokun, çevirmek için basılı tut.	Tap a card to pick it, press and hold to turn it over.
+865	Ben	Me
+866	Yeniden bağlandı	Reconnected
+867	Bağlantı koptu, yeniden deneniyor…	Connection lost, retrying…
+868	Bağlanıyor…	Connecting…
+869	Bağlı	Connected
+870	Bağlantı yok — sunucu çalışıyor mu?	No connection. Is the server running?
+871	Oda kapandı	The room has closed
+872	Önce "Yarısı"na bas: kaleyi savunacak asker bırak, yoksa kalen düşer!	First press "Half" — leave defenders or your castle falls!
+873	Yaklaştır	Zoom in
+874	Uzaklaştır	Zoom out
+875	Başka bir sekmede açık	Open in another tab
+876	Keepfall bu tarayıcıda başka bir sekmede açıldı ve koltuğunu o aldı. Burada oynamaya devam etmek için sayfayı yenile.	Keepfall was opened in another tab of this browser, and that tab took your seat. Reload this page to play here again.
+877	Sayfayı yenile	Reload
+878	Keepfall yeni sürüme geçti. Yenilemek için buraya tıkla.	Keepfall has been updated. Tap here to reload.
+879	Keepfall odama katıl: {0}	Join my Keepfall room: {0}
+880	Sunucu yeniden başladı, maç kapandı. Ana menüye dönülüyor…	The server restarted and the match is over. Going back to the main menu…
+881	Efektleri azalt	Reduce effects
+882	(kamera sarsıntısı, kıvılcım ve ok izleri)	(camera shake, sparks and arrow trails)
+883	Oyun hakkında	About the game
+884	Gizlilik	Privacy
+885	Oyun hesap ya da e-posta adresi toplamaz.	The game does not collect accounts or email addresses.
+886	Oyuncu adın ve maç verisi yalnızca maç sürdüğü kadar sunucuda tutulur.	Your player name and match data are kept on the server only while the match lasts.
+887	Hata kayıtları anonim cihaz bilgisi (tarayıcı ve ekran gibi) içerir.	Error logs contain anonymous device information (such as browser and screen).
+888	Tarayıcında yalnızca ayarların ve rehber durumun saklanır.	Only your settings and tutorial progress are stored in your browser.
+889	sürüm	version
+890	Yapımcı:	Created by:
+891	Kaynaklar ve lisanslar	Credits and licences
+892	Altın: ormandan gelir; kale penceresinde asker kiralanır	Gold: comes from the forest; soldiers are hired in the castle window
+893	Nüfus ve asker sayısı	Population and soldier count
+894	Boştaki işçiler yemek yer ama üretmez	Idle workers eat but produce nothing
+895	Yemek: +{0} üretim, −{1} tüketim (dakikada)	Food: +{0} produced, −{1} eaten (per minute)
+896	Açlık: üretim yarıya indi!	Hunger: production is halved!
+897	Odun: {0} /dk	Wood: {0} /min
+898	Demir: {0} /dk	Iron: {0} /min
+899	{0} boşta!	{0} idle!
+900	izleyici	spectator
+901	savaş · kıtlık	war · famine
+902	savaş	war
+903	hazırlık	prep
+904	Oyun hızı ×{0}	Game speed ×{0}
+905	(bot)	(bot)
+906	Görevdeki gözcü çalışmaz ama yemek yer; dönünce boşta olur	A scout on a mission does not work but still eats; when it is back it is idle
+907	Ulak yük ve mesaj taşır; bilgi toplamaz, yakalanamaz. Yükü ve mesajı yalnız sen ve alıcı görür. Gözcüyle aynı hakkı kullanır.	An envoy carries goods and a message; it gathers no information and cannot be caught. Only you and the receiver see the goods and the message. It uses the same allowance as the scout.
+908	Yemek	Food
+909	Odun	Wood
+910	Demir	Iron
+911	Altın	Gold
+912	Mesaj (isteğe bağlı)	Message (optional)
+913	Ulak mesajı	Envoy message
+914	Ulak gönder	Send Envoy
+915	Emir	Order
+916	Önünü kes: yolda karşılaştığı ilk orduyla savaşır ve eve döner; kimseyle karşılaşmazsa yolun yarısından döner. Rakip bunu bilemez.	Intercept: fights the first army it meets on the road and goes home; if it meets nobody it turns back half way. The rival cannot tell.
+917	Saldır (kaleye)	Attack (the castle)
+918	Önünü kes (yolda karşıla, dön)	Intercept (meet on the road, return)
+919	Kalesi düştü	Its castle has fallen
+920	Bağlantısı yok	Offline
+921	Kalesi ayakta	Its castle stands
+922	Gözcü gözetledi, dönüyor · {0} sn	The scout has spied, returning · {0}s
+923	Gözcü yolda · {0} sn	Scout on the way · {0}s
+924	Gidiş-dönüş {0} sn	Round trip {0}s
+925	Bu oyuncu elendi.	This player is eliminated.
+926	Saldırı savaş fazında açılır ({0} sonra).	Attacks open in the war phase (in {0}).
+927	Maç bitti.	The match is over.
+928	Yük {0} / {1} · mesaj {2} / {3}	Cargo {0} / {1} · message {2} / {3}
+929	Ulak yükünü bıraktı, dönüyor · {0} sn	The envoy left its cargo, returning · {0}s
+930	Ulak yolda · {0} sn	Envoy on the way · {0}s
+931	{0} asker, yolun yarısına {1} sn	{0} {0:soldier|soldiers}, {1}s to halfway
+932	{0} asker, yol {1} sn	{0} {0:soldier|soldiers}, {1}s on the road
+933	Önünü kes	Intercept
+934	Henüz rapor yok. Gözcü dönünce son rapor burada görünür.	No report yet. The latest report shows here once the scout is back.
+935	Ulak gönderilemedi.	The envoy could not be sent.
+936	Ulak yola çıktı.	The envoy has set out.
+937	Ordu yola çıktı: önünü kesecek.	The army has set out: it will intercept.
+938	Kim kimi kandırdı?	Who fooled whom?
+939	Bu maçta kimse hile yapmadı.	Nobody played a trick this match.
+940	Klibi kaydet	Save clip
+941	Kaydedilecek bir savaş klibi yok.	There is no battle clip to save.
+942	{0} sahte bir ordu raporu hazırladı ({1} asker gösteriyor).	{0} prepared a fake army report (showing {1} soldiers).
+943	{1} gözcüsü, {0} kalesinde sahte raporu okudu.	The scout of {1} read the fake report at the castle of {0}.
+944	Kâhin {1}, {0} kalesinin raporunun sahte olduğunu gördü.	The Oracle {1} saw that the report of {0}'s castle was fake.
+945	{0}, {1} kalesine {2} kişilik hayalet ordu yolladı.	{0} sent a phantom army of {2} to the castle of {1}.
+946	{1} kalesi, {0} adına yaklaşan hayalet ordunun geldiğini gördü.	The castle of {1} saw the phantom army of {0} approaching.
+947	{0} hayalet ordusu, {1} kalesinin kapısına varıp dağıldı.	The phantom army of {0} reached the gate of {1} and faded away.
+948	{0} hayalet ordusu, {1} kalesine giderken yolda başka bir orduya rastlayıp dağıldı.	The phantom army of {0} met another army on the road to {1} and faded away.
+949	Kâhin {1}, kalesine gelen ordunun {0} hayaleti olduğunu gördü.	The Oracle {1} saw that the army coming to their castle was a phantom of {0}.
+950	Kâhin {1}, {2} adıyla gelen ordunun gerçekte {0} olduğunu gördü.	The Oracle {1} saw that the army coming as {2} was really {0}.
+951	{0}, {1} hayalet ordusundan {2} kişiyi rüşvetle çıkardı.	{0} bribed {2} out of the phantom army of {1}.
+952	{0}, {1} ordusundan {2} askeri rüşvetle eve döndürdü.	{0} bribed {2} soldiers of the army of {1} into turning back home.
+953	{0}, bir haydut kampını ({2} haydut) kiralayıp {1} kalesine yolladı.	{0} hired a bandit camp ({2} bandits) and sent it against the castle of {1}.
+954	{0} kiralık haydutları {1} kalesinin kapısında savaştı; kale düştü.	The bandits hired by {0} fought at the gate of {1}; the castle fell.
+955	{0} kiralık haydutları {1} kalesinin kapısında savaştı; kale ayakta kaldı.	The bandits hired by {0} fought at the gate of {1}; the castle stood.
+956	{0}, {1} kalesine {2} adıyla ulak yolladı.	{0} sent an envoy to the castle of {1} under the name of {2}.
+957	{1} kalesine {2} adıyla ulak ulaştı; gerçek gönderen {0}.	An envoy arrived at the castle of {1} as {2}; the real sender was {0}.
+958	{0}, {1} kalesine {2} adıyla {3} kişilik ordu yolladı.	{0} sent an army of {3} to the castle of {1} under the name of {2}.
+959	{2} adıyla gelen ordu ({0}) {1} kalesinin kapısında savaştı; kale düştü.	The army that came as {2} ({0}) fought at the gate of {1}; the castle fell.
+960	{2} adıyla yürüyen ordu ({0}) yolda {1} ile savaştı.	The army marching as {2} ({0}) fought {1} on the road.
+961	{2} adıyla gelen ordu ({0}) {1} kalesinin kapısında savaştı; kale ayakta kaldı.	The army that came as {2} ({0}) fought at the gate of {1}; the castle stood.
+962	{1}, gözcüsüyle {0} kalesindeki kılık değiştirmiş ordunun gerçek sahibini öğrendi.	{1} learned through a scout who the disguised army of {0} really belonged to.
+963	{1}, {2} adıyla gelen ordunun {0} olduğunu öğrendi (süre doldu).	{1} learned that the army that came as {2} was {0} (time ran out on the disguise).
+964	Bir maçı kazan.	Win a match.
+965	Meydan Okuyucu	Challenger
+966	Bir meydan okumayı kazan.	Win a challenge.
+967	Üç Yıldız	Three Stars
+968	Bir meydan okumayı üç yıldızla bitir.	Finish a challenge with three stars.
+969	Günün Şampiyonu	Champion of the Day
+970	Günlük meydan okumayı kazan.	Win the daily challenge.
+971	Hayalet Zafer	Ghost Victory
+972	Hayalet orduyla rakibi oyalayıp maçı kazan.	Win a match after sending a ghost army.
+973	Köy Yağması	Village Raid
+974	Ormandaki bir köyü yağmala.	Plunder a village in the forest.
+975	Üç Köy Yandı	Three Villages Burned
+976	Tek maçta üç köy yağmala.	Plunder three villages in one match.
+977	Haydut Avcısı	Bandit Hunter
+978	Bir haydut kampını temizle.	Clear a bandit camp.
+979	Kıtlık Gelmeden	Before the Famine
+980	Kıtlık başlamadan maçı kazan.	Win the match before the famine begins.
+981	Kale Yıkıcı	Castle Breaker
+982	Bir rakip kaleyi düşür.	Bring down a rival castle.
+983	Kansız Zafer	Bloodless Victory
+984	Hiç asker kaybetmeden, en az bir savaş kazanarak maçı kazan.	Win the match without losing a soldier, after winning at least one battle.
+985	Küllerinden	From the Ashes
+986	İki savaş kaybedip yine de maçı kazan.	Lose two battles and still win the match.
+987	Son Ayakta	Last One Standing
+988	Üç ya da dört kişilik maçta tüm rakipleri eleyerek kazan.	Win a three- or four-player match by eliminating every rival.
+989	Dört Kişilik Masa	Full Table
+990	Üç rakibe karşı maçı kazan.	Win a match against three rivals.
+991	Zoru Yendin	Hard Beaten
+992	Zor bir botun olduğu maçı kazan.	Win a match that had a Hard bot in it.
+993	Göz Kulak	Eyes and Ears
+994	Bir gözcü gönder ve raporunu oku.	Send a scout and read its report.
+995	Ulak Postası	Courier Post
+996	Bir ulağın rakibe ulaşsın.	Get an envoy to reach a rival.
+997	Yalancı Şahit	False Witness
+998	Gölge olarak sahte bir ordu tablosu yaz.	As the Shadow, write a fake army table.
+999	Altın Dil	Silver Tongue
+1000	Tüccar olarak bir orduya rüşvet ver.	As the Merchant, bribe an army.
+1001	Kiralık Kılıç	Sword for Hire
+1002	Tüccar olarak bir haydut kampı kirala.	As the Merchant, hire a bandit camp.
+1003	Entrikacı olarak başkasının adıyla ordu ya da ulak gönder.	As the Schemer, send an army or an envoy in somebody else's name.
+1004	Onurlu Düşüş	Honourable Fall
+1005	Kalen düşsün ama önce en az üç savaş kazan.	Lose your castle, but only after winning at least three battles.
+1006	Kıdemli	Veteran
+1007	On maç bitir.	Finish ten matches.
+1008	On Zafer	Ten Victories
+1009	On maç kazan.	Win ten matches.
+1010	Fatih	Conqueror
+1011	Yirmi beş maç kazan.	Win twenty-five matches.
+1012	Dört Krallık	Four Kingdoms
+1013	Her krallıkla en az bir maç kazan.	Win at least one match with every kingdom.
+1014	Krallık Ustası	Kingdom Master
+1015	Bir krallıkta ustalığın en üst düzeyine çık.	Reach the top mastery level with one kingdom.
+1016	Meydan Okumaların Sonu	End of the Challenges
+1017	Tüm meydan okumaları en az bir yıldızla geç.	Pass every challenge with at least one star.
+1018	Kusursuz Defter	Perfect Ledger
+1019	Tüm meydan okumalarda üç yıldız topla.	Earn three stars in every challenge.
+1020	Yıldız Avcısı	Star Hunter
+1021	Meydan okumalarda toplam on iki yıldız topla.	Earn twelve stars in total across the challenges.
+1022	Bronz çerçeve	Bronze frame
+1023	Gümüş çerçeve	Silver frame
+1024	Altın çerçeve	Gold frame
+1025	{0} başarım aç	Earn {0} achievements
+1026	{0} flaması {1}	{0} banner {1}
+1027	{0} ile {1} maç kazan	Win {1} matches with {0}
+1028	Başarımlar ve Ustalık	Achievements and Mastery
+1029	(rozetler, flamalar)	(badges, banners)
+1030	Ustalık {0} / 3	Mastery {0} / 3
+1031	{0} maç · {1} galibiyet	{0} matches · {1} wins
+1032	en üst düzey	top level
+1033	sonraki düzey için {0} galibiyet daha	{0} more wins for the next level
+1034	Çerçevesiz	No frame
+1035	Sade	Plain
+1036	Krallık ustalığı	Kingdom mastery
+1037	Bir krallıkla maç kazandıkça ustalığın artar; flama tasarımları ustalıkla açılır.	Every win with a kingdom raises your mastery of it; banner designs open with mastery.
+1038	Görünüş	Looks
+1039	Yalnız süstür, oyunu etkilemez. Çerçeven lobide ve maç sonunda herkese görünür; flaman yalnız kendi kalende asılı durur, maç bitince sıralamada herkes görür.	Looks only, they change nothing in play. Your frame shows to everybody in the lobby and on the end screen; your banner hangs only at your own castle, and everybody sees it in the ranking once the match is over.
+1040	Avatar çerçevesi	Avatar frame
+1041	Flamalar	Banners
+1042	Başarımlar	Achievements
+1043	Ustalık yükseldi: düzey {0}!	Mastery up: level {0}!
+1044	Yeni başarım!	New achievement!
+1045	Yeni başarımlar!	New achievements!
+1046	Yeni açılım!	New unlock!
+1047	Ana menüdeki "Başarımlar ve Ustalık" ekranından seçebilirsin.	You can pick it on the "Achievements and Mastery" screen of the main menu.
+1048	İlerleme	Progress
