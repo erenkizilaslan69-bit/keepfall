@@ -1,0 +1,30 @@
+# de: swear words of the envoy message / player name filter (EnvoyMessage.cs). A curated subset of the CC BY 4.0 LDNOOBW list (see LICENSE-LDNOOBW.md).
+# `word` = whole word, `stem*` = any word beginning with it. Add a word here and it is filtered; remove one that masks an innocent word.
+arsch*
+arschloch*
+fotze*
+votze*
+hurensohn*
+hure
+huren
+schlampe*
+scheiße
+scheisse
+scheiß*
+scheiss*
+schwanzlutscher*
+schwuchtel*
+wichser*
+wichsen
+nutte*
+neger*
+kanake*
+ficken
+fick
+ficker*
+verfickt*
+fickfehler*
+spast*
+drecksau*
+mistkerl*
+dummficker*

@@ -24,7 +24,7 @@ Keepfall is a short castle strategy game in pixel art. You have one castle, a ha
 
 [h2]Who deceived whom?[/h2]
 
-Each player secretly rules one of [b]four kingdoms[/b], and nobody knows which. The Shadow Kingdom marches phantom armies and writes false scout reports. The Merchant Republic bribes marching armies and hires bandit camps. The Seers see every kingdom and spot the tricks. The Schemers send armies and envoys under someone else's name. When the match ends, the game tells you [b]who deceived whom[/b], minute by minute.
+Each player secretly rules one of [b]four kingdoms[/b], and nobody knows which. The Shadow Kingdom marches phantom armies and writes false scout reports. The Merchant Republic bribes marching armies and hires bandit camps. The Oracles see every kingdom and spot the tricks. The Schemers send armies and envoys under someone else's name. When the match ends, the game tells you [b]who deceived whom[/b], minute by minute.
 
 [h2]Fog, scouts, envoys, bluffs[/h2]
 
@@ -53,7 +53,7 @@ Play alone against Easy, Medium or Hard bots, learn the game in handmade Challen
 [*] Bots (Easy, Medium, Hard), handmade Challenges and a daily challenge
 [*] [MP] 2–4 players, private rooms with a room code
 [*] 30 achievements, kingdom mastery, cosmetic-only unlocks
-[*] English and Turkish
+[*] 15 languages
 [/list]
 
 Art: Tiny Swords by Pixel Frog.
@@ -97,7 +97,7 @@ Kolay, Orta ya da Zor botlara karşı tek başına oyna; her biri tek bir fikri 
 [*] Botlar (Kolay, Orta, Zor), el yapımı Meydan Okumalar ve günlük meydan okuma
 [*] [MP] 2–4 oyuncu, oda koduyla özel odalar
 [*] 30 başarım, krallık ustalığı, yalnızca süs olan kozmetikler
-[*] Türkçe ve İngilizce
+[*] 15 dil
 [/list]
 
 Sanat: Tiny Swords, Pixel Frog.

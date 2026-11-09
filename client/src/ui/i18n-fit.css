@@ -1,0 +1,3 @@
+/* Long translations (de, ru, pl, fr, ...) must fit where the Turkish/English text did (tools/lang-audit.mjs lists what does not): wrap or shrink instead of being cut off. */
+.ucard-btns { flex-wrap: wrap; }
+.ucard-btns .btn { flex: 1 1 auto; min-width: 0; white-space: nowrap; }

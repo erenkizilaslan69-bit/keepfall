@@ -1,0 +1,29 @@
+# pt: swear words of the envoy message / player name filter (EnvoyMessage.cs). A curated subset of the CC BY 4.0 LDNOOBW list (see LICENSE-LDNOOBW.md).
+# `word` = whole word, `stem*` = any word beginning with it. Add a word here and it is filtered; remove one that masks an innocent word.
+merda*
+caralho*
+puta
+putas
+putaria
+puto
+filho da puta
+filha da puta
+foda-se
+foder
+fodido*
+porra*
+cuzão
+cuzao
+buceta*
+boceta*
+viado
+viadinho*
+paneleiro*
+vai tomar no cu
+vai-te foder
+arrombado*
+puta que pariu
+puta que te pariu
+cuzona
+vagabunda*
+fdp

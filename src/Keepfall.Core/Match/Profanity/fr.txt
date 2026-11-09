@@ -1,0 +1,34 @@
+# fr: swear words of the envoy message / player name filter (EnvoyMessage.cs). A curated subset of the CC BY 4.0 LDNOOBW list (see LICENSE-LDNOOBW.md).
+# `word` = whole word, `stem*` = any word beginning with it. Add a word here and it is filtered; remove one that masks an innocent word.
+merde*
+putain*
+pute
+putes
+salope*
+connard*
+connasse*
+enculé*
+encule*
+enculer*
+enfoiré*
+enfoire*
+niquer*
+nique
+nique ta mère
+pédé*
+fils de pute
+fille de pute
+couilles
+branleur*
+branleuse*
+salaud*
+pouffiasse*
+tapette*
+gouine*
+nègre*
+negre*
+bordel de merde
+ta gueule
+ferme ta gueule
+trou du cul
+fdp

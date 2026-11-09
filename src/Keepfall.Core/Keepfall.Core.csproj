@@ -12,4 +12,9 @@
     <InternalsVisibleTo Include="Keepfall.Core.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The swear-word lists of the envoy message / name filter (EnvoyMessage.cs): one text file per language. -->
+    <EmbeddedResource Include="Match/Profanity/*.txt" />
+  </ItemGroup>
+
 </Project>

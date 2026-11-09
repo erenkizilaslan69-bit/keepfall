@@ -26,6 +26,7 @@ import '@fontsource/atkinson-hyperlegible-next/latin-ext-700.css';
 import '@fontsource/noto-sans/cyrillic-400.css';
 import '@fontsource/noto-sans/cyrillic-700.css';
 import './ui/fonts.css';
+import './ui/i18n-fit.css';
 import { Minimap } from './minimap';
 import { EndScreen, HomeScreen, LobbyScreen } from './screens';
 import { setBotSeats } from './format';
