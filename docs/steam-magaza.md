@@ -247,4 +247,4 @@ Açık:
 5. Sistem gereksinimleri (D3D11 dahil) girilir (§3). Sayfada geçmemesi gerekenler: mobil, Steam Deck/Linux/macOS, kontrolcü, mod desteği, sesli sohbet, bulut kayıt, Steam başarımları (SDK entegrasyonu denenmedi).
 6. "Coming Soon" olarak yayımlanır; sayfa gözden geçirmesi (Valve) ~birkaç gün sürebilir.
 
-**Güncelleme (10 Kasım):** oyun içi ve mağaza çevirilerinin (15 dil) yapay zekâ yardımıyla yapıldığı beyana eklendi; oyun içi krediler güncellendi (Gemini cümlesi kalktı, `client/src/ui/settings.ts`). Ses kaynakları `docs/ses-lisanslari.md`'ye göre Kenney ve OpenGameArt (CC0); Pixabay yok.
+**Güncelleme (10 Kasım):** oyun içi ve mağaza çevirilerinin (15 dil) yapay zekâ yardımıyla yapıldığı beyana eklendi; oyun içi krediler güncellendi (Gemini cümlesi kalktı, `client/src/ui/settings.ts`). Ses kaynakları `docs/ses-lisanslari.md`'ye göre: Pixabay (Pixabay Content License; Eren'in seçtiği 13 ses) + Kenney ve OpenGameArt (CC0); kredilerde üçü de yazılı.

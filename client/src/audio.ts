@@ -530,7 +530,8 @@ class Music {
     if (!ctx || this.loading.has(track)) return;
     this.loading.add(track);
     try {
-      const res = await fetch(asset(`/audio/music/${MUSIC_FILE[track]}.mp3`));
+      // ogg where the browser plays it (smaller), mp3 otherwise and for the old war loop (its ogg came out larger than the mp3: none is shipped)
+      const res = await fetch(asset(`/audio/music/${MUSIC_FILE[track]}.${track === 'war' ? 'mp3' : EXT}`));
       if (!res.ok) throw new Error(String(res.status));
       this.buffers.set(track, await ctx.decodeAudioData(await res.arrayBuffer()));
       this.loading.delete(track);

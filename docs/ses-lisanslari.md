@@ -1,6 +1,6 @@
 # Ses lisansları
 
-Hepsi CC0 1.0 (kamu malı: ticari kullanım, değiştirme, ayrı dağıtım serbest; isim vermek zorunlu değil, ama kaynak yazıldı). Dosyalar `client/public/audio/sfx/` (ogg + mp3 yedeği) ve `music/`.
+İki lisans var: **Pixabay Content License** (Eren'in seçtiği 13 ses, aşağıda "2026-11-06 Eren'in seçtiği sesler" bölümü; bugün oyunda duyulan yay, kılıç, mancınık, kale yıkılışı, yükseltme, zafer, kamp ateşi, at, açılış/hazırlık/lobi müziği bunlar) ve **CC0 1.0** (geri kalan Kenney/OpenGameArt kayıtları: kamu malı, isim zorunlu değil, ama kaynak yazıldı). Kredilerde (Ayarlar → Hakkında, 15 dil): "Pixabay (Pixabay Content License), Kenney, OpenGameArt (CC0)"; lisans özeti `client/public/licenses/AUDIO-LICENSES.txt`. Dosyalar `client/public/audio/sfx/` (ogg + mp3 yedeği) ve `music/`.
 Her dosya kaynaktan kırpıldı, tek kanala çevrildi ve ses düzeyi eşitlendi (ffmpeg); başka değişiklik yok. Lisans her sayfada "Public Domain CC0" olarak doğrulandı (2026-11-06).
 
 ## Önceden vardı
@@ -97,3 +97,21 @@ music-bg-loop.mp3     - HAZIRLIK arka plan müziği (~2,5 dk kesintisiz döngü;
 music-lobby-loop.mp3  - LOBİ / ana menü müziği (~3 dk kesintisiz döngü; orijinal çok yüksek kaydedilmişti, -16 LUFS'e indirildi) - kaynak: Pixabay - link: ?
 # Lisans: Pixabay Content License (ticari kullanım serbest, isim zorunlu değil; sesleri tek başına dağıtmak/satmak yasak).
 ```
+
+## 2026-11-10 denetim: 13 Pixabay sesi
+`audio-inbox/` artık boş (dosyalar 2026-11-06'da yerleştirildi, commit a8b7761). Hepsi oyunda:
+| audio-inbox adı | Oyundaki dosya | Nerede çalar (`client/src/audio.ts`) |
+|---|---|---|
+| bow-shot | `sfx/bow-shot.ogg/.mp3` | `arrow`: okçu atışı (savaş oynatması) |
+| sword-clash-1 | `sfx/sword-clash-1` | `sword`: kılıç vuruşu (1/3) |
+| sword-slice-1 / -2 | `sfx/sword-slice-1`, `-2` | `sword`: kılıç vuruşu (2/3) |
+| catapult-launch | `sfx/catapult-launch` | `catapult`: mancınık atışı |
+| castle-collapse | `sfx/castle-collapse` | `castleFall`: kale düşüşü |
+| campfire-loop | `sfx/campfire-loop` | ortam döngüsü `fire`: kamp ateşi, kameranın yakınlığıyla |
+| horse-gallop-loop | `sfx/horse-gallop-loop` | ortam döngüsü `gallop`: en yakın süvari kolu |
+| upgrade | `sfx/upgrade` | `upgrade`: bina yükseltme |
+| victory | `sfx/victory` | `win`: zafer |
+| music-start | `music/start.ogg/.mp3` | bulutlar açılınca BİR KEZ (`music.intro`) |
+| music-bg-loop | `music/prep-bg.ogg/.mp3` | hazırlık döngüsü |
+| music-lobby-loop | `music/lobby.ogg/.mp3` | ana menü, lobi, maç sonu |
+2026-11-10: müziklerin ogg'u eklendi (`ffmpeg -c:a libvorbis -q:a 5`, başka işlem yok); tarayıcı ogg çalabiliyorsa ogg, değilse mp3. `war.mp3` (RandomMind, CC0) mp3 kaldı: ogg'u daha büyük çıktı.

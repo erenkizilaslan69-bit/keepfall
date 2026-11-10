@@ -15,7 +15,7 @@ const VERSION = '0.9';
 const CREDITS: [string, string][] = [
   [t('Görseller'), 'Tiny Swords & Tiny Swords Warfare by Pixel Frog'],
   [t('Yazı tipleri'), 'Pixelify Sans, Atkinson Hyperlegible Next, Fusion Pixel, Noto Sans (SIL Open Font License)'],
-  [t('Sesler'), 'Kenney, OpenGameArt (CC0)'],
+  [t('Sesler'), 'Pixabay (Pixabay Content License), Kenney, OpenGameArt (CC0)'],
   [t('Küfür sözlükleri'), 'LDNOOBW (CC BY 4.0)'],
   [t('Çeviriler'), t('Yapay zekâ yardımıyla')],
   [t('Yazılım'), t('Phaser 3 (MIT), Microsoft SignalR ve ASP.NET Core (MIT).')],
