@@ -167,9 +167,12 @@ export function placeSignposts(scene: Phaser.Scene, roads: RoadView[], seed: num
 
 // ---- the paved ground in front of a castle gate ------------------------------------------------------------------------------------
 
-const COBBLE = [rgb(0x86b8ba), rgb(0x7aaab0), rgb(0x92c2c0)];
-const MORTAR = rgb(0x3f6571);
-const SHINE = rgb(0xcfe3cf);
+// The same family as the yard's grey flagstones (CourtyardFloor): it is a road, not the wall (a blue cobble with dark mortar read as the wall's top).
+const COBBLE = [rgb(0xb3ad9d), rgb(0xa59f8f), rgb(0xbdb7a6)];
+const MORTAR = rgb(0x6f6552);
+const SHINE = rgb(0xd9d3c0);
+/** The worn earth along its edges, where the stones give out into the grass. */
+const SOIL = [rgb(0xb48e5b), rgb(0xaa8452), rgb(0xbf9a66)];
 
 /**
  * The road between the castle gate and the wall gate, paved with cobbles when the wall is strong: level 2 paves the stretch in front of
@@ -209,15 +212,29 @@ export class GatePaving {
     for (let j = 0; j < h / CELL; j++) {
       for (let i = 0; i < w / CELL; i++) {
         const wx = from + i * CELL, y = j * CELL + CELL / 2 - h / 2; // y: distance from the road's middle
-        const edge = 26 + (noise(wx, 0, 40, seed) - 0.5) * 5 + (hash(i, j, seed) - 0.5) * 3;
-        if (Math.abs(y) > edge) continue;
-        // bricks in rows of 12 px, each row shifted: mortar on the row's top line and between bricks
-        const row = Math.floor((j * CELL + h) / 12), inRow = (j * CELL + h) % 12;
-        const brickW = 20 + Math.floor(hash(row, 0, seed + 1) * 8), shift = Math.floor(hash(row, 1, seed + 2) * brickW);
-        const col = Math.floor((wx - from + shift) / brickW), inCol = (wx - from + shift) % brickW;
-        let c = COBBLE[Math.floor(hash(col, row, seed + 3) * COBBLE.length)];
-        if (inRow < CELL || inCol < CELL) c = MORTAR;
-        else if (inRow < CELL * 2 && inCol < brickW - CELL && hash(col, row, seed + 4) > 0.5) c = SHINE;
+        // how far the stones reach from the middle here: a ragged edge, and the two ends taper (into the square before the castle, under the wall's gap)
+        const fromEnd = Math.min(i * CELL, w - i * CELL);
+        const edge = 22 + (noise(wx, 0, 40, seed) - 0.5) * 6 + (hash(i, j, seed) - 0.5) * 3 - Math.max(0, 24 - fromEnd) * 0.5;
+        const d = Math.abs(y);
+        if (d > edge + 7) continue; // the grass
+        let c: [number, number, number];
+        if (d > edge - 3) {
+          // the rim: stones giving out into worn earth, the earth into the grass (no line round it)
+          const k = (d - (edge - 3)) / 10;
+          const r = hash(i, j, seed + 7);
+          if (r < 0.55 - k) c = COBBLE[Math.floor(hash(i, j, seed + 8) * COBBLE.length)];
+          else if (r < 1.05 - k) c = SOIL[Math.floor(hash(i, j, seed + 9) * SOIL.length)];
+          else continue;
+        } else {
+          // flagstones in rows of 12 px, each row shifted: mortar on the row's top line and between stones
+          const row = Math.floor((j * CELL + h) / 12), inRow = (j * CELL + h) % 12;
+          const brickW = 22 + Math.floor(hash(row, 0, seed + 1) * 8), shift = Math.floor(hash(row, 1, seed + 2) * brickW);
+          const col = Math.floor((wx - from + shift) / brickW), inCol = (wx - from + shift) % brickW;
+          c = COBBLE[Math.floor(hash(col, row, seed + 3) * COBBLE.length)];
+          if (inRow < CELL || inCol < CELL) c = MORTAR;
+          else if (inRow < CELL * 2 && inCol < brickW - CELL && hash(col, row, seed + 4) > 0.55) c = SHINE;
+          if (hash(col, row, seed + 6) > 0.95 && c !== MORTAR) c = SOIL[1]; // a missing stone here and there: bare earth shows through
+        }
         const rgba = (255 << 24) | (c[2] << 16) | (c[1] << 8) | c[0];
         for (let v = 0; v < CELL; v++) for (let u = 0; u < CELL; u++) px[(j * CELL + v) * w + i * CELL + u] = rgba;
       }
