@@ -124,7 +124,7 @@ EV SAHİBİ  Keepfall.exe
  └─ Steam kapısı Steam lobisi üyeleri ── P2P (Valve relay) akış tüneli ──▶ G   (tunnel.js)
 KONUK  Keepfall.exe (sayfa KENDİ gömülü sunucusundan gelir; yalnız hub bağlantısı ev sahibine gider)
  └─ http://join.keepfall.localhost → kabuğun yerel kapısı → (TCP ip:port) ya da (Steam tüneli) → ev sahibinin G kapısı
-KONUK (tarayıcı, yalnız LAN)  http://<ev sahibi ip>:47800/?room=KOD  (sayfa ev sahibinden gelir)
+(Tarayıcıdan katılma 2026-11-11 güvenlik turunda kaldırıldı: konuğa yalnız /hub ve /version açık, §9.)
 ```
 
 - **Ağ kodu değişmedi:** iki uçta da SignalR/WebSocket; köprü yalnız bayt taşır. İstemcide tek ek `GameConnection.switchServer(base)` (`client/src/net.ts`) ve `client/src/hosted.ts`.
@@ -132,7 +132,7 @@ KONUK (tarayıcı, yalnız LAN)  http://<ev sahibi ip>:47800/?room=KOD  (sayfa e
 - **Tünel** (`tools/steam/shell/tunnel.js`): paket = `[tür][akış no][veri]` (OPEN/DATA/END/RESET), 32 KB parçalar, eş başına en çok 16 akış; ev sahibi yalnız KENDİ lobisinin üyelerinden akış kabul eder. Steam'siz denetim: `node tools/tunnel-check.mjs` (sahte hat; 700 KB gövde, 8 eşzamanlı akış, yükseltilmiş bağlantı, yabancı reddi).
 - **Lobi:** "Oyun kur (ev sahibi)" → Arkadaşlar / Herkese açık / Özel; lobi verisi `kf, code, build, protocol, name, players, max, phase`. Arkadaş listesinden "Oyuna katıl" ve davet (`GameLobbyJoinRequested`, oyun kapalıyken `+connect_lobby <id>`), oyun içi "Açık oyunları listele". Rich Presence `#Status_Lobby` ("Lobide 2/4", `players` anahtarı; `tools/steam/rich_presence_loc.vdf` yeniden yüklenmeli) + `steam_player_group`. Steam adı varsayılan oyuncu adı. Boş koltuklar botla dolar (mevcut seçenek).
 - **App id:** `steam.json` → `appId` (0 = Steam kapalı, oyun hatasız açılır). Geliştirme: `KEEPFALL_STEAM_APPID=480` **ve** `KEEPFALL_STEAM_DEV=1` (480 bu olmadan açılmaz); `pack-steam.mjs` pakette 480 ya da `steam_appid.txt` bulursa durur. Gerçek app id gelince yalnız `steam.json` değişir.
-- **Steam'siz yedek (LAN / doğrudan IP):** lobi adresi gösterir (`http://192.168.x.x:47800/?room=KOD`, "Adresi kopyala"); konuk bunu oyunda "Ev sahibinin adresi"ne yazar (`ip:port#KOD` da olur) ya da tarayıcıda açar. İnternet üzerinden doğrudan IP için ev sahibinin 47800/TCP portunu yönlendirmesi gerekir (Steam yolunda gerekmez). İlk açılışta Windows güvenlik duvarı izin sorar.
+- **Steam'siz yedek (LAN / doğrudan IP):** yalnız "LAN / IP adresiyle" kurulan oyunda (Steam yoksa tek seçenek) kapı açılır; lobi adresi gösterir (`192.168.x.x:47800#KOD`, "Adresi kopyala"), konuk bunu oyunda "Ev sahibinin adresi"ne yazar. Tarayıcıdan katılma YOK (dosyalar konuğa kapalı, §9). İnternet üzerinden doğrudan IP için ev sahibinin 47800/TCP portunu yönlendirmesi gerekir (Steam yolunda gerekmez). İlk açılışta Windows güvenlik duvarı izin sorar.
 - **Sürüm uyumu:** `build.json` (`0.1.0+<commit>`, `pack-steam` yazar) → `/version` `build` + lobi verisi. Katılmadan ÖNCE karşılaştırılır: "Sürüm uyuşmuyor: ev sahibi X, sen Y. İkiniz de oyunu güncelleyin." Liste uyumsuz lobiyi "farklı sürüm" diye işaretler.
 - **Kopma:** lobide koltuk 60 sn (`LobbyGraceMinutes` 1); maçta 60 sn sonra kaleyi Orta bot oynatır (`Keepfall__TakeoverSeconds` 60 → `RoomPlayer.Deputy`; koltuk insanın kalır, jetonuyla dönünce bot anında bırakır; oyuncu şeridinde "bağlantı yok, yerine bot oynuyor").
 - **Ev sahibi çıkarsa:** pencereyi kapatır ya da menüye dönerse maç olduğu yerde biter (süre dolmuş gibi sıralanır), herkese `HostLeft` + maç sonu + "Kim kimi kandırdı" özeti gider (`HostedMatch`, `POST /api/host/stop` yalnız ev sahibinin kendi kapısından). Ev sahibi ansızın giderse (çökme, elektrik) konuk 12 sn içinde "Ev sahibiyle bağlantı koptu…" mesajını görür, tıklayınca kendi menüsüne döner; **bu durumda özet YOK** (veri ev sahibindeydi).
@@ -168,7 +168,7 @@ Gereken: **iki Steam hesabı ve iki bilgisayar** (aynı hesap iki yerde aynı an
 6. **Kopma:** B'de Wi-Fi'yi 70 sn kapat → A'da B'nin şeridinde "yerine bot oynuyor"; aç → B kaldığı yerden sürer.
 7. **Ev sahibi çıkışı:** A pencereyi kapatsın → B'de maç sonu ekranı + "Ev sahibi oyundan ayrıldı".
 8. Sorun olursa iki bilgisayarın `shell.log` dosyasını gönder (`p2p`, `lobby`, `join` satırları).
-9. Steam'siz karşılaştırma: aynı ağda B, A'nın lobisindeki adresi "Ev sahibinin adresi"ne yazar (Windows güvenlik duvarı sorusuna A'da "İzin ver").
+9. Steam'siz karşılaştırma: A "LAN / IP adresiyle (Steam yok)" seçip kursun; aynı ağda B, A'nın lobisindeki adresi "Ev sahibinin adresi"ne yazar (Windows güvenlik duvarı sorusuna A'da "İzin ver").
 
 Gerçek app id gelince: `steam.json` → `appId`, Steamworks panelinde Rich Presence dosyasını (`tools/steam/rich_presence_loc.vdf`) yeniden yükle; lobi/P2P için panelde ek ayar gerekmez.
 
@@ -181,3 +181,52 @@ Gerçek app id gelince: `steam.json` → `appId`, Steamworks panelinde Rich Pres
 - Windows güvenlik duvarı ilk "Oyun kur"da izin penceresi çıkarır; reddedilirse LAN çalışmaz (Steam yolu etkilenmez).
 - Konuk masaüstü istemcisi kendi gömülü sunucusunu da çalıştırır (≈ 100 MB bellek; kaldırmak ayrı iş).
 - Yeni metinler 13 dilde çevrilmedi (İngilizce görünür); lobi/menü yerleşimi 15 dilde `lang-audit` ile bakılmadı.
+
+## 9. Ev sahibi güvenliği: saldırı yüzeyi ve sınırlar (2026-11-11)
+
+Bağlam: "Steam: herkese açık" lobide yabancılar ev sahibinin bilgisayarındaki gömülü sunucuya bağlanır. İki kilit var: kabuğun kapı bekçisi (`tools/steam/shell/gate.js`) ve sunucunun konuk kuralları (`GuestGate.cs`, `Program.cs`). Biri aşılırsa öbürü durur.
+
+### Konuğun erişebildiği HER şey
+
+| Yol | Konuğa | Not |
+|---|---|---|
+| `GET/POST/DELETE/OPTIONS /hub`, `/hub/negotiate` | AÇIK | Oyun hub'ı (SignalR). Tek oyun kapısı. |
+| `GET /version` | AÇIK | Yalnız `protocol`, `build`, `hosted`, `commit: local`. Sürüm uyumu için. |
+| Oyun dosyaları (`/`, `index.html`, `/assets`, `/art`, `/licenses`, `/oda/KOD`) | KAPALI (404) | Konuk kendi kopyasını kullanır; **tarayıcıdan katılma kaldırıldı**. |
+| `/api/guide`, `/api/client-log`, `/health`, `/ping` | KAPALI (404) | |
+| `POST /api/host/stop` (ev sahibi kapanışı) | KAPALI (404) | Yalnız ev sahibinin kendi penceresinden (yerel ana kapı). |
+| Director / kameraman (`DirectorRooms`, `DirectorWatch`) | KAPALI | Steam yapısında ve ev sahipli sunucuda her zaman. |
+| Hub'da `CreateRoom`, `KickPlayer` | Reddedilir | Konuk oda kuramaz, kimseyi çıkaramaz. |
+| Hub'da ev sahibi komutları (`StartMatch`, `AddBot`, `RemoveBot`, `SetSpeed`, `FinishMatch`, `BackToLobby`, `SetGuided`, `SetStarter`, `StartChallenge`) | Reddedilir | `Room` oda sahibini koltuktan denetler; hız yalnız Development'ta. |
+| Dosya sistemi, debug uçları, Electron köprüsü (`window.keepfallSteam`) | Erişilemez | Köprü yalnız ev sahibinin kendi sayfasında; sunucuda dosya okuyan/yazan konuk ucu yok. |
+| Ev sahibinin ana kapısı (127.0.0.1:P) ve konuk kapısı (127.0.0.1:G) | Doğrudan erişilemez | İkisi de yalnız loopback dinler; konuk G'ye yalnız bekçiden geçerek ulaşır. |
+
+Ağa açık port: yalnız **LAN / IP oyunu** kurulunca `0.0.0.0:47800` (lobide "Ağ kapısı açık (port …)" uyarısı). **Steam oyununda açık port yoktur** (güvenlik duvarı sorusu da çıkmaz); yalnız lobi üyelerinden gelen Steam P2P akışları kabul edilir.
+
+### Sınırlar
+
+| Katman | Sınır |
+|---|---|
+| Bekçi (LAN + Steam tüneli) | İlk istek satırı 5 sn içinde, ≤ 1 KB, yalnız yukarıdaki yollar ve HTTP/1.1; değilse 404 ve kapat. Konuk (IP / Steam kimliği) başına 8 eşzamanlı bağlantı, toplam 32; konuk başına 10 sn'de 40 yeni bağlantı (aşan 429). 75 sn sessiz hat kapanır. LAN kapısı en çok 48 soket. |
+| Tünel | Paket ≤ 32 KB + başlık; bilinmeyen tür, kısa/aşırı büyük paket, 16'dan fazla akış "ihlal" sayılır, 20 ihlalde eş kesilir ve oyun kapanana kadar dinlenmez. Okunmayan akış 8 MB'ta kesilir. Lobi üyesi olmayana yanıt bile verilmez. |
+| Kestrel (yalnız ev sahipli sunucu) | 64 eşzamanlı bağlantı, 24 yükseltilmiş (WebSocket), gövde 64 KB (konukta `Content-Length` büyükse okunmadan 413), başlıklar 16 KB, istek satırı 2 KB, başlık zaman aşımı 10 sn. |
+| SignalR | Mesaj 32 KB (aşan bağlantı kapanır), el sıkışma 8 sn, istemci zaman aşımı 60 sn. |
+| Konuk hatları (`GuestGate`) | En çok 12 konuk hub bağlantısı, oda başına 6 (3 konuk × yeniden bağlanma payı); **20 sn içinde koltuk almayan bağlantı kapatılır**; yanlış oda kodu konuk başına 6/dk (yeni bağlantı açmak sayaç sıfırlamaz). Oda 4 koltuk: ev sahibi + en çok 3 konuk. |
+| Kimlik | Bekçi konuğun kimliğini (`X-Keepfall-Peer`: LAN adresi ya da `steam:<id>`) her bağlantının ilk isteğine yazar; sunucu kimliği **TCP bağlantısına** sabitler (aynı bağlantıdan gelen sonraki istek ne derse desin aynı konuktur). |
+| Oyuncu çıkarma | Ev sahibi lobide "Çıkar": oyuncuya haber gider, hatları kapanır, adresi / Steam kimliği o odaya dönemez (jetonu da geçersiz). Maç sırasında çıkarma yok (kale alınmaz); kopan oyuncuyu 60 sn sonra bot oynatır. |
+
+### Denetimler
+
+- `node tools/host-fuzz.mjs` (38): 25 başka yol + 14 başka yöntem/protokol, çöp/TLS/SSH, bitmeyen satır, sessiz ve yarım bağlantı, aynı bağlantıda kaçak istek, 100 KB başlık, 4 MB gövde, 200 bağlantılık sel, 25 bağlan-kop, yanlış/bozuk/eksik el sıkışma, 300 KB mesaj, bozuk çerçeveler, sahte sürüm, yanlış türde argümanlar, konuktan ev sahibi komutları, ad/koltuk/jeton taklidi, çıkarılanın geri dönme denemeleri, maç sırasında 600 saçma komut. Ev sahibi hiç çökmedi; maç saati işlemeye devam etti.
+- `node tools/tunnel-check.mjs` (11): tünelden başka yollar sunucuya ulaşmaz; 4000 rastgele/aşırı büyük/tampon olmayan paket hata fırlatmaz; üye 16'dan fazla akış tutamaz ve kötüye kullanım bildirilir; istek satırsız 13 MB akış bellekte tutulmaz.
+- `node tools/host-check.mjs` (48): önceki akış + dosyalar kapalı, kick + yasak, koltuk almayan hat 20 sn'de kapanır, başkasının koltuğu jetonsuz alınamaz.
+- `HostedGameTests` (kick kuralları), toplam 415 birim testi; duman testi (gizli bilgi) geçti.
+
+### Kalan riskler
+
+- **Ev sahibi her şeyi bilir**; yabancılarla herkese açık oyunda ev sahibi hile yapabilir (bellek). Konuklar için gizli bilgi filtreleri aynen.
+- **Aynı ağ / aynı NAT**: LAN'da kimlik IP'dir; aynı evden iki oyuncu aynı sınırı ve yasağı paylaşır. Steam'de kimlik Steam hesabıdır (yeni hesap açan geri gelebilir; ev sahibi yine çıkarır ya da lobiyi "Özel" kurar).
+- **Kaynak tüketme**: sınırlar içinde kalan bir konuk yine de saniyede onlarca komut yollayabilir (komut başına ucuz, hız sınırı yok). Ölçülen: 600 komut ≈ 10 sn, maç etkilenmedi. Komut hız sınırı eklenmedi.
+- **Steam tüneli gerçek hatta denenmedi** (iki hesap gerekir); bekçi ve sınırlar sahte hatla sınandı.
+- **Kestrel/SignalR/Electron açıkları**: yüzey küçültüldü ama bu kütüphanelerdeki bir açık ev sahibini etkiler; sürümler güncel tutulmalı (Electron 45.2.3, .NET 10).
+- LAN kapısı açıkken oda kodunu bilen ağdaki herkes koltuk alabilir (kod 6 harf, 6 yanlış/dk); istenmeyen oyuncu için "Çıkar".

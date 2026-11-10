@@ -50,7 +50,8 @@ Bot dengesi: `BattleSim bot --mac 400 --zorluk karisik|bekleyen|orta|zor-orta` (
 ## Ev sahipli çok oyunculu (Steam yapısı, 2026-11-11)
 - Resmi sunucu YOK (kullanıcı kararı). Steam yapısında odayı kuran oyuncunun gömülü sunucusu maçı yürütür; konuklar LAN kapısından (47800) ya da Steam lobisi + P2P tünelinden gelir. Ayrıntı ve Steam test adımları: `docs/steam-paketleme.md` §7–8.
 - Kabuk: `tools/steam/shell/mp.js` (kapılar, lobi), `tunnel.js` (akış tüneli; Steam'i bilmez). İstemci: `client/src/hosted.ts`, `GameConnection.switchServer`. Sunucu: `Keepfall__GuestPort` (konuk oda kuramaz), `Keepfall__TakeoverSeconds` (kopanı bot oynatır, `RoomPlayer.Deputy`), `HostedMatch` + `/api/host/stop`, `/version` `build`. Web sunucusunda hepsi kapalı; web davranışını değiştirme.
-- Denetim: `node tools/pack-steam.mjs` sonra `node tools/host-check.mjs` (~4 dk; `ABRUPT=1` ani kayıp), `node tools/tunnel-check.mjs`, `node tools/steam-check.mjs`. Kabuk dosyası değişince pakete kopyala ya da yeniden paketle. 480 yalnız `KEEPFALL_STEAM_DEV=1` ile; pakete girmez.
+- Güvenlik (§9): konuk yalnız `/hub` ve `/version`'a ulaşır (kabukta `gate.js`, sunucuda `GuestGate`); konuğa yeni uç AÇMA, açarsan iki izin listesini ve `host-fuzz`'ı güncelle. LAN kapısı yalnız "LAN / IP" oyununda; tarayıcıdan katılma yok.
+- Denetim: `node tools/pack-steam.mjs` sonra `node tools/host-check.mjs` (~4 dk; `ABRUPT=1` ani kayıp), `node tools/host-fuzz.mjs` (~4 dk), `node tools/tunnel-check.mjs`, `node tools/steam-check.mjs`. Kabuk dosyası değişince pakete kopyala ya da yeniden paketle. 480 yalnız `KEEPFALL_STEAM_DEV=1` ile; pakete girmez.
 
 ## Bilinen açık konular
 - **Okçu hâlâ biraz güçlü**: deste turnuvalarında Okçulu desteler ortalama ~%52 ve en iyi 5 deste içinde her turda; tam çözülmedi (hasar 9, can 68'e inmişti). Yeni ayar turunda önce okçu içeren desteleri izle.
