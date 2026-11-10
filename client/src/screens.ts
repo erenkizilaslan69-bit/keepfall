@@ -86,7 +86,7 @@ export class HomeScreen {
     const friends = !FEATURE_PRIVATE_ROOM ? '' : hosted ? `<div class="or">${t('ya da arkadaşlarınla')}</div>
         <div class="join-row host-row">
           ${hosted.steam ? `<label class="field">${t('Kimler katılabilir')} <select id="vis"><option value="friends">${t('Arkadaşlar')}</option><option value="public">${t('Herkese açık')}</option><option value="private">${t('Özel (yalnız davet)')}</option></select></label>` : ''}
-          <button id="create" class="btn">${t('Oyun kur (ev sahibi)')}</button>
+          <button id="create" class="btn${hosted.steam ? '' : ' wide'}">${t('Oyun kur (ev sahibi)')}</button>
         </div>
         <div class="or">${t('ya da')}</div>
         <div class="join-row">
