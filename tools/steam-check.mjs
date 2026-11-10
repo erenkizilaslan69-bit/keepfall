@@ -1,5 +1,5 @@
 // Starts the packed Steam demo (steam-build/Keepfall/Keepfall.exe, see tools/pack-steam.mjs) and checks it like a player would:
-// the window opens, only solo doors exist (no "Oda kur"/"Odaya katıl"), the bridge is there with Steam off, no request left the machine,
+// the window opens, the menu's doors exist (solo + friend-hosted), the bridge is there with Steam off, no request left the machine,
 // a quick match starts, progress survives a relaunch (same origin), and closing the window stops the server.
 //   node tools/steam-check.mjs [out-prefix]      screenshots go to <out-prefix>-*.png (default art/shots/steam/check; git-ignored)
 import { execSync } from 'node:child_process';
@@ -37,7 +37,9 @@ check('main menu appears (Quick play)', await app.waitFor(`!!document.querySelec
 await sleep(2500);
 check('challenges button present', await app.js(`!!document.querySelector('#challenges')`));
 check('progress button present', await app.js(`!!document.querySelector('#progress')`));
-check('multiplayer doors closed (no create/join)', await app.js(`!document.querySelector('#create') && !document.querySelector('#join') && !document.querySelector('#code')`));
+// (friend-hosted multiplayer: this computer hosts, or joins a friend by address; there is no official server; the whole flow: tools/host-check.mjs)
+check('friend-hosted multiplayer doors: host a game, join by address', await app.js(`!!document.querySelector('#create') && !!document.querySelector('#join') && /47800/.test(document.querySelector('#code').placeholder)`));
+check('...and nothing is listening for friends until a game is hosted', await app.js(`window.keepfallSteam.mp.info().then((i) => i.hosting === false && i.lanPort === 0)`));
 const bridge = await app.js(`(async()=>{const b=window.keepfallSteam;if(!b)return null;return {shell:b.shell,status:await b.status()}})()`);
 check('desktop bridge present, Steam off without an app id', !!bridge && bridge.status.available === false, JSON.stringify(bridge));
 await app.shot('menu');

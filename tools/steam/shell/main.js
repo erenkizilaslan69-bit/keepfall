@@ -177,9 +177,13 @@ ipcMain.handle('mp:probe', mpCall(() => mp.probe(), false));
 function tellGuestsWeLeave() {
   return new Promise((resolve) => {
     if (!mp || !mp.isHosting() || !server || server.exitCode !== null) { resolve(); return; }
-    const req = http.request({ host: '127.0.0.1', port, path: '/api/host/stop', method: 'POST', timeout: 1500, headers: { 'Content-Length': 0 } }, (res) => { res.resume(); res.on('end', () => setTimeout(resolve, 400)); });
-    req.on('error', () => resolve());
-    req.on('timeout', () => { req.destroy(); resolve(); });
+    const req = http.request({ host: '127.0.0.1', port, path: '/api/host/stop', method: 'POST', timeout: 1500, headers: { 'Content-Length': 0 } }, (res) => {
+      let body = '';
+      res.on('data', (d) => { body += d; });
+      res.on('end', () => { log('farewell ' + res.statusCode + ' ' + body.slice(0, 80)); setTimeout(resolve, 600); });
+    });
+    req.on('error', (e) => { log('farewell failed: ' + e.message); resolve(); });
+    req.on('timeout', () => { log('farewell timed out'); req.destroy(); resolve(); });
     req.end();
   });
 }

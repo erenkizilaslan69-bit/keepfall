@@ -106,4 +106,20 @@ public class HostedGameTests
         Assert.NotNull(ViewMapper.ToView(room).Result);
         Assert.False(room.Abort()); // once
     }
+    [Fact]
+    public void A_match_ended_by_the_host_during_the_preparation_also_gives_everybody_a_result()
+    {
+        var (room, host, guest) = Started(TimeSpan.FromSeconds(60));
+        for (int t = 0; t < 30; t++) room.Tick(1);
+        Assert.Equal(RoomPhase.Preparation, room.Phase);
+        Assert.True(room.Abort());
+        Assert.Equal(RoomPhase.Ended, room.Phase);
+        Assert.NotNull(ViewMapper.ToView(room).Result);
+        foreach (var p in new[] { host, guest })
+        {
+            Assert.NotNull(ViewMapper.CastleOf(room, p)?.Summary);
+            _ = Keepfall.Core.Progress.Achievements.FactsOf(room, p);
+            _ = MapViewMapper.StateOf(room, p);
+        }
+    }
 }

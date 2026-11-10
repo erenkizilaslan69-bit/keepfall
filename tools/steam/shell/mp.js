@@ -79,7 +79,9 @@ function createMp(o) {
   if (at >= 0 && /^\d{5,20}$/.test(o.argv[at + 1] || '')) pendingLobby = o.argv[at + 1];
 
   // ---------- helpers ----------
-  const addresses = () => Object.values(os.networkInterfaces()).flat().filter((i) => i && i.family === 'IPv4' && !i.internal).map((i) => i.address);
+  // this computer's addresses, the home-network ones first (192.168 / 10 / 172.16–31), self-assigned 169.254 ones last
+  const rank = (a) => (/^192\.168\./.test(a) ? 0 : /^10\./.test(a) ? 1 : /^172\.(1[6-9]|2\d|3[01])\./.test(a) ? 2 : /^169\.254\./.test(a) ? 9 : 5);
+  const addresses = () => Object.values(os.networkInterfaces()).flat().filter((i) => i && i.family === 'IPv4' && !i.internal).map((i) => i.address).sort((x, y) => rank(x) - rank(y));
 
   function getJson(options, ms) {
     return new Promise((resolve) => {
