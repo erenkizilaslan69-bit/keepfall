@@ -85,19 +85,24 @@ export class WallRing {
 
   /** The castle has fallen: the wall greys out, the towers are gone (with dust). */
   /**
-   * A marching column keeps off the wall: is `p` (scene px) on it (its band, the towers included), or does the step from `from` (the column's own line,
-   * on the road) to `p` go through it anywhere but the gate? The stone wall's lines; the fence stands about where they are.
+   * A marching column keeps off the wall: is `p` (scene px, a soldier's feet) on it or on a tower, near enough that the soldier's body would stand on it,
+   * or does the step from `from` (the column's own line, on the road) to `p` go through the wall anywhere but the gate? The stone wall's lines (the fence
+   * stands about where they are); the towers are their sprites' feet. Walking past in front of a tower is fine (the soldier is drawn in front of it by
+   * its feet), on or in it is not.
    */
   blocks(p: Point, from: Point): boolean {
     const east = this.gateOnEast, o = this.origin;
     const L = o.x + 4 + (east ? 0 : GATE_SIDE_INSET), R = o.x + REGION_W - 4 - (east ? GATE_SIDE_INSET : 0), T = o.y + 4, B = o.y + REGION_H - 4;
     const gateX = east ? R : L, gateY = o.y + GATE_Y;
     const inGate = (q: Point) => Math.abs(q.y - gateY) < GATE_HALF - 6 && Math.abs(q.x - gateX) < 70;
-    // the stone lies inside the lines: the side walls a strip about 33 px wide, the north wall's top and face about 53 px, the south wall's face above its line
-    const OUT = 6, SIDE = 36, NORTH = 58, SOUTH = 40;
+    // the stone: the side walls a strip about 33 px wide inside their line (a soldier is about 36 px wide: its feet keep BODY px off), the north wall's
+    // top and face about 53 px below its line, the south wall's face above its line
+    const BODY = 20, OUT = 6, SIDE = 36, NORTH = 58, SOUTH = 40;
+    const onSide = p.y > T - OUT && p.y < B + OUT && ((p.x > L - BODY && p.x < L + SIDE + BODY) || (p.x > R - SIDE - BODY && p.x < R + BODY));
+    const onRow = p.x > L - BODY && p.x < R + BODY && ((p.y > T - OUT && p.y < T + NORTH) || (p.y > B - SOUTH && p.y < B + OUT));
+    if ((onSide || onRow) && !inGate(p)) return true;
+    for (const t of this.towers) if (t.active && Math.abs(p.x - t.x) < t.displayWidth * 0.3 + BODY && p.y > t.y - 46 && p.y < t.y + 10) return true;
     const inside = (q: Point) => q.x > L && q.x < R && q.y > T && q.y < B;
-    const onWall = (q: Point) => q.x > L - OUT && q.x < R + OUT && q.y > T - OUT && q.y < B + OUT && !(q.x > L + SIDE && q.x < R - SIDE && q.y > T + NORTH && q.y < B - SOUTH);
-    if (onWall(p) && !inGate(p)) return true;
     return inside(p) !== inside(from) && !inGate(p) && !inGate(from);
   }
 

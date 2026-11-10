@@ -650,12 +650,14 @@ export class Movers {
           return 0;
         };
         sq = fit(c, n);
-        if (speedPx > 1) {
-          const s2 = Math.min(end, s + speedPx * SQUEEZE_AHEAD), d2 = this.trailDir(t, s2);
+        if (speedPx > 1) for (const k of [0.5, 1]) {
+          const s2 = Math.min(end, s + speedPx * SQUEEZE_AHEAD * k), d2 = this.trailDir(t, s2);
           sq = Math.min(sq, fit(this.trailAt(t, s2), { x: -d2.y, y: d2.x }));
         }
       }
       t.squeeze[i] = (t.squeeze[i] ?? 1) + (sq - (t.squeeze[i] ?? 1)) * ease(sq < (t.squeeze[i] ?? 1) ? SQUEEZE_IN : SQUEEZE_OUT);
+      // never on the obstacle itself: where the eased place would still be on it, the soldier is where it may stand (the look ahead makes that rare and small)
+      if (side !== 0 && t.squeeze[i] > sq && this.blocked({ x: c.x + n.x * side * t.squeeze[i], y: c.y + n.y * side * t.squeeze[i] }, c)) t.squeeze[i] = sq;
       const off = side * t.squeeze[i];
       const x = c.x + n.x * off, y = c.y + n.y * off;
       // which way it faces: the way it moves sideways (eased; a soldier going straight up or down keeps the way it faced)
