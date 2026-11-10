@@ -4,20 +4,39 @@ Otomatik: `node tools/lang-audit.mjs`. Sayılar: İngilizcede olmayan, o dilin e
 
 | Dil | home | lobby | match | forge-window | farm-window | kingdom-panel | guide | settings |
 |---|---|---|---|---|---|---|---|---|
-| de | 0 | 0 | 0 | 12 | 0 | 0 | 0 | 0 |
+| en (taban) | 0 | 0 | 0 | 10 | 0 | 7 | 0 | 0 |
+| tr | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| zh-CN | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 0 |
+| zh-TW | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| ru | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| es-ES | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 0 |
+| es-419 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| pt-BR | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| de | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 |
+| fr | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| ja | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| ko | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| pl | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 0 |
+| it | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 0 |
+| uk | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 
 ## Ayrıntı (dilin eklediği)
 
+### zh-CN · kingdom-panel
+- cut by div.kingdom-panel.paper: `button.btn` "设置报告" konum 42,789,136,825
+- offscreen: `button.btn` "设置报告" konum 42,789,136,825
+
+### es-ES · kingdom-panel
+- cut by div.kingdom-panel.paper: `button.btn` "Fijar informe" konum 42,825,173,861
+- offscreen: `button.btn` "Fijar informe" konum 42,825,173,861
+
 ### de · forge-window
-- cut by div.win-body: `small` "30 s" konum 584,690,607,705
-- cut by div.win-body: `b` "×0" konum 543,725,558,739
-- cut by div.win-body: `b` "Schildträger" konum 507,752,602,770
-- cut by div.win-body: `small` "35 s" konum 584,780,606,795
-- cut by div.win-body: `button.btn` "+1" konum 668,740,693,770
-- cut by div.win-body: `button.btn` "+5" konum 701,740,730,770
-- cut by div.win-body: `b` "×0" konum 543,815,558,828
-- cut by div.win-body: `b` "Katapult" konum 572,813,639,831
-- cut by div.win-body: `span.cost` "10" konum 507,842,543,862
-- cut by div.win-body: `small` "60 s" konum 590,851,613,866
-- cut by div.win-body: `button.btn` "+1" konum 668,821,693,851
-- cut by div.win-body: `button.btn` "+5" konum 701,821,730,851
+- cut by div.win-body: `span.up-line` "Ausbauen +50 % Waffengeschwindigkeit" konum 482,394,754,432
+
+### pl · kingdom-panel
+- cut by div.kingdom-panel.paper: `button.btn` "Ustaw raport" konum 42,825,182,861
+- offscreen: `button.btn` "Ustaw raport" konum 42,825,182,861
+
+### it · kingdom-panel
+- cut by div.kingdom-panel.paper: `button.btn` "Imposta rapporto" konum 42,843,214,879
+- offscreen: `button.btn` "Imposta rapporto" konum 42,843,214,879
