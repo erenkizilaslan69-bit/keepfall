@@ -937,8 +937,8 @@
 937	Ordu yola çıktı: önünü kesecek.	The army has set out: it will intercept.
 938	Kim kimi kandırdı?	Who fooled whom?
 939	Bu maçta kimse hile yapmadı.	Nobody played a trick this match.
-940	Klibi kaydet	Save clip
-941	Kaydedilecek bir savaş klibi yok.	There is no battle clip to save.
+940		
+941		
 942	{0} sahte bir ordu raporu hazırladı ({1} asker gösteriyor).	{0} prepared a fake army report (showing {1} soldiers).
 943	{1} gözcüsü, {0} kalesinde sahte raporu okudu.	The scout of {1} read the fake report at the castle of {0}.
 944	Kâhin {1}, {0} kalesinin raporunun sahte olduğunu gördü.	The Oracle {1} saw that the report of {0}'s castle was fake.
@@ -1049,3 +1049,45 @@
 1049	Küfür sözlükleri	Profanity word lists
 1050	Çeviriler	Translations
 1051	Yapay zekâ yardımıyla	AI-assisted
+1052	Adres anlaşılamadı. Örnek: 192.168.1.5:47800#ABCDEF	That address could not be read. Example: 192.168.1.5:47800#ABCDEF
+1053	Adresin sonunda oda kodu yok (örnek: 192.168.1.5:47800#ABCDEF).	The address has no room code at its end (example: 192.168.1.5:47800#ABCDEF).
+1054	Ev sahibine ulaşılamadı. Adresi ve ev sahibinin oyununun açık olduğunu kontrol et.	The host could not be reached. Check the address and that the host's game is open.
+1055	Bu adreste açık bir Keepfall oyunu yok.	There is no open Keepfall game at that address.
+1056	Sürüm uyuşmuyor: ev sahibi {0}, sen {1}. İkiniz de oyunu güncelleyin.	Version mismatch: the host has {0}, you have {1}. Both of you should update the game.
+1057	Steam çalışmıyor; adresle katılabilirsin.	Steam is not running; you can still join by address.
+1058	Ev sahibi oyundan ayrıldı. Ana menüye dönmek için tıkla.	The host has left the game. Click to return to the main menu.
+1059	Ev sahibiyle bağlantı koptu: maç onun bilgisayarında çalışıyordu ve sürdürülemiyor. Ana menüye dönmek için tıkla.	The connection to the host was lost: the match ran on their computer and cannot go on. Click to return to the main menu.
+1060	Kimler katılabilir	Who can join
+1061		
+1062		
+1063		
+1064	Oyun kur (ev sahibi)	Host a game
+1065	Ev sahibinin adresi	Host's address
+1066	Oyuna katıl	Join game
+1067	Açık oyunları listele	List open games
+1068	Aranıyor…	Searching…
+1069	farklı sürüm	different version
+1070	maçta	in a match
+1071	Katıl	Join
+1072	Açık oyun bulunamadı.	No open games found.
+1073		
+1074	Adresi kopyala	Copy address
+1075	Steam'den davet et	Invite through Steam
+1076		
+1077	bağlantı yok, yerine bot oynuyor	disconnected, a bot is playing for them
+1078	Ağ kapısı açılamadı (47800–47809 portları dolu olabilir).	The network door could not be opened (ports 47800–47809 may be in use).
+1079	Steam: arkadaşlar	Steam: friends
+1080	Steam: herkese açık	Steam: public
+1081	Steam: özel (yalnız davet)	Steam: private (invite only)
+1082	LAN / IP adresiyle (Steam yok)	LAN / by IP address (no Steam)
+1083	Oyun kur (LAN / IP)	Host a game (LAN / IP)
+1084	Ağ kapısı açık (port {0}): bu ağdaki herkes adresi bilirse katılmayı deneyebilir.	Network door open (port {0}): anyone on this network who knows the address can try to join.
+1085	Maç bu bilgisayarda çalışır: sen çıkarsan herkes için biter. Arkadaşların bu adresi oyunda "Ev sahibinin adresi"ne yazar.	The match runs on this computer: if you quit, it ends for everybody. Your friends type this address into "Host's address" in the game.
+1086	Maç bu bilgisayarda çalışır: sen çıkarsan herkes için biter. Yalnız Steam lobindekiler bağlanabilir; bu bilgisayarda ağa açık port yok.	The match runs on this computer: if you quit, it ends for everybody. Only members of your Steam lobby can connect; no network port is open on this computer.
+1087	Çıkar	Remove
+1088	Ev sahibi oyundan ayrıldı: maç burada bitti.	The host has left the game: the match ends here.
+1089	Bu oyunda odayı yalnız ev sahibi kurabilir.	Only the host can make a room in this game.
+1090	Oyuncuyu sadece odayı kuran çıkarabilir.	Only the room's host can remove a player.
+1091	Kendini çıkaramazsın.	You cannot remove yourself.
+1092	Ev sahibi seni odadan çıkardı.	The host removed you from the room.
+1093	O koltukta oyuncu yok.	There is no player in that seat.

@@ -37,10 +37,13 @@ const TSV = join(ROOT, 'docs', 'ceviri-kaynak.tsv');
 const clean = (s) => String(s).replace(/[\t\r\n]+/g, ' ');
 let order = [];
 if (process.argv.includes('--keep-order') && existsSync(TSV)) {
-  order = readFileSync(TSV, 'utf8').split(/\r?\n/).filter(Boolean).map((l) => l.split('\t')[1]); // the frozen order (cleaned keys: texts with tabs/newlines are not expected)
+  order = readFileSync(TSV, 'utf8').split(/\r?\n/).filter(Boolean).map((l) => l.split('\t')[1] ?? ''); // the frozen order (cleaned keys: texts with tabs/newlines are not expected)
   for (const k of Object.keys(SRC)) if (!order.includes(clean(k))) order.push(clean(k));
 } else order = Object.keys(SRC).map(clean);
 const byClean = new Map(Object.keys(SRC).map((k) => [clean(k), k]));
-const lines = order.filter((k) => byClean.has(k)).map((k, i) => `${i + 1}\t${k}\t${clean(SRC[byClean.get(k)])}`);
+// A text that left the game keeps its number as an empty row (frozen order): otherwise every later number would shift and the translated chunks
+// (docs/ceviri-parca, merged by number) would land on the wrong texts. Without --keep-order the list is simply renumbered.
+const keep = process.argv.includes('--keep-order');
+const lines = (keep ? order : order.filter((k) => byClean.has(k))).map((k, i) => (byClean.has(k) ? `${i + 1}\t${k}\t${clean(SRC[byClean.get(k)])}` : `${i + 1}\t\t`));
 writeFileSync(TSV, lines.join('\n') + '\n', 'utf8');
-console.log(`${lines.length} texts (${Object.keys(extra).length} from the server's two-language texts) → docs/ceviri-kaynak.tsv`);
+console.log(`${lines.filter((l) => l.split('\t')[1]).length} texts, ${lines.length} numbers (${Object.keys(extra).length} from the server's two-language texts) → docs/ceviri-kaynak.tsv`);

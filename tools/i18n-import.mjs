@@ -10,7 +10,10 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const COLS = ['zh-CN', 'zh-TW', 'ru', 'es-ES', 'es-419', 'pt-BR', 'de', 'fr', 'ja', 'ko', 'pl', 'it', 'uk'];
 const only = (process.argv.indexOf('--only') > 0 ? process.argv[process.argv.indexOf('--only') + 1].split(',') : COLS);
-const source = new Map(readFileSync(join(ROOT, 'docs', 'ceviri-kaynak.tsv'), 'utf8').split(/\r?\n/).filter(Boolean).map((l) => { const [n, tr, en] = l.split('\t'); return [Number(n), { tr, en }]; }));
+// (a number whose text has left the game is an empty row: its translations are skipped without a word)
+const allRows = readFileSync(join(ROOT, 'docs', 'ceviri-kaynak.tsv'), 'utf8').split(/\r?\n/).filter(Boolean).map((l) => { const [n, tr, en] = l.split('\t'); return [Number(n), { tr, en }]; });
+const retired = new Set(allRows.filter(([, v]) => !v.tr).map(([n]) => n));
+const source = new Map(allRows.filter(([, v]) => v.tr));
 const dir = join(ROOT, 'docs', 'ceviri-parca');
 const rows = new Map(COLS.map((c) => [c, new Map()]));
 let warn = 0;
@@ -22,6 +25,7 @@ for (const f of existsSync(dir) ? readdirSync(dir).filter((x) => x.endsWith('.ts
     if (!line.trim() || line.startsWith('#')) return;
     const cells = line.split('\t');
     const n = Number(cells[0]), src = source.get(n);
+    if (retired.has(n)) return;
     if (!src) { console.warn(`${f}:${i + 1}: no text number ${cells[0]}`); warn++; return; }
     if (cells.length !== COLS.length + 1) { console.warn(`${f}:${i + 1} (#${n}): ${cells.length - 1} columns, expected ${COLS.length}`); warn++; }
     COLS.forEach((c, j) => {
