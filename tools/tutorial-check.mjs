@@ -53,23 +53,28 @@ const read = () => js(`(() => {
   if (!card) return null;
   const fr = frame && !frame.hidden ? frame.getBoundingClientRect() : null;
   return JSON.stringify({ text: card.querySelector('.tut-text').textContent, step: card.querySelector('.tut-step').textContent, hidden: card.hidden,
-    frame: fr ? { x: fr.x + fr.width / 2, y: fr.y + fr.height / 2, w: fr.width, h: fr.height } : null });
+    frame: fr ? { x: fr.x + fr.width / 2, y: fr.y + fr.height / 2, w: fr.width, h: fr.height } : null,
+    // the preparation clock from the game state, not from the (translated) text: works in every language
+    left: (() => { const c = window.keepfallUi.castle; return c && c.phase === 'preparation' ? Math.max(0, Math.round(c.prepSeconds - c.elapsedSeconds)) : null; })(), done: !!localStorage.getItem('keepfall_tutorial_done') });
 })()`);
 
+const FAST = !!process.env.FAST; // x20 from the first step to the end (FAST=1): the whole tutorial at the fastest room speed
 const REAL = !!process.env.REALTIME; // real time (x1) from the first click to the end: no speed-up; hints and the first minutes of the war are watched afterwards
-const seen = new Set(); let n = 0, sped = false, last = '', lastLog = 0, completed = false;
+const seen = new Set(); let n = 0, sped = false, last = '', lastLog = 0, completed = false, lastCountdown = false;
 const stateLine = () => js("(() => { const c = window.keepfallUi.castle; if (!c) return null; return JSON.stringify({ phase: c.phase, t: Math.round(c.elapsedSeconds), war: Math.round(Math.max(0, c.elapsedSeconds - c.prepSeconds)), soldiers: c.soldiers, arming: c.units.reduce((n, u) => n + u.arming, 0), weapons: c.units.reduce((n, u) => n + u.weapons, 0), queued: c.queue.reduce((n, o) => n + o.remaining, 0), armies: c.war.armies.length, incoming: c.war.incoming.length, food: Math.round(c.resources.food), foodNet: Math.round((c.rates.foodIn - c.rates.foodOut) * 10) / 10, starving: c.starving, eliminated: c.eliminated, reports: c.scouting.reports.length, speed: c.speed }); })()");
 const hintsSeen = new Set();
 const watchHints = async () => { const raw = await js("JSON.stringify([...document.querySelectorAll('.notes .ribbon, .notes > *')].map((n) => n.textContent.trim()))"); for (const h of JSON.parse(raw ?? '[]')) if (!hintsSeen.has(h)) { hintsSeen.add(h); console.log('   ribbon:', h.slice(0, 150)); } };
 const t0 = Date.now();
+if (FAST) console.log('   speed x20 (whole run):', await js('(async () => JSON.stringify(await window.keepfallNet.setSpeed(20)))()'));
 while (Date.now() - t0 < (REAL ? 1_500_000 : 420_000)) {
   if (REAL && Date.now() - lastLog > 30_000) { lastLog = Date.now(); console.log('   [state]', await stateLine()); }
   if (REAL) await watchHints();
   const raw = await read();
   if (!raw) { console.log('tutorial element gone'); completed = true; break; }
   const st = JSON.parse(raw);
-  const countdown = /the war starts in|Savaşa/.test(st.text);
-  if (!st.hidden && st.text !== last && !(countdown && /the war starts in|Savaşa/.test(last))) {
+  // the countdown step: no frame and the preparation clock is running (any language)
+  const countdown = !st.frame && st.left !== null && /\d:\d\d/.test(st.text);
+  if (!st.hidden && st.text !== last && !(countdown && lastCountdown)) {
     last = st.text; n++;
     await sleep(700);
     const label = String(n).padStart(2, '0');
@@ -79,11 +84,12 @@ while (Date.now() - t0 < (REAL ? 1_500_000 : 420_000)) {
     if (!/the war starts in/.test(st.text)) console.log('   state:', await js("(() => { const c = window.keepfallUi.castle; return JSON.stringify({ soldiers: c.soldiers, pop: c.population, jobs: c.jobs.map((j) => j.job + ':' + j.count).join(' '), phase: c.phase, armies: c.war.armies.length + ':' + c.war.armies.map((a) => a.state + a.units.map((u) => u.count).join('/')).join(','), notes: [...document.querySelectorAll('.notes .ribbon, .notes > *')].map((n) => n.textContent.trim()).join(' | ').slice(0, 160), win: window.keepfallUi.windows.current && window.keepfallUi.windows.current.kind, queue: c.queue.length, units: c.units.filter((u) => u.weapons + u.soldiers + u.arming > 0).map((u) => [u.id, u.weapons, u.soldiers, u.arming]) }); })()"));
   }
   if (countdown) last = st.text;
-  if (/Nice work|Harika/.test(st.text)) { completed = true; if (!REAL) break; }
+  lastCountdown = countdown;
+  if (st.done) { completed = true; if (!REAL) break; }
   // waiting for the war: speed the match up (development server) and drop back to x1 when about 45 s are left, so the attack step is played in real time
-  const left = REAL ? null : /the war starts in (\d+):(\d+)/.exec(st.text);
-  if (left && !sped && Number(left[1]) * 60 + Number(left[2]) > 60) { sped = true; await js('window.keepfallNet.setSpeed(20); 1'); }
-  if (!REAL && sped && (!left || Number(left[1]) * 60 + Number(left[2]) <= 60)) { await js('window.keepfallNet.setSpeed(1); 1'); sped = false; }
+  const left = REAL || FAST || !countdown ? null : st.left;
+  if (left !== null && !sped && left > 60) { sped = true; console.log('   speed x20:', await js('(async () => JSON.stringify(await window.keepfallNet.setSpeed(20)))()')); }
+  if (!REAL && !FAST && sped && (left === null || left <= 60)) { console.log('   speed x1:', await js('(async () => JSON.stringify(await window.keepfallNet.setSpeed(1)))()')); sped = false; }
   if (st.frame) await click(st.frame.x, st.frame.y);
   if (/First press|Önce/.test(st.text)) { for (let k = 0; k < 14; k++) { await sleep(150); const r2 = await read(); if (!r2) { console.log('   (gone)'); break; } const q = JSON.parse(r2); console.log('   dbg:', await js("(() => { const b = document.querySelector('.win [data-act=all]'); const r = b && b.getBoundingClientRect(); const f = document.querySelector('.tut-frame').getBoundingClientRect(); return JSON.stringify({ disabled: b && b.disabled, btn: r && [Math.round(r.x + r.width / 2), Math.round(r.y + r.height / 2)], frame: [Math.round(f.x + f.width / 2), Math.round(f.y + f.height / 2)], home: [...document.querySelectorAll('.win [data-f=home]')].map((e) => e.textContent) }); })()"), await js("JSON.stringify([...document.querySelectorAll('.win [data-count]')].map((i) => i.value))")); if (q.text !== st.text) { console.log('   next:', q.text, q.frame ? '(frame)' : '(no frame)'); if (q.frame) { await click(q.frame.x, q.frame.y); console.log('   clicked it'); } break; } } }
   await sleep(900);

@@ -40,6 +40,7 @@ Kural kaynağı yine `CLAUDE.md`; ayrıntılı teknik plan `docs/sonraki-plan.md
 - Krediler (`ui/settings.ts`) yenilendi: Gemini cümlesi kalktı; Tiny Swords, yazı tipleri (OFL), sesler (Kenney + OpenGameArt CC0 — `docs/ses-lisanslari.md`'ye göre, Pixabay yok), LDNOOBW (CC BY 4.0), çeviriler AI destekli, Red Lion Games. Lisans metinleri `client/public/licenses/` (her derlemeye kopyalanır).
 - Küfür filtresi: `docs/kufur-filtresi.md`.
 - Yerleşim: `node tools/lang-audit.mjs` → `docs/lang-audit.md` (`ui/i18n-fit.css`). Kalan "cut" kayıtları dikey kaydırmalı pencerelerin taşan içeriğidir (İngilizce tabanda da var), yatay kırpılma değil.
+- Rehber denetimi dilden bağımsız: `tools/tutorial-check.mjs` geri sayımı oyun durumundan okur; hız için sunucu `Keepfall__AllowSpeedControl=true` ile açılmalı (bin'den çalışınca appsettings.Development.json okunmaz). en, tr, zh-CN, ru rehberi baştan sona geçti (bekleme x20, eylemler x1). `FAST=1` (tamamı x20) rehberi bitiremez: tıklayıcı yetişemez, hazırlık 5. adımda biter ve kale düşer; hata değil.
 - Açık: native gözden geçirme (özellikle uk, ja, ko, zh); eski Gemini/Kenney uzun kredi anahtarları sözlüklerde duruyor (zararsız, temizlenebilir).
 
 ## 0. Çalışma şekli (değişmeyecek kurallar)
