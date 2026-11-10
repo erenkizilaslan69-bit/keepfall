@@ -43,11 +43,15 @@ rmSync(join(pkg, 'resources', 'default_app.asar'), { force: true });
 for (const f of readdirSync(join(pkg, 'locales'))) if (!/^(en-US|tr)\.pak$/.test(f)) rmSync(join(pkg, 'locales', f));
 const app = join(pkg, 'resources', 'app');
 mkdirSync(app, { recursive: true });
-for (const f of ['main.js', 'preload.js']) cpSync(join(shellSrc, f), join(app, f));
+for (const f of ['main.js', 'preload.js', 'mp.js', 'tunnel.js']) cpSync(join(shellSrc, f), join(app, f));
 writeFileSync(join(app, 'package.json'), JSON.stringify({ name: 'keepfall', version: '0.1.0', main: 'main.js' }, null, 2));
 // the Steam SDK binding is optional: it is shipped only when it is installed (and used only when steam.json holds an app id)
 if (existsSync(join(shellSrc, 'node_modules', 'steamworks.js'))) cpSync(join(shellSrc, 'node_modules', 'steamworks.js'), join(app, 'node_modules', 'steamworks.js'), { recursive: true });
 writeFileSync(join(pkg, 'steam.json'), JSON.stringify({ appId: 0, note: 'Put the Steamworks app id here (a number above 0) to switch Steam on; 0 = off.' }, null, 2) + '\n');
+// The build's name: host and guest of a friend-hosted game must match (the shell and the server's /version tell it).
+let commit = 'nogit';
+try { commit = execSync('git rev-parse --short HEAD', { cwd: root }).toString().trim(); } catch { /* not a checkout */ }
+writeFileSync(join(pkg, 'build.json'), JSON.stringify({ version: `0.1.0+${commit}` }, null, 2) + '\n');
 
 // 3. the game server, self-contained, with its rules and the client
 const server = join(pkg, 'server');
@@ -67,5 +71,14 @@ cpSync(dist, join(server, 'client', 'dist'), { recursive: true });
 const licenses = join(root, 'client', 'licenses');
 if (existsSync(licenses)) cpSync(licenses, join(pkg, 'licenses'), { recursive: true });
 writeFileSync(join(pkg, 'README-demo.txt'), 'Keepfall demo (offline). Start Keepfall.exe. Nothing is sent over the internet; progress is stored on this computer.\n');
+
+// Valve's test app id (480, Spacewar) is for development on one machine only: a package that carries it is refused.
+const carries480 = (dir) => readdirSync(dir, { withFileTypes: true }).some((e) => {
+  const f = join(dir, e.name);
+  if (e.isDirectory()) return e.name !== 'node_modules' && e.name !== 'server' && e.name !== 'locales' && carries480(f);
+  if (e.name === 'steam_appid.txt') return true;
+  return e.name === 'steam.json' && Number(JSON.parse(readFileSync(f, 'utf8')).appId) === 480;
+});
+if (carries480(pkg)) { console.error('The package holds the test app id 480 (steam.json / steam_appid.txt): remove it.'); process.exit(1); }
 
 console.log(`\n${pkg}\n  total ${mb(size(pkg))}  (server ${mb(size(server))}, client ${mb(size(join(server, 'client')))}, shell+Electron ${mb(size(pkg) - size(server))})`);
