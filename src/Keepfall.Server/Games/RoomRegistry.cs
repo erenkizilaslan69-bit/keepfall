@@ -20,6 +20,15 @@ public sealed class KeepfallOptions
     public double StatsLogSeconds { get; set; } = 60;
     /// <summary>The director (cameraman) key: empty = no director. Never on on Render or in the Steam build (see <see cref="Director"/>).</summary>
     public string DirectorKey { get; set; } = "";
+    /// <summary>
+    /// The friend-hosted game (the Steam build's desktop shell): the local port that friends' connections arrive on (through the shell's LAN door or its Steam
+    /// tunnel). 0 = not a hosted game. A connection on this port is a guest: it may join rooms but not make them, and never ends anybody's match.
+    /// </summary>
+    public int GuestPort { get; set; }
+    /// <summary>Seconds without a connection after which a computer player plays a human's castle in a running match; 0 = never (the web server).</summary>
+    public double TakeoverSeconds { get; set; }
+    /// <summary>The build's name, told by /version: host and guest of a friend-hosted game must have the same one.</summary>
+    public string Build { get; set; } = "";
 }
 
 /// <summary>A room plus the lock that guards it. Every read or write of <see cref="Room"/> happens under <see cref="Lock"/>.</summary>
@@ -58,6 +67,7 @@ public sealed class RoomRegistry(GameRules rules, Microsoft.Extensions.Options.I
             MinPlayers = o.AllowSoloStart ? 1 : 2,
             AllowSpeedControl = o.AllowSpeedControl,
             LobbyGrace = TimeSpan.FromMinutes(o.LobbyGraceMinutes),
+            TakeoverGrace = o.TakeoverSeconds > 0 ? TimeSpan.FromSeconds(o.TakeoverSeconds) : null,
         };
         while (true)
         {

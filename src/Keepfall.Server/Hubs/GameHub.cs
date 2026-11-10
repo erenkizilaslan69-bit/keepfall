@@ -17,8 +17,16 @@ namespace Keepfall.Server.Hubs;
 ///
 /// Groups: "oda:{code}" gets the public room state; "oda:{code}:o{seat}" gets that seat's castle.
 /// </summary>
-public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules, Keepfall.Core.Challenges.ChallengeCatalog challenges, Director director, ILogger<GameHub> logger) : Hub
+public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules, Keepfall.Core.Challenges.ChallengeCatalog challenges, Director director,
+    Microsoft.Extensions.Options.IOptions<KeepfallOptions> options, ILogger<GameHub> logger) : Hub
 {
+    /// <summary>The friend-hosted game: this server runs on the host's own computer (see <see cref="KeepfallOptions.GuestPort"/>).</summary>
+    private bool Hosted => options.Value.GuestPort > 0;
+    /// <summary>The caller came in through the guests' door (a friend over LAN or Steam), not from the host's own window.</summary>
+    private bool IsGuest => IsGuestConnection(Context.GetHttpContext(), options.Value);
+    public static bool IsGuestConnection(HttpContext? http, KeepfallOptions o) =>
+        o.GuestPort > 0 && (http is null || http.Connection.LocalPort == o.GuestPort || http.Connection.RemoteIpAddress is not { } ip || !System.Net.IPAddress.IsLoopback(ip));
+
     private const string CodeKey = "code";
     private const string TokenKey = "token";
 
@@ -41,6 +49,7 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     public async Task<JoinView> CreateRoom(string? name)
     {
         if (Context.Items.ContainsKey(CodeKey)) return JoinFail("Bu bağlantı zaten bir odada.");
+        if (IsGuest) return JoinFail("Bu oyunda odayı yalnız ev sahibi kurabilir.");
         var session = registry.Create();
         if (session is null) return JoinFail("Sunucu dolu, birazdan tekrar dene.");
         JoinResult result;
@@ -121,7 +130,7 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     /// <summary>Rooms the director can watch (null: the director is off or the key is wrong). See <see cref="Director"/>.</summary>
     public async Task<List<DirectorRoomView>?> DirectorRooms(string? key)
     {
-        if (!director.Accepts(key)) { await Task.Delay(1000); return null; } // (a wrong key costs a second: no guessing)
+        if (Hosted || !director.Accepts(key)) { await Task.Delay(1000); return null; } // (a wrong key costs a second: no guessing)
         var list = new List<DirectorRoomView>();
         foreach (var s in registry.Sessions)
             lock (s.Lock)
@@ -136,7 +145,7 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     /// </summary>
     public async Task<JoinView> DirectorWatch(string? key, string? code)
     {
-        if (!director.Accepts(key)) { await Task.Delay(1000); return JoinFail("Kapalı."); }
+        if (Hosted || !director.Accepts(key)) { await Task.Delay(1000); return JoinFail("Kapalı."); }
         if (Context.Items.ContainsKey(CodeKey) || Context.Items.ContainsKey(DirectorItem)) return JoinFail("Bu bağlantı zaten bir odada.");
         if (registry.Find(code) is not { } session) return JoinFail("Oda bulunamadı.");
         RoomView room;
@@ -168,10 +177,19 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
         if (Bound() is not { } bound) return NotJoined;
         var code = bound.Session.Room.Code;
         int seat;
+        bool hostQuit = false;
         lock (bound.Session.Lock)
         {
             seat = bound.Session.Room.Find(bound.Token)?.Seat ?? 0;
-            bound.Session.Room.Leave(bound.Token, DateTime.UtcNow);
+            // The friend-hosted game: the host walks out of a running match that friends are still in. Their game lives on this computer, so it ends here
+            // for everybody, with the end screen and the summary (rather than leaving them in a match whose machine may be switched off any moment).
+            hostQuit = Hosted && !IsGuest && HostedMatch.HasGuests(bound.Session.Room, seat);
+            if (!hostQuit) bound.Session.Room.Leave(bound.Token, DateTime.UtcNow);
+        }
+        if (hostQuit)
+        {
+            await HostedMatch.End(Clients, bound.Session);
+            lock (bound.Session.Lock) bound.Session.Room.Leave(bound.Token, DateTime.UtcNow);
         }
         Context.Items.Remove(CodeKey);
         Context.Items.Remove(TokenKey);

@@ -22,6 +22,13 @@ public sealed record RoomOptions
     public TimeSpan LobbyGrace { get; init; } = TimeSpan.FromMinutes(2);
     /// <summary>A host who drops (e.g. refreshes the page) stays host this long before it passes on.</summary>
     public TimeSpan HostGrace { get; init; } = TimeSpan.FromSeconds(30);
+    /// <summary>
+    /// A player whose connection is gone this long in a running match is played by a computer player until they come back (their token still
+    /// takes the seat back). Null: never (the hosted web server: a castle just stands). The friend-hosted (Steam/LAN) game sets 60 s.
+    /// </summary>
+    public TimeSpan? TakeoverGrace { get; init; }
+    /// <summary>How the stand-in plays.</summary>
+    public BotDifficulty TakeoverLevel { get; init; } = BotDifficulty.Medium;
     /// <summary>Dev-only ×N game speed, settable by the host.</summary>
     public bool AllowSpeedControl { get; init; }
     public double? PrepSeconds { get; init; }
@@ -61,6 +68,11 @@ public sealed class RoomPlayer
     /// <summary>The bot's difficulty; null for a human.</summary>
     public BotDifficulty? Bot { get; }
     public bool IsBot => Bot is not null;
+    /// <summary>
+    /// A human whose connection has been gone too long: a computer player of this level plays the castle (through the same views and commands) until
+    /// the human's token joins again. The seat stays the human's: not a bot in the lists, results and progress are theirs.
+    /// </summary>
+    public BotDifficulty? Deputy { get; internal set; }
 
     /// <summary>Public number 1–4; also decides the colour.</summary>
     public int Seat { get; }
@@ -248,6 +260,7 @@ public sealed class Room
         {
             existing.Connections++;
             existing.DisconnectedAtUtc = null;
+            existing.Deputy = null; // back at the seat: the stand-in steps aside at once
             if (Host is null) HostSeat = existing.Seat;
             return new JoinResult(existing, true, null);
         }
@@ -301,6 +314,13 @@ public sealed class Room
         bool changed = false;
         if (Phase == RoomPhase.Lobby)
             changed = _players.RemoveAll(p => !p.IsBot && !p.Connected && nowUtc - p.DisconnectedAtUtc > Options.LobbyGrace) > 0;
+        if (Options.TakeoverGrace is { } grace && Phase is RoomPhase.Preparation or RoomPhase.War)
+            foreach (var p in _players)
+                if (!p.IsBot && p.Deputy is null && !p.Connected && nowUtc - p.DisconnectedAtUtc > grace && !IsEliminated(p))
+                {
+                    p.Deputy = Options.TakeoverLevel;
+                    changed = true;
+                }
         if (Host is null || (!Host.Connected && nowUtc - Host.DisconnectedAtUtc > Options.HostGrace))
         {
             int before = HostSeat;
@@ -579,6 +599,18 @@ public sealed class Room
         PlayOut(dt, beforeTick);
         Phase = RoomPhase.Ended;
         return CommandResult.Success;
+    }
+
+    /// <summary>
+    /// The machine that runs the match is going away (the friend-hosted game: the host quits): the match ends where it stands, ranked as if the time had
+    /// run out, so everybody still gets the end screen and the summary. False if no match was running.
+    /// </summary>
+    public bool Abort()
+    {
+        if (Phase is not (RoomPhase.Preparation or RoomPhase.War) || Game is null) return false;
+        Game.EndNow();
+        Phase = RoomPhase.Ended;
+        return true;
     }
 
     private void PlayOut(double dt, Action<double>? beforeTick)

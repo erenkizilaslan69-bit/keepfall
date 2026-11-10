@@ -73,7 +73,17 @@ app.MapGet("/health", () => "ok");
 // For an uptime pinger (cron-job.org, UptimeRobot): a free host sleeps after ~15 minutes without a request, and a sleeping server loses its rooms.
 app.MapGet("/ping", () => "pong");
 // What the running server is (for checking that a deploy went out): the conversation version and the build it was made from (RENDER_GIT_COMMIT on Render).
-app.MapGet("/version", () => Results.Json(new { protocol = Keepfall.Server.Hubs.GameHub.Protocol, commit = Environment.GetEnvironmentVariable("RENDER_GIT_COMMIT") ?? "local" }));
+app.MapGet("/version", () => Results.Json(new { protocol = Keepfall.Server.Hubs.GameHub.Protocol, commit = Environment.GetEnvironmentVariable("RENDER_GIT_COMMIT") ?? "local", build = options.Build, hosted = options.GuestPort > 0 }));
+// The friend-hosted game (the desktop shell): the host is quitting. Every running match that friends are in ends where it stands and they get the end screen
+// and the summary; the shell calls this from its own machine just before it stops the server. Guests (and every other server) get 404.
+app.MapPost("/api/host/stop", async (HttpContext http, RoomRegistry registry, Microsoft.AspNetCore.SignalR.IHubContext<GameHub> hub) =>
+{
+    if (options.GuestPort <= 0 || GameHub.IsGuestConnection(http, options)) return Results.NotFound();
+    int ended = 0;
+    foreach (var session in registry.Sessions)
+        if (await HostedMatch.End(hub.Clients, session)) ended++;
+    return Results.Json(new { ended });
+});
 // The numbers of the "how to play" page: public rules only, read from the balance config (so the page follows the config).
 var guide = Keepfall.Views.GuideMapper.Of(rules);
 app.MapGet("/api/guide", () => Results.Json(guide));

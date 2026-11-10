@@ -173,6 +173,12 @@ public sealed partial class GameState
     private double PhaseEndsAt => Phase == MatchPhase.Preparation ? PrepSeconds : PrepSeconds + WarSeconds + _extraWarSeconds;
     private double _extraWarSeconds;
 
+    /// <summary>Ends the match where it stands (ranked like a match whose time ran out). Nothing happens if it is over already.</summary>
+    public void EndNow()
+    {
+        if (Phase != MatchPhase.Ended) EndMatch(byElimination: false);
+    }
+
     /// <summary>The war lasts at least <paramref name="seconds"/> more (the match is not cut short; the famine keeps its place in the planned war).</summary>
     public void EnsureWarRemaining(double seconds)
     {

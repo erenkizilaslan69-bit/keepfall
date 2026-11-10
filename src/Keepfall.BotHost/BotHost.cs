@@ -37,9 +37,10 @@ public sealed class BotHost(GameRules rules, int seed)
         }
         foreach (var player in room.Players)
         {
-            if (player.Bot is not { } level) continue;
-            // Nobody reads a bot's notifications: it works from its pictures.
-            room.TakeNotifications(player);
+            // (a human who has been gone too long is played by a stand-in until they return: Room.Maintain sets RoomPlayer.Deputy)
+            if ((player.Bot ?? player.Deputy) is not { } level) continue;
+            // Nobody reads a bot's notifications: it works from its pictures. (A human's are kept for when they are back.)
+            if (player.IsBot) room.TakeNotifications(player);
             if (room.IsEliminated(player)) continue;
             if (!_bots.TryGetValue(player.Seat, out var bot))
                 _bots[player.Seat] = bot = new Bot(rules, level, player.Seat, MixSeed(seed, player.Seat), PassiveSeats.Contains(player.Seat));
