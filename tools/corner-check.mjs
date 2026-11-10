@@ -3,7 +3,9 @@
 // then stops for four seconds, then goes on) and (2) a rival's army (only position and velocity, as the server tells it) walks a real road of the map that
 // has a bend, with the same stop; then (3) every other kind of walker (our scout and envoy, a rival's scout and envoy, a rival's army of catapults and cavalry) and
 // the room between the drawn soldiers of a column (nobody may stand closer than 26 px to a neighbour). Every frame the drawn leader's distance from the road is
-// measured; the check fails if it is ever over 0.3 tiles.
+// measured; the check fails if it is ever over 0.3 tiles. The soldiers themselves may spill onto the grass beside the road (their lanes are fixed), but every
+// frame: no soldier changes its row or lane (nor does a row's order across get mixed up), no soldier jumps (moves faster than 25 tiles a second), and nobody
+// stands on (or beyond) a wall, a tower, a tree or a building while its column's line is free there (the made-up route of our own army crosses walls: where it does, nobody is judged).
 // Usage: node tools/corner-check.mjs [http://localhost:5174/]   (CORNER_LIMIT=0.3 to change the limit)
 import { spawn } from 'node:child_process';
 import { mkdtempSync } from 'node:fs';
@@ -52,15 +54,24 @@ const result = await run(`(async () => {
   const base = { targetSeat: 1, returning: false, units: [{ unitId: 'kilicli', name: 'k', count: 6 }], visionRadius: 8, fighting: false, missionKind: null, quarter: null, siteId: null };
   const walk = async (name, route, speed, mk, roads, stopFrom = 4) => {
     const cum = cumul(route), len = cum[cum.length - 1];
-    let travelled = 0, worst = 0, worstAt = 0, frames = 0;
+    let travelled = 0, worst = 0, worstAt = 0, frames = 0; globalThis.__swapAt = globalThis.__jumpAt = globalThis.__blockedAt = globalThis.__sepAt = undefined;
     const t0 = performance.now();
-    let raf = 0, minSep = 1e9, off = 0, checked = 0; const sample = () => { const tr = s.movers.debugTracks().find((x) => x.key.includes(name)); if (tr) { const d = offRoads(tr.shown, roads); frames++; if (d > worst) { worst = d; worstAt = (performance.now() - t0) / 1000; }
+    let raf = 0, minSep = 1e9, swaps = 0, jumps = 0, blockedN = 0, checked = 0; const placeOf = new Map(); const sample = () => { const tr = s.movers.debugTracks().find((x) => x.key.includes(name)); if (tr) { const d = offRoads(tr.shown, roads); frames++; if (d > worst) { worst = d; worstAt = (performance.now() - t0) / 1000; }
       const nearBend = route.slice(1, -1).some((v) => Math.hypot(tr.shown.x - v.x, tr.shown.y - v.y) < 4.6); // a column bunches up round a sharp corner: only the straight stretches are measured
       const spAll = s.movers.debugSprites().filter((x) => x.active && (x.x !== 0 || x.y !== 0) && x.getData('track') === tr.key);
-      const atEnds = [route[0], route[route.length - 1]].some((v) => Math.hypot(tr.shown.x - v.x, tr.shown.y - v.y) < 7); // (a column is up to 6 tiles long, and the road's two ends are crossings with other roads, or the gate)
-      if (!atEnds && (name.startsWith('seen:cc2') || name.startsWith('seen:cc5'))) for (const q of spAll) { // nobody off the road's lane (the crossings, where four abreast is allowed, are not counted)
-        const tp = toTile(q.x, q.y); const ds = roads.map((r) => Math.min(...r.slice(1).map((b, k) => dist(tp, r[k], b))) * L.TILE); checked++;
-        if (ds.filter((d) => d < 70).length < 2 && Math.min(...ds) > 48) { off++; globalThis.__offAt = Math.round(Math.min(...ds)) + 'px at ' + ((performance.now() - t0) / 1000).toFixed(1) + 's idx ' + spAll.indexOf(q) + ' of ' + spAll.length + ' ' + tr.shown.x.toFixed(1) + ',' + tr.shown.y.toFixed(1); } }
+      const slots = s.movers.debugSlots().filter((x) => x.key === tr.key), nowMs = performance.now();
+      const rows = new Map();
+      for (const q of slots) {
+        const sprite = s.movers.debugSprites().filter((x) => x.getData('track') === tr.key)[q.i];
+        const was = placeOf.get(sprite);
+        if (was && (was.row !== q.row || was.lane !== q.lane)) { swaps++; globalThis.__swapAt = q.i + ' ' + was.row + '/' + was.lane + ' -> ' + q.row + '/' + q.lane; }
+        if (was && was.x !== 0 && nowMs > was.ms) { const d = Math.hypot(q.x - was.x, q.y - was.y), v = d / L.TILE / ((nowMs - was.ms) / 1000); if (d > 30 && v > 25) { jumps++; globalThis.__jumpAt = Math.round(d) + 'px in ' + Math.round(nowMs - was.ms) + 'ms, soldier ' + q.i + ' at ' + ((nowMs - t0) / 1000).toFixed(1) + 's'; } }
+        placeOf.set(sprite, { row: q.row, lane: q.lane, x: q.x, y: q.y, ms: nowMs });
+        if (s.blockedAt({ x: q.x, y: q.y }, q.line) && ![[0, 0], [40, 0], [-40, 0], [0, 40], [0, -40]].some(([dx, dy]) => s.blockedAt({ x: q.line.x + dx, y: q.line.y + dy }, { x: q.line.x + dx, y: q.line.y + dy }))) { /* on an obstacle while its column's line beside it is free: it should have stepped in */ blockedN++; globalThis.__blockedAt = 'soldier ' + q.i + ' at ' + Math.round(q.x) + ',' + Math.round(q.y) + ' ' + ((nowMs - t0) / 1000).toFixed(1) + 's'; }
+        (rows.get(q.row) ?? rows.set(q.row, []).get(q.row)).push(q);
+      }
+      for (const row of rows.values()) { row.sort((a, b) => a.lane - b.lane); for (let k = 1; k < row.length; k++) if (row[k].side < row[k - 1].side - 2) { swaps++; globalThis.__swapAt = 'row ' + row[k].row + ' lanes out of order'; } }
+      checked++;
       const sp = nearBend ? [] : s.movers.debugSprites().filter((x) => x.active && (x.x !== 0 || x.y !== 0) && x.getData('track') === tr.key); for (let i = 0; i < sp.length; i++) for (let j = i + 1; j < sp.length; j++) { const dd = Math.hypot(sp[i].x - sp[j].x, sp[i].y - sp[j].y); if (dd < minSep) { minSep = dd; globalThis.__sepAt = ((performance.now() - t0) / 1000).toFixed(1) + 's ' + i + '-' + j + ' ' + sp[i].texture.key + '/' + sp[j].texture.key; } } } raf = requestAnimationFrame(sample); }; raf = requestAnimationFrame(sample);
     let sec = 0;
     while (travelled < len - 0.5) {
@@ -72,7 +83,7 @@ const result = await run(`(async () => {
     }
     cancelAnimationFrame(raf);
     s.movers.sync({ ...s.state, own: [], seen: [] });
-    return { name, worst: Number(worst.toFixed(3)), worstAtSec: Number(worstAt.toFixed(1)), frames, minSep: minSep > 1e8 ? null : Math.round(minSep), sepAt: globalThis.__sepAt, offRoad: checked ? off : undefined, offAt: globalThis.__offAt };
+    return { name, worst: Number(worst.toFixed(3)), worstAtSec: Number(worstAt.toFixed(1)), frames, minSep: minSep > 1e8 ? null : Math.round(minSep), sepAt: globalThis.__sepAt, laneSwaps: swaps, swapAt: globalThis.__swapAt, jumps, jumpAt: globalThis.__jumpAt, inObstacle: blockedN, blockedAt: globalThis.__blockedAt, checked };
   };
   const out = [];
   // 1. our army on a route with sharp corners (the server gives the whole route)
@@ -106,6 +117,21 @@ const result = await run(`(async () => {
       }
     }
   }
+  // a 40-man rival army on the road through the forest (narrow, trees beside it): three abreast, closing up, nobody in a tree
+  {
+    const forest = s.layout.features.find((f) => f.kind === 'forest');
+    const roadsOf = s.layout.roads.map((r) => r.points);
+    const inF = (p) => forest && Math.hypot(p.x - forest.center.x, p.y - forest.center.y) < forest.radius;
+    const path = roadsOf.map((p) => ({ p, n: p.filter(inF).length })).sort((a, b) => b.n - a.n)[0]?.p;
+    if (path && path.length > 1) {
+      const units = [['kalkanli', 10], ['kilicli', 12], ['okcu', 10], ['mancinik', 4], ['suvari', 4]].map(([unitId, count]) => ({ unitId, name: unitId, count }));
+      out.push(await walk('seen:cc10', path, 2.5, (pos, travelled, r, speed) => {
+        const a = along(r, cumul(r), travelled);
+        return { ...s.state, own: [], seen: [{ id: 'cc10', kind: 'army', ownerColor: 'red', units, position: pos.p, velocity: { x: a.dir.x * speed, y: a.dir.y * speed }, heading: a.dir }] };
+      }, roadsOf, 3));
+      out[out.length - 1].minSep = null; // (40 men: the catapults and horses of a big column brush shoulders on a forest path; only order, jumps and trees are judged)
+    }
+  }
   // our own scout and envoy on the sharp route, our own army of catapults and cavalry
   for (const [name, kind, units] of [['own:cc6', 'scout', []], ['own:cc7', 'envoy', []], ['own:cc8', 'army', [{ unitId: 'suvari', name: 's', count: 2 }, { unitId: 'kalkanli', name: 'k', count: 3 }, { unitId: 'mancinik', name: 'm', count: 3 }, { unitId: 'okcu', name: 'o', count: 3 }]]]) {
     out.push(await walk(name, route, 2.5, (pos, travelled, r, speed) => {
@@ -115,10 +141,10 @@ const result = await run(`(async () => {
   }
   // 4. a big rival column on a road that runs 15 px outside a castle's wall: nobody may stand on the wall (rival regions' wall rings)
   {
-    const ri = s.layout.regions.findIndex((r) => r.seat !== s.layout.regions.find((q) => q.seat === window.keepfallUi.mySeat)?.seat);
+    const ri = s.layout.regions.findIndex((r) => r.seat !== null && r.color && r.seat !== window.keepfallUi.mySeat); // (a castle that is there: an empty corner has no wall)
     const reg = s.layout.regions[ri], w = s.movers.walls[ri];
     const west = reg.corner === 'northEast' || reg.corner === 'southEast'; // the gate is in the west wall of these (it stands 40 px in)
-    const x = reg.origin.x + (west ? 44 - 15 : 4 - 15) / 64, y0 = reg.origin.y + 3;
+    const x = reg.origin.x + (west ? 44 - 15 : 4 - 15) / L.TILE, y0 = reg.origin.y + 3;
     const units = [{ unitId: 'kilicli', name: 'k', count: 16 }, { unitId: 'okcu', name: 'o', count: 8 }, { unitId: 'mancinik', name: 'm', count: 4 }, { unitId: 'suvari', name: 's', count: 4 }];
     let inside = 0, total = 0, rows = 0;
     s.movers.setRoads([[{ x, y: y0 - 8 }, { x, y: y0 + 16 }]]); // a road that runs along the wall (the real ones lead through the gate, where the column rightly goes in)
@@ -140,9 +166,9 @@ const result = await run(`(async () => {
 let ok = true;
 try {
   for (const r of JSON.parse(result)) {
-    const pass = r.worst < LIMIT && (r.minSep === null || r.minSep >= 26) && !r.insideWall && !r.offRoad;
+    const pass = r.worst < LIMIT && (r.minSep === null || r.minSep >= 26) && !r.insideWall && !r.laneSwaps && !r.jumps && !r.inObstacle;
     ok &&= pass;
-    console.log(`${pass ? 'ok  ' : 'FAIL'} ${r.name}: the column was at most ${r.worst} tiles from its road (limit ${LIMIT}), at ${r.worstAtSec} s, ${r.frames} frames${r.minSep !== null ? `, closest two soldiers ${r.minSep} px (${r.sepAt})` : ''}${r.bendDegrees ? `, bend ${r.bendDegrees}°` : ''}${r.offRoad !== undefined ? `, ${r.offRoad} soldiers off the road's lane (${r.offAt})` : ''}${r.insideWall !== undefined ? `, ${r.insideWall} of ${r.soldiers} soldiers on the wall` : ''}`);
+    console.log(`${pass ? 'ok  ' : 'FAIL'} ${r.name}: the column was at most ${r.worst} tiles from its road (limit ${LIMIT}), at ${r.worstAtSec} s, ${r.frames} frames${r.minSep !== null ? `, closest two soldiers ${r.minSep} px (${r.sepAt})` : ''}${r.bendDegrees ? `, bend ${r.bendDegrees}°` : ''}${r.laneSwaps !== undefined ? `, ${r.laneSwaps} row/lane changes${r.swapAt ? ` (${r.swapAt})` : ''}, ${r.jumps} jumps${r.jumpAt ? ` (${r.jumpAt})` : ''}, ${r.inObstacle} in a wall/tree/building${r.blockedAt ? ` (${r.blockedAt})` : ''}` : ''}${r.insideWall !== undefined ? `, ${r.insideWall} of ${r.soldiers} soldiers on the wall` : ''}`);
   }
 } catch { console.log('FAIL no result:', String(result).slice(0, 300)); ok = false; }
 if (errors.length) { console.log('page errors:', errors.slice(0, 3).join(' | ')); ok = false; }

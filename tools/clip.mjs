@@ -2,7 +2,7 @@
 // runs a setup script (JS, an expression that may return a promise; it may start its own timers), then takes pictures of the page for a few seconds and
 // makes them an mp4 with ffmpeg (winget install Gyan.FFmpeg).
 // Usage: node tools/clip.mjs <out.mp4> <setup.js> [http://localhost:5174/]
-// Env: SECONDS=6 FPS=8 SIZE=1280,720 BOTS=easy  WARMUP=800 (ms between the setup and the first picture)  QUERY=?fx=0
+// Env: SECONDS=6 FPS=8 SIZE=1280,720 BOTS=easy  GPU=1 (the real graphics card: much faster pictures than the software renderer)  WARMUP=800 (ms between the setup and the first picture)  QUERY=?fx=0
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -18,7 +18,7 @@ const port = 9333 + Math.floor(Math.random() * 500);
 const dir = mkdtempSync(join(tmpdir(), 'kf-clip-'));
 const frames = join(dir, 'frames'); mkdirSync(frames);
 const chrome = spawn('C:/Program Files/Google/Chrome/Application/chrome.exe', ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${join(dir, 'profile')}`, `--window-size=${W},${H}`,
-  '--no-first-run', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', 'about:blank'], { stdio: 'ignore' });
+  '--no-first-run', ...(process.env.GPU ? ['--use-angle=d3d11', '--enable-gpu-rasterization'] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']), '--ignore-gpu-blocklist', 'about:blank'], { stdio: 'ignore' });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let targets;
 for (let i = 0; i < 40; i++) { try { targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); if (targets.some((t) => t.type === 'page')) break; } catch { /* not up */ } await sleep(500); }
