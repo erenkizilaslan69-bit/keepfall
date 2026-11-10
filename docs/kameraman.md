@@ -57,3 +57,8 @@ Bulgu: 1–2 askerlik yol çatışmaları boş kavşak gibi görünüyordu → e
 Performans (bu makine, 16 mantıksal çekirdek): sayfa ortalama 155 fps (en düşük 107; ekran yenileme hızına bağlı, 60 fps kaydın üstünde), Chrome %16,7, ffmpeg %11,5 (tüm çekirdeklerin payı; yaklaşık 4–5 çekirdek). Oyuncuların olduğu 5090 sunucusu aynı makinedeyse bu yük sunucu tick'ini etkilemez görünüyor (tick hafif), ama kayıt ayrı bilgisayardan da alınabilir.
 
 Açık: üç taraflı kuşatma iki denemede de olmadı (botlar nadiren yapar): puanı ve klip adı hazır, gerçek maçta görülünce bakılmalı. NVENC bu makinede sürücü sürümü yüzünden açılmıyor (x264 kullanılıyor).
+
+## Düzeltme turu (2026-11-10 akşam)
+Yakın çekim (tam sayı zoom, savaş kutusu yalnız savaş noktasına 4,5 karo yakın askerler; iki kademe arasında yakın olana hafif öncelik `CLOSER_BIAS` 1,35), dünya etiketleri gizli, gri yarı saydam duman, boşta orduları/kaleleri izleme. Dört botlu deneme (`20261110-1854`, `-1903`, `-1913`, `-1926`): 12–21 olay, hepsinde hayalet ordu/üç taraflı kuşatma dahil her olay türü en az bir kez görüldü; sayfa ~199 fps, Chrome ~%15, ffmpeg ~%8. Zoom 2 kapı savaşlarında ve çoğu yol çatışmasında tutuyor; çok yayılmış savaşlar (ormanda dağınık yol çatışması, `-1913`'teki üç taraflı kuşatma) zoom 1'de kalabiliyor.
+
+5090 bu sürümle yeniden yayımlandı ve anahtarla açıldı (anahtar repo dışında: `keepfall-dev-lan\director-key.txt`). Makinenin ağ adresi değişti: artık `http://192.168.1.170:5090/`.
