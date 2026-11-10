@@ -18,8 +18,18 @@ namespace Keepfall.Server.Hubs;
 /// Groups: "oda:{code}" gets the public room state; "oda:{code}:o{seat}" gets that seat's castle.
 /// </summary>
 public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules, Keepfall.Core.Challenges.ChallengeCatalog challenges, Director director,
-    Microsoft.Extensions.Options.IOptions<KeepfallOptions> options, ILogger<GameHub> logger) : Hub
+    Microsoft.Extensions.Options.IOptions<KeepfallOptions> options, GuestGate guests, ILogger<GameHub> logger) : Hub
 {
+    /// <summary>The words a player who was put out of the lobby gets (the page shows and translates them).</summary>
+    public const string KickedNote = "Ev sahibi seni odadan çıkardı.";
+
+    public override async Task OnConnectedAsync()
+    {
+        // The friend-hosted game: guests' lines are counted and one that takes no seat in time is closed (see GuestGate).
+        if (IsGuest && !guests.Opened(Context)) { Context.Abort(); return; }
+        await base.OnConnectedAsync();
+    }
+
     /// <summary>The friend-hosted game: this server runs on the host's own computer (see <see cref="KeepfallOptions.GuestPort"/>).</summary>
     private bool Hosted => options.Value.GuestPort > 0;
     /// <summary>The caller came in through the guests' door (a friend over LAN or Steam), not from the host's own window.</summary>
@@ -62,6 +72,16 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     public async Task<JoinView> JoinRoom(string? code, string? name, string? token, bool remembered)
     {
         if (Context.Items.ContainsKey(CodeKey)) return JoinFail("Bu bağlantı zaten bir odada.");
+        if (IsGuest)
+        {
+            if (!guests.MayGuess(Context.ConnectionId)) return JoinFail("Çok fazla deneme. Bir dakika bekle.");
+            if (registry.Find(code) is { } wanted)
+            {
+                if (guests.IsBanned(Context.ConnectionId, wanted.Room.Code)) return JoinFail(KickedNote);
+                if (!guests.RoomHasSpace(wanted.Room.Code)) return JoinFail("Oda dolu.");
+            }
+            else guests.Missed(Context.ConnectionId);
+        }
         var misses = Context.Items.TryGetValue("misses", out var m) && m is List<DateTime> list ? list : new List<DateTime>();
         misses.RemoveAll(t => DateTime.UtcNow - t > WrongCodeWindow);
         if (misses.Count >= MaxWrongCodes) return JoinFail("Çok fazla deneme. Bir dakika bekle.");
@@ -83,6 +103,7 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
         var code = session.Room.Code;
         Context.Items[CodeKey] = code;
         Context.Items[TokenKey] = player.Token;
+        if (IsGuest) guests.Bound(Context.ConnectionId, code, player.Token);
         await Groups.AddToGroupAsync(Context.ConnectionId, RoomGroup(code));
         await Groups.AddToGroupAsync(Context.ConnectionId, PlayerGroup(code, player.Seat));
 
@@ -112,6 +133,7 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        guests.Closed(Context.ConnectionId);
         if (Context.Items.TryGetValue(DirectorItem, out var watched) && watched is string watchedCode) director.Unwatch(watchedCode);
         if (Bound() is { } bound)
         {
@@ -193,13 +215,14 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
         }
         Context.Items.Remove(CodeKey);
         Context.Items.Remove(TokenKey);
+        guests.Unbound(Context.ConnectionId);
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, RoomGroup(code));
         if (seat > 0) await Groups.RemoveFromGroupAsync(Context.ConnectionId, PlayerGroup(code, seat));
         // Everybody has left a lobby or a finished match: the room is closed at once, so it does not hold one of the server's slots for the abandon time
         // (a room in a running match stays until it is abandoned, see TickLoop).
         bool empty;
         lock (bound.Session.Lock) empty = bound.Session.Room.Phase is RoomPhase.Lobby or RoomPhase.Ended && bound.Session.Room.Players.All(p => p.IsBot || !p.Connected);
-        if (empty) { registry.Remove(code); return new CommandResultView(true, null); }
+        if (empty) { registry.Remove(code); guests.RoomClosed(code); return new CommandResultView(true, null); }
         await PushRoom(bound.Session);
         return new CommandResultView(true, null);
     }
@@ -246,6 +269,30 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     public Task<CommandResultView> BackToLobby() => RoomCommand((room, token) => room.BackToLobby(token));
     public Task<CommandResultView> AddBot(BotDifficulty difficulty) => RoomCommand((room, token) => room.AddBot(token, difficulty));
     public Task<CommandResultView> RemoveBot(int seat) => RoomCommand((room, token) => room.RemoveBot(token, seat));
+
+    /// <summary>
+    /// The host puts a player out of the lobby. The player is told, their connections are closed, and (in the friend-hosted game) their address or
+    /// Steam id cannot join this room again.
+    /// </summary>
+    public async Task<CommandResultView> KickPlayer(int seat)
+    {
+        if (Bound() is not { } bound) return NotJoined;
+        if (IsGuest) return new CommandResultView(false, "Oyuncuyu sadece odayı kuran çıkarabilir.");
+        var code = bound.Session.Room.Code;
+        CommandResult result;
+        string? kicked;
+        lock (bound.Session.Lock) result = bound.Session.Room.Kick(bound.Token, seat, out kicked);
+        if (!result.Ok || kicked is null) return new CommandResultView(result.Ok, result.Error);
+        await Clients.Group(PlayerGroup(code, seat)).SendAsync("Kicked", KickedNote);
+        foreach (var line in guests.Kick(code, kicked))
+        {
+            await Groups.RemoveFromGroupAsync(line.ConnectionId, RoomGroup(code));
+            await Groups.RemoveFromGroupAsync(line.ConnectionId, PlayerGroup(code, seat));
+            _ = Task.Delay(500).ContinueWith(_ => line.Abort(), TaskScheduler.Default); // (after the goodbye has gone out)
+        }
+        await PushRoom(bound.Session);
+        return new CommandResultView(true, null);
+    }
 
     /// <summary>
     /// The host ends a match that only bots are still playing: the rest is simulated on the server at once

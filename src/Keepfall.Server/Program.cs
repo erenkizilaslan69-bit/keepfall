@@ -26,6 +26,21 @@ builder.Services.AddSingleton(rules);
 builder.Services.AddSingleton(Keepfall.Core.Challenges.ChallengeCatalog.LoadBeside(balancePath, rules));
 builder.Services.AddSingleton<RoomRegistry>();
 builder.Services.AddSingleton<Director>();
+builder.Services.AddSingleton<GuestGate>();
+if (options.GuestPort > 0)
+{
+    // The friend-hosted game: strangers may reach this computer's server (a public Steam lobby). Small, strict limits; nothing a game needs comes near them.
+    builder.WebHost.ConfigureKestrel(k =>
+    {
+        k.Limits.MaxConcurrentConnections = 64;
+        k.Limits.MaxConcurrentUpgradedConnections = 24;
+        k.Limits.MaxRequestBodySize = 64 * 1024;
+        k.Limits.MaxRequestHeadersTotalSize = 16 * 1024;
+        k.Limits.MaxRequestLineSize = 2048;
+        k.Limits.RequestHeadersTimeout = TimeSpan.FromSeconds(10);
+        k.Limits.KeepAliveTimeout = TimeSpan.FromSeconds(30);
+    });
+}
 builder.Services.AddSingleton<ServerStats>();
 builder.Services.AddSingleton<ClientErrorLog>();
 builder.Services.AddHostedService<TickLoop>();
@@ -45,6 +60,13 @@ builder.Services.AddSignalR(o =>
     // A phone on Wi-Fi/4G has short gaps: the server waits a minute for a sign of life (the client sends one every 10 s) before it calls a connection dead.
     o.KeepAliveInterval = TimeSpan.FromSeconds(10);
     o.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+    o.MaximumReceiveMessageSize = 32 * 1024; // (the framework's default, said out loud: the largest command is a few hundred bytes)
+    if (options.GuestPort > 0)
+    {
+        o.HandshakeTimeout = TimeSpan.FromSeconds(8);
+        o.MaximumParallelInvocationsPerClient = 1;
+        o.StreamBufferCapacity = 1;
+    }
 }).AddJsonProtocol(o =>
     o.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
 
@@ -55,7 +77,15 @@ if (Director.OffReason(options) is { } directorOff)
     if (!string.IsNullOrEmpty(options.DirectorKey)) app.Logger.LogWarning("Director (cameraman) connection OFF: {Reason}", directorOff);
 }
 else app.Logger.LogWarning("Director (cameraman) connection ON: a page with ?director=<key> sees the whole map. Recording/dev only.");
-app.UseForwardedHeaders();
+// The friend-hosted game: a guest (anybody who came in through the guests' door) gets the hub and /version, and a 404 for everything else: the game's
+// files, the guide and error-log APIs, the host's stop switch. Guests bring their own copy of the game; nothing on this computer is served to them.
+if (options.GuestPort > 0)
+    app.Use(async (http, next) =>
+    {
+        if (GameHub.IsGuestConnection(http, options) && !GuestGate.Allows(http.Request)) { http.Response.StatusCode = StatusCodes.Status404NotFound; return; }
+        await next();
+    });
+else app.UseForwardedHeaders(); // (behind a hosting platform's proxy only: a guest of a friend-hosted game must not be able to name its own address)
 app.UseRouting(); // CORS needs the endpoint (the hub's negotiate and WebSocket upgrade) to be routed first: UseRouting -> UseCors -> MapHub
 app.UseCors();
 

@@ -122,4 +122,33 @@ public class HostedGameTests
             _ = MapViewMapper.StateOf(room, p);
         }
     }
+    [Fact]
+    public void The_host_can_put_a_player_out_of_the_lobby_and_nobody_else_can()
+    {
+        var room = new Room("ABCDEF", Rules, new RoomOptions());
+        var host = room.Join("Ada", null, false, T0).Player!;
+        var guest = room.Join("Bora", null, false, T0).Player!;
+        var other = room.Join("Cem", null, false, T0).Player!;
+        room.AddBot(host.Token, BotDifficulty.Easy);
+
+        Assert.False(room.Kick(guest.Token, other.Seat, out var none).Ok); // a guest cannot
+        Assert.Null(none);
+        Assert.False(room.Kick(host.Token, host.Seat, out _).Ok); // not oneself
+        Assert.False(room.Kick(host.Token, 4, out _).Ok); // a bot is removed with RemoveBot
+        Assert.False(room.Kick(host.Token, 9, out _).Ok);
+        Assert.False(room.Kick("no-such-token", guest.Seat, out _).Ok);
+
+        Assert.True(room.Kick(host.Token, guest.Seat, out var kicked).Ok);
+        Assert.Equal(guest.Token, kicked);
+        Assert.Null(room.Find(guest.Token));
+        Assert.DoesNotContain(room.Players, p => p.Seat == guest.Seat);
+        // the old token is worth nothing: joining with it is a new player in the free seat, and commands with it are refused
+        Assert.False(room.SetReady(guest.Token, true).Ok);
+
+        // never during a match: a castle is not taken away
+        room.SetReady(host.Token, true); room.SetReady(other.Token, true);
+        Assert.True(room.Start(host.Token).Ok);
+        Assert.False(room.Kick(host.Token, other.Seat, out _).Ok);
+        Assert.NotNull(room.Find(other.Token));
+    }
 }

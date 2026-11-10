@@ -502,6 +502,26 @@ public sealed class Room
         return CommandResult.Success;
     });
 
+    /// <summary>
+    /// The host puts a human player out of the lobby (never during a match: a castle is not taken away). The seat is free at once; the token no
+    /// longer belongs to the room. <paramref name="kickedToken"/>: whose connections the server has to close.
+    /// </summary>
+    public CommandResult Kick(string token, int seat, out string? kickedToken)
+    {
+        string? found = null;
+        var result = InLobby(token, p =>
+        {
+            if (p.Seat != HostSeat) return CommandResult.Fail("Oyuncuyu sadece odayı kuran çıkarabilir.");
+            if (seat == p.Seat) return CommandResult.Fail("Kendini çıkaramazsın.");
+            if (_players.FirstOrDefault(x => x.Seat == seat && !x.IsBot) is not { } target) return CommandResult.Fail("O koltukta oyuncu yok.");
+            _players.Remove(target);
+            found = target.Token;
+            return CommandResult.Success;
+        });
+        kickedToken = found;
+        return result;
+    }
+
     public CommandResult RemoveBot(string token, int seat) => InLobby(token, p =>
     {
         if (p.Seat != HostSeat) return CommandResult.Fail("Botu sadece odayı kuran çıkarabilir.");
