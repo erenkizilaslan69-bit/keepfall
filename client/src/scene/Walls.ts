@@ -84,6 +84,23 @@ export class WallRing {
   }
 
   /** The castle has fallen: the wall greys out, the towers are gone (with dust). */
+  /**
+   * A marching column keeps off the wall: is `p` (scene px) on it (its band, the towers included), or does the step from `from` (the column's own line,
+   * on the road) to `p` go through it anywhere but the gate? The stone wall's lines; the fence stands about where they are.
+   */
+  blocks(p: Point, from: Point): boolean {
+    const east = this.gateOnEast, o = this.origin;
+    const L = o.x + 4 + (east ? 0 : GATE_SIDE_INSET), R = o.x + REGION_W - 4 - (east ? GATE_SIDE_INSET : 0), T = o.y + 4, B = o.y + REGION_H - 4;
+    const gateX = east ? R : L, gateY = o.y + GATE_Y;
+    const inGate = (q: Point) => Math.abs(q.y - gateY) < GATE_HALF - 6 && Math.abs(q.x - gateX) < 70;
+    // the stone lies inside the lines: the side walls a strip about 33 px wide, the north wall's top and face about 53 px, the south wall's face above its line
+    const OUT = 6, SIDE = 36, NORTH = 58, SOUTH = 40;
+    const inside = (q: Point) => q.x > L && q.x < R && q.y > T && q.y < B;
+    const onWall = (q: Point) => q.x > L - OUT && q.x < R + OUT && q.y > T - OUT && q.y < B + OUT && !(q.x > L + SIDE && q.x < R - SIDE && q.y > T + NORTH && q.y < B - SOUTH);
+    if (onWall(p) && !inGate(p)) return true;
+    return inside(p) !== inside(from) && !inGate(p) && !inGate(from);
+  }
+
   ruin(fx?: { dust(x: number, y: number, scale: number, tint: number): void }): void {
     if (this.fallen) return;
     this.fallen = true;

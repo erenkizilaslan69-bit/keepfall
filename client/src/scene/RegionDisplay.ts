@@ -69,6 +69,9 @@ export class RegionDisplay {
     this.lordFallen = castle.eliminated;
   }
 
+  /** The buildings' feet (scene px), for the marching columns. */
+  feet(): { l: number; t: number; r: number; b: number }[] { return this.workers.feet(); }
+
   destroy(): void {
     for (const [type, slot] of this.slots) {
       slot.sprites.forEach((s) => s.destroy());

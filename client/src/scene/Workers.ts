@@ -56,6 +56,8 @@ export class Workers {
   }
 
   private allBlocks(): Foot[] { return [...this.blocks.values()].flat(); }
+  /** The buildings' feet in scene px (this castle's corner added): marching columns keep off them too. */
+  feet(): Foot[] { return this.allBlocks().map((r) => ({ l: r.l + this.off.x, t: r.t + this.off.y, r: r.r + this.off.x, b: r.b + this.off.y })); }
 
   /** A building's feet changed (it was built, grew, or took another look): the people who stand in it move out, the paths go round it. */
   private readonly levels = new Map<BuildingType, number>();

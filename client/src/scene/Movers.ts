@@ -21,6 +21,12 @@ import { lowGraphics } from '../prefs';
 // front, archers at the back — so whoever sees an army coming can read what it is made of.
 // Between two server ticks positions are extrapolated (our own along the road, others along their
 // heading) and corrected smoothly when the next tick arrives.
+//
+// The column (only the drawing: the server's position, timings and rules are untouched): every soldier gets a place in the column when it is formed
+// (its row and its lane) and keeps it for the whole march. It walks the leader's own trail (the way the leader was drawn), a fixed distance behind
+// along it, and stands its lane's width to the side of the trail there: round a bend the column snakes, rows do not swing round as a whole.
+// On a narrow path the lanes close up a little (smoothly); nobody may stand on a wall or a tower, in a tree or in a building (they step in towards
+// the column's line instead), and a column that stops keeps its order.
 
 const RUN: Record<string, { anim: string; scale: number }> = {
   kalkanli: { anim: 'warrior-guard', scale: UNIT_SCALE },
@@ -40,38 +46,55 @@ const ORDER = ['kalkanli', 'kilicli', 'mizrakci', 'okcu', 'mancinik', 'kesis', '
 const drawnOf = (total: number): number => lowGraphics()
   ? Math.min(14, Math.max(Math.min(total, 10), 10 + Math.floor((total - 10) / 8)))
   : Math.min(22, Math.max(Math.min(total, 10), 10 + Math.floor((total - 10) / 4)));
-const ROW_GAP = 34; // px: the base distance between two rows (the zone that catches a click sits one row behind the leader)
+const ROW_GAP = 34; // px: the zone that catches a click sits about one row behind the leader
 /** How much room each kind needs: across the road (px) and along it (px). The catapult is big and the cavalry long; nobody stands on anybody. */
 const FOOT: Record<string, { w: number; d: number }> = {
   mancinik: { w: 84, d: 84 }, suvari: { w: 54, d: 60 }, kilicli: { w: 42, d: 34 }, kalkanli: { w: 40, d: 34 }, mizrakci: { w: 40, d: 34 }, okcu: { w: 38, d: 32 }, kesis: { w: 36, d: 34 },
 };
 const FOOT_DEFAULT = { w: 40, d: 40 };
-/** How wide a row may be on a forest path, on a road in the open, and at a crossing or on open ground (px). */
-const LANE_FOREST = 84, LANE_ROAD = 124, LANE_OPEN = 196;
-const ROW_WIDTH = 196; // px: a row is full when its units together would be wider than this (four infantrymen abreast, two catapults, three horsemen)
+/** How wide a row may be on a forest path, on a road in the open, and at a crossing or on open ground (px); the outer lanes may stand this much wider (on the grass). */
+const LANE_FOREST = 84, LANE_ROAD = 124, LANE_OPEN = 196, LANE_SPILL = 1.25;
+/** Lanes of a column, fixed for the whole march: two abreast up to this many soldiers in the army, three beyond. A lane is this wide (px, an infantryman). */
+const TWO_ABREAST_UP_TO = 12, LANE_PX = 46;
+/** The lanes close up at most to this share of their width (26 px between two infantrymen), over about half a second. */
+const LANE_MIN = 0.62, LANE_EASE = 0.5;
+/** A soldier squeezed in by a wall, a tree or a building looks this far ahead (s) along its way, steps in fast (s) and back out slowly (s). */
+const SQUEEZE_AHEAD = 0.45, SQUEEZE_IN = 0.1, SQUEEZE_OUT = 0.45;
+/** How far along the trail (px) the way a soldier faces is averaged: a bend is taken over twice this, not in one step. */
+const TURN_PX = 34;
+/** A turn of the face needs this much sideways motion (px a second): a soldier walking straight up or down the screen does not flicker left and right. */
+const FACE_PX = 10;
 
-/** Where each drawn unit stands in the column, in marching order: `back` px behind the leader along the road, `side` px across it. */
-function columnLayout(kinds: string[]): { back: number; side: number }[] {
+/** One drawn soldier's place in its column, set when the column is formed and never changed: its row and lane, how far behind the leader (px along its trail) and to the side (px). */
+interface Slot { row: number; lane: number; back: number; side: number }
+
+/** The places of a column's soldiers in marching order: rows of two or three (fewer where a big unit takes room), each a little apart, never re-sorted. */
+function marchSlots(kinds: string[], soldiers: number): Slot[] {
+  const width = (soldiers <= TWO_ABREAST_UP_TO ? 2 : 3) * LANE_PX;
   const rows: string[][] = [];
   let used = 0;
   for (const k of kinds) {
     const w = (FOOT[k] ?? FOOT_DEFAULT).w + 6;
-    if (!rows.length || (used + w > ROW_WIDTH && rows[rows.length - 1].length)) { rows.push([]); used = 0; }
+    if (!rows.length || (used + w > width && rows[rows.length - 1].length)) { rows.push([]); used = 0; }
     rows[rows.length - 1].push(k); used += w;
   }
-  const out: { back: number; side: number }[] = [];
+  const out: Slot[] = [];
   let back = 0;
   rows.forEach((row, r) => {
     const widths = row.map((k) => (FOOT[k] ?? FOOT_DEFAULT).w + 6);
-    const total = widths.reduce((a, b) => a + b, 0);
-    let at = -total / 2;
-    row.forEach((_k, i) => { out.push({ back, side: at + widths[i] / 2 }); at += widths[i]; });
+    let at = -widths.reduce((a, b) => a + b, 0) / 2;
+    row.forEach((_k, lane) => {
+      const i = out.length; // a small fixed stagger (the same every time): drilled rows would look like a parade
+      out.push({ row: r, lane, back: back + ((i * 53) % 9) - 4, side: at + widths[lane] / 2 + ((i * 37) % 7) - 3 });
+      at += widths[lane];
+    });
     const depth = Math.max(...row.map((k) => (FOOT[k] ?? FOOT_DEFAULT).d));
     const nextDepth = r + 1 < rows.length ? Math.max(...rows[r + 1].map((k) => (FOOT[k] ?? FOOT_DEFAULT).d)) : depth;
     back += (depth + nextDepth) / 2;
   });
   return out;
 }
+
 /** Never extrapolate further than this many ticks without news (stops runaways if ticks stop). */
 // How far the picture walks on by itself when no news arrives (a phone's network stalling, a throttled tab). A cap of 1.5 ticks made the column stand still
 // during a gap of four seconds and then jump seven tiles when the news came: a wrong place to the player. The armies keep to known roads, so walking on is safe.
@@ -108,10 +131,22 @@ interface Track {
   shown: Vec;
   /** Our own armies: how far along the route (tiles) the column is drawn; the position is always read off the route, so a bend is never cut. */
   shownDist?: number;
+  /** Drawn off its (new) road: it is walking over to it (at most the catch-up speed), not put on it. */
+  rejoin?: boolean;
   heading: Vec;
   sprites: Phaser.GameObjects.Sprite[];
-  /** Where each sprite stands in the column when the road is not known (see columnLayout). */
-  layout: { back: number; side: number }[];
+  /** Every sprite's fixed place in the column (see marchSlots). */
+  slots: Slot[];
+  /** The way the leader was drawn (scene px), oldest first, and how far along it each point is (px): the soldiers walk it behind the leader. */
+  trail: { x: number; y: number }[];
+  trailArc: number[];
+  /** Per row: how wide its lanes are now (1 as formed, smaller on a narrow path; eased). */
+  rowScale: number[];
+  /** Per sprite: how far out to its lane it stands now (1 in its lane, 0 on the column's line: squeezed in by a wall, a tree or a building; eased). */
+  squeeze: number[];
+  /** Per sprite: its eased sideways motion (px a second) and which way it faces. */
+  vx: number[];
+  faceLeft: boolean[];
   /** The unit kind of every drawn sprite, in marching order. */
   kinds: string[];
   /** Ours only: what a click on it opens, and the invisible area that catches the click. */
@@ -173,9 +208,9 @@ export class Movers {
     return inForest ? LANE_FOREST : LANE_OPEN; // open ground (a castle's yard, a clearing); in the trees a path too
   }
 
-  /** The outer edges of the wall rings (scene px): a column outside them keeps off the stone, and squeezes together where the road runs close by. */
+  /** The outer edges of the wall rings (scene px). Development only (tools/corner-check.mjs measures who stands on a wall); the scene's `blocked` keeps the columns off. */
   setWalls(rects: { x: number; y: number; w: number; h: number }[]): void { this.walls = rects; }
-  private walls: { x: number; y: number; w: number; h: number }[] = [];
+  walls: { x: number; y: number; w: number; h: number }[] = [];
 
   /** Set by the scene: a battle replay is being played at this place (tiles). The column that walked into it stays hidden meanwhile. */
   inReplay: (at: Vec) => boolean = () => false;
@@ -289,7 +324,7 @@ export class Movers {
     }
     for (const [key, t] of this.tracks) {
       // Our own walkers keep to their road, bends included: a column drawn away from it has cut a corner.
-      if (t.route && t.route.length > 1) {
+      if (t.route && t.route.length > 1 && !t.rejoin) { // (one walking over to its new road is not off it)
         let near = Infinity;
         for (let i = 0; i + 1 < t.route.length; i++) near = Math.min(near, distanceToSegment(t.shown, t.route[i], t.route[i + 1]));
         if (near > 0.6) problems.push(`${key}: ${near.toFixed(1)} tiles off its road`);
@@ -374,14 +409,17 @@ export class Movers {
         if (t.shownDist === undefined) {
           const p = projectOnRoute(t.route, t.cumulative, t.shown);
           t.shownDist = p.off > 0.6 ? want : p.d;
+          // drawn away from the new road (a new order, or a guess of somebody else's road that the news corrected): it walks over to it, it is not put there
+          t.rejoin = p.off > 0.6;
         }
         const diff = want - t.shownDist;
         if (Math.abs(diff) > 30) t.shownDist = want;
         else if (diff > 3) t.shownDist += Math.min(diff, CATCH_UP_TILES_PER_SECOND * Math.max(dt, 0.016));
-        else t.shownDist += diff * Math.min(1, dt * 12);
+        else t.shownDist += Math.sign(diff) * Math.min(Math.abs(diff) * Math.min(1, dt * 12), CATCH_UP_TILES_PER_SECOND * Math.max(dt, 0.016)); // (a glide, never faster than the catch-up run: the soldiers behind follow it)
         t.shownDist = Math.min(length, Math.max(0, t.shownDist));
         const here = alongSmooth(t.route, t.cumulative, t.shownDist);
-        t.shown = here.point;
+        if (t.rejoin && Math.hypot(here.point.x - t.shown.x, here.point.y - t.shown.y) < 0.05) t.rejoin = false;
+        if (!t.rejoin) t.shown = here.point; // (rejoining: the glide below takes it there)
         target = here.point; heading = here.direction;
       } else {
         // Somebody else's: only where they are and which way they go. They keep to the roads, so go on along the road (round its corners),
@@ -398,17 +436,18 @@ export class Movers {
       const gap = Math.hypot(target.x - t.shown.x, target.y - t.shown.y);
       // Somebody else's column that is behind its estimate catches up ALONG the road it is on (a straight glide cut the corner of a bend), as long as the
       // estimate lies ahead of it the way it is going; otherwise (ahead of the estimate, or off the roads) the straight glide below.
-      const ahead2 = !t.route && gap > 1e-4 && gap <= 30 && (target.x - t.shown.x) * t.heading.x + (target.y - t.shown.y) * t.heading.y > 0;
-      const stepLen = gap > 3 ? CATCH_UP_TILES_PER_SECOND * Math.max(dt, 0.016) : gap * k;
+      const ahead2 = !t.route && !t.rejoin && gap > 1e-4 && gap <= 30 && (target.x - t.shown.x) * t.heading.x + (target.y - t.shown.y) * t.heading.y > 0;
+      const stepLen = Math.min(gap > 3 ? Infinity : gap * k, CATCH_UP_TILES_PER_SECOND * Math.max(dt, 0.016));
       const walked = ahead2 ? followRoads(this.roads, t.shown, t.heading, Math.min(gap, stepLen)) : null;
       if (walked) t.shown = walked.point;
       else if (gap > 30) t.shown = target; // (a recall or a new order from far away: not a correction)
       else if (gap > 3) { const step = Math.min(gap, CATCH_UP_TILES_PER_SECOND * Math.max(dt, 0.016)) / gap; t.shown = { x: t.shown.x + (target.x - t.shown.x) * step, y: t.shown.y + (target.y - t.shown.y) * step }; }
-      else t.shown = { x: t.shown.x + (target.x - t.shown.x) * k, y: t.shown.y + (target.y - t.shown.y) * k };
+      else { const g = Math.min(k, gap > 1e-9 ? (CATCH_UP_TILES_PER_SECOND * Math.max(dt, 0.016)) / gap : 1); t.shown = { x: t.shown.x + (target.x - t.shown.x) * g, y: t.shown.y + (target.y - t.shown.y) * g }; } // (a glide, never faster than the catch-up run)
       if (heading.x !== 0 || heading.y !== 0) t.heading = heading;
       const hidden = t.fighting || (!t.scout && this.inReplay(t.shown));
       for (const s of t.sprites) s.setVisible(!hidden);
-      this.place(t);
+      this.record(t);
+      this.place(t, dt);
       if (!hidden && !t.scout && !t.envoy && this.fx && now >= (t.dustAt ?? 0) && Math.hypot(t.velocity.x, t.velocity.y) > 0.2) {
         const horses = t.units.some((u) => u.unitId === 'suvari');
         t.dustAt = now + (horses ? 170 : 380) / Math.max(1, Math.min(this.gameSpeed, 3));
@@ -485,7 +524,9 @@ export class Movers {
     trace('track-created', key, `${kinds.length} drawn of ${units.reduce((n, u) => n + u.count, 0)}${t ? ' (rebuilt: its soldiers changed)' : ''}`);
     const fresh: Track = {
       key, color, scout, envoy, units, position, velocity: { x: 0, y: 0 }, route: null, cumulative: [], travelled: 0, speed: 0, vision: 0, fighting: false,
-      receivedAt: performance.now(), shown: t?.shown ?? position, heading: t?.heading ?? { x: 1, y: 0 }, sprites, layout: columnLayout(kinds), kinds,
+      receivedAt: performance.now(), shown: t?.shown ?? position, heading: t?.heading ?? { x: 1, y: 0 }, sprites, kinds,
+      slots: scout ? [{ row: 0, lane: 0, back: 0, side: 0 }] : marchSlots(kinds, units.reduce((n, u) => n + u.count, 0)),
+      trail: [], trailArc: [], rowScale: [], squeeze: kinds.map(() => 1), vx: kinds.map(() => 0), faceLeft: kinds.map(() => (t?.heading.x ?? 1) < -0.1),
       select: null, zone: null,
     };
     this.tracks.set(key, fresh);
@@ -493,71 +534,139 @@ export class Movers {
     return fresh;
   }
 
-  /** The column: rows of three across the road, the first row at the army's position. */
-  private place(t: Track): void {
-    const lead = toWorld(t.shown);
-    const h = t.heading, p = { x: -h.y, y: h.x };
-    const faceLeft = h.x < -0.1;
-    if (t.route && t.shownDist !== undefined && !t.scout && !t.envoy && t.kinds.length === t.sprites.length) this.placeOnRoad(t, faceLeft);
-    else this.placeStatic(t, lead, h, p, faceLeft);
-    this.label(t, lead, h);
+  /** Set by the scene: may a soldier stand at `p` (scene px), coming from `from` (its column's line)? Walls, towers, trees and buildings say no. */
+  blocked: (p: { x: number; y: number }, from: { x: number; y: number }) => boolean = () => false;
+
+  /** Development (tools/corner-check.mjs): every drawn soldier's fixed place, where it stands and the point of its column's line it stands beside. */
+  debugSlots(): { key: string; i: number; row: number; lane: number; side: number; x: number; y: number; line: { x: number; y: number } }[] {
+    const out: { key: string; i: number; row: number; lane: number; side: number; x: number; y: number; line: { x: number; y: number } }[] = [];
+    for (const t of this.tracks.values()) t.sprites.forEach((s, i) => {
+      const sl = t.slots[i];
+      if (sl && s.active) out.push({ key: t.key, i, row: sl.row, lane: sl.lane, side: (s.getData('side') as number) ?? 0, x: s.x, y: s.y, line: (s.getData('line') as { x: number; y: number }) ?? { x: s.x, y: s.y } });
+    });
+    return out;
   }
 
   /**
-   * The column on its road: rows are laid one behind the other along the road (round its bends), and every row holds as many soldiers as the road's lane
-   * allows where the row stands (one or two on a path or a road, four at a crossing or in the open), slid or closed up where a wall is close.
+   * The leader's trail grows where the leader is drawn now. A small step back (the news put the leader a little behind where it was drawn, still going the
+   * same way) cuts the trail back instead of folding it; a turn round (a recall) is walked like any bend; a jump (a new order far away) forms the column anew.
    */
-  private placeOnRoad(t: Track, faceLeft: boolean): void {
-    const first = alongSmooth(t.route!, t.cumulative, 0);
-    const at = (backPx: number) => {
-      const want = t.shownDist! - backPx / TILE;
-      return want >= 0 ? alongSmooth(t.route!, t.cumulative, want) : { point: { x: first.point.x + first.direction.x * want, y: first.point.y + first.direction.y * want }, direction: first.direction };
-    };
-    const foot = (k: string) => FOOT[k] ?? FOOT_DEFAULT;
-    let back = 0, i = 0, prevDepth = 0, row = 0;
-    while (i < t.kinds.length) {
-      if (row > 0) back += (prevDepth + foot(t.kinds[i]).d) / 2;
-      const here = at(back), bp = toWorld(here.point), n = { x: -here.direction.y, y: here.direction.x };
-      let lane = this.laneAt(bp);
-      if (this.walls.length) { const c = this.clearance(bp, n); lane = Math.min(lane, c.left + c.right); }
-      const members: number[] = [];
-      let used = 0;
-      while (i < t.kinds.length) {
-        const w = foot(t.kinds[i]).w + 6;
-        if (members.length && used + w > lane) break;
-        members.push(i); used += w; i++;
+  private record(t: Track): void {
+    const p = toWorld(t.shown);
+    const n = t.trail.length;
+    if (n === 0) { this.seed(t, p); return; }
+    const last = t.trail[n - 1];
+    const d = Math.hypot(p.x - last.x, p.y - last.y);
+    if (d > 3 * TILE) { this.seed(t, p); return; }
+    if (d < 2) return;
+    if (n >= 2) {
+      const prev = t.trail[n - 2], dir = { x: last.x - prev.x, y: last.y - prev.y };
+      const back = (p.x - last.x) * dir.x + (p.y - last.y) * dir.y < 0;
+      const stillForward = t.heading.x * dir.x + t.heading.y * dir.y > 0;
+      if (back && stillForward && d < TILE) {
+        while (t.trail.length > 1) {
+          const e = t.trail[t.trail.length - 1], f = t.trail[t.trail.length - 2];
+          if ((e.x - p.x) * (e.x - f.x) + (e.y - p.y) * (e.y - f.y) <= 0) break; // (e is behind p: keep it)
+          t.trail.pop(); t.trailArc.pop();
+        }
       }
-      const fit = this.fitRow(bp, n, -used / 2, used / 2);
-      let x = -used / 2, depth = 0;
-      for (const m of members) {
-        const w = foot(t.kinds[m]).w + 6;
-        const side = (x + w / 2) * fit.scale + fit.shift;
-        x += w;
-        depth = Math.max(depth, foot(t.kinds[m]).d);
-        const sx = bp.x + n.x * side, sy = bp.y + n.y * side;
-        t.sprites[m].setPosition(sx, sy).setDepth(sy).setFlipX(faceLeft);
-      }
-      prevDepth = depth; row++;
     }
+    const end = t.trail[t.trail.length - 1];
+    t.trail.push(p);
+    t.trailArc.push(t.trailArc[t.trailArc.length - 1] + Math.hypot(p.x - end.x, p.y - end.y));
+    // only as much trail as the column is long (and a little more)
+    const keep = t.trailArc[t.trailArc.length - 1] - (t.slots[t.slots.length - 1]?.back ?? 0) - 4 * TILE;
+    let drop = 0;
+    while (drop + 2 < t.trail.length && t.trailArc[drop + 1] < keep) drop++;
+    if (drop > 0) { t.trail.splice(0, drop); t.trailArc.splice(0, drop); }
   }
 
-  /** The column when the road is not known: rows straight behind the leader (and slid or closed up where walls are close). */
-  private placeStatic(t: Track, lead: { x: number; y: number }, h: Vec, p: { x: number; y: number }, faceLeft: boolean): void {
-    const fits = new Map<number, { shift: number; scale: number }>(); // per row (its distance back): how the row sits between the walls
-    t.sprites.forEach((s, i) => {
-      const raw = t.layout[i] ?? { back: 0, side: 0 };
-      let at = raw;
-      let fit = fits.get(raw.back);
-      if (!fit) {
-        const row = t.layout.filter((l) => l.back === raw.back);
-        fit = this.fitRow({ x: lead.x - h.x * raw.back, y: lead.y - h.y * raw.back }, p, Math.min(...row.map((l) => l.side)) - 22, Math.max(...row.map((l) => l.side)) + 22);
-        fits.set(raw.back, fit);
+  /** A column that is formed (or formed anew): its trail is laid behind the leader along its road (ours, or the one worked out), else straight back. */
+  private seed(t: Track, p: { x: number; y: number }): void {
+    const length = (t.slots[t.slots.length - 1]?.back ?? 0) + 2 * TILE, step = 16;
+    const pts: { x: number; y: number }[] = [];
+    for (let k = Math.ceil(length / step); k >= 1; k--) {
+      const back = (k * step) / TILE;
+      if (t.route && t.shownDist !== undefined && t.route.length > 1) {
+        const d = t.shownDist - back;
+        if (d >= 0) pts.push(toWorld(alongSmooth(t.route, t.cumulative, d).point));
+        else { const f = alongSmooth(t.route, t.cumulative, 0); pts.push(toWorld({ x: f.point.x + f.direction.x * d, y: f.point.y + f.direction.y * d })); }
+      } else pts.push({ x: p.x - t.heading.x * back * TILE, y: p.y - t.heading.y * back * TILE });
+    }
+    pts.push(p);
+    t.trail = pts;
+    t.trailArc = cumulativePx(pts);
+  }
+
+  /** The point of the trail at distance `s` along it (px); before its start, straight on back the way its first stretch runs. */
+  private trailAt(t: Track, s: number): { x: number; y: number } {
+    const tr = t.trail, arc = t.trailArc, n = tr.length;
+    if (n === 1) return { x: tr[0].x - t.heading.x * (arc[0] - s), y: tr[0].y - t.heading.y * (arc[0] - s) };
+    if (s <= arc[0]) {
+      const l = Math.max(1e-6, arc[1] - arc[0]), ux = (tr[1].x - tr[0].x) / l, uy = (tr[1].y - tr[0].y) / l;
+      return { x: tr[0].x - ux * (arc[0] - s), y: tr[0].y - uy * (arc[0] - s) };
+    }
+    if (s >= arc[n - 1]) return tr[n - 1];
+    let lo = 0, hi = n - 1;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (arc[m] <= s) lo = m; else hi = m; }
+    const k = (s - arc[lo]) / Math.max(1e-6, arc[hi] - arc[lo]);
+    return { x: tr[lo].x + (tr[hi].x - tr[lo].x) * k, y: tr[lo].y + (tr[hi].y - tr[lo].y) * k };
+  }
+
+  /** Which way the trail runs at `s`, averaged over a stretch of it (a sharp corner of the road is turned over a short curve). */
+  private trailDir(t: Track, s: number): Vec {
+    const end = t.trailArc[t.trailArc.length - 1];
+    const a = this.trailAt(t, Math.min(end, s + TURN_PX)), b = this.trailAt(t, Math.min(end, s) - TURN_PX);
+    return normalise({ x: a.x - b.x, y: a.y - b.y }) ?? t.heading;
+  }
+
+  /** Every soldier at its fixed place: its distance behind the leader along the trail, its lane to the side (closed up on a narrow path, stepped in from obstacles). */
+  private place(t: Track, dt: number): void {
+    const lead = toWorld(t.shown), h = t.heading;
+    const end = t.trailArc[t.trailArc.length - 1];
+    const ease = (tau: number) => 1 - Math.exp(-Math.max(dt, 0.001) / tau);
+    // the lanes of each row: as wide as the road lets them be where the row is (every few frames), eased
+    const rows = (t.slots[t.slots.length - 1]?.row ?? 0) + 1;
+    for (let r = 0; r < rows; r++) {
+      if (t.rowScale[r] === undefined) t.rowScale[r] = 1;
+      const members = t.slots.filter((sl) => sl.row === r);
+      if (members.length < 2) continue;
+      const span = Math.max(...members.map((sl) => sl.side)) - Math.min(...members.map((sl) => sl.side)) + LANE_PX;
+      const want = Math.min(1, Math.max(LANE_MIN, (this.laneAt(this.trailAt(t, end - members[0].back)) * LANE_SPILL) / span));
+      t.rowScale[r] += (want - t.rowScale[r]) * ease(LANE_EASE);
+    }
+    const speedPx = Math.hypot(t.velocity.x, t.velocity.y) * this.gameSpeed * TILE;
+    t.sprites.forEach((sprite, i) => {
+      const sl = t.slots[i];
+      if (!sl) return;
+      const s = end - sl.back;
+      const c = this.trailAt(t, s), d = this.trailDir(t, s), n = { x: -d.y, y: d.x };
+      const side = sl.side * (t.rowScale[sl.row] ?? 1);
+      // stepped in from a wall, a tree or a building: the furthest out it may stand here and a little further along its way
+      let sq = 1;
+      if (side !== 0) {
+        const fit = (cc: { x: number; y: number }, nn: Vec) => {
+          for (const f of [1, 0.75, 0.5, 0.25]) if (!this.blocked({ x: cc.x + nn.x * side * f, y: cc.y + nn.y * side * f }, cc)) return f;
+          return 0;
+        };
+        sq = fit(c, n);
+        if (speedPx > 1) {
+          const s2 = Math.min(end, s + speedPx * SQUEEZE_AHEAD), d2 = this.trailDir(t, s2);
+          sq = Math.min(sq, fit(this.trailAt(t, s2), { x: -d2.y, y: d2.x }));
+        }
       }
-      at = { back: raw.back, side: raw.side * fit.scale + fit.shift };
-      const x = lead.x - h.x * at.back + p.x * at.side;
-      const y = lead.y - h.y * at.back + p.y * at.side;
-      s.setPosition(x, y).setDepth(y).setFlipX(faceLeft);
+      t.squeeze[i] = (t.squeeze[i] ?? 1) + (sq - (t.squeeze[i] ?? 1)) * ease(sq < (t.squeeze[i] ?? 1) ? SQUEEZE_IN : SQUEEZE_OUT);
+      const off = side * t.squeeze[i];
+      const x = c.x + n.x * off, y = c.y + n.y * off;
+      // which way it faces: the way it moves sideways (eased; a soldier going straight up or down keeps the way it faced)
+      const fresh = sprite.x === 0 && sprite.y === 0;
+      if (!fresh && dt > 0) t.vx[i] += ((x - sprite.x) / dt - t.vx[i]) * ease(0.25);
+      if (t.vx[i] < -FACE_PX) t.faceLeft[i] = true;
+      else if (t.vx[i] > FACE_PX) t.faceLeft[i] = false;
+      else if (fresh) t.faceLeft[i] = h.x < -0.1;
+      sprite.setPosition(x, y).setDepth(y).setFlipX(t.faceLeft[i]).setData('side', off).setData('line', c);
     });
+    this.label(t, lead, h);
   }
 
   private label(t: Track, lead: { x: number; y: number }, h: Vec): void {
@@ -570,35 +679,6 @@ export class Movers {
       html: `<div class="wl-sign"><i class="dot" style="background:${COLOR_CSS[t.color] ?? '#888'}"></i><i class="ico ico-sword"></i><b>${total}</b></div>`,
     });
     t.zone?.setPosition(lead.x - h.x * ROW_GAP, lead.y - h.y * ROW_GAP - 18);
-  }
-
-  /**
-   * A row of soldiers spans from `lo` to `hi` px across the road (negative: to the left). Walls beside the road limit it: the row slides to the side that
-   * is free and, where there is no room even so, closes up (never to less than half). Returns the shift and scale to apply to the row's sideways places.
-   */
-  private fitRow(at: { x: number; y: number }, n: { x: number; y: number }, lo: number, hi: number): { shift: number; scale: number } {
-    if (this.walls.length === 0) return { shift: 0, scale: 1 };
-    const { left, right } = this.clearance(at, n);
-    const lower = -left - lo, upper = right - hi; // the row's middle may move within [lower, upper]
-    if (lower <= upper) return { shift: Math.min(upper, Math.max(lower, 0)), scale: 1 };
-    const scale = Math.max(0.5, (left + right) / (hi - lo));
-    return { shift: (right - left) / 2, scale };
-  }
-
-  /** Free room (px) to the left and right of a point across the road, up to the nearest wall ring (160 when there is none or the point is inside a ring). */
-  private clearance(at: { x: number; y: number }, n: { x: number; y: number }): { left: number; right: number } {
-    const free = (dx: number, dy: number): number => {
-      let best = 160;
-      for (const r of this.walls) {
-        if (at.x > r.x && at.x < r.x + r.w && at.y > r.y && at.y < r.y + r.h) return 160; // inside the ring (coming out of a gate): nothing to keep off
-        const tx = dx === 0 ? [-Infinity, Infinity] : [(r.x - at.x) / dx, (r.x + r.w - at.x) / dx].sort((p, q) => p - q);
-        const ty = dy === 0 ? [-Infinity, Infinity] : [(r.y - at.y) / dy, (r.y + r.h - at.y) / dy].sort((p, q) => p - q);
-        const enter = Math.max(tx[0], ty[0]), leave = Math.min(tx[1], ty[1]);
-        if (enter <= leave && leave > 0 && enter > 0) best = Math.min(best, enter);
-      }
-      return Math.max(0, best - 8);
-    };
-    return { right: free(n.x, n.y), left: free(-n.x, -n.y) };
   }
 
   /** Where one of our armies or scouts is drawn now (scene px), for the window that is about it. */
@@ -648,7 +728,8 @@ export function roadAhead(roads: Vec[][], pos: Vec, vel: Vec, distance: number):
 function walkRoads(roads: Vec[][], pos: Vec, vel: Vec, distance: number): { point: Vec; direction: Vec; corners: Vec[] } | null {
   const v = normalise(vel);
   if (!v || roads.length === 0) return null;
-  // The road segment under the position that points the same way (either way along it).
+  // The road segment under the position that points the same way (either way along it). At a crossing several are under it: the one that runs most the
+  // way it goes wins over a slightly nearer one that bends off (a wrong guess sends the drawn column down the wrong road until the news corrects it).
   let best: { road: number; seg: number; t: number; dist: number; sign: 1 | -1 } | null = null;
   roads.forEach((pts, ri) => {
     for (let i = 0; i + 1 < pts.length; i++) {
@@ -658,8 +739,9 @@ function walkRoads(roads: Vec[][], pos: Vec, vel: Vec, distance: number): { poin
       const t = Math.min(1, Math.max(0, ((pos.x - a.x) * dx + (pos.y - a.y) * dy) / len2));
       const d = Math.hypot(pos.x - (a.x + dx * t), pos.y - (a.y + dy * t));
       const dot = (dx * v.x + dy * v.y) / Math.sqrt(len2);
-      if (d > 0.7 || Math.abs(dot) < 0.5 || (best && d >= best.dist)) continue;
-      best = { road: ri, seg: i, t, dist: d, sign: dot > 0 ? 1 : -1 };
+      const score = d + (1 - Math.abs(dot)) * 1.5;
+      if (d > 0.7 || Math.abs(dot) < 0.5 || (best && score >= best.dist)) continue;
+      best = { road: ri, seg: i, t, dist: score, sign: dot > 0 ? 1 : -1 };
     }
   });
   if (!best) return null;
@@ -705,6 +787,12 @@ function distanceToSegment(p: Vec, a: Vec, b: Vec): number {
   const dx = b.x - a.x, dy = b.y - a.y, len2 = dx * dx + dy * dy;
   const t = len2 < 1e-9 ? 0 : Math.min(1, Math.max(0, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2));
   return Math.hypot(p.x - (a.x + dx * t), p.y - (a.y + dy * t));
+}
+
+function cumulativePx(points: { x: number; y: number }[]): number[] {
+  const out = [0];
+  for (let i = 1; i < points.length; i++) out.push(out[i - 1] + Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y));
+  return out;
 }
 
 function cumulative(points: Vec[]): number[] {

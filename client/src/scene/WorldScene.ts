@@ -199,6 +199,7 @@ export class WorldScene extends Phaser.Scene {
       return { x: o.x + (east ? 4 : 4 + inset), y: o.y + 24, w: 16 * TILE - 8 - inset, h: 12 * TILE - 32 };
     }));
     this.movers.inReplay = (at) => this.battles?.active.some((b) => Math.hypot(b.at.x - at.x, b.at.y - at.y) < 2.5) ?? false;
+    this.movers.blocked = (p, from) => this.blockedAt(p, from);
     this.fog = new Fog(this, this.layout.size, WATER_FAR);
     this.fx = new Effects(this);
     this.movers.setEffects(this.fx);
@@ -377,6 +378,30 @@ export class WorldScene extends Phaser.Scene {
    * no fog, every castle's inside, every army and scout. Our own castle goes on being drawn by the normal code,
    * fed from the picture instead of the live state.
    */
+  /** Trees by 128 px cell (their trunks, scene px), built on first use. */
+  private treeCells: Map<string, { x: number; y: number }[]> | null = null;
+  private feetCache: { at: number; list: { l: number; t: number; r: number; b: number }[] } | null = null;
+  /**
+   * May a marching soldier stand at `p` (scene px), coming from `from` (its column's line on the road)? Not on a wall or a tower (nor through one), not
+   * in a tree's trunk, not in a building's feet. Cosmetic only (the server walks the army along its road whatever is drawn).
+   */
+  blockedAt(p: { x: number; y: number }, from: { x: number; y: number }): boolean {
+    for (const w of this.walls.values()) if (w.blocks(p, from)) return true;
+    if (!this.treeCells) {
+      this.treeCells = new Map();
+      for (const t of this.trees) {
+        const k = `${Math.floor(t.sprite.x / 128)},${Math.floor(t.sprite.y / 128)}`;
+        (this.treeCells.get(k) ?? this.treeCells.set(k, []).get(k)!).push({ x: t.sprite.x, y: t.sprite.y - 6 });
+      }
+    }
+    const cx = Math.floor(p.x / 128), cy = Math.floor(p.y / 128);
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++)
+      for (const t of this.treeCells.get(`${cx + dx},${cy + dy}`) ?? []) if (Math.abs(p.x - t.x) < 22 && Math.abs(p.y - t.y) < 16) return true;
+    // the buildings' feet (gathered again every half second: buildings grow and change)
+    if (!this.feetCache || this.time.now - this.feetCache.at > 500) this.feetCache = { at: this.time.now, list: [...(this.workers?.feet() ?? []), ...[...this.regions.values()].flatMap((r) => r.feet())] };
+    return this.feetCache.list.some((r) => p.x > r.l - 6 && p.x < r.r + 6 && p.y > r.t - 6 && p.y < r.b + 6);
+  }
+
   /** The director: the box the soldiers of a battle being replayed stand in (world px), or null. */
   battleBounds(id: string, reach: number): { x: number; y: number; w: number; h: number } | null { return this.battles?.bounds(id, reach) ?? null; }
 
