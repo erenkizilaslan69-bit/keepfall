@@ -13,9 +13,11 @@ declare const __BUILD_DATE__: string;
 const VERSION = '0.9';
 
 const CREDITS: [string, string][] = [
-  [t('Görseller'), t('Tiny Swords (Free Pack) — Pixel Frog (pixelfrog-assets.itch.io/tiny-swords). Lisansı yeniden dağıtıma izin vermediği için oyunun deposunda yoktur. Sur taşı ve tabelalar aynı yapımcının CC0 paketinden. Krallık kaleleri ve binaları, arayüz çerçeveleri, orman yerleri, harita süsleri, süvari atı ve mancınık yapay zekâ (Google Gemini) ile üretilip bu oyun için düzenlendi; kamp ateşi koddan çizildi.')],
-  [t('Sesler'), t('Kenney — Interface Sounds ve Impact Sounds (CC0). Müzik: RandomMind — "The Old Tower Inn" ve "Medieval: Minstrel Dance" (CC0).')],
-  [t('Yazı tipleri'), t('Pixelify Sans ve Atkinson Hyperlegible Next — SIL Open Font License 1.1.')],
+  [t('Görseller'), 'Tiny Swords & Tiny Swords Warfare by Pixel Frog'],
+  [t('Yazı tipleri'), 'Pixelify Sans, Atkinson Hyperlegible Next, Fusion Pixel, Noto Sans (SIL Open Font License)'],
+  [t('Sesler'), 'Kenney, OpenGameArt (CC0)'],
+  [t('Küfür sözlükleri'), 'LDNOOBW (CC BY 4.0)'],
+  [t('Çeviriler'), t('Yapay zekâ yardımıyla')],
   [t('Yazılım'), t('Phaser 3 (MIT), Microsoft SignalR ve ASP.NET Core (MIT).')],
 ];
 
@@ -109,7 +111,7 @@ export function toggleSettings(): void {
         <section class="set-about hidden" data-f="about">
           <h3>${t('Oyun hakkında')}</h3>
           <p><b>Keepfall</b> — ${t('sürüm')} ${VERSION} (${typeof __BUILD_DATE__ === 'string' ? __BUILD_DATE__ : ''})</p>
-          <p>${t('Yapımcı:')} <b>Eren</b></p>
+          <p>${t('Yapımcı:')} <b>Red Lion Games</b></p>
           <h4>${t('Kaynaklar ve lisanslar')}</h4>
           <dl>${CREDITS.map(([k, v]) => `<dt>${k}</dt><dd>${CRAZY ? v.replace(/\s*\(pixelfrog-assets\.itch\.io\/tiny-swords\)/, '') : v}</dd>`).join('')}</dl>
         </section>

@@ -1049,5 +1049,8 @@ const D: Record<string, string> = {
   "Yeni açılım!": "新解锁！",
   "Ana menüdeki \"Başarımlar ve Ustalık\" ekranından seçebilirsin.": "你可以在主菜单的“成就与精通”界面里选择它。",
   "İlerleme": "进度",
+  "Küfür sözlükleri": "脏话词表",
+  "Çeviriler": "翻译",
+  "Yapay zekâ yardımıyla": "由 AI 辅助",
 };
 export default D;

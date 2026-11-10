@@ -1049,5 +1049,8 @@ const D: Record<string, string> = {
   "Yeni açılım!": "Нова розблокована нагорода!",
   "Ana menüdeki \"Başarımlar ve Ustalık\" ekranından seçebilirsin.": "Обрати її можна на екрані «Досягнення та майстерність» у головному меню.",
   "İlerleme": "Прогрес",
+  "Küfür sözlükleri": "Списки лайки",
+  "Çeviriler": "Переклади",
+  "Yapay zekâ yardımıyla": "За допомогою ШІ",
 };
 export default D;

@@ -1049,5 +1049,8 @@ const D: Record<string, string> = {
   "Yeni açılım!": "Новая награда!",
   "Ana menüdeki \"Başarımlar ve Ustalık\" ekranından seçebilirsin.": "Выбрать её можно на экране «Достижения и мастерство» в главном меню.",
   "İlerleme": "Прогресс",
+  "Küfür sözlükleri": "Списки ругательств",
+  "Çeviriler": "Переводы",
+  "Yapay zekâ yardımıyla": "С помощью ИИ",
 };
 export default D;

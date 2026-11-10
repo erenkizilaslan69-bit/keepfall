@@ -1049,5 +1049,8 @@ const D: Record<string, string> = {
   "Yeni açılım!": "¡Nuevo desbloqueo!",
   "Ana menüdeki \"Başarımlar ve Ustalık\" ekranından seçebilirsin.": "Puedes elegirlo en la pantalla «Logros y maestría» del menú principal.",
   "İlerleme": "Progreso",
+  "Küfür sözlükleri": "Listas de groserías",
+  "Çeviriler": "Traducciones",
+  "Yapay zekâ yardımıyla": "Con ayuda de IA",
 };
 export default D;

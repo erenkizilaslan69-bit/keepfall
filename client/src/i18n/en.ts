@@ -1,6 +1,9 @@
 // English texts of the interface (key: the Turkish original). See i18n/index.ts.
 // The file is one plain object literal (tools/i18n-scan.mjs reads it without compiling): keep it that way.
 export const EN: Record<string, string> = {
+  "Küfür sözlükleri": "Profanity word lists",
+  "Çeviriler": "Translations",
+  "Yapay zekâ yardımıyla": "AI-assisted",
   "Dil": "Language",
   "Dili değiştir": "Change language",
   "Meydan Okuma": "Challenges",
