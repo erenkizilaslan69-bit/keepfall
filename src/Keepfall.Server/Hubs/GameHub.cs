@@ -17,7 +17,7 @@ namespace Keepfall.Server.Hubs;
 ///
 /// Groups: "oda:{code}" gets the public room state; "oda:{code}:o{seat}" gets that seat's castle.
 /// </summary>
-public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules, Keepfall.Core.Challenges.ChallengeCatalog challenges, ILogger<GameHub> logger) : Hub
+public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules, Keepfall.Core.Challenges.ChallengeCatalog challenges, Director director, ILogger<GameHub> logger) : Hub
 {
     private const string CodeKey = "code";
     private const string TokenKey = "token";
@@ -103,6 +103,7 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        if (Context.Items.TryGetValue(DirectorItem, out var watched) && watched is string watchedCode) director.Unwatch(watchedCode);
         if (Bound() is { } bound)
         {
             // (what happened to the line is the only way to tell a phone's network blip from a server problem afterwards)
@@ -111,6 +112,52 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
             await PushRoom(bound.Session);
         }
         await base.OnDisconnectedAsync(exception);
+    }
+
+    // ---- director (cameraman) ----------------------------------------------------------------
+
+    private const string DirectorItem = "director";
+
+    /// <summary>Rooms the director can watch (null: the director is off or the key is wrong). See <see cref="Director"/>.</summary>
+    public async Task<List<DirectorRoomView>?> DirectorRooms(string? key)
+    {
+        if (!director.Accepts(key)) { await Task.Delay(1000); return null; } // (a wrong key costs a second: no guessing)
+        var list = new List<DirectorRoomView>();
+        foreach (var s in registry.Sessions)
+            lock (s.Lock)
+                list.Add(new DirectorRoomView(s.Room.Code, s.Room.Phase.ToString(), s.Room.Players.Count(p => !p.IsBot), s.Room.Players.Count(p => p.IsBot),
+                    s.Room.Game?.ElapsedSeconds ?? 0));
+        return list;
+    }
+
+    /// <summary>
+    /// Watch a room as the director: not a player (no seat taken, not in the room's list, no commands), the whole map live. Answers like a join, with the
+    /// seat of the castle the page is built around; the layout, that castle and the pictures follow (the tick loop sends them while the match runs).
+    /// </summary>
+    public async Task<JoinView> DirectorWatch(string? key, string? code)
+    {
+        if (!director.Accepts(key)) { await Task.Delay(1000); return JoinFail("Kapalı."); }
+        if (Context.Items.ContainsKey(CodeKey) || Context.Items.ContainsKey(DirectorItem)) return JoinFail("Bu bağlantı zaten bir odada.");
+        if (registry.Find(code) is not { } session) return JoinFail("Oda bulunamadı.");
+        RoomView room;
+        MapLayoutView? layout;
+        CastleView? castle = null;
+        int seat = 0;
+        lock (session.Lock)
+        {
+            room = ViewMapper.ToView(session.Room);
+            layout = MapViewMapper.LayoutOf(session.Room);
+            if (Director.Anchor(session.Room) is { } anchor) { seat = anchor.Seat; castle = ViewMapper.CastleOf(session.Room, anchor); }
+        }
+        var roomCode = session.Room.Code;
+        Context.Items[DirectorItem] = roomCode;
+        director.Watch(roomCode);
+        await Groups.AddToGroupAsync(Context.ConnectionId, RoomGroup(roomCode));
+        await Groups.AddToGroupAsync(Context.ConnectionId, Director.Group(roomCode));
+        logger.LogInformation("Director watching room {Room}", roomCode);
+        if (layout is not null) await Clients.Caller.SendAsync("MapLayout", layout);
+        if (castle is not null) await Clients.Caller.SendAsync("CastleState", castle);
+        return new JoinView(true, null, roomCode, null, seat, room);
     }
 
     // ---- lobby -----------------------------------------------------------------------------

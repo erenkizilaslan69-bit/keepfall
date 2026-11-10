@@ -69,6 +69,7 @@ export class GameConnection {
     // If the room is gone (the server restarted) or the seat cannot be taken back, say so instead of leaving a frozen screen.
     this.hub.onreconnected(async () => {
       if (!this.roomCode) return;
+      if (this.directorKey) { const again = await this.directorWatch(this.directorKey, this.roomCode).catch(() => null); if (!again?.ok) this.on.status('roomLost'); return; }
       const result = await this.joinRoom(this.roomCode, this.name).catch(() => null);
       if (!result?.ok) this.on.status('roomLost');
     });
@@ -123,6 +124,27 @@ export class GameConnection {
   /** Gives up an attempt to connect that is still pending (the next `start()` begins afresh). */
   async abort(): Promise<void> {
     try { await this.hub.stop(); } catch { /* nothing to stop */ }
+  }
+
+  /** The director (cameraman) key, when this page is one (see director.ts): a reconnect watches again instead of joining. */
+  private directorKey: string | null = null;
+
+  /** Director only: the rooms on the server (null: the server has no director or the key is wrong). */
+  directorRooms(key: string): Promise<{ code: string; phase: string; humans: number; bots: number; elapsedSeconds: number }[] | null> {
+    return this.hub.invoke('DirectorRooms', key);
+  }
+
+  /** Director only: watch a room (no seat is taken; `seat` is the castle the page is built around). */
+  async directorWatch(key: string, code: string): Promise<JoinView> {
+    const result = await this.hub.invoke<JoinView>('DirectorWatch', key, code);
+    if (result.ok) {
+      this.directorKey = key;
+      this.roomCode = result.code;
+      this.seat = result.seat;
+      this.on.status('connected');
+      if (result.room) this.on.room(result.room);
+    }
+    return result;
   }
 
   async createRoom(name: string): Promise<JoinView> {

@@ -26,10 +26,10 @@ writeFileSync(join(dir, 'challenges.json'), readFileSync(join(root, 'config', 'c
 
 const server = process.env.KF_SMOKE_EXE
   ? spawn(process.env.KF_SMOKE_EXE, ['--urls', `http://localhost:${port}`], {
-    cwd: dirname(process.env.KF_SMOKE_EXE), stdio: 'ignore', env: { ...process.env, ASPNETCORE_ENVIRONMENT: 'Development', Keepfall__BalancePath: configPath, Keepfall__AllowSpeedControl: 'true', Keepfall__AllowSoloStart: 'true' },
+    cwd: dirname(process.env.KF_SMOKE_EXE), stdio: 'ignore', env: { ...process.env, ASPNETCORE_ENVIRONMENT: 'Development', Keepfall__BalancePath: configPath, Keepfall__DirectorKey: '', Keepfall__AllowSpeedControl: 'true', Keepfall__AllowSoloStart: 'true' },
   })
   : spawn('dotnet', ['run', '--project', join(root, 'src', 'Keepfall.Server'), '--no-launch-profile', '--urls', `http://localhost:${port}`], {
-    cwd: root, stdio: 'ignore', env: { ...process.env, ASPNETCORE_ENVIRONMENT: 'Development', Keepfall__BalancePath: configPath },
+    cwd: root, stdio: 'ignore', env: { ...process.env, ASPNETCORE_ENVIRONMENT: 'Development', Keepfall__BalancePath: configPath, Keepfall__DirectorKey: '' },
   });
 const stop = () => { spawnSync('taskkill', ['/pid', String(server.pid), '/T', '/F'], { stdio: 'ignore' }); };
 process.on('exit', stop);

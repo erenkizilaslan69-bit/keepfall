@@ -377,6 +377,9 @@ export class WorldScene extends Phaser.Scene {
    * no fog, every castle's inside, every army and scout. Our own castle goes on being drawn by the normal code,
    * fed from the picture instead of the live state.
    */
+  /** The room's speed now (×1 normally; the director's camera moves with it). */
+  get speedNow(): number { return this.state?.speed ?? 1; }
+
   setSpectator(frame: SpectatorStateView): void {
     if (!this.ready) { this.pendingSpectator = frame; return; }
     // The other colours sheets are loaded the first time (a moment); the newest picture waits for them.

@@ -73,6 +73,8 @@ function startServer(p) {
     Keepfall__MaxRooms: '4',            // a solo demo: a few rooms are plenty (a replay/new match overlaps the old one for a moment)
     Keepfall__StatsLogSeconds: '0',
     KEEPFALL_PARENT_PID: String(process.pid),
+    KEEPFALL_STEAM: '1',                // the server refuses the director (cameraman) connection in the Steam build, whatever else is set
+    Keepfall__DirectorKey: '',
   };
   server = spawn(serverExe, [], { cwd: serverDir, env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
   const tail = [];

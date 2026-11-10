@@ -20,12 +20,16 @@ public sealed class SpectatorFeed
     private GameState? _game;
     private double _now;
 
+    /// <summary>This tick's picture, live (the director's; null between matches).</summary>
+    public SpectatorStateView? Latest { get; private set; }
+
     /// <summary>Take this tick's picture (call after the game ticked) and forget the ones nobody needs any more.</summary>
     public void Capture(Room room, double delay, double wait)
     {
         if (room.Game is not { } game) { Reset(null); return; }
         if (!ReferenceEquals(game, _game)) Reset(game);
         if (SpectatorMapper.Capture(room) is not { } frame) return;
+        Latest = frame;
         _now = frame.ElapsedSeconds;
         foreach (var castle in frame.Castles)
             if (castle.Eliminated && _fellAt.TryAdd(castle.Seat, frame.ElapsedSeconds))
@@ -69,6 +73,7 @@ public sealed class SpectatorFeed
     private void Reset(GameState? game)
     {
         _game = game;
+        Latest = null;
         _frames.Clear();
         _fellAt.Clear();
         _next.Clear();

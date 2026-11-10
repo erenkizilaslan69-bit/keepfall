@@ -416,6 +416,9 @@ public sealed partial class GameState
     /// Every army and scout on the map, wherever it is (armies that are fighting are left out: the battle
     /// replay draws them). Spectators only: no player ever gets this.
     /// </summary>
+    /// <summary>The phantom armies on the map (only the director's recording view is told which they are).</summary>
+    public HashSet<string> DecoyIds() => _armies.Where(a => a.Decoy).Select(a => a.PublicId).ToHashSet();
+
     public IReadOnlyList<SeenMover> AllMovers()
     {
         var all = new List<SeenMover>();

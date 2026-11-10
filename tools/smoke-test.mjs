@@ -64,6 +64,16 @@ const ja = await A.call('CreateRoom', 'Ali');
 const jb = await B.call('JoinRoom', ja.code, 'Bora', null, false);
 const jc = await C.call('JoinRoom', ja.code, 'Cem', null, false);
 check('A creates, B and C join', ja.ok && jb.ok && jc.ok, ja.error ?? jb.error ?? jc.error);
+// The director (cameraman) view sees everything: without Keepfall__DirectorKey on the server (the smoke test never sets one) it is refused, whatever key is sent.
+{
+  const D = client();
+  await D.ready;
+  const rooms = await D.call('DirectorRooms', 'kf-director-guess-0123456789');
+  const watch = await D.call('DirectorWatch', 'kf-director-guess-0123456789', ja.code);
+  const empty = await D.call('DirectorWatch', '', ja.code);
+  check('without a director key on the server the director is refused', !Array.isArray(rooms) && !watch.ok && !empty.ok && !D.msgs.some((m) => ['SpectatorState', 'MapLayout', 'CastleState', 'RoomState'].includes(m.target)));
+  D.ws.close();
+}
 check('economy refused in the lobby', !(await B.call('MoveWorkers', 'idle', 'farmer', 1)).ok);
 check('scouting refused in the lobby', !(await A.call('SendScout', 2, 'idle')).ok);
 check('only the host starts', !(await B.call('StartMatch')).ok);

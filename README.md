@@ -130,6 +130,16 @@ cloudflared tunnel --url http://localhost:5080
 - `Production` modunda hız butonları ve tek kişiyle maç başlatma kapalıdır; maç en az 2 oyuncuyla başlar. Bunlar gerekirse sunucuyu `Development` ile çalıştır.
 - Tünel adresi her açılışta değişir. Tüneli ya da sunucuyu kapatınca oyun da kapanır.
 
+## Kameraman (yönetmen) modu
+
+Fragman/mağaza görüntüsü için gizli izleyici + kendi kendini yöneten kamera + kayıt. Sunucuyu `Keepfall__DirectorKey=<16+ karakter>` ile başlat (Render ve Steam'de her durumda kapalı), sonra:
+
+```
+node tools/director.mjs http://192.168.1.3:5090/ --key <anahtar>
+```
+
+Görünür Chrome tüm ekranı kaplar, ffmpeg 1920x1080 60 fps kaydeder; maç bitince `art/promo/director/<tarih>/` altına tüm maç + olay başına klip (`NN-<olay>-m<dakika>.mp4`). Ayrıntı ve seçenekler: `docs/kameraman.md`.
+
 ## BattleSim (denge aracı)
 
 ```bash

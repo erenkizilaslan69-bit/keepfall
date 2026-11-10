@@ -18,6 +18,8 @@ public sealed class KeepfallOptions
     public int MaxRooms { get; set; }
     /// <summary>How often the server writes its load line (active rooms, tick time, memory) to the log; 0 = never.</summary>
     public double StatsLogSeconds { get; set; } = 60;
+    /// <summary>The director (cameraman) key: empty = no director. Never on on Render or in the Steam build (see <see cref="Director"/>).</summary>
+    public string DirectorKey { get; set; } = "";
 }
 
 /// <summary>A room plus the lock that guards it. Every read or write of <see cref="Room"/> happens under <see cref="Lock"/>.</summary>

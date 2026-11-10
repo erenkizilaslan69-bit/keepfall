@@ -1,0 +1,6 @@
+/* The director (cameraman) page (?director=<key>, see director.ts): only the map is shown, no interface and no mouse pointer. */
+html.kf-director, html.kf-director * { cursor: none !important; }
+html.kf-director #ui,
+html.kf-director #stage > :not(canvas),
+html.kf-director body > :not(#app):not(.cloud-curtain) { display: none !important; }
+html.kf-director .director-wait .banner { cursor: default; }

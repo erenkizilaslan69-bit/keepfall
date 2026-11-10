@@ -16,6 +16,7 @@ public sealed class TickLoop(
     IOptions<KeepfallOptions> options,
     Keepfall.Core.GameRules rules,
     ServerStats stats,
+    Director director,
     ILogger<TickLoop> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -55,6 +56,10 @@ public sealed class TickLoop(
         bool roomChanged, ended = false, preparing;
         string? endNote = null;
         List<(int Seat, List<SpectatorStateView> Frames, SpectatorWaitView? Wait)> spectating = [];
+        SpectatorStateView? directorFrame = null;
+        CastleView? directorCastle = null;
+        MapLayoutView? directorLayout = null;
+        bool directed = director.IsWatched(session.Room.Code);
         lock (session.Lock)
         {
             var room = session.Room;
@@ -74,8 +79,23 @@ public sealed class TickLoop(
                     // Fallen players watch the whole map (live, or as late as match.spectatorDelaySeconds says); nobody else ever gets this.
                     session.Spectators.Capture(room, rules.Match.SpectatorDelaySeconds, rules.Match.SpectatorWaitSeconds);
                     spectating = session.Spectators.TakeDue(room, rules.Match.SpectatorDelaySeconds, rules.Match.SpectatorWaitSeconds);
+                    if (directed)
+                    {
+                        // the director's live picture of everything, and the castle its page is built around (the layout again in the match's first ticks:
+                        // a director that joined in the lobby has none yet)
+                        directorFrame = Director.Frame(session);
+                        if (Director.Anchor(room) is { } anchor) directorCastle = ViewMapper.CastleOf(room, anchor);
+                        if (room.Game is { } g && g.ElapsedSeconds <= tickSeconds * 3 * Math.Max(1, room.Speed)) directorLayout = MapViewMapper.LayoutOf(room);
+                    }
                 }
             }
+        }
+        if (directed)
+        {
+            var group = hub.Clients.Group(Director.Group(session.Room.Code));
+            if (directorLayout is not null) await group.SendAsync("MapLayout", directorLayout);
+            if (directorCastle is not null) await group.SendAsync("CastleState", directorCastle);
+            if (directorFrame is not null) await group.SendAsync("SpectatorState", directorFrame);
         }
         if (endNote is not null) logger.LogInformation("Maç bitti, oda {Code}: {Note}", session.Room.Code, endNote);
         foreach (var (seat, frames, wait) in spectating)

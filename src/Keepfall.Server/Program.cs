@@ -25,6 +25,7 @@ var rules = BalanceConfigLoader.LoadFromFile(balancePath);
 builder.Services.AddSingleton(rules);
 builder.Services.AddSingleton(Keepfall.Core.Challenges.ChallengeCatalog.LoadBeside(balancePath, rules));
 builder.Services.AddSingleton<RoomRegistry>();
+builder.Services.AddSingleton<Director>();
 builder.Services.AddSingleton<ServerStats>();
 builder.Services.AddSingleton<ClientErrorLog>();
 builder.Services.AddHostedService<TickLoop>();
@@ -49,6 +50,11 @@ builder.Services.AddSignalR(o =>
 
 var app = builder.Build();
 app.Logger.LogInformation("Ayar dosyası: {Path}", Path.GetFullPath(balancePath));
+if (Director.OffReason(options) is { } directorOff)
+{
+    if (!string.IsNullOrEmpty(options.DirectorKey)) app.Logger.LogWarning("Director (cameraman) connection OFF: {Reason}", directorOff);
+}
+else app.Logger.LogWarning("Director (cameraman) connection ON: a page with ?director=<key> sees the whole map. Recording/dev only.");
 app.UseForwardedHeaders();
 app.UseRouting(); // CORS needs the endpoint (the hub's negotiate and WebSocket upgrade) to be routed first: UseRouting -> UseCors -> MapHub
 app.UseCors();

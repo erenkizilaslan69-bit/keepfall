@@ -27,6 +27,7 @@ import '@fontsource/noto-sans/cyrillic-400.css';
 import '@fontsource/noto-sans/cyrillic-700.css';
 import './ui/fonts.css';
 import './ui/i18n-fit.css';
+import './ui/director.css';
 import { Minimap } from './minimap';
 import { EndScreen, HomeScreen, LobbyScreen } from './screens';
 import { setBotSeats } from './format';
@@ -80,6 +81,12 @@ let lastLayout: MapLayoutView | null = null;
 let lastMap: MapStateView | null = null;
 let pendingBattles: BattleStartedView[] = [];
 let lastSpectator: SpectatorStateView | null = null;
+/**
+ * The director (cameraman) page: `?director=<key>`, only in a build for our own server (not Steam, CrazyGames or the hosted itch build: there this is
+ * false at build time and the code is left out). See director.ts and docs/kameraman.md.
+ */
+const DIRECTOR_KEY: string | null = !import.meta.env.VITE_PLATFORM && !import.meta.env.VITE_SERVER_URL ? new URLSearchParams(location.search).get('director') : null;
+let directorCam: import('./director').DirectorCamera | null = null;
 let summary: SummaryView | null = null;
 let status = '';
 /** Challenge mode: the list from the server (once), and the result of the match that just ended until the end screen has shown it. */
@@ -136,6 +143,7 @@ const net = new GameConnection({
   },
   spectatorState: (frame) => {
     lastSpectator = frame;
+    directorCam?.onPicture(frame);
     for (const b of frame.started) {
       if (scene) scene.playBattle(b);
       else pendingBattles.push(b);
@@ -187,6 +195,15 @@ if (import.meta.env.DEV) (window as unknown as { keepfallCrazy: unknown }).keepf
 // ---- room events ---------------------------------------------------------------------------
 
 function onRoom(r: RoomView): void {
+  if (DIRECTOR_KEY) {
+    // the director watches only a match: the lobby and the end screens are not its business (the recorder stops when the match is over)
+    (window as unknown as { keepfallDirector?: { phase?: string } }).keepfallDirector!.phase = r.phase;
+    if (r.phase !== 'preparation' && r.phase !== 'war') { if (directorCam && !directorCam.matchEnd) directorCam.matchEnd = Date.now(); return; }
+    if (screen !== 'game') showGame();
+    ui?.setRoom(r);
+    scene?.setRoom(r);
+    return;
+  }
   // Starter rules hide the row pickers (the server ignores them anyway).
   document.documentElement.classList.toggle('kf-starter', r.starter === true);
   setBotSeats(r.players);
@@ -699,6 +716,7 @@ async function main(): Promise<void> {
       return;
     }
   }
+  if (DIRECTOR_KEY) { await startDirector(DIRECTOR_KEY); return; }
   // A room in the address: /oda/KOD (the page's own address) or ?room=KOD (an invitation link; the CrazyGames link carries it too)
   const asked = FEATURE_PRIVATE_ROOM ? new URLSearchParams(location.search).get('room') : null;
   const named = !FEATURE_PRIVATE_ROOM ? null : /^\/oda\/([A-Za-z]{6})\/?$/.exec(currentRoute())?.[1]?.toUpperCase() ?? (asked && /^[A-Za-z]{6}$/.test(asked) ? asked.toUpperCase() : null) ?? crazyInviteRoom();
@@ -724,6 +742,35 @@ async function main(): Promise<void> {
     // A return to the room we were in a moment ago that no longer exists is not an error worth showing: the home screen simply comes up.
     markActiveRoom(null);
     showHome(resumed ? {} : { code, error: tr(r.error ?? t('Odaya katılınamadı.')) });
+  }
+}
+
+/**
+ * The director page: picks the match to watch (`&room=CODE`, else the running match with the most people, waiting for one if there is none),
+ * hides the interface and the pointer, and lets the camera direct itself.
+ */
+async function startDirector(key: string): Promise<void> {
+  document.documentElement.classList.add('kf-director');
+  const state: { phase?: string; room?: string; error?: string; log: unknown[]; cam?: unknown } = { log: [] };
+  (window as unknown as { keepfallDirector: typeof state }).keepfallDirector = state;
+  const show = (text: string) => { app.innerHTML = `<div class="screen director-wait"><p class="banner">${text}</p></div>`; };
+  const wanted = new URLSearchParams(location.search).get('room')?.toUpperCase() ?? null;
+  for (;;) {
+    const rooms = await net.directorRooms(key).catch(() => null);
+    if (!rooms) { state.error = 'refused'; show('Director: refused (no Keepfall__DirectorKey on the server, wrong key, or a hosted/Steam server).'); return; }
+    const live = rooms.filter((r) => r.phase === 'Preparation' || r.phase === 'War');
+    const pick = wanted ? live.find((r) => r.code === wanted) : live.sort((a, b) => b.humans - a.humans || b.elapsedSeconds - a.elapsedSeconds)[0];
+    if (pick) {
+      const { DirectorCamera } = await import('./director');
+      directorCam = new DirectorCamera(() => scene, () => lastLayout);
+      state.log = directorCam.log;
+      state.cam = directorCam;
+      const r = await net.directorWatch(key, pick.code);
+      if (r.ok) { state.room = pick.code; return; }
+      directorCam.stop(); directorCam = null;
+    }
+    show(`Director: waiting for a match${wanted ? ' in room ' + wanted : ''}…`);
+    await new Promise((res) => setTimeout(res, 3000));
   }
 }
 
