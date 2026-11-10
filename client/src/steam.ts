@@ -25,14 +25,22 @@ export async function initSteam(): Promise<boolean> {
  * What the player is doing, for the Steam friends list ("Rich Presence"). The values are tokens of the localisation file
  * tools/steam/rich_presence_loc.vdf (Steam shows them in the friend's language: Turkish and English). Sent only when it changes.
  */
-export type SteamStatus = 'menu' | 'prep' | 'war' | 'challenge_prep' | 'challenge_war' | 'spectating' | 'ended';
+export type SteamStatus = 'menu' | 'lobby' | 'prep' | 'war' | 'challenge_prep' | 'challenge_war' | 'spectating' | 'ended';
 const TOKEN: Record<SteamStatus, string> = {
-  menu: '#Status_Menu', prep: '#Status_Prep', war: '#Status_War', challenge_prep: '#Status_ChallengePrep', challenge_war: '#Status_ChallengeWar',
+  menu: '#Status_Menu', lobby: '#Status_Lobby', prep: '#Status_Prep', war: '#Status_War', challenge_prep: '#Status_ChallengePrep', challenge_war: '#Status_ChallengeWar',
   spectating: '#Status_Spectating', ended: '#Status_Ended',
 };
 let lastStatus: SteamStatus | null = null;
-export function steamStatus(status: SteamStatus): void {
-  if (!bridge || status === lastStatus) return;
-  lastStatus = status;
-  void bridge.presence('steam_display', TOKEN[status]).catch(() => { /* */ });
+let lastPlayers = '';
+/** `players`: "2/4" in a lobby with friends (the lobby line shows it; friends see the group as one party). */
+export function steamStatus(status: SteamStatus, players = '', group = ''): void {
+  if (!bridge || (status === lastStatus && players === lastPlayers)) return;
+  lastStatus = status; lastPlayers = players;
+  const b = bridge;
+  void (async () => {
+    await b.presence('players', players || null);
+    await b.presence('steam_player_group', group || null);
+    await b.presence('steam_player_group_size', group ? players.split('/')[0] : null);
+    await b.presence('steam_display', TOKEN[status]);
+  })().catch(() => { /* a nicety */ });
 }

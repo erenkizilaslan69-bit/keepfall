@@ -46,6 +46,8 @@ import { startFpsMeter } from './ui/fps-meter';
 import { armTutorial, disarmTutorial, tutorialDone } from './ui/tutorial';
 import { CRAZY } from './crazy';
 import { FEATURE_PRIVATE_ROOM } from './features';
+import { hostedRole, hostLink, joinError, mp, rememberGuest, rememberedGuest, setHostedRole, type MpHost, type MpInfo, type MpJoin } from './hosted';
+import { setHostedShare } from './screens';
 import { initSteam, steamStatus } from './steam';
 import { crazyGameplay, crazyInstant, crazyInviteRoom, crazyLoaded, crazyRoom, crazyUsername, crazyVictory, initCrazy, onCrazyJoin, watchCrazySettings } from './crazy';
 import { countMatch, newPlayer, playsFullRules, setSiteChatOff } from './prefs';
@@ -156,8 +158,11 @@ const net = new GameConnection({
   challengeResult: (r) => { lastChallengeResult = r; applyChallengeResult(); },
   progressResult: (r) => onProgressResult(r),
   notification: (text) => ui?.notify(text),
+  hostLeft: (text) => { hostGone = true; showBanner(tr(text), () => void leaveToMenu()); },
   status: (s) => {
     // A blip shorter than a second and a half is not worth a red ribbon: "reconnecting" is only shown if it lasts.
+    if (hostedRole() === 'guest') watchHost(s);
+    if (hostGone && s !== 'connected') return; // the host has quit: the line will not come back, and the words on the screen already say so
     if (s === 'reconnecting') {
       if (!downTimer && !downShown) {
         downTimer = window.setTimeout(() => {
@@ -227,12 +232,15 @@ function onRoom(r: RoomView): void {
   crazyRoom(r.code, r.phase === 'lobby' && !soloRoom);
   crazyGameplay(screen === 'game' && !lastCastle?.eliminated);
   roomEnded = r.phase === 'ended'; roomChallenge = !!r.challengeId;
+  lobbyPlayers = r.phase === 'lobby' && r.players.some((p) => !p.isBot && p.seat !== net.seat) ? `${r.players.length}/${r.maxPlayers}` : '';
+  noteHostedRoom(r);
   announce();
 }
 
 /** Steam friends list ("Rich Presence"): what this player is doing now; does nothing without Steam. */
-let roomEnded = false, roomChallenge = false;
+let roomEnded = false, roomChallenge = false, lobbyPlayers = '';
 function announce(): void {
+  if (screen === 'lobby' && (lobbyPlayers || hostedRole() !== 'none')) { steamStatus('lobby', lobbyPlayers || '1/4', net.roomCode ?? ''); return; }
   if (screen === 'home' || screen === 'challenges' || screen === 'progress' || screen === 'lobby' || screen === 'none') { steamStatus('menu'); return; }
   if (screen === 'end' || roomEnded) { steamStatus('ended'); return; }
   if (lastCastle?.eliminated) { steamStatus('spectating'); return; }
@@ -293,6 +301,7 @@ function clear(): void {
 /** Back to the main menu; in a running match the castle stays in the game and the room's link brings the player back to it. */
 async function leaveToMenu(): Promise<void> {
   await net.leaveRoom();
+  await endHosted();
   disarmTutorial();
   crazyRoom(null, false);
   crazyGameplay(false);
@@ -310,6 +319,92 @@ let soloRoom = false;
 /** The match's music has begun (the clouds have parted): until then the menu music plays on. */
 let musicInGame = false;
 
+// ---- friend-hosted game (desktop build): this computer is the server, or a guest of a friend's ----------------------------------------------------
+
+/** The desktop shell's multiplayer door as it was when the page started (null: a browser). */
+let mpInfo: MpInfo | null = null;
+/** The doors of the game we host (the LAN address for the lobby's invitation box). */
+let hostDoors: MpHost | null = null;
+/** The host told us it is quitting (or we found it gone): no "reconnecting" talk after that. */
+let hostGone = false;
+let hostProbe = 0, hostMisses = 0;
+
+/** A guest's line is down: ask the shell every few seconds whether the host still answers; four silences in a row and the game is over for us. */
+function watchHost(s: ConnectionStatus): void {
+  if (s === 'connected') { window.clearInterval(hostProbe); hostProbe = 0; hostMisses = 0; return; }
+  if (hostProbe || hostGone) return;
+  hostProbe = window.setInterval(async () => {
+    if (hostedRole() !== 'guest') { window.clearInterval(hostProbe); hostProbe = 0; return; }
+    hostMisses = (await mp()?.probe()) ? 0 : hostMisses + 1;
+    if (hostMisses >= 4) hostLost();
+  }, 3000);
+}
+
+/** The host cannot be reached any more (it crashed, lost its network, or left without a word). */
+function hostLost(): void {
+  window.clearInterval(hostProbe); hostProbe = 0; hostMisses = 0;
+  if (hostGone || hostedRole() !== 'guest') return;
+  hostGone = true;
+  void net.abort();
+  showBanner(screen === 'end' ? t('Ev sahibi oyundan ayrıldı. Ana menüye dönmek için tıkla.')
+    : t('Ev sahibiyle bağlantı koptu: maç onun bilgisayarında çalışıyordu ve sürdürülemiyor. Ana menüye dönmek için tıkla.'), () => void leaveToMenu());
+}
+
+/** Out of a friend-hosted game: a host shuts its doors, a guest goes back to its own server. */
+async function endHosted(): Promise<void> {
+  const role = hostedRole();
+  window.clearInterval(hostProbe); hostProbe = 0; hostMisses = 0;
+  hostDoors = null;
+  setHostedShare(null);
+  if (role === 'none') { hostGone = false; return; }
+  setHostedRole('none');
+  rememberGuest(null);
+  await mp()?.leave();
+  if (role === 'guest') {
+    await net.switchServer('');
+    hostGone = false;
+    hideBanner();
+    try { await net.start(); } catch (e) { console.error(e); }
+  }
+  hostGone = false;
+}
+
+/** The shell has opened its door to a host: point the hub at it and take a seat. Null = in; otherwise the words for the player. */
+async function enterHost(join: MpJoin, name: string): Promise<string | null> {
+  if (!join.ok || !join.base || !join.code) return joinError(join);
+  setHostedRole('guest');
+  setHostedShare(null, true);
+  hostGone = false;
+  await net.switchServer(join.base);
+  let error: string | null = null;
+  try {
+    await net.start();
+    const r = await net.joinRoom(join.code, name);
+    if (!r.ok) error = tr(r.error ?? t('Odaya katılınamadı.'));
+  } catch { error = joinError({ ok: false, error: 'no-answer' }); }
+  if (error) { await endHosted(); return error; }
+  return null;
+}
+
+/** A Steam invitation (or "Join game" in the friends list): out of whatever we are doing, into that lobby. */
+async function joinSteamLobby(lobbyId: string): Promise<void> {
+  const bridge = mp();
+  if (!bridge) return;
+  if (screen !== 'home' && screen !== 'none') await leaveToMenu();
+  const error = await enterHost(await bridge.joinSteam(lobbyId), loadName() || siteName);
+  if (error) showHome({ error }); else rememberGuest({ kind: 'steam', lobbyId });
+}
+
+/** The host's lobby and friends list follow the room: how many are in, and whether the match has begun. */
+let lastHostNote = '';
+function noteHostedRoom(r: RoomView): void {
+  if (hostedRole() !== 'host') return;
+  const note = `${r.players.length}/${r.maxPlayers}:${r.phase}`;
+  if (note === lastHostNote) return;
+  lastHostNote = note;
+  void mp()?.hostUpdate({ players: r.players.length, max: r.maxPlayers, phase: r.phase, name: r.players.find((p) => p.isHost)?.name ?? '' });
+}
+
 function showHome(defaults: { code?: string; error?: string } = {}): void {
   musicInGame = false;
   music.scene('lobby');
@@ -318,15 +413,32 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
   document.documentElement.classList.add('in-menu');
   screen = 'home';
   announce();
-  new HomeScreen(app, { name: loadName() || siteName, code: defaults.code ?? '', error: defaults.error }, {
-    create: async (name) => {
+  const bridge = mpInfo ? mp() : null;
+  new HomeScreen(app, { name: loadName() || siteName, code: defaults.code ?? '', error: defaults.error, hosted: bridge ? { steam: mpInfo!.steam } : null }, {
+    create: async (name, visibility) => {
       saveName(name);
       soloRoom = false;
+      if (bridge) setHostedRole('host'); // (before the room's first picture arrives: the lobby is drawn as a host's)
       const r = await net.createRoom(name);
-      if (!r.ok) return r.error;
+      if (!r.ok) { setHostedRole('none'); return r.error; }
+      if (bridge) {
+        // This computer is the server now: the doors for friends are opened (LAN, and a Steam lobby when Steam runs).
+        hostDoors = await bridge.hostOpen({ code: r.code!, steam: mpInfo!.steam ? visibility ?? 'friends' : null, name: name || siteName, players: 1, max: 4, phase: 'lobby' });
+        lastHostNote = '';
+        setHostedShare({ link: hostLink(hostDoors, r.code!), steam: hostDoors.steam, invite: () => void bridge.invite() });
+        if (r.room) showLobby(r.room);
+      }
       setRoute(`/oda/${r.code}${location.search}`);
       return null;
     },
+    joinSteam: async (name, lobbyId) => {
+      if (!bridge) return null;
+      saveName(name);
+      const error = await enterHost(await bridge.joinSteam(lobbyId), name);
+      if (!error) rememberGuest({ kind: 'steam', lobbyId });
+      return error;
+    },
+    lobbies: async () => (bridge ? bridge.lobbies() : []),
     challenges: () => void showChallenges(),
     progress: () => void showProgress(),
     quick: async (name) => {
@@ -334,6 +446,13 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
       return quickMatch(name);
     },
     join: async (name, code) => {
+      if (bridge) {
+        // the desktop build: a friend's game is at an address (the host's LAN door), not on a server of ours
+        saveName(name);
+        const error = await enterHost(await bridge.joinLan(code), name);
+        if (!error) rememberGuest({ kind: 'lan', address: code.trim() });
+        return error;
+      }
       const c = code.trim().toUpperCase();
       if (!/^[A-Z]{6}$/.test(c)) return t('Oda kodu 6 harf olmalı.');
       saveName(name);
@@ -717,6 +836,33 @@ async function main(): Promise<void> {
     }
   }
   if (DIRECTOR_KEY) { await startDirector(DIRECTOR_KEY); return; }
+  // The desktop build: friend-hosted games. A reload of the page (a language switch) finds the game it was in: a host's doors are still open in the
+  // shell, a guest's line is made again; an invitation that started the game is followed.
+  const bridge = mp();
+  if (bridge) {
+    mpInfo = await bridge.info().catch(() => null);
+    if (mpInfo) {
+      if (mpInfo.steamName && !siteName) siteName = mpInfo.steamName; // the Steam name is the name offered until the player types their own
+      bridge.onEvent((e) => {
+        if (e.type === 'steam-join') void joinSteamLobby(e.lobbyId);
+        else if (e.type === 'host-left' || e.type === 'line-failed') { if (hostedRole() === 'guest' && !hostGone) window.setTimeout(hostLost, e.type === 'host-left' ? 1500 : 0); }
+      });
+      const was = rememberedGuest();
+      if (mpInfo.pendingLobby) { await joinSteamLobby(mpInfo.pendingLobby); if (hostedRole() === 'guest') return; }
+      else if (was && loadActiveRoom()) {
+        const again = was.kind === 'lan' ? await bridge.joinLan(was.address) : await bridge.joinSteam(was.lobbyId);
+        if (again.ok && again.base) {
+          setHostedRole('guest'); setHostedShare(null, true);
+          await net.switchServer(again.base);
+          try { await net.start(); } catch { await endHosted(); }
+        } else rememberGuest(null);
+      } else if (mpInfo.hosting && loadActiveRoom()) {
+        setHostedRole('host');
+        hostDoors = { ok: true, lanPort: mpInfo.lanPort, addresses: mpInfo.addresses, steam: !!mpInfo.lobbyId, lobbyId: mpInfo.lobbyId };
+        setHostedShare({ link: hostLink(hostDoors, loadActiveRoom()!), steam: hostDoors.steam, invite: () => void bridge.invite() });
+      } else if (mpInfo.hosting) await bridge.leave();
+    }
+  }
   // A room in the address: /oda/KOD (the page's own address) or ?room=KOD (an invitation link; the CrazyGames link carries it too)
   const asked = FEATURE_PRIVATE_ROOM ? new URLSearchParams(location.search).get('room') : null;
   const named = !FEATURE_PRIVATE_ROOM ? null : /^\/oda\/([A-Za-z]{6})\/?$/.exec(currentRoute())?.[1]?.toUpperCase() ?? (asked && /^[A-Za-z]{6}$/.test(asked) ? asked.toUpperCase() : null) ?? crazyInviteRoom();

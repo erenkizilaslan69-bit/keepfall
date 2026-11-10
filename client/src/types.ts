@@ -56,7 +56,7 @@ export type RoomPhase = 'lobby' | 'preparation' | 'war' | 'ended';
 
 /** Public facts about a player; the server never sends anyone else's token or castle. */
 export type BotLevel = 'easy' | 'medium' | 'hard';
-export interface PlayerView { seat: number; name: string; color: PlayerColor; ready: boolean; connected: boolean; isHost: boolean; eliminated: boolean; isBot: boolean; botLevel: BotLevel | null; sheltered?: boolean; frame?: string | null }
+export interface PlayerView { seat: number; name: string; color: PlayerColor; ready: boolean; connected: boolean; isHost: boolean; eliminated: boolean; isBot: boolean; botLevel: BotLevel | null; sheltered?: boolean; frame?: string | null; /** friend-hosted game: the player is away and a computer player holds the castle */ deputy?: boolean }
 
 export interface RoomView {
   code: string;

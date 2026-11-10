@@ -31,12 +31,16 @@ export interface ConnectionEvents {
   progressResult: (result: ProgressResult) => void;
   /** Something that happened to us, e.g. "Kırmızı'nın gözcüsü kaleni gözetledi." */
   notification: (text: string) => void;
+  /** The friend-hosted game: the host has quit, the match ends here (the end screen follows). */
+  hostLeft?: (text: string) => void;
   status: (status: ConnectionStatus) => void;
 }
 
 /** Thin wrapper over the hub: the client only sends commands, the server decides. */
 export class GameConnection {
-  private readonly hub: signalR.HubConnection;
+  private hub!: signalR.HubConnection;
+  /** Another game server than the page's own: a friend's (the desktop build's guest door). Empty: our own. */
+  private base = '';
   /** The room we are in (its code is public: the room's link has it). */
   roomCode: string | null = null;
   private name = '';
@@ -44,8 +48,27 @@ export class GameConnection {
   seat = 0;
 
   constructor(private readonly on: ConnectionEvents) {
-    this.hub = new signalR.HubConnectionBuilder()
-      .withUrl(serverUrl('/hub'), { withCredentials: false }) // no cookies: the hub answers any origin (itch.io page → hosted server)
+    this.build();
+    // While we are in a room its record is kept fresh: a page that is reloaded within a minute finds its way back (see identity.ts).
+    setInterval(() => { if (this.roomCode && this.hub.state === signalR.HubConnectionState.Connected) markActiveRoom(this.roomCode); }, 5000);
+  }
+
+  /**
+   * Points the connection at another game server (a friend's game, through the desktop shell's door) or back at our own (''): the old line is closed
+   * without a word to the page, the new one is not started yet (call start()).
+   */
+  async switchServer(base: string): Promise<void> {
+    const old = this.hub;
+    this.roomCode = null;
+    this.seat = 0;
+    this.base = base.replace(/\/+$/, '');
+    this.build();
+    try { await old.stop(); } catch { /* it was down */ }
+  }
+
+  private build(): void {
+    const hub = this.hub = new signalR.HubConnectionBuilder()
+      .withUrl(this.base ? this.base + '/hub' : serverUrl('/hub'), { withCredentials: false }) // no cookies: the hub answers any origin (itch.io page → hosted server)
       // The library gives up after ~40 s; a match lasts longer than a bad minute of wifi, so keep trying every 5 s for ten minutes.
       .withAutomaticReconnect({ nextRetryDelayInMilliseconds: (ctx) => ctx.elapsedMilliseconds >= 600_000 ? null : ([0, 2000][ctx.previousRetryCount] ?? 5000) })
       .configureLogging(signalR.LogLevel.Warning)
@@ -64,18 +87,17 @@ export class GameConnection {
     this.hub.on('ChallengeResult', (result: ChallengeResult) => this.on.challengeResult(result));
     this.hub.on('ProgressResult', (result: ProgressResult) => this.on.progressResult(result));
     this.hub.on('Notification', (text: string) => this.on.notification(text));
-    this.hub.onreconnecting(() => this.on.status('reconnecting'));
+    this.hub.on('HostLeft', (text: string) => this.on.hostLeft?.(text));
+    this.hub.onreconnecting(() => { if (hub === this.hub) this.on.status('reconnecting'); });
     // A reconnect is a new connection on the server: rejoin the same seat with our token.
     // If the room is gone (the server restarted) or the seat cannot be taken back, say so instead of leaving a frozen screen.
     this.hub.onreconnected(async () => {
-      if (!this.roomCode) return;
+      if (hub !== this.hub || !this.roomCode) return;
       if (this.directorKey) { const again = await this.directorWatch(this.directorKey, this.roomCode).catch(() => null); if (!again?.ok) this.on.status('roomLost'); return; }
       const result = await this.joinRoom(this.roomCode, this.name).catch(() => null);
       if (!result?.ok) this.on.status('roomLost');
     });
-    this.hub.onclose(() => this.on.status('disconnected'));
-    // While we are in a room its record is kept fresh: a page that is reloaded within a minute finds its way back (see identity.ts).
-    setInterval(() => { if (this.roomCode && this.hub.state === signalR.HubConnectionState.Connected) markActiveRoom(this.roomCode); }, 5000);
+    this.hub.onclose(() => { if (hub === this.hub) this.on.status('disconnected'); }); // (a line we swapped out ourselves says nothing)
   }
 
   /**

@@ -16,6 +16,14 @@ import type { PlayerColor } from './types';
 import { asset } from './env';
 import { bannerUrl, frameClass } from './progress/looks';
 import { FEATURE_PRIVATE_ROOM } from './features';
+import type { MpLobby, Visibility } from './hosted';
+
+/** The friend-hosted game (desktop build): what the host's lobby offers for inviting; null everywhere else. Set by main.ts before the lobby is shown. */
+export interface HostedShare { link: string | null; steam: boolean; invite: () => void }
+let hostedShare: HostedShare | null = null;
+/** True for a guest of a friend-hosted game: the room's code is of no use to anybody (the host invites). */
+let hostedGuest = false;
+export function setHostedShare(share: HostedShare | null, guest = false): void { hostedShare = share; hostedGuest = guest; }
 import { crazyActive, crazyInviteLink, crazyVictory } from './crazy';
 
 // Plain-HTML screens around the game: home, lobby and the end screen, in the same parchment-and-ribbon
@@ -69,9 +77,30 @@ export function logoHtml(): string {
 export class HomeScreen {
   constructor(
     parent: HTMLElement,
-    defaults: { name: string; code: string; error?: string },
-    actions: { create: (name: string) => Promise<string | null>; join: (name: string, code: string) => Promise<string | null>; quick: (name: string) => Promise<string | null>; challenges: () => void; progress: () => void },
+    defaults: { name: string; code: string; error?: string; hosted?: { steam: boolean } | null },
+    actions: { create: (name: string, visibility?: Visibility) => Promise<string | null>; join: (name: string, code: string) => Promise<string | null>; quick: (name: string) => Promise<string | null>; challenges: () => void; progress: () => void;
+      joinSteam?: (name: string, lobbyId: string) => Promise<string | null>; lobbies?: () => Promise<MpLobby[]> },
   ) {
+    // The desktop build: no official server. "Oyun kur" makes this computer the host; friends join by its address or through Steam.
+    const hosted = defaults.hosted ?? null;
+    const friends = !FEATURE_PRIVATE_ROOM ? '' : hosted ? `<div class="or">${t('ya da arkadaşlarınla')}</div>
+        <div class="join-row host-row">
+          ${hosted.steam ? `<label class="field">${t('Kimler katılabilir')} <select id="vis"><option value="friends">${t('Arkadaşlar')}</option><option value="public">${t('Herkese açık')}</option><option value="private">${t('Özel (yalnız davet)')}</option></select></label>` : ''}
+          <button id="create" class="btn">${t('Oyun kur (ev sahibi)')}</button>
+        </div>
+        <div class="or">${t('ya da')}</div>
+        <div class="join-row">
+          <label class="field">${t('Ev sahibinin adresi')} <input id="code" maxlength="80" value="${esc(defaults.code)}" placeholder="192.168.1.5:47800#ABCDEF" autocomplete="off" spellcheck="false"></label>
+          <button id="join" class="btn btn-red">${t('Oyuna katıl')}</button>
+        </div>
+        ${hosted.steam ? `<div class="mp-lobbies"><button id="refresh" class="btn small">${t('Açık oyunları listele')}</button><ul id="lobbies" class="players"></ul></div>` : ''}`
+      : `<div class="or">${t('ya da arkadaşlarınla')}</div>
+        <button id="create" class="btn wide">${t('Oda kur')}</button>
+        <div class="or">${t('ya da')}</div>
+        <div class="join-row">
+          <label class="field">${t('Oda kodu')} <input id="code" maxlength="6" value="${esc(defaults.code)}" placeholder="ABCDEF" autocapitalize="characters"></label>
+          <button id="join" class="btn btn-red">${t('Odaya katıl')}</button>
+        </div>`;
     const root = mount(parent, `
       <div class="screen menu paper home">
         ${logoHtml()}
@@ -80,13 +109,7 @@ export class HomeScreen {
         <button id="quick" class="btn wide kf-btn--green">${t('Hızlı oyna')} <small>${t('(3 bota karşı, hemen)')}</small></button>
         <button id="challenges" class="btn wide">${t('Meydan Okuma')} <small>${t('(tek kişilik, hedefli maçlar)')}</small></button>
         <button id="progress" class="btn wide">${t('Başarımlar ve Ustalık')} <small>${t('(rozetler, flamalar)')}</small></button>
-        ${FEATURE_PRIVATE_ROOM ? `<div class="or">${t('ya da arkadaşlarınla')}</div>
-        <button id="create" class="btn wide">${t('Oda kur')}</button>
-        <div class="or">${t('ya da')}</div>
-        <div class="join-row">
-          <label class="field">${t('Oda kodu')} <input id="code" maxlength="6" value="${esc(defaults.code)}" placeholder="ABCDEF" autocapitalize="characters"></label>
-          <button id="join" class="btn btn-red">${t('Odaya katıl')}</button>
-        </div>` : ''}
+        ${friends}
         <p class="error" id="error">${esc(defaults.error ?? '')}</p>
       </div>`);
     const name = root.querySelector<HTMLInputElement>('#name')!;
@@ -101,7 +124,23 @@ export class HomeScreen {
     root.querySelector('#quick')!.addEventListener('click', () => run(() => actions.quick(name.value)));
     root.querySelector('#challenges')!.addEventListener('click', () => actions.challenges());
     root.querySelector('#progress')!.addEventListener('click', () => actions.progress());
-    root.querySelector('#create')?.addEventListener('click', () => run(() => actions.create(name.value)));
+    root.querySelector('#create')?.addEventListener('click', () => run(() => actions.create(name.value, (root.querySelector<HTMLSelectElement>('#vis')?.value as Visibility | undefined))));
+    // Steam: the open games (public ones, and friends' as Steam lists them); one click joins.
+    const list = root.querySelector<HTMLElement>('#lobbies');
+    root.querySelector('#refresh')?.addEventListener('click', async () => {
+      if (!list || !actions.lobbies) return;
+      list.innerHTML = `<li class="empty"><span class="pname muted">${t('Aranıyor…')}</span></li>`;
+      const found = await actions.lobbies();
+      list.innerHTML = found.length ? found.map((l) => `
+        <li><span class="pname">${esc(l.name || t('Oyuncu'))}</span>
+          <span class="tags"><span class="tag">${l.players}/${l.max}</span>
+          ${!l.compatible ? `<span class="tag warn">${t('farklı sürüm')}</span>` : l.phase !== 'lobby' ? `<span class="tag">${t('maçta')}</span>` : `<button class="btn small" data-lobby="${esc(l.id)}">${t('Katıl')}</button>`}</span></li>`).join('')
+        : `<li class="empty"><span class="pname muted">${t('Açık oyun bulunamadı.')}</span></li>`;
+    });
+    list?.addEventListener('click', (e) => {
+      const id = (e.target as HTMLElement).closest<HTMLElement>('[data-lobby]')?.dataset.lobby;
+      if (id && actions.joinSteam) void run(() => actions.joinSteam!(name.value, id));
+    });
     root.querySelector('#join')?.addEventListener('click', () => run(() => actions.join(name.value, code.value)));
     code.addEventListener('keydown', (e) => { if (e.key === 'Enter') void run(() => actions.join(name.value, code.value)); });
     (defaults.code ? name : name.value ? code : name).focus();
@@ -121,11 +160,17 @@ export class LobbyScreen {
           <div class="lob-left">
             ${logoHtml()}
             <div class="title-ribbon ribbon ribbon-blue">${t('Oda')} <span class="code">${esc(room.code)}</span></div>
-            <div class="share"${FEATURE_PRIVATE_ROOM ? '' : ' hidden'}>
+            ${hostedShare ? `<div class="share">
+              <input class="share-code" readonly value="${esc(hostedShare.link ?? t('Ağ kapısı açılamadı'))}" aria-label="${t('Ev sahibinin adresi')}">
+              ${hostedShare.link ? `<button class="btn" data-a="copylink">${t('Adresi kopyala')}</button>` : ''}
+              ${hostedShare.steam ? `<button class="btn" data-a="invite">${t("Steam'den davet et")}</button>` : ''}
+            </div>
+            <p class="muted small">${t('Maç bu bilgisayarda çalışır: sen çıkarsan herkes için biter. Aynı ağdaki arkadaşların bu adresi oyunda "Ev sahibinin adresi"ne yazar ya da tarayıcıda açar.')}</p>`
+            : `<div class="share"${FEATURE_PRIVATE_ROOM && !hostedGuest ? '' : ' hidden'}>
               <input class="share-code" readonly value="${esc(`${t('Oda kodu')}: ${room.code}`)}" aria-label="${t('Oda kodu')}">
               <button class="btn" data-a="copy">${t('Oda kodunu kopyala')}</button>
               ${inIframe() && !crazyActive() ? '' : `<button class="btn" data-a="copylink">${t('Bağlantıyı kopyala')}</button>`}
-            </div>
+            </div>`}
             <ul class="players" id="players"></ul>
           </div>
           <div class="lob-right">
@@ -163,7 +208,7 @@ export class LobbyScreen {
       if (a === 'copy' || a === 'copylink') {
         // The room code (all that matters inside an iframe such as itch.io) or the address of the room; the button says "Copied!" for two seconds.
         const button = this.q<HTMLButtonElement>(`[data-a="${a}"]`);
-        const text = a === 'copy' ? this.room!.code : crazyInviteLink(this.room!.code) ?? `${location.origin}/?room=${this.room!.code}`;
+        const text = a === 'copy' ? this.room!.code : hostedShare?.link ?? crazyInviteLink(this.room!.code) ?? `${location.origin}/?room=${this.room!.code}`;
         // On a phone the share sheet (messages, chats) is the natural way to send a link; where it is missing or refused, the link is copied.
         if (a === 'copylink' && isTouch() && typeof navigator.share === 'function') {
           try { await navigator.share({ title: 'Keepfall', text: t('Keepfall odama katıl: {0}', this.room!.code), url: text }); return; } catch (err) { if ((err as DOMException)?.name === 'AbortError') return; }
@@ -172,6 +217,8 @@ export class LobbyScreen {
         const label = button.textContent;
         button.textContent = done ? t('Kopyalandı!') : t('Kopyalanamadı');
         setTimeout(() => { button.textContent = label; }, 2000);
+      } else if (a === 'invite') {
+        hostedShare?.invite();
       } else if (a === 'ready') {
         this.show(await this.net.setReady(!this.me(this.room!)?.ready));
       } else if (a === 'deckpick') {

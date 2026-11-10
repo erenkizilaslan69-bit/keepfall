@@ -143,7 +143,7 @@ export class TopBar {
 
   private renderPlayers(): void {
     const players = this.room?.players ?? [];
-    const key = players.map((p) => `${p.seat}:${p.name}:${p.color}:${p.connected}:${p.eliminated}:${p.isBot}`).join(',');
+    const key = players.map((p) => `${p.seat}:${p.name}:${p.color}:${p.connected}:${p.eliminated}:${p.isBot}:${p.deputy === true}`).join(',');
     if (key === this.playersKey) return;
     this.playersKey = key;
     const box = this.q('[data-f="players"]');
@@ -159,7 +159,7 @@ export class TopBar {
 function chip(p: PlayerView, me: boolean): string {
   const state = p.eliminated ? 'out' : p.connected ? '' : 'away';
   const avatar = `${AVATAR_ROOT}Avatars_${String(((p.seat - 1) % 25) + 1).padStart(2, '0')}.png`;
-  const title = `${tr(p.name)}${p.isBot ? ` ${t('(bot)')}` : ''}${me ? ` ${t('(sen)')}` : ''}${p.eliminated ? ` — ${t('elendi')}` : p.connected ? '' : ` — ${t('bağlantı yok')}`}`;
+  const title = `${tr(p.name)}${p.isBot ? ` ${t('(bot)')}` : ''}${me ? ` ${t('(sen)')}` : ''}${p.eliminated ? ` — ${t('elendi')}` : p.connected ? '' : p.deputy ? ` — ${t('bağlantı yok, yerine bot oynuyor')}` : ` — ${t('bağlantı yok')}`}`;
   return `<span class="chip ${state} ${me ? 'me' : ''}" data-seat="${p.seat}" data-color="${p.color}" title="${esc(title)}">
     <i class="avatar" style="background-image:url('${avatar}')"></i><span class="chip-name">${botMark(p.seat)}${esc(tr(p.name))}</span></span>`;
 }

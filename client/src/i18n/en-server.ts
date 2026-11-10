@@ -213,5 +213,7 @@ export const EN_SERVER: Record<string, string> = {
   "Meydan okuma tanımı geçersiz.": "This challenge is not valid.",
   "Böyle bir meydan okuma yok.": "There is no such challenge.",
   "Bilinmeyen çerçeve.": "Unknown frame.",
-  "Bilinmeyen flama.": "Unknown banner."
+  "Bilinmeyen flama.": "Unknown banner.",
+  "Ev sahibi oyundan ayrıldı: maç burada bitti.": "The host has left the game: the match ends here.",
+  "Bu oyunda odayı yalnız ev sahibi kurabilir.": "Only the host can make a room in this game."
 };
