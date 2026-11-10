@@ -9,6 +9,9 @@ const { Duplex } = require('node:stream');
 const OPEN = 1, DATA = 2, END = 3, RESET = 4;
 const CHUNK = 32 * 1024; // well under Steam's 1 MB reliable limit; small enough not to hold the line for long
 const MAX_STREAMS_PER_PEER = 16; // a page needs a handful (negotiate, the socket, a version question)
+const MAX_PACKET = CHUNK + 5;    // nothing we send is larger; a larger packet is not from our code
+const MAX_UNREAD = 8 * 1024 * 1024; // bytes waiting in one stream that nobody reads: the stream is cut rather than the memory filled
+const MAX_STRIKES = 20;          // packets that break the rules before the peer is reported (onAbuse)
 
 class Tunnel {
   /** @param {{ send: (peer: string, data: Buffer) => boolean | void, log?: (line: string) => void }} line */
@@ -21,6 +24,16 @@ class Tunnel {
     this.onStream = null;
     /** Host side: may this peer open streams at all (a member of our lobby)? */
     this.allow = () => true;
+    /** A peer keeps sending packets that are not ours (too large, an unknown kind, streams over the limit): told once per peer. */
+    this.onAbuse = null;
+    this.strikes = new Map();
+  }
+
+  strike(peer, why) {
+    const n = (this.strikes.get(peer) || 0) + 1;
+    if (this.strikes.size > 256) this.strikes.clear();
+    this.strikes.set(peer, n);
+    if (n === MAX_STRIKES) { this.log('tunnel abuse (' + why + ') from ' + peer); this.dropPeer(peer); if (this.onAbuse) this.onAbuse(peer); }
   }
 
   packet(type, id, payload) {
@@ -65,17 +78,24 @@ class Tunnel {
 
   /** A packet came in from `peer`. */
   receive(peer, data) {
-    if (!data || data.length < 5) return;
+    // Whatever arrives here was written by somebody else's computer: nothing in it is trusted, and nothing it holds may throw.
+    if (!Buffer.isBuffer(data) || data.length < 5) { this.strike(peer, 'short packet'); return; }
+    if (data.length > MAX_PACKET) { this.strike(peer, 'oversized packet'); return; }
     const type = data.readUInt8(0), id = data.readUInt32BE(1), key = peer + ':' + id;
+    if (type < OPEN || type > RESET) { this.strike(peer, 'unknown packet'); return; }
     const stream = this.streams.get(key);
     if (type === OPEN) {
       let open = 0;
       for (const k of this.streams.keys()) if (k.startsWith(peer + ':')) open++;
-      if (stream || !this.onStream || !this.allow(peer) || open >= MAX_STREAMS_PER_PEER) { this.line.send(peer, this.packet(RESET, id)); return; }
+      if (!this.onStream || !this.allow(peer)) return; // not somebody we talk to: not even an answer
+      if (stream || open >= MAX_STREAMS_PER_PEER) { this.strike(peer, 'too many streams'); this.line.send(peer, this.packet(RESET, id)); return; }
       this.onStream(peer, this.make(peer, id));
     } else if (!stream) {
-      if (type === DATA) this.line.send(peer, this.packet(RESET, id)); // the other side talks into a stream we no longer have
-    } else if (type === DATA) stream.push(data.subarray(5));
+      if (type === DATA && this.allow(peer)) this.line.send(peer, this.packet(RESET, id)); // the other side talks into a stream we no longer have
+    } else if (type === DATA) {
+      if (stream.readableLength > MAX_UNREAD) { this.strike(peer, 'flood'); stream.destroy(); return; }
+      stream.push(data.subarray(5));
+    }
     else if (type === END) stream.push(null);
     else if (type === RESET) { this.streams.delete(key); stream.destroy(); }
   }

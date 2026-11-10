@@ -43,7 +43,7 @@ rmSync(join(pkg, 'resources', 'default_app.asar'), { force: true });
 for (const f of readdirSync(join(pkg, 'locales'))) if (!/^(en-US|tr)\.pak$/.test(f)) rmSync(join(pkg, 'locales', f));
 const app = join(pkg, 'resources', 'app');
 mkdirSync(app, { recursive: true });
-for (const f of ['main.js', 'preload.js', 'mp.js', 'tunnel.js']) cpSync(join(shellSrc, f), join(app, f));
+for (const f of ['main.js', 'preload.js', 'mp.js', 'tunnel.js', 'gate.js']) cpSync(join(shellSrc, f), join(app, f));
 writeFileSync(join(app, 'package.json'), JSON.stringify({ name: 'keepfall', version: '0.1.0', main: 'main.js' }, null, 2));
 // the Steam SDK binding is optional: it is shipped only when it is installed (and used only when steam.json holds an app id)
 if (existsSync(join(shellSrc, 'node_modules', 'steamworks.js'))) cpSync(join(shellSrc, 'node_modules', 'steamworks.js'), join(app, 'node_modules', 'steamworks.js'), { recursive: true });

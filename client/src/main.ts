@@ -159,6 +159,7 @@ const net = new GameConnection({
   progressResult: (r) => onProgressResult(r),
   notification: (text) => ui?.notify(text),
   hostLeft: (text) => { hostGone = true; showBanner(tr(text), () => void leaveToMenu()); },
+  kicked: (text) => { void leaveToMenu().then(() => showHome({ error: tr(text) })); },
   status: (s) => {
     // A blip shorter than a second and a half is not worth a red ribbon: "reconnecting" is only shown if it lasts.
     if (hostedRole() === 'guest') watchHost(s);
@@ -423,9 +424,12 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
       if (!r.ok) { setHostedRole('none'); return r.error; }
       if (bridge) {
         // This computer is the server now: the doors for friends are opened (LAN, and a Steam lobby when Steam runs).
-        hostDoors = await bridge.hostOpen({ code: r.code!, steam: mpInfo!.steam ? visibility ?? 'friends' : null, name: name || siteName, players: 1, max: 4, phase: 'lobby' });
+        // A Steam game opens no port on this computer; the LAN door is opened only for a LAN / direct-IP game (the choice, or no Steam at all).
+        const lan = !mpInfo!.steam || visibility === 'lan';
+        hostDoors = await bridge.hostOpen({ code: r.code!, steam: lan ? null : (visibility as 'friends' | 'public' | 'private' | undefined) ?? 'friends', lan, name: name || siteName, players: 1, max: 4, phase: 'lobby' });
+        if (!hostDoors.ok) { const error = joinError({ ok: false, error: hostDoors.error }); await leaveToMenu(); return error; }
         lastHostNote = '';
-        setHostedShare({ link: hostLink(hostDoors, r.code!), steam: hostDoors.steam, invite: () => void bridge.invite() });
+        setHostedShare({ link: hostLink(hostDoors, r.code!), steam: hostDoors.steam, invite: () => void bridge.invite(), lanPort: hostDoors.lanPort });
         if (r.room) showLobby(r.room);
       }
       setRoute(`/oda/${r.code}${location.search}`);
@@ -859,7 +863,7 @@ async function main(): Promise<void> {
       } else if (mpInfo.hosting && loadActiveRoom()) {
         setHostedRole('host');
         hostDoors = { ok: true, lanPort: mpInfo.lanPort, addresses: mpInfo.addresses, steam: !!mpInfo.lobbyId, lobbyId: mpInfo.lobbyId };
-        setHostedShare({ link: hostLink(hostDoors, loadActiveRoom()!), steam: hostDoors.steam, invite: () => void bridge.invite() });
+        setHostedShare({ link: hostLink(hostDoors, loadActiveRoom()!), steam: hostDoors.steam, invite: () => void bridge.invite(), lanPort: hostDoors.lanPort });
       } else if (mpInfo.hosting) await bridge.leave();
     }
   }

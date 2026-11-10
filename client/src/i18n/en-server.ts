@@ -215,5 +215,9 @@ export const EN_SERVER: Record<string, string> = {
   "Bilinmeyen çerçeve.": "Unknown frame.",
   "Bilinmeyen flama.": "Unknown banner.",
   "Ev sahibi oyundan ayrıldı: maç burada bitti.": "The host has left the game: the match ends here.",
-  "Bu oyunda odayı yalnız ev sahibi kurabilir.": "Only the host can make a room in this game."
+  "Bu oyunda odayı yalnız ev sahibi kurabilir.": "Only the host can make a room in this game.",
+  "Oyuncuyu sadece odayı kuran çıkarabilir.": "Only the room's host can remove a player.",
+  "Kendini çıkaramazsın.": "You cannot remove yourself.",
+  "Ev sahibi seni odadan çıkardı.": "The host removed you from the room.",
+  "O koltukta oyuncu yok.": "There is no player in that seat."
 };

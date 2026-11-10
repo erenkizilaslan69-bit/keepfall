@@ -340,5 +340,15 @@ export const EN: Record<string, string> = {
   "Adresi kopyala": "Copy address",
   "Steam'den davet et": "Invite through Steam",
   "Maç bu bilgisayarda çalışır: sen çıkarsan herkes için biter. Aynı ağdaki arkadaşların bu adresi oyunda \"Ev sahibinin adresi\"ne yazar ya da tarayıcıda açar.": "The match runs on this computer: if you quit, it ends for everybody. Friends on the same network type this address into \"Host's address\" in the game, or open it in a browser.",
-  "bağlantı yok, yerine bot oynuyor": "disconnected, a bot is playing for them"
+  "bağlantı yok, yerine bot oynuyor": "disconnected, a bot is playing for them",
+  "Ağ kapısı açılamadı (47800–47809 portları dolu olabilir).": "The network door could not be opened (ports 47800–47809 may be in use).",
+  "Steam: arkadaşlar": "Steam: friends",
+  "Steam: herkese açık": "Steam: public",
+  "Steam: özel (yalnız davet)": "Steam: private (invite only)",
+  "LAN / IP adresiyle (Steam yok)": "LAN / by IP address (no Steam)",
+  "Oyun kur (LAN / IP)": "Host a game (LAN / IP)",
+  "Ağ kapısı açık (port {0}): bu ağdaki herkes adresi bilirse katılmayı deneyebilir.": "Network door open (port {0}): anyone on this network who knows the address can try to join.",
+  "Maç bu bilgisayarda çalışır: sen çıkarsan herkes için biter. Arkadaşların bu adresi oyunda \"Ev sahibinin adresi\"ne yazar.": "The match runs on this computer: if you quit, it ends for everybody. Your friends type this address into \"Host's address\" in the game.",
+  "Maç bu bilgisayarda çalışır: sen çıkarsan herkes için biter. Yalnız Steam lobindekiler bağlanabilir; bu bilgisayarda ağa açık port yok.": "The match runs on this computer: if you quit, it ends for everybody. Only members of your Steam lobby can connect; no network port is open on this computer.",
+  "Çıkar": "Remove"
 };

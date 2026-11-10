@@ -10,6 +10,7 @@ const net = require('node:net');
 const http = require('node:http');
 const os = require('node:os');
 const { Tunnel, lagPipe, parseLag } = require('./tunnel');
+const { admit, Limiter } = require('./gate');
 
 const LAN_PORT = 47800, LAN_TRIES = 10;
 const LOBBY_TYPES = { private: 0, friends: 1, public: 2 };
@@ -26,6 +27,11 @@ function createMp(o) {
   const pipeBoth = (a, b) => { lagPipe(a, b, lag || {}); lagPipe(b, a, lag || {}); a.on('error', () => b.destroy()); b.on('error', () => a.destroy()); a.on('close', () => b.destroy()); b.on('close', () => a.destroy()); };
 
   let lanServer = null, lanPort = 0;
+  // Every guest connection (LAN or Steam) passes the doorkeeper (gate.js) before it reaches the game server: hub and /version only, a few
+  // connections per guest, a ceiling for the house.
+  const limiter = new Limiter();
+  const upstream = () => net.connect({ host: '127.0.0.1', port: guestPort });
+  const blocked = new Set(); // Steam ids that abused the tunnel: not listened to until the game is closed
   let target = null;          // guest: { kind: 'lan', host, port } | { kind: 'steam', peer }
   let lobby = null;           // the Steam lobby we are in (host or guest)
   let hosting = false;
@@ -39,8 +45,9 @@ function createMp(o) {
     send: (peer, data) => { const s = o.steam(); if (!s) return false; try { return s.client.networking.sendP2PPacket(BigInt(peer), RELIABLE, data); } catch (e) { log('p2p send failed: ' + e.message); return false; } },
   });
   const members = () => { try { return lobby ? lobby.getMembers().map((m) => String(m.steamId64)) : []; } catch { return []; } };
-  tunnel.allow = (peer) => hosting && members().includes(peer);
-  tunnel.onStream = (_peer, stream) => { const up = net.connect({ host: '127.0.0.1', port: guestPort }); pipeBoth(stream, up); };
+  tunnel.allow = (peer) => hosting && !blocked.has(peer) && members().includes(peer);
+  tunnel.onStream = (peer, stream) => admit(stream, 'steam:' + peer, limiter, upstream, log);
+  tunnel.onAbuse = (peer) => { blocked.add(peer); };
 
   function startSteamLine() {
     const s = o.steam();
@@ -124,10 +131,8 @@ function createMp(o) {
       const wanted = Number(process.env.KEEPFALL_LAN_PORT) || LAN_PORT;
       const attempt = (n) => {
         if (n >= LAN_TRIES) { resolve(0); return; }
-        const s = net.createServer((socket) => {
-          socket.on('error', () => { /* closed below */ });
-          pipeBoth(socket, net.connect({ host: '127.0.0.1', port: guestPort }));
-        });
+        const s = net.createServer((socket) => { socket.setNoDelay(true); admit(socket, socket.remoteAddress, limiter, upstream, log); });
+        s.maxConnections = 48;
         s.once('error', () => attempt(n + 1));
         s.listen(wanted + n, '0.0.0.0', () => { lanServer = s; lanPort = wanted + n; s.on('error', (e) => log('lan door: ' + e.message)); resolve(lanPort); });
       };
@@ -148,8 +153,11 @@ function createMp(o) {
     leaveSteamLobby();
     target = null;
     hosting = true;
-    const port = await openLan();
-    const result = { ok: true, lanPort: port, addresses: addresses(), steam: false, lobbyId: null };
+    // The LAN door (a listening port on every network of this computer, and Windows' firewall question) is opened only when the host asks for a
+    // LAN / direct-IP game; a game made for Steam friends has no open port at all.
+    closeLan();
+    const port = opts && opts.lan === true ? await openLan() : 0;
+    const result = { ok: true, lanPort: port, addresses: port ? addresses() : [], steam: false, lobbyId: null };
     const kind = opts && opts.steam;
     if (kind && kind in LOBBY_TYPES && startSteamLine()) {
       try {
@@ -160,6 +168,7 @@ function createMp(o) {
       } catch (e) { log('lobby create failed: ' + e.message); lobby = null; }
     }
     log('host open lan=' + port + ' steam=' + result.steam);
+    if (!port && !result.steam) { leave(); return { ok: false, error: opts && opts.lan === true ? 'no-door' : 'no-steam', lanPort: 0, addresses: [], steam: false, lobbyId: null }; }
     return result;
   }
 
@@ -183,6 +192,7 @@ function createMp(o) {
   function leave() {
     hosting = false;
     target = null;
+    blocked.clear();
     closeLan();
     leaveSteamLobby();
     return true;

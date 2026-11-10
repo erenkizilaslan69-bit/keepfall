@@ -19,7 +19,7 @@ import { FEATURE_PRIVATE_ROOM } from './features';
 import type { MpLobby, Visibility } from './hosted';
 
 /** The friend-hosted game (desktop build): what the host's lobby offers for inviting; null everywhere else. Set by main.ts before the lobby is shown. */
-export interface HostedShare { link: string | null; steam: boolean; invite: () => void }
+export interface HostedShare { link: string | null; steam: boolean; invite: () => void; /** the LAN door's port while it is open (0: no port is open on this computer) */ lanPort: number }
 let hostedShare: HostedShare | null = null;
 /** True for a guest of a friend-hosted game: the room's code is of no use to anybody (the host invites). */
 let hostedGuest = false;
@@ -85,8 +85,8 @@ export class HomeScreen {
     const hosted = defaults.hosted ?? null;
     const friends = !FEATURE_PRIVATE_ROOM ? '' : hosted ? `<div class="or">${t('ya da arkadaşlarınla')}</div>
         <div class="join-row host-row">
-          ${hosted.steam ? `<label class="field">${t('Kimler katılabilir')} <select id="vis"><option value="friends">${t('Arkadaşlar')}</option><option value="public">${t('Herkese açık')}</option><option value="private">${t('Özel (yalnız davet)')}</option></select></label>` : ''}
-          <button id="create" class="btn${hosted.steam ? '' : ' wide'}">${t('Oyun kur (ev sahibi)')}</button>
+          ${hosted.steam ? `<label class="field">${t('Kimler katılabilir')} <select id="vis"><option value="friends">${t('Steam: arkadaşlar')}</option><option value="public">${t('Steam: herkese açık')}</option><option value="private">${t('Steam: özel (yalnız davet)')}</option><option value="lan">${t('LAN / IP adresiyle (Steam yok)')}</option></select></label>` : ''}
+          <button id="create" class="btn${hosted.steam ? '' : ' wide'}">${hosted.steam ? t('Oyun kur (ev sahibi)') : t('Oyun kur (LAN / IP)')}</button>
         </div>
         <div class="or">${t('ya da')}</div>
         <div class="join-row">
@@ -161,11 +161,14 @@ export class LobbyScreen {
             ${logoHtml()}
             <div class="title-ribbon ribbon ribbon-blue">${t('Oda')} <span class="code">${esc(room.code)}</span></div>
             ${hostedShare ? `<div class="share">
-              <input class="share-code" readonly value="${esc(hostedShare.link ?? t('Ağ kapısı açılamadı'))}" aria-label="${t('Ev sahibinin adresi')}">
-              ${hostedShare.link ? `<button class="btn" data-a="copylink">${t('Adresi kopyala')}</button>` : ''}
+              ${hostedShare.link ? `<input class="share-code" readonly value="${esc(hostedShare.link)}" aria-label="${t('Ev sahibinin adresi')}">
+              <button class="btn" data-a="copylink">${t('Adresi kopyala')}</button>` : ''}
               ${hostedShare.steam ? `<button class="btn" data-a="invite">${t("Steam'den davet et")}</button>` : ''}
             </div>
-            <p class="muted small">${t('Maç bu bilgisayarda çalışır: sen çıkarsan herkes için biter. Aynı ağdaki arkadaşların bu adresi oyunda "Ev sahibinin adresi"ne yazar ya da tarayıcıda açar.')}</p>`
+            ${hostedShare.lanPort ? `<p class="tag warn door-open" id="door-open">${t('Ağ kapısı açık (port {0}): bu ağdaki herkes adresi bilirse katılmayı deneyebilir.', hostedShare.lanPort)}</p>` : ''}
+            <p class="muted small">${hostedShare.lanPort
+    ? t('Maç bu bilgisayarda çalışır: sen çıkarsan herkes için biter. Arkadaşların bu adresi oyunda "Ev sahibinin adresi"ne yazar.')
+    : t('Maç bu bilgisayarda çalışır: sen çıkarsan herkes için biter. Yalnız Steam lobindekiler bağlanabilir; bu bilgisayarda ağa açık port yok.')}</p>`
             : `<div class="share"${FEATURE_PRIVATE_ROOM && !hostedGuest ? '' : ' hidden'}>
               <input class="share-code" readonly value="${esc(`${t('Oda kodu')}: ${room.code}`)}" aria-label="${t('Oda kodu')}">
               <button class="btn" data-a="copy">${t('Oda kodunu kopyala')}</button>
@@ -217,6 +220,8 @@ export class LobbyScreen {
         const label = button.textContent;
         button.textContent = done ? t('Kopyalandı!') : t('Kopyalanamadı');
         setTimeout(() => { button.textContent = label; }, 2000);
+      } else if (a === 'kick') {
+        this.show(await this.net.kickPlayer(Number((e.target as HTMLElement).closest<HTMLElement>('[data-seat]')!.dataset.seat)));
       } else if (a === 'invite') {
         hostedShare?.invite();
       } else if (a === 'ready') {
@@ -382,6 +387,7 @@ export class LobbyScreen {
         <span class="tags">
           ${p.isBot ? `<span class="tag">${t('bot · {0}', p.botLevel === 'easy' ? t('kolay') : p.botLevel === 'hard' ? t('zor') : t('orta'))}</span>` : ''}
           ${p.isBot && me?.isHost ? `<button class="btn small" data-a="rmbot" data-seat="${p.seat}">${t('Bot çıkar')}</button>` : ''}
+          ${!p.isBot && me?.isHost && p.seat !== this.mySeat ? `<button class="btn small" data-a="kick" data-seat="${p.seat}">${t('Çıkar')}</button>` : ''}
           ${p.isHost ? `<span class="tag">${t('oda sahibi')}</span>` : ''}
           ${p.isBot ? '' : !p.connected ? `<span class="tag warn">${t('bağlantı yok')}</span>` : p.ready ? `<span class="tag ok">${t('hazır')}</span>` : `<span class="tag">${t('bekliyor')}</span>`}
         </span>

@@ -11,11 +11,12 @@ export interface MpJoin { ok: boolean; code?: string; base?: string; error?: str
 export interface MpHost { ok: boolean; lanPort: number; addresses: string[]; steam: boolean; lobbyId: string | null; error?: string }
 export interface MpLobby { id: string; name: string; players: number; max: number; phase: string; compatible: boolean; build: string }
 export type MpEvent = { type: 'host-left' | 'line-failed' } | { type: 'steam-join'; lobbyId: string } | { type: 'lobby-members'; count: number };
-export type Visibility = 'friends' | 'public' | 'private';
+/** Who may come in: a Steam lobby (friends / anybody / invited only), or 'lan': no Steam, a door on the local network (direct IP). */
+export type Visibility = 'friends' | 'public' | 'private' | 'lan';
 
 export interface MpBridge {
   info(): Promise<MpInfo | null>;
-  hostOpen(options: { code: string; steam: Visibility | null; name: string; players: number; max: number; phase: string }): Promise<MpHost>;
+  hostOpen(options: { code: string; steam: 'friends' | 'public' | 'private' | null; lan: boolean; name: string; players: number; max: number; phase: string }): Promise<MpHost>;
   hostUpdate(data: { name?: string; players?: number; max?: number; phase?: string }): Promise<boolean>;
   leave(): Promise<boolean>;
   joinLan(address: string): Promise<MpJoin>;
@@ -54,11 +55,12 @@ export function joinError(r: MpJoin): string {
     case 'not-a-host': return t('Bu adreste açık bir Keepfall oyunu yok.');
     case 'version': return t('Sürüm uyuşmuyor: ev sahibi {0}, sen {1}. İkiniz de oyunu güncelleyin.', r.host ?? '?', r.mine ?? '?');
     case 'no-steam': return t('Steam çalışmıyor; adresle katılabilirsin.');
+    case 'no-door': return t('Ağ kapısı açılamadı (47800–47809 portları dolu olabilir).');
     default: return t('Odaya katılınamadı.');
   }
 }
 
-/** The address a friend types (or opens in a browser) to reach the host: the first LAN address, the door's port and the room. */
+/** The address a friend types into "Ev sahibinin adresi" to reach a LAN / direct-IP game: the first LAN address, the door's port and the room. */
 export function hostLink(h: { addresses: string[]; lanPort: number }, code: string): string | null {
-  return h.lanPort > 0 && h.addresses.length ? `http://${h.addresses[0]}:${h.lanPort}/?room=${code}` : null;
+  return h.lanPort > 0 && h.addresses.length ? `${h.addresses[0]}:${h.lanPort}#${code}` : null;
 }

@@ -33,6 +33,8 @@ export interface ConnectionEvents {
   notification: (text: string) => void;
   /** The friend-hosted game: the host has quit, the match ends here (the end screen follows). */
   hostLeft?: (text: string) => void;
+  /** The room's host has put us out of the lobby. */
+  kicked?: (text: string) => void;
   status: (status: ConnectionStatus) => void;
 }
 
@@ -88,6 +90,7 @@ export class GameConnection {
     this.hub.on('ProgressResult', (result: ProgressResult) => this.on.progressResult(result));
     this.hub.on('Notification', (text: string) => this.on.notification(text));
     this.hub.on('HostLeft', (text: string) => this.on.hostLeft?.(text));
+    this.hub.on('Kicked', (text: string) => { if (hub === this.hub) this.on.kicked?.(text); });
     this.hub.onreconnecting(() => { if (hub === this.hub) this.on.status('reconnecting'); });
     // A reconnect is a new connection on the server: rejoin the same seat with our token.
     // If the room is gone (the server restarted) or the seat cannot be taken back, say so instead of leaving a frozen screen.
@@ -219,6 +222,8 @@ export class GameConnection {
   startChallenge = (id: string, fullRules = false) => this.call(fullRules ? 'StartChallengeFullRules' : 'StartChallenge', id);
   addBot = (level: BotLevel) => this.call('AddBot', level);
   removeBot = (seat: number) => this.call('RemoveBot', seat);
+  /** The host puts a player out of the lobby. */
+  kickPlayer = (seat: number) => this.call('KickPlayer', seat);
   finishMatch = () => this.call('FinishMatch');
   backToLobby = () => this.call('BackToLobby');
   /** Back to the main menu: the server unbinds this connection (a lobby seat is freed, a castle in a running match stays). */
