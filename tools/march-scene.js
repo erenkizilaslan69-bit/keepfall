@@ -1,6 +1,6 @@
 // A setup for tools/clip.mjs: one rival army (as the server tells it: only where it is and which way it goes) walks a chosen kind of road of the map and the
 // camera follows it, for before/after clips of how a column marches. The kind is the first line, set by tools/march-clips.mjs:
-//   straight | corner | forest | junction | big (a 40-man army on a straight road) | forest-x (the crossing of two roads in the forest) | big-corner (36 men round the sharpest bend)
+//   straight | corner | forest | junction | big (a 40-man army on a straight road) | forest-x (the crossing of two roads in the forest) | big-corner (36 men round the sharpest bend) | gate-in (36 men arriving at a castle's door through its wall)
 // Optional: globalThis.__marchZoom (camera zoom, default 1.3; 1 for the big army).
 // Usage (normally through march-clips.mjs): node tools/clip.mjs out.mp4 tools/march-scene.js
 (async () => {
@@ -51,6 +51,20 @@
       }
     }
   }
+  if (KIND === 'gate-out') {
+    // an army leaving a castle: from its door, through the gap in its wall, round the corner onto the road along the wall
+    const r0 = s.layout.regions.find((r) => r.seat !== null && r.color);
+    const door = { x: r0.origin.x + 8, y: r0.origin.y + 452 / 64 };
+    const p = roads.find((q) => len(q[0], door) < 0.3) ?? roads.find((q) => len(q[q.length - 1], door) < 0.3);
+    if (p) { const fwd = len(p[0], door) < 0.3 ? p : [...p].reverse(); route = stretch(fwd, 1); }
+  }
+  if (KIND === 'gate-in') {
+    // an army arriving at another castle: along the road from its junction back to that castle's door (through the gap in its wall)
+    const doors = s.layout.regions.filter((r) => r.seat !== null && r.color).map((r) => ({ x: r.origin.x + 8, y: r.origin.y + 452 / 64 }));
+    const door = doors[doors.length - 1];
+    const p = roads.find((q) => len(q[0], door) < 0.3) ?? roads.find((q) => len(q[q.length - 1], door) < 0.3);
+    if (p) { const rev = len(p[0], door) < 0.3 ? [...p].reverse() : p; route = stretch(rev, Math.max(1, rev.length - 2)); }
+  }
   if (!route && (KIND === 'corner' || KIND === 'big-corner' || KIND === 'forest-x')) {
     let best = null;
     // the sharpest bend; for the big army a sharp one (over ~70°) with the most road on both sides of it, so the whole column is seen turning
@@ -79,7 +93,7 @@
     const a = best.p[best.i], b = best.p[best.i + 1], u = { x: (b.x - a.x) / best.l, y: (b.y - a.y) / best.l };
     route = [{ x: a.x + u.x * 1, y: a.y + u.y * 1 }, { x: a.x + u.x * Math.min(best.l - 1, 23), y: a.y + u.y * Math.min(best.l - 1, 23) }];
   }
-  const units = KIND === 'big-corner'
+  const units = KIND === 'big-corner' || KIND === 'gate-in' || KIND === 'gate-out'
     ? [{ unitId: 'kalkanli', name: 'k', count: 9 }, { unitId: 'kilicli', name: 'k', count: 10 }, { unitId: 'mizrakci', name: 'm', count: 6 }, { unitId: 'okcu', name: 'o', count: 8 }, { unitId: 'suvari', name: 's', count: 3 }]
     : KIND === 'big'
     ? [{ unitId: 'kalkanli', name: 'k', count: 10 }, { unitId: 'kilicli', name: 'k', count: 12 }, { unitId: 'okcu', name: 'o', count: 10 }, { unitId: 'mancinik', name: 'm', count: 4 }, { unitId: 'suvari', name: 's', count: 4 }]

@@ -5,7 +5,8 @@
 // the room between the drawn soldiers of a column (nobody may stand closer than 26 px to a neighbour). Every frame the drawn leader's distance from the road is
 // measured; the check fails if it is ever over 0.3 tiles. The soldiers themselves may spill onto the grass beside the road (their lanes are fixed), but every
 // frame: no soldier changes its row or lane (nor does a row's order across get mixed up), no soldier jumps (moves faster than 25 tiles a second), and nobody
-// stands on (or beyond) a wall, a tower, a tree or a building while its column's line is free there (the made-up route of our own army crosses walls: where it does, nobody is judged).
+// stands on (or beyond) a wall, a tower, a tree or a building, with no exception: the made-up route lies in the open, and the castle exits and
+// entries (ours and a rival's, out of the gate and in to the door, 36 men) are walked on the real roads.
 // Usage: node tools/corner-check.mjs [http://localhost:5174/]   (CORNER_LIMIT=0.3 to change the limit)
 import { spawn } from 'node:child_process';
 import { mkdtempSync } from 'node:fs';
@@ -67,7 +68,7 @@ const result = await run(`(async () => {
         if (was && (was.row !== q.row || was.lane !== q.lane)) { swaps++; globalThis.__swapAt = q.i + ' ' + was.row + '/' + was.lane + ' -> ' + q.row + '/' + q.lane; }
         if (was && was.x !== 0 && nowMs > was.ms) { const d = Math.hypot(q.x - was.x, q.y - was.y), v = d / L.TILE / ((nowMs - was.ms) / 1000); if (d > 30 && v > 25) { jumps++; globalThis.__jumpAt = Math.round(d) + 'px in ' + Math.round(nowMs - was.ms) + 'ms, soldier ' + q.i + ' at ' + ((nowMs - t0) / 1000).toFixed(1) + 's'; } }
         placeOf.set(sprite, { row: q.row, lane: q.lane, x: q.x, y: q.y, ms: nowMs });
-        if (s.blockedAt({ x: q.x, y: q.y }, q.line) && ![[0, 0], [40, 0], [-40, 0], [0, 40], [0, -40]].some(([dx, dy]) => s.blockedAt({ x: q.line.x + dx, y: q.line.y + dy }, { x: q.line.x + dx, y: q.line.y + dy }))) { /* on an obstacle while its column's line beside it is free: it should have stepped in */ blockedN++; globalThis.__blockedAt = 'soldier ' + q.i + ' at ' + Math.round(q.x) + ',' + Math.round(q.y) + ' ' + ((nowMs - t0) / 1000).toFixed(1) + 's'; }
+        if (s.blockedAt({ x: q.x, y: q.y }, q.line)) { /* on (or through) a wall, a tower, a tree or a building: never, gates included */ blockedN++; globalThis.__blockedAt = 'soldier ' + q.i + ' at ' + Math.round(q.x) + ',' + Math.round(q.y) + ' ' + ((nowMs - t0) / 1000).toFixed(1) + 's'; }
         (rows.get(q.row) ?? rows.set(q.row, []).get(q.row)).push(q);
       }
       for (const row of rows.values()) { row.sort((a, b) => a.lane - b.lane); for (let k = 1; k < row.length; k++) if (row[k].side < row[k - 1].side - 2) { swaps++; globalThis.__swapAt = 'row ' + row[k].row + ' lanes out of order'; } }
@@ -87,7 +88,8 @@ const result = await run(`(async () => {
   };
   const out = [];
   // 1. our army on a route with sharp corners (the server gives the whole route)
-  const route = [{ x: 8, y: 8 }, { x: 14, y: 8 }, { x: 14, y: 14 }, { x: 9, y: 15 }, { x: 9, y: 20 }, { x: 16, y: 21 }];
+  // (in the open between the west castles and the forest: nothing to walk through)
+  const route = [{ x: 3, y: 18 }, { x: 9, y: 18 }, { x: 9, y: 24 }, { x: 4, y: 25 }, { x: 4, y: 30 }, { x: 11, y: 31 }];
   for (const stop of [2, 4, 6]) out.push(await walk('own:cc1', route, 2.5, (pos, travelled, r, speed) => {
     const a = along(r, cumul(r), travelled);
     return { ...s.state, seen: [], own: [{ ...base, id: 'cc1', kind: 'army', position: pos.p, velocity: { x: a.dir.x * speed, y: a.dir.y * speed }, route: r, travelled, speed }] };
@@ -132,6 +134,29 @@ const result = await run(`(async () => {
       out[out.length - 1].minSep = null; // (40 men: the catapults and horses of a big column brush shoulders on a forest path; only order, jumps and trees are judged)
     }
   }
+  // out of a castle's gate and in to its door, 36 men: ours leaving and coming home, a rival's leaving its castle and arriving at another's
+  {
+    const roadsOf = s.layout.roads.map((r) => r.points);
+    const doorOf = (r) => ({ x: r.origin.x + 8, y: r.origin.y + 452 / 64 });
+    const seated = s.layout.regions.filter((r) => r.seat !== null && r.color);
+    const roadFrom = (door) => { const p = roadsOf.find((q) => Math.hypot(q[0].x - door.x, q[0].y - door.y) < 0.3) ?? roadsOf.find((q) => Math.hypot(q[q.length - 1].x - door.x, q[q.length - 1].y - door.y) < 0.3); if (!p) return null; return Math.hypot(p[0].x - door.x, p[0].y - door.y) < 0.3 ? p : [...p].reverse(); };
+    const own = seated.find((r) => r.seat === window.keepfallUi.mySeat), rival = seated.find((r) => r.seat !== window.keepfallUi.mySeat);
+    const units = [['kalkanli', 9], ['kilicli', 10], ['mizrakci', 6], ['okcu', 8], ['suvari', 3]].map(([unitId, count]) => ({ unitId, name: unitId, count }));
+    const ownUnits = units.map((u) => ({ ...u }));
+    const cases = [];
+    if (own) { const out = roadFrom(doorOf(own)); if (out) { cases.push(['own:cc11', out, 'own']); cases.push(['own:cc12', [...out].reverse(), 'own']); } }
+    if (rival) { const out = roadFrom(doorOf(rival)); if (out) { cases.push(['seen:cc13', out, 'seen']); cases.push(['seen:cc14', [...out].reverse(), 'seen']); } }
+    for (const [name, path, who] of cases) {
+      out.push(await walk(name, path, 2.5, (pos, travelled, r, speed) => {
+        const a = along(r, cumul(r), travelled);
+        return who === 'own'
+          ? { ...s.state, seen: [], own: [{ ...base, id: name.slice(4), kind: 'army', units: ownUnits, position: pos.p, velocity: { x: a.dir.x * speed, y: a.dir.y * speed }, route: r, travelled, speed }] }
+          : { ...s.state, own: [], seen: [{ id: name.slice(5), kind: 'army', ownerColor: 'red', units, position: pos.p, velocity: { x: a.dir.x * speed, y: a.dir.y * speed }, heading: a.dir }] };
+      }, roadsOf, 99));
+      out[out.length - 1].minSep = null; // (36 men close up to pass a gate: only walls, towers, order and jumps are judged)
+      out[out.length - 1].gate = name.endsWith('11') ? 'our gate, out' : name.endsWith('12') ? 'our gate, home' : name.endsWith('13') ? "a rival's gate, out" : "a rival's door, in";
+    }
+  }
   // our own scout and envoy on the sharp route, our own army of catapults and cavalry
   for (const [name, kind, units] of [['own:cc6', 'scout', []], ['own:cc7', 'envoy', []], ['own:cc8', 'army', [{ unitId: 'suvari', name: 's', count: 2 }, { unitId: 'kalkanli', name: 'k', count: 3 }, { unitId: 'mancinik', name: 'm', count: 3 }, { unitId: 'okcu', name: 'o', count: 3 }]]]) {
     out.push(await walk(name, route, 2.5, (pos, travelled, r, speed) => {
@@ -168,7 +193,7 @@ try {
   for (const r of JSON.parse(result)) {
     const pass = r.worst < LIMIT && (r.minSep === null || r.minSep >= 26) && !r.insideWall && !r.laneSwaps && !r.jumps && !r.inObstacle;
     ok &&= pass;
-    console.log(`${pass ? 'ok  ' : 'FAIL'} ${r.name}: the column was at most ${r.worst} tiles from its road (limit ${LIMIT}), at ${r.worstAtSec} s, ${r.frames} frames${r.minSep !== null ? `, closest two soldiers ${r.minSep} px (${r.sepAt})` : ''}${r.bendDegrees ? `, bend ${r.bendDegrees}°` : ''}${r.laneSwaps !== undefined ? `, ${r.laneSwaps} row/lane changes${r.swapAt ? ` (${r.swapAt})` : ''}, ${r.jumps} jumps${r.jumpAt ? ` (${r.jumpAt})` : ''}, ${r.inObstacle} in a wall/tree/building${r.blockedAt ? ` (${r.blockedAt})` : ''}` : ''}${r.insideWall !== undefined ? `, ${r.insideWall} of ${r.soldiers} soldiers on the wall` : ''}`);
+    console.log(`${pass ? 'ok  ' : 'FAIL'} ${r.name}: the column was at most ${r.worst} tiles from its road (limit ${LIMIT}), at ${r.worstAtSec} s, ${r.frames} frames${r.minSep !== null ? `, closest two soldiers ${r.minSep} px (${r.sepAt})` : ''}${r.bendDegrees ? `, bend ${r.bendDegrees}°` : ''}${r.gate ? ` [${r.gate}]` : ''}${r.laneSwaps !== undefined ? `, ${r.laneSwaps} row/lane changes${r.swapAt ? ` (${r.swapAt})` : ''}, ${r.jumps} jumps${r.jumpAt ? ` (${r.jumpAt})` : ''}, ${r.inObstacle} in a wall/tree/building${r.blockedAt ? ` (${r.blockedAt})` : ''}` : ''}${r.insideWall !== undefined ? `, ${r.insideWall} of ${r.soldiers} soldiers on the wall` : ''}`);
   }
 } catch { console.log('FAIL no result:', String(result).slice(0, 300)); ok = false; }
 if (errors.length) { console.log('page errors:', errors.slice(0, 3).join(' | ')); ok = false; }
