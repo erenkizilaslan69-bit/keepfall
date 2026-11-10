@@ -210,6 +210,54 @@ public class EnvoyMessageTests
     public void Harmless_words_that_only_look_alike_are_left_alone(string text) =>
         Assert.Equal(text, EnvoyMessage.Check(text, On).Text);
 
+    // The embedded per-language lists (Match/Profanity/*.txt): at least two words of each language must be masked, and the word must be gone from the result.
+    [Theory]
+    [InlineData("de", "Du bist ein Arschloch", "Arschloch")]
+    [InlineData("de", "so ein Wichser", "Wichser")]
+    [InlineData("es", "eres un gilipollas", "gilipollas")]
+    [InlineData("es", "qué mierda", "mierda")]
+    [InlineData("fr", "espèce de connard", "connard")]
+    [InlineData("fr", "quelle merde", "merde")]
+    [InlineData("it", "sei uno stronzo", "stronzo")]
+    [InlineData("it", "che cazzo fai", "cazzo")]
+    [InlineData("pt", "seu filho da puta", "filho da puta")]
+    [InlineData("pt", "que caralho", "caralho")]
+    [InlineData("pl", "ty kurwa", "kurwa")]
+    [InlineData("pl", "spierdalaj stąd", "spierdalaj")]
+    [InlineData("ru", "ты мудак", "мудак")]
+    [InlineData("ru", "пошёл нахуй", "нахуй")]
+    [InlineData("uk", "ти довбойоб", "довбойоб")]
+    [InlineData("uk", "що за гівно", "гівно")]
+    [InlineData("zh", "你这个傻逼", "傻逼")]
+    [InlineData("zh", "他妈的", "他妈的")]
+    [InlineData("ja", "このクソ野郎", "クソ野郎")]
+    [InlineData("ja", "ファック", "ファック")]
+    [InlineData("ko", "이 씨발 놈", "씨발")]
+    [InlineData("ko", "병신 같네", "병신")]
+    public void Swear_words_of_the_other_languages_are_masked(string lang, string text, string word)
+    {
+        Assert.NotEmpty(lang); // documents which list the sample comes from
+        var masked = EnvoyMessage.Check(text, On).Text!;
+        Assert.DoesNotContain(word, masked, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("*", masked);
+    }
+
+    [Theory]
+    [InlineData("Die Vergangenheit ist vorbei und der Klassenraum offen")]
+    [InlineData("la bite d'amarrage du bateau")]
+    [InlineData("el pinche cocinero puso la mesa")]
+    [InlineData("a putative leader and a retardant coating")]
+    [InlineData("il pesce e il finocchio sono freschi")]
+    [InlineData("o veado correu pela floresta")]
+    [InlineData("Мы идём в голый лес за грибами")]
+    [InlineData("Привіт, друже, як справи")]
+    [InlineData("Dzień dobry, jak się masz")]
+    [InlineData("今天天气很好，我们去攻城")]
+    [InlineData("ナクソス島とエクソシスト")]
+    [InlineData("안녕하세요 보지 말고 가세요")]
+    public void Clean_sentences_in_the_other_languages_are_not_masked(string text) =>
+        Assert.Equal(text, EnvoyMessage.Check(text, On).Text);
+
     [Fact]
     public void The_limits_hold_in_characters_and_an_empty_message_is_no_message()
     {

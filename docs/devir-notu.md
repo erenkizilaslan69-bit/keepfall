@@ -34,6 +34,14 @@ Kural kaynağı yine `CLAUDE.md`; ayrıntılı teknik plan `docs/sonraki-plan.md
 
 ---
 
+## 0B. 15 dil (2026-11-10, dev dalı)
+- Diller: en, tr, zh-CN, zh-TW, ru, es-ES, es-419, pt-BR, de, fr, ja, ko, pl, it, uk. Altyapı `client/src/i18n/` (`langs.ts`, `langs/<kod>.ts`, algılama: kayıtlı → `?lang=` → Steam → tarayıcı), terimler `docs/ceviri-sozlugu.md`, çeviri hattı `docs/ceviri-parca/*.tsv` + `tools/i18n-*.mjs`, durum `docs/i18n-durum.md`. Yazı tipleri `docs/yazi-tipi-lisanslari.md` (Fusion Pixel CJK/Kiril, yalnız seçilen dilde yüklenir).
+- Mağaza metinleri `docs/steam-magaza-diller/`; AI beyanına "oyun içi ve mağaza çevirileri AI yardımıyla" eklendi (`steam-magaza.md` §6).
+- Krediler (`ui/settings.ts`) yenilendi: Gemini cümlesi kalktı; Tiny Swords, yazı tipleri (OFL), sesler (Kenney + OpenGameArt CC0 — `docs/ses-lisanslari.md`'ye göre, Pixabay yok), LDNOOBW (CC BY 4.0), çeviriler AI destekli, Red Lion Games. Lisans metinleri `client/public/licenses/` (her derlemeye kopyalanır).
+- Küfür filtresi: `docs/kufur-filtresi.md`.
+- Yerleşim: `node tools/lang-audit.mjs` → `docs/lang-audit.md` (`ui/i18n-fit.css`). Kalan "cut" kayıtları dikey kaydırmalı pencerelerin taşan içeriğidir (İngilizce tabanda da var), yatay kırpılma değil.
+- Açık: native gözden geçirme (özellikle uk, ja, ko, zh); eski Gemini/Kenney uzun kredi anahtarları sözlüklerde duruyor (zararsız, temizlenebilir).
+
 ## 0. Çalışma şekli (değişmeyecek kurallar)
 
 - **Eren** tasarım ve kararları verir; **Claude (sohbet)** tasarım danışmanı ve Claude Code için Türkçe prompt yazarı; **Claude Code** (Eren'in Windows makinesinde, repo `erenkizilaslan69-bit/keepfall`) tüm kodu yazar.

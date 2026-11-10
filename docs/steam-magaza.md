@@ -172,7 +172,7 @@ Yaş derecelendirmesi (IARC) tahmini: PEGI 7 / ESRB E10+ düzeyi (fantezi şidde
 **Kod yardımcıları (muaf):** oyun kodunun büyük kısmı bir yapay zekâ kod yardımcısıyla (Claude Code) yazıldı; Valve kuralına göre beyan gerekmez, ama istenirse "geliştirme sürecinde kullanıldı" notu eklenebilir.
 
 **Taslak beyan (form metni, EN) — karar: oyun içi metinler beyan edilir:**
-> No AI-generated art, audio or music is shipped with the game or its store page: all art is by Pixel Frog (Tiny Swords, licensed) or drawn in code, and audio is CC0 recordings. The game generates nothing with AI at runtime. The English and Turkish in-game and store text was drafted with AI assistance and reviewed by the developer. AI coding assistants were used during development (code only).
+> No AI-generated art, audio or music is shipped with the game or its store page: all art is by Pixel Frog (Tiny Swords, licensed) or drawn in code, and audio is CC0 recordings. The game generates nothing with AI at runtime. The in-game and store texts and the translations into all 15 languages were made with AI assistance and reviewed by the developer. AI coding assistants were used during development (code only).
 
 **Karar (Eren, 10 Kasım):** oyun içi Türkçe/İngilizce metinlerin yapay zekâ yardımıyla yazıldığı kısa ve dürüst biçimde beyan edilir (yukarıdaki metin). Steam formunda "metin" kutusu varsa işaretle; yoksa bu cümle serbest metin alanına girer.
 
@@ -246,3 +246,5 @@ Açık:
 4. Yapay zekâ beyanı ve içerik anketi doldurulur (§5, §6); yaş derecelendirmesi anketten çıkar.
 5. Sistem gereksinimleri (D3D11 dahil) girilir (§3). Sayfada geçmemesi gerekenler: mobil, Steam Deck/Linux/macOS, kontrolcü, mod desteği, sesli sohbet, bulut kayıt, Steam başarımları (SDK entegrasyonu denenmedi).
 6. "Coming Soon" olarak yayımlanır; sayfa gözden geçirmesi (Valve) ~birkaç gün sürebilir.
+
+**Güncelleme (10 Kasım):** oyun içi ve mağaza çevirilerinin (15 dil) yapay zekâ yardımıyla yapıldığı beyana eklendi; oyun içi krediler güncellendi (Gemini cümlesi kalktı, `client/src/ui/settings.ts`). Ses kaynakları `docs/ses-lisanslari.md`'ye göre Kenney ve OpenGameArt (CC0); Pixabay yok.

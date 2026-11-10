@@ -4,29 +4,20 @@ Otomatik: `node tools/lang-audit.mjs`. Sayılar: İngilizcede olmayan, o dilin e
 
 | Dil | home | lobby | match | forge-window | farm-window | kingdom-panel | guide | settings |
 |---|---|---|---|---|---|---|---|---|
-| en (taban) | 0 | 0 | 0 | 10 | 0 | 0 | 0 | 0 |
-| de | 0 | 0 | 0 | 2 | 0 | 0 | 0 | 0 |
-| ru | 0 | 0 | 0 | 1 | 0 | 10 | 0 | 0 |
-| zh-CN | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| ja | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| de | 0 | 0 | 0 | 12 | 0 | 0 | 0 | 0 |
 
 ## Ayrıntı (dilin eklediği)
 
 ### de · forge-window
-- cut by div.win-body: `span.up-line` "Ausbauen +50 % Waffengeschwindigkeit" konum 482,394,754,432
-- cut by div.win-body: `span.cost` "10" konum 507,793,543,813
-
-### ru · forge-window
-- cut by div.win-body: `span.cost` "10" konum 507,776,543,796
-
-### ru · kingdom-panel
-- cut by div.kingdom-panel.paper: `span` "Лучник" konum 42,729,88,748
-- offscreen: `span` "Лучник" konum 42,729,88,748
-- cut by div.kingdom-panel.paper: `span` "Щитоносец" konum 42,763,117,782
-- offscreen: `span` "Щитоносец" konum 42,763,117,782
-- cut by div.kingdom-panel.paper: `span` "Монах" konum 42,797,82,816
-- offscreen: `span` "Монах" konum 42,797,82,816
-- cut by div.kingdom-panel.paper: `span` "Катапульта" konum 42,831,118,850
-- offscreen: `span` "Катапульта" konum 42,831,118,850
-- cut by div.kingdom-panel.paper: `button.btn` "Задать донесение" konum 42,860,195,896
-- offscreen: `button.btn` "Задать донесение" konum 42,860,195,896
+- cut by div.win-body: `small` "30 s" konum 584,690,607,705
+- cut by div.win-body: `b` "×0" konum 543,725,558,739
+- cut by div.win-body: `b` "Schildträger" konum 507,752,602,770
+- cut by div.win-body: `small` "35 s" konum 584,780,606,795
+- cut by div.win-body: `button.btn` "+1" konum 668,740,693,770
+- cut by div.win-body: `button.btn` "+5" konum 701,740,730,770
+- cut by div.win-body: `b` "×0" konum 543,815,558,828
+- cut by div.win-body: `b` "Katapult" konum 572,813,639,831
+- cut by div.win-body: `span.cost` "10" konum 507,842,543,862
+- cut by div.win-body: `small` "60 s" konum 590,851,613,866
+- cut by div.win-body: `button.btn` "+1" konum 668,821,693,851
+- cut by div.win-body: `button.btn` "+5" konum 701,821,730,851
