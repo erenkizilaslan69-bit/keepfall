@@ -87,6 +87,20 @@ export class BattlePlayer {
   debugSprites(): Phaser.GameObjects.Sprite[] {
     return [...this.replays.values()].flatMap((r) => r.fighters.filter((f): f is Fighter => !!f).map((f) => f.sprite));
   }
+  /** The box (world px) the living soldiers of a replay take up right now; null when it is not being replayed (the director frames it). */
+  bounds(id: string): { x: number; y: number; w: number; h: number } | null {
+    const r = this.replays.get(id);
+    if (!r || r.ended) return null;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const f of r.fighters) {
+      if (!f || !f.sprite.active || !f.sprite.visible) continue;
+      // (the frames are mostly empty around the figure: the figure is about a fifth of the frame either side of its middle)
+      // the origin is at the feet: the figure stands above them
+      const s = f.sprite, hw = s.displayWidth * 0.22;
+      x0 = Math.min(x0, s.x - hw); y0 = Math.min(y0, s.y - s.displayHeight * 0.35); x1 = Math.max(x1, s.x + hw); y1 = Math.max(y1, s.y + s.displayHeight * 0.05);
+    }
+    return x1 > x0 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : null;
+  }
   /** Every battle that has been replayed here, for good: its "Savaş" cloud must not come back after the replay ends. */
   private played = new Set<string>();
   hasPlayed(id: string): boolean { return this.played.has(id); }

@@ -377,6 +377,9 @@ export class WorldScene extends Phaser.Scene {
    * no fog, every castle's inside, every army and scout. Our own castle goes on being drawn by the normal code,
    * fed from the picture instead of the live state.
    */
+  /** The director: the box the soldiers of a battle being replayed stand in (world px), or null. */
+  battleBounds(id: string): { x: number; y: number; w: number; h: number } | null { return this.battles?.bounds(id) ?? null; }
+
   /** The room's speed now (×1 normally; the director's camera moves with it). */
   get speedNow(): number { return this.state?.speed ?? 1; }
 

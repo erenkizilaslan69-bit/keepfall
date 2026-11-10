@@ -195,11 +195,7 @@ export class Effects {
     if ((have?.length ?? 0) === [0, 1, 4, 5][stage]) return;
     have?.forEach((s) => s.destroy());
     const list: Phaser.GameObjects.Sprite[] = [];
-    const smoke = (dx: number, dy: number, scale: number) => {
-      const s = this.scene.add.sprite(x + dx, y + dy, 'dust').setScale(scale).setDepth(DEPTH_FX).setTint(0x3a3a3a).setAlpha(0.9);
-      s.play({ key: 'dust', repeat: -1, startFrame: Phaser.Math.Between(0, 7) });
-      list.push(s);
-    };
+    const smoke = (dx: number, dy: number, scale: number) => list.push(this.smokePuff(x + dx, y + dy, scale * 0.8, 0.6));
     const flame = (dx: number, dy: number, scale: number) => {
       const s = this.scene.add.sprite(x + dx, y + dy, 'fire').setScale(scale).setDepth(DEPTH_FX).setOrigin(0.5, 0.85);
       s.play({ key: 'fire', repeat: -1, startFrame: Phaser.Math.Between(0, 5) });
@@ -207,8 +203,29 @@ export class Effects {
     };
     if (stage >= 1) smoke(-105, -190, 4);
     if (stage >= 2) { flame(95, -150, 2.6); flame(-30, -195, 2.2); smoke(100, -215, 4.2); smoke(-35, -245, 3.6); }
-    if (stage === 3) { list.forEach((s) => s.setAlpha(0.4)); smoke(0, -140, 4.6); }
+    if (stage === 3) { list.forEach((s) => s.setAlpha(0.4).setData('alpha', 0.35)); smoke(0, -140, 4.6); list[list.length - 1].setData('alpha', 0.4); }
     this.burning.set(id, list);
+  }
+
+  /**
+   * One column of smoke over a burning castle or wall: the Tiny Swords dust puff, light grey and see-through, rising and fading over and over
+   * (a dark, still one looked like a black hole close up). The sprite's 'alpha' data is how opaque it gets at most.
+   */
+  private smokePuff(x: number, y: number, scale: number, alpha: number): Phaser.GameObjects.Sprite {
+    const s = this.scene.add.sprite(x, y, 'dust').setScale(scale).setDepth(DEPTH_FX).setTint(0xb4aea6).setAlpha(0).setData('alpha', alpha);
+    s.play({ key: 'dust', repeat: -1, startFrame: Phaser.Math.Between(0, 7) });
+    s.once('destroy', () => this.scene.tweens.killTweensOf(s));
+    const rise = () => {
+      if (!s.active) return;
+      s.setPosition(x + Phaser.Math.Between(-8, 8), y).setScale(scale * 0.85);
+      this.scene.tweens.add({
+        targets: s, y: y - 34 * scale / 4, scale: scale * 1.15, duration: 2600, ease: 'Sine.easeOut',
+        onUpdate: (tw) => s.setAlpha((s.getData('alpha') as number) * Math.sin(Math.PI * tw.progress)),
+        onComplete: rise,
+      });
+    };
+    this.scene.time.delayedCall(Phaser.Math.Between(0, 1200), rise);
+    return s;
   }
 
   /**
@@ -222,11 +239,7 @@ export class Effects {
     if ((have?.length ?? 0) === [0, 1, 3, 4][stage]) return;
     have?.forEach((s) => s.destroy());
     const list: Phaser.GameObjects.Sprite[] = [];
-    const smoke = (dy: number, scale: number) => {
-      const s = this.scene.add.sprite(x, y + dy, 'dust').setScale(scale).setDepth(DEPTH_FX).setTint(0x3a3a3a).setAlpha(0.85);
-      s.play({ key: 'dust', repeat: -1, startFrame: Phaser.Math.Between(0, 7) });
-      list.push(s);
-    };
+    const smoke = (dy: number, scale: number) => list.push(this.smokePuff(x, y + dy, scale * 0.8, 0.55));
     const flame = (dy: number, scale: number) => {
       const s = this.scene.add.sprite(x, y + dy, 'fire').setScale(scale).setDepth(DEPTH_FX).setOrigin(0.5, 0.85);
       s.play({ key: 'fire', repeat: -1, startFrame: Phaser.Math.Between(0, 5) });
@@ -234,7 +247,7 @@ export class Effects {
     };
     if (stage >= 1) smoke(-70, 2.6);
     if (stage >= 2) { flame(-30, 1.8); flame(70, 1.6); }
-    if (stage === 3) { list.forEach((s) => s.setAlpha(0.4)); smoke(40, 3); }
+    if (stage === 3) { list.forEach((s) => s.setAlpha(0.4).setData('alpha', 0.35)); smoke(40, 3); }
     this.burning.set(id, list);
   }
 
