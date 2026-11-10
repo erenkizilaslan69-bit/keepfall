@@ -2,7 +2,8 @@
 // runs a setup script (JS, an expression that may return a promise; it may start its own timers), then takes pictures of the page for a few seconds and
 // makes them an mp4 with ffmpeg (winget install Gyan.FFmpeg).
 // Usage: node tools/clip.mjs <out.mp4> <setup.js> [http://localhost:5174/]
-// Env: SECONDS=6 FPS=8 SIZE=1280,720 BOTS=easy  GPU=1 (the real graphics card: much faster pictures than the software renderer)  WARMUP=800 (ms between the setup and the first picture)  QUERY=?fx=0
+// Env: SECONDS=6 FPS=8 SIZE=1280,720 BOTS=easy  GPU=1 (the real graphics card: much faster pictures than the software renderer)
+//      SCREEN=1: a visible kiosk Chrome on the 1920x1080 screen, recorded with ffmpeg at 60 fps (as tools/director.mjs does; nothing may cover it meanwhile)  WARMUP=800 (ms between the setup and the first picture)  QUERY=?fx=0
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -17,7 +18,8 @@ const URL = BASE + (process.env.QUERY ?? '');
 const port = 9333 + Math.floor(Math.random() * 500);
 const dir = mkdtempSync(join(tmpdir(), 'kf-clip-'));
 const frames = join(dir, 'frames'); mkdirSync(frames);
-const chrome = spawn('C:/Program Files/Google/Chrome/Application/chrome.exe', ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${join(dir, 'profile')}`, `--window-size=${W},${H}`,
+const SCREEN = !!process.env.SCREEN;
+const chrome = spawn('C:/Program Files/Google/Chrome/Application/chrome.exe', [...(SCREEN ? ['--kiosk', '--window-position=0,0', '--force-device-scale-factor=1', '--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-features=Translate,TranslateUI,CalculateNativeWinOcclusion', '--disable-infobars', '--hide-scrollbars'] : ['--headless=new']), `--remote-debugging-port=${port}`, `--user-data-dir=${join(dir, 'profile')}`, `--window-size=${W},${H}`,
   '--no-first-run', ...(process.env.GPU ? ['--use-angle=d3d11', '--enable-gpu-rasterization'] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']), '--ignore-gpu-blocklist', 'about:blank'], { stdio: 'ignore' });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let targets;
@@ -33,15 +35,27 @@ const run = async (expression) => {
   return r.result?.result?.value;
 };
 await send('Runtime.enable'); await send('Page.enable');
-await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
+if (!SCREEN) await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
 await send('Page.navigate', { url: URL }); await sleep(3500);
 await run(`localStorage.clear(); localStorage.setItem('keepfall_tutorial_seen', 'true'); localStorage.setItem('keepfall_lang', '${process.env.KFLANG ?? 'tr'}'); 1`);
 await send('Page.navigate', { url: URL }); await sleep(3500);
 await run(`(async () => { const n = window.keepfallNet; await n.createRoom('Eren'); for (const l of ${JSON.stringify(BOTS)}) await n.addBot(l); await n.setReady(true); await n.startMatch(); return 1; })()`);
 await run(`(async () => { for (let i = 0; i < 120; i++) { if (window.keepfallScene?.ready) break; await new Promise(r => setTimeout(r, 400)); } await new Promise(r => setTimeout(r, 2500)); document.getElementById('kingdom-decree')?.remove(); return 1; })()`);
 const setup = await run(readFileSync(SETUP, 'utf8'));
-if (typeof setup === 'string' && setup.startsWith('ERR')) console.log('setup:', setup.slice(0, 300));
+if (typeof setup === 'string') console.log('setup:', setup.slice(0, 300));
 await sleep(Number(process.env.WARMUP ?? 800));
+if (SCREEN) {
+  // the screen itself at 60 fps, the window brought to the front first
+  spawnSync('powershell', ['-NoProfile', '-Command', `(New-Object -ComObject WScript.Shell).AppActivate(${chrome.pid})`], { stdio: 'ignore', windowsHide: true });
+  await send('Page.bringToFront'); await sleep(600);
+  mkdirSync(dirname(OUT), { recursive: true });
+  const r = spawnSync('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'ddagrab=output_idx=0:framerate=60:draw_mouse=0,hwdownload,format=bgra', '-t', String(SECONDS),
+    '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', OUT], { stdio: 'inherit' });
+  ws.close(); chrome.kill();
+  console.log(r.status === 0 ? `saved ${OUT} (the screen, ${SECONDS} s at 60 fps)` : 'ffmpeg failed');
+  rmSync(dir, { recursive: true, force: true });
+  process.exit(r.status === 0 ? 0 : 1);
+}
 const total = Math.round(SECONDS * FPS), t0 = Date.now();
 for (let i = 0; i < total; i++) {
   const due = t0 + (i * 1000) / FPS;
