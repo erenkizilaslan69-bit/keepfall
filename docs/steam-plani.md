@@ -36,6 +36,7 @@ Eleştirinin ana bulguları: (1) çok oyunculu oyun boş lobiyle çıkarsa ölü
 
 ### F. Steam paketleme — HAZIRLIK YAPILDI 2026-11-07, kullanıcı kararı bekliyor (hesap, fiyat/tarih, lisans)
 - **Yapıldı (hesapsız)**: Electron kabuğu + gömülü self-contained sunucuyla çevrimdışı demo prototipi (`node tools/pack-steam.mjs`, doğrulama `tools/steam-check.mjs`; kabuk seçimi ve ölçümler `docs/steam-paketleme.md`), `SteamProgressStore` + zengin durum taslağı (app id yoksa kapalı), mağaza taslağı ve fragman/ekran görüntüsü planı (`docs/steam-magaza.md`, `tools/shot-steam.mjs`, `tools/steam-trailer.mjs`), Tiny Swords lisans soruları ve değiştirilebilir varlık listesi (`docs/steam-paketleme.md` §4–5).
+- **Çok oyunculu (2026-11-11)**: resmi sunucu yok; ev sahibi (listen server) modeli kodlandı ve LAN üzerinden uçtan uca denendi (`docs/steam-paketleme.md` §7). Demo kapsamı önerisi: botlara karşı tek kişilik + arkadaşla ev sahipli çok oyunculu.
 - **Bekleyen (kullanıcı)**: Steamworks hesabı + 100 USD (app id), fiyat ve tarih, Tiny Swords Free Pack'in Steam'de ticari kullanım/yeniden dağıtım teyidi, yapay zekâ içerik beyanı. Gerçek SDK ile başarım/bulut/Rich Presence denenmedi.
 - Özgün plan:
 - Masaüstü kabuğu (Electron veya Tauri) + Steamworks (başarımlar, bulut kayıt, zengin durum). Oyun şimdiki gibi sunucu ister; demo için **tek kişilik modun sunucusu istemciyle birlikte yerelde** çalışabilir (çevrimdışı demo).

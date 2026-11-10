@@ -19,7 +19,7 @@ server/  self-contained .NET sunucu (.NET kurulumu gerekmez) + config/ + client/
 
 - **Sabit kaynak (origin)**: rastgele port yüzünden `localStorage` her açılışta sıfırlanırdı (ilerleme, dil, ayarlar). Sayfa sabit `keepfall.localhost` adresinde açılır, Chromium bunu o gün seçilen porta eşler; `*.localhost` güvenli bağlam sayılır. Yeniden açılışta farklı port, aynı depolama (denetim geçiyor).
 - **Dışarıya hiçbir istek**: kabuk `webRequest` ile `keepfall.localhost` dışındaki her isteği iptal eder ve sayar (`window.keepfallSteam.blockedRequests()`); denetim bir Hızlı oyna maçından sonra 0 görüyor. İstemci zaten CDN/Google Fonts kullanmıyor (yazı tipleri `@fontsource`, paketle gelir). Kredilerdeki Tiny Swords adresi yalnız metin.
-- **Çok oyunculu/davet kapalı**: `client/.env.steam` → `VITE_FEATURE_PRIVATE_ROOM=0`, `VITE_FEATURE_CRAZY_INVITE=0` (CrazyGames için yapılan bayraklar). Ana menüde yalnız Hızlı oyna, Meydan Okuma, Başarımlar ve Ustalık kalır. Sunucu yalnız 127.0.0.1'i dinler; `Keepfall__MaxRooms=4`.
+- **Güncelleme (2026-11-11): çok oyunculu artık AÇIK, ev sahibi modeliyle (§7); bu madde eski durumu anlatır.** **Çok oyunculu/davet kapalı**: `client/.env.steam` → `VITE_FEATURE_PRIVATE_ROOM=0`, `VITE_FEATURE_CRAZY_INVITE=0` (CrazyGames için yapılan bayraklar). Ana menüde yalnız Hızlı oyna, Meydan Okuma, Başarımlar ve Ustalık kalır. Sunucu yalnız 127.0.0.1'i dinler; `Keepfall__MaxRooms=4`.
 - Sunucuya tek ekleme: `Program.cs` içinde `KEEPFALL_PARENT_PID` varsa üst süreç ölünce `StopApplication()` (başka yerde ayarsız = etkisiz).
 - Gizli bilgi kuralları aynen geçerli: sunucu otoriter, istemci yalnız kendi görünümünü alır (sunucu kodu değişmedi).
 
@@ -112,3 +112,72 @@ Yani engel ağırlıkla **birimler** ve **zemin/ağaç/arayüz kalanları**: izi
 3. Yukarıdaki Tiny Swords soruları (itch.io sayfası/Pixel Frog yazılı onayı).
 4. Steam'in yapay zekâ içerik beyanı kararı (hangi görseller AI üretimi).
 5. Kod imzalama sertifikası (isteğe bağlı), uygulama simgesi.
+
+## 7. Çok oyunculu: ev sahibi (listen server) modeli (2026-11-11)
+
+**Karar (Eren):** resmi sunucu YOK (maliyet 0). Steam sürümünde odayı kuran oyuncunun bilgisayarı yetkili sunucudur; arkadaşlar LAN/doğrudan IP ya da Steam ağı üzerinden bağlanır. Web sürümü (Render/itch) değişmedi: aşağıdaki her sunucu ayarı varsayılan olarak kapalıdır.
+
+```
+EV SAHİBİ  Keepfall.exe
+ ├─ Keepfall.Server  127.0.0.1:P (kendi penceresi)  +  127.0.0.1:G (KONUK kapısı: Keepfall__GuestPort)
+ ├─ LAN kapısı   0.0.0.0:47800 (doluysa +1…+9)  ── TCP ──▶ G        (mp.js; yalnız oyun kurulunca açılır)
+ └─ Steam kapısı Steam lobisi üyeleri ── P2P (Valve relay) akış tüneli ──▶ G   (tunnel.js)
+KONUK  Keepfall.exe (sayfa KENDİ gömülü sunucusundan gelir; yalnız hub bağlantısı ev sahibine gider)
+ └─ http://join.keepfall.localhost → kabuğun yerel kapısı → (TCP ip:port) ya da (Steam tüneli) → ev sahibinin G kapısı
+KONUK (tarayıcı, yalnız LAN)  http://<ev sahibi ip>:47800/?room=KOD  (sayfa ev sahibinden gelir)
+```
+
+- **Ağ kodu değişmedi:** iki uçta da SignalR/WebSocket; köprü yalnız bayt taşır. İstemcide tek ek `GameConnection.switchServer(base)` (`client/src/net.ts`) ve `client/src/hosted.ts`.
+- **Kütüphane: `steamworks.js` 0.4.0 (MIT)**, zaten kabukta. Doğrulanan API (paketteki `client.d.ts`): `matchmaking.createLobby/joinLobby/getLobbies`, `Lobby.setData/getFullData/openInviteDialog/getMembers/getOwner`, `networking.sendP2PPacket/readP2PPacket/acceptP2PSession` (eski `ISteamNetworking`: NAT delme, olmazsa Valve relay; güvenilir ve sıralı mesaj ≤ 1 MB), geri çağrılar `P2PSessionRequest`, `P2PSessionConnectFail`, `LobbyChatUpdate`, `GameLobbyJoinRequested`. Yeni `ISteamNetworkingSockets` bu kütüphanede YOK; eski API Valve tarafında hâlâ destekleniyor ve relay'e düşüyor. Diğer adaylar: `Steamworks.NET` (MIT) / `Facepunch.Steamworks` (MIT) NetworkingSockets'i verir ama Steam'i .NET sunucu sürecine taşımak gerekir (overlay/başarım köprüsü Electron'da kalır, iki süreçte iki Steam başlatması); gerek görülürse tünelin yalnız `send/receive` ucu değişir (`tunnel.js` Steam'i bilmez).
+- **Tünel** (`tools/steam/shell/tunnel.js`): paket = `[tür][akış no][veri]` (OPEN/DATA/END/RESET), 32 KB parçalar, eş başına en çok 16 akış; ev sahibi yalnız KENDİ lobisinin üyelerinden akış kabul eder. Steam'siz denetim: `node tools/tunnel-check.mjs` (sahte hat; 700 KB gövde, 8 eşzamanlı akış, yükseltilmiş bağlantı, yabancı reddi).
+- **Lobi:** "Oyun kur (ev sahibi)" → Arkadaşlar / Herkese açık / Özel; lobi verisi `kf, code, build, protocol, name, players, max, phase`. Arkadaş listesinden "Oyuna katıl" ve davet (`GameLobbyJoinRequested`, oyun kapalıyken `+connect_lobby <id>`), oyun içi "Açık oyunları listele". Rich Presence `#Status_Lobby` ("Lobide 2/4", `players` anahtarı; `tools/steam/rich_presence_loc.vdf` yeniden yüklenmeli) + `steam_player_group`. Steam adı varsayılan oyuncu adı. Boş koltuklar botla dolar (mevcut seçenek).
+- **App id:** `steam.json` → `appId` (0 = Steam kapalı, oyun hatasız açılır). Geliştirme: `KEEPFALL_STEAM_APPID=480` **ve** `KEEPFALL_STEAM_DEV=1` (480 bu olmadan açılmaz); `pack-steam.mjs` pakette 480 ya da `steam_appid.txt` bulursa durur. Gerçek app id gelince yalnız `steam.json` değişir.
+- **Steam'siz yedek (LAN / doğrudan IP):** lobi adresi gösterir (`http://192.168.x.x:47800/?room=KOD`, "Adresi kopyala"); konuk bunu oyunda "Ev sahibinin adresi"ne yazar (`ip:port#KOD` da olur) ya da tarayıcıda açar. İnternet üzerinden doğrudan IP için ev sahibinin 47800/TCP portunu yönlendirmesi gerekir (Steam yolunda gerekmez). İlk açılışta Windows güvenlik duvarı izin sorar.
+- **Sürüm uyumu:** `build.json` (`0.1.0+<commit>`, `pack-steam` yazar) → `/version` `build` + lobi verisi. Katılmadan ÖNCE karşılaştırılır: "Sürüm uyuşmuyor: ev sahibi X, sen Y. İkiniz de oyunu güncelleyin." Liste uyumsuz lobiyi "farklı sürüm" diye işaretler.
+- **Kopma:** lobide koltuk 60 sn (`LobbyGraceMinutes` 1); maçta 60 sn sonra kaleyi Orta bot oynatır (`Keepfall__TakeoverSeconds` 60 → `RoomPlayer.Deputy`; koltuk insanın kalır, jetonuyla dönünce bot anında bırakır; oyuncu şeridinde "bağlantı yok, yerine bot oynuyor").
+- **Ev sahibi çıkarsa:** pencereyi kapatır ya da menüye dönerse maç olduğu yerde biter (süre dolmuş gibi sıralanır), herkese `HostLeft` + maç sonu + "Kim kimi kandırdı" özeti gider (`HostedMatch`, `POST /api/host/stop` yalnız ev sahibinin kendi kapısından). Ev sahibi ansızın giderse (çökme, elektrik) konuk 12 sn içinde "Ev sahibiyle bağlantı koptu…" mesajını görür, tıklayınca kendi menüsüne döner; **bu durumda özet YOK** (veri ev sahibindeydi).
+- **Güvenlik:** ev sahibi tüm durumu bilir (kabul: arkadaş oyunu). Konuklar yalnız kendi görünümlerini alır (ViewMapper filtreleri aynen; `host-check` sızıntı denetimi). Konuk kapısından gelen bağlantı oda kuramaz, ev sahibini durduramaz; director (kameraman) Steam yapısında ve ev sahipli sunucuda kapalı. Komut doğrulaması `Room`/`GameState`'te (sahiplik, kaynak, kural; hub fuzz testleri mevcut). Ulak: 140 karakter, tek ulak hakkı (doğal hız sınırı), 15 dilde küfür filtresi (`docs/kufur-filtresi.md`).
+- **Demo kapsamı (öneri, Next Fest):** botlara karşı Hızlı oyna + Meydan Okuma'nın ilk 6–8 görevi + arkadaşla ev sahipli çok oyunculu (15 dk modu, 2–4 kişi, boş koltuk bot). Demo ile tam sürüm ayrı app id olacağı için birbirlerinin lobisini görmez; ilerleme demoda yerel.
+
+### Denetim ve ölçüm (2026-11-11, bu makine)
+
+`node tools/host-check.mjs` (paket gerekir; `ABRUPT=1` ev sahibini öldürür): 1 ev sahibi + 3 konuk (ikinci masaüstü kopya gecikmeli hatla, başsız tarayıcı, çıplak hub istemcisi). Geçenler: LAN kapısı ve adres, konuk kısıtları, sürüm uyumsuzluğu ve ölü adres mesajları, 4 kişilik maç, gecikmeli hat, kopma → 20 sn (testte kısaltılmış) sonra bot → geri dönüş, sızıntı, ev sahibi yükü, ev sahibi çıkışı (düzgün: maç sonu + özet; ani: mesaj + kendi menüsü + tek kişilik maç).
+
+| Ölçüm | Sonuç |
+|---|---|
+| Gecikmeli hat (tek yön 150 ± 50 ms, paketlerin %2'si +250 ms) | ping ortanca ≈ 320–330 ms, p95 ≈ 420–640 ms; komut yanıtı ≈ 330–400 ms (en kötü ≈ 570); kale resmi 1 sn'de bir (en kötü 1,1 sn) |
+| Ev sahibi oyun sunucusu, 4 oyunculu maç | tek çekirdeğin ≈ %2–3'ü, ≈ 106 MB |
+| Masaüstü pencereleri (ev sahibi + 1 konuk aynı makinede, 10 süreç) | ≈ 2,2–2,4 GB toplam (pencere başına ≈ 1,1 GB, önceki ölçümle aynı) |
+| Sızıntı | konuğun aldığı ≈ 390 mesajda diğer oyuncuların jetonu yok; kale resimleri yalnız kendi kalesi; SpectatorState yok; rakip krallık/deste yok |
+
+Steam (app id 480, tek hesap): SDK açılır, Steam adı gelir, lobi kurulur, davet düğmesi görünür. **Denenemedi (ikinci hesap/bilgisayar gerekir):** P2P tünelin gerçek Steam hattında çalışması, davet/“Oyuna katıl”, lobi listesinde görünme (Steam kendi lobini sana listelemez), relay gecikmesi.
+
+## 8. Eren'in gerçek Steam testi için yapması gerekenler
+
+Gereken: **iki Steam hesabı ve iki bilgisayar** (aynı hesap iki yerde aynı anda oyunda olamaz; ikinci hesap ücretsiz açılır, 480 herkese açık test uygulamasıdır). İki hesap birbirini arkadaş eklemiş olmalı (yeni hesaplar "sınırlı" olduğundan arkadaşlık isteğini eski hesaptan gönder).
+
+1. İki bilgisayarda da aynı paketi kullan: bu makinede `node tools/pack-steam.mjs`, sonra `steam-build/Keepfall` klasörünü ikinci bilgisayara kopyala (aynı `build.json` = aynı sürüm).
+2. İki bilgisayarda da Steam açık ve giriş yapılmışken PowerShell'de paket klasöründe:
+   ```powershell
+   $env:KEEPFALL_STEAM_APPID='480'; $env:KEEPFALL_STEAM_DEV='1'; $env:KEEPFALL_SHELL_LOG="$PWD\shell.log"; .\Keepfall.exe
+   ```
+   (Steam arkadaş listesinde "Spacewar oynuyor" görünür; `shell.log`'da `steam on 480` yazmalı.)
+3. **Davet:** A bilgisayarında "Oyun kur (ev sahibi)" (Arkadaşlar) → lobide "Steam'den davet et" → B'yi seç. B'de davet kabul edilince oyun lobiye girmeli. Ayrıca B'nin arkadaş listesinde A'ya sağ tık → "Oyuna katıl".
+4. **Liste:** A "Herkese açık" kursun; B ana menüde "Açık oyunları listele" → A'nın oyunu görünmeli → "Katıl". (480'de başka oyunların lobileri de döner; yalnız Keepfall olanlar listelenir.)
+5. Maçı başlat (boş koltuklar botla), 2–3 dakika oyna: gecikme hissi, ordu gönderme, ulak mesajı.
+6. **Kopma:** B'de Wi-Fi'yi 70 sn kapat → A'da B'nin şeridinde "yerine bot oynuyor"; aç → B kaldığı yerden sürer.
+7. **Ev sahibi çıkışı:** A pencereyi kapatsın → B'de maç sonu ekranı + "Ev sahibi oyundan ayrıldı".
+8. Sorun olursa iki bilgisayarın `shell.log` dosyasını gönder (`p2p`, `lobby`, `join` satırları).
+9. Steam'siz karşılaştırma: aynı ağda B, A'nın lobisindeki adresi "Ev sahibinin adresi"ne yazar (Windows güvenlik duvarı sorusuna A'da "İzin ver").
+
+Gerçek app id gelince: `steam.json` → `appId`, Steamworks panelinde Rich Presence dosyasını (`tools/steam/rich_presence_loc.vdf`) yeniden yükle; lobi/P2P için panelde ek ayar gerekmez.
+
+### Açık riskler
+
+- Steam P2P tüneli yalnız sahte hatla ve tek hesapla denendi; gerçek relay'de akış/sıra davranışı, büyük ilk resimler (MapLayout) ve yeniden bağlanma görülmeli.
+- `steamworks.js` eski `ISteamNetworking` API'sini kullanıyor; Valve kaldırırsa tünelin hattı `ISteamNetworkingMessages`'a taşınmalı (kütüphanede yok: çatal ya da Steamworks.NET).
+- Ev sahibi ansızın giderse maç ve özet kaybolur (ev sahibi göçü yok). Ev sahibi her şeyi bilir: yabancılarla "Herkese açık" oyunda hile mümkün (bellek okuma); arkadaş oyunu için kabul.
+- LAN kapısı açıkken aynı ağdaki herkes odaya katılmayı deneyebilir (oda kodu 6 harf, 6 yanlış/dk sınırı; konuk oda kuramaz). İnternetten doğrudan IP port yönlendirme ister.
+- Windows güvenlik duvarı ilk "Oyun kur"da izin penceresi çıkarır; reddedilirse LAN çalışmaz (Steam yolu etkilenmez).
+- Konuk masaüstü istemcisi kendi gömülü sunucusunu da çalıştırır (≈ 100 MB bellek; kaldırmak ayrı iş).
+- Yeni metinler 13 dilde çevrilmedi (İngilizce görünür); lobi/menü yerleşimi 15 dilde `lang-audit` ile bakılmadı.

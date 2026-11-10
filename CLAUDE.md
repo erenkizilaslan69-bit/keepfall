@@ -47,6 +47,11 @@ Bot dengesi: `BattleSim bot --mac 400 --zorluk karisik|bekleyen|orta|zor-orta` (
 ## Üç taraflı kapı kuşatması (2026-11-07)
 - Kapıda kuşatma sürerken gelen ikinci ordu beklemez, savaşa katılır (savunan + 2 saldıran); kale yalnız ayakta kalan son saldırana düşer, esir/ganimet ona gider. `war.joinSiege` (true) kapatılırsa eski bekleme kuralı geri gelir; `war.siegeMaxAttackers` 3. Plan/ölçüm: `docs/uc-tarafli-kusatma-plani.md`, `docs/uc-tarafli-kusatma-olcum.md`. Test sayısı artık ~375. Güncel genel durum ve Steam işleri: `docs/devir-notu.md` bölüm 0A.
 
+## Ev sahipli çok oyunculu (Steam yapısı, 2026-11-11)
+- Resmi sunucu YOK (kullanıcı kararı). Steam yapısında odayı kuran oyuncunun gömülü sunucusu maçı yürütür; konuklar LAN kapısından (47800) ya da Steam lobisi + P2P tünelinden gelir. Ayrıntı ve Steam test adımları: `docs/steam-paketleme.md` §7–8.
+- Kabuk: `tools/steam/shell/mp.js` (kapılar, lobi), `tunnel.js` (akış tüneli; Steam'i bilmez). İstemci: `client/src/hosted.ts`, `GameConnection.switchServer`. Sunucu: `Keepfall__GuestPort` (konuk oda kuramaz), `Keepfall__TakeoverSeconds` (kopanı bot oynatır, `RoomPlayer.Deputy`), `HostedMatch` + `/api/host/stop`, `/version` `build`. Web sunucusunda hepsi kapalı; web davranışını değiştirme.
+- Denetim: `node tools/pack-steam.mjs` sonra `node tools/host-check.mjs` (~4 dk; `ABRUPT=1` ani kayıp), `node tools/tunnel-check.mjs`, `node tools/steam-check.mjs`. Kabuk dosyası değişince pakete kopyala ya da yeniden paketle. 480 yalnız `KEEPFALL_STEAM_DEV=1` ile; pakete girmez.
+
 ## Bilinen açık konular
 - **Okçu hâlâ biraz güçlü**: deste turnuvalarında Okçulu desteler ortalama ~%52 ve en iyi 5 deste içinde her turda; tam çözülmedi (hasar 9, can 68'e inmişti). Yeni ayar turunda önce okçu içeren desteleri izle.
 - **Zor bot Orta karşısında ≈%59** (hedef %75–85). Kuşanma süresi (15 sn) ve süvari/keşiş eklenmesinden sonra yeniden ayarlanmadı; kullanıcı "dokunma" dedi, isterse `docs/bot-zor-tablo.md` yöntemiyle yeniden ölç.
