@@ -87,13 +87,14 @@ export class BattlePlayer {
   debugSprites(): Phaser.GameObjects.Sprite[] {
     return [...this.replays.values()].flatMap((r) => r.fighters.filter((f): f is Fighter => !!f).map((f) => f.sprite));
   }
-  /** The box (world px) the living soldiers of a replay take up right now; null when it is not being replayed (the director frames it). */
-  bounds(id: string): { x: number; y: number; w: number; h: number } | null {
+  /** The box (world px) the living soldiers of a replay take up right now, counting only those within `reach` px of where it is fought; null when it is not being replayed (the director frames it). */
+  bounds(id: string, reach: number): { x: number; y: number; w: number; h: number } | null {
     const r = this.replays.get(id);
     if (!r || r.ended) return null;
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (const f of r.fighters) {
       if (!f || !f.sprite.active || !f.sprite.visible) continue;
+      if (Math.hypot(f.sprite.x - r.gate.x, f.sprite.y - r.gate.y) > reach) continue; // (defenders still coming down from the yard: not the fight yet)
       // (the frames are mostly empty around the figure: the figure is about a fifth of the frame either side of its middle)
       // the origin is at the feet: the figure stands above them
       const s = f.sprite, hw = s.displayWidth * 0.22;

@@ -46,8 +46,12 @@ const BASE: Record<DirectorEventType, number> = {
 const ZOOM: Record<DirectorEventType, number> = {
   'castle-fall': 2, 'three-way-siege': 2, 'gate-battle': 2, 'road-clash': 3, 'phantom-army': 2, 'army-march': 2,
 };
-/** The zoom steps a shot may use, and how much of the screen a battle's soldiers should fill (about 60 %, never over 90 %). */
-const ZOOM_MIN = 1, ZOOM_MAX = 3, FILL = 0.6, FILL_MAX = 0.9;
+/** The zoom steps a shot may use, and how much of the screen a battle's soldiers should fill (about 60 %, never over 95 %). */
+const ZOOM_MIN = 1, ZOOM_MAX = 3, FILL = 0.6, FILL_MAX = 0.95;
+/** Between two steps the closer one is taken a little sooner (a fight filling 80 % reads better than one filling 40 %). */
+const CLOSER_BIAS = 1.35;
+/** Only the soldiers this near the battle's point (tiles) are framed: defenders still walking down from the yard are not the fight yet. */
+const REACH = 4.5;
 /** Room around the soldiers (world px), so the front lines are not at the edge. */
 const PAD = 40;
 /** A castle falling: looked at a little above its foot (the blasts and the smoke go up). */
@@ -139,7 +143,7 @@ export class DirectorCamera {
     const id = three ? `${b.id}-3` : b.id;
     // a battle that grows into a three-sided one: the two-sided event ends where the bigger one begins
     if (three) for (const e of this.events) if (e.id === b.id) e.end = now;
-    this.add(type, id, now, ms, () => at, Math.min(40, soldiers), () => this.scene()?.battleBounds(b.id) ?? null);
+    this.add(type, id, now, ms, () => at, Math.min(40, soldiers), () => this.scene()?.battleBounds(b.id, REACH * TILE) ?? null);
   }
 
   private add(type: DirectorEventType, id: string, now: number, ms: number, at: Ev['at'], bonus: number, box?: Ev['box']): void {
@@ -216,7 +220,7 @@ export class DirectorCamera {
       // frame the soldiers: their box fills about 60 % of the screen at the nearest whole-number zoom that still leaves room around it
       x = box.x + box.w / 2; y = box.y + box.h / 2;
       const w = box.w + PAD * 2, h = box.h + PAD * 2;
-      let z = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(Math.min((FILL * cam.width) / w, (FILL * cam.height) / h))));
+      let z = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.floor(CLOSER_BIAS * Math.min((FILL * cam.width) / w, (FILL * cam.height) / h))));
       while (z > ZOOM_MIN && (w * z > FILL_MAX * cam.width || h * z > FILL_MAX * cam.height)) z--;
       // out at once when the fight no longer fits; in only once a closer shot has fitted for two seconds (a step back and forth looks restless)
       if (z < ev.zoom) { ev.zoom = z; ev.closerSince = 0; }
