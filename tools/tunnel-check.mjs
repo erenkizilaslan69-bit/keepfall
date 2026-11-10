@@ -8,6 +8,8 @@ import { randomBytes, createHash } from 'node:crypto';
 
 const require = createRequire(import.meta.url);
 const { Tunnel } = require('./steam/shell/tunnel.js');
+const { admit, Limiter } = require('./steam/shell/gate.js');
+import { randomBytes as rb } from 'node:crypto';
 
 let failed = 0;
 const check = (name, ok, note = '') => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${note ? ' — ' + note : ''}`); if (!ok) failed++; };
@@ -38,7 +40,12 @@ const host = ends.host = new Tunnel(line('host'));
 const guest = ends.guest = new Tunnel(line('guest'));
 const stranger = ends.stranger = new Tunnel(line('stranger'));
 host.allow = (peer) => peer === 'guest';
-host.onStream = (_peer, stream) => { const up = net.connect({ host: '127.0.0.1', port: serverPort }); stream.pipe(up); up.pipe(stream); up.on('error', () => stream.destroy()); stream.on('close', () => up.destroy()); up.on('close', () => stream.destroy()); };
+// (as the shell does it: every stream passes the doorkeeper before the game server)
+const limiter = new Limiter();
+const refusals = [];
+host.onStream = (peer, stream) => admit(stream, 'steam:' + peer, limiter, () => net.connect({ host: '127.0.0.1', port: serverPort }), (l) => refusals.push(l));
+const abused = [];
+host.onAbuse = (peer) => abused.push(peer);
 
 // the guest's local door, as mp.js makes it
 const door = (tunnel) => new Promise((resolve) => {
@@ -54,10 +61,13 @@ const get = (port, path, body) => new Promise((resolve) => {
 
 check('a GET through the tunnel', (await get(guestDoor.address().port, '/version')).includes('"hosted":true'));
 const big = randomBytes(700_000);
-const echoed = JSON.parse(await get(guestDoor.address().port, '/upload', big));
+const echoed = JSON.parse(await get(guestDoor.address().port, '/hub/negotiate', big));
 check('a 700 KB body arrives whole and in order', echoed.n === big.length && echoed.sha === createHash('sha256').update(big).digest('hex'));
-const many = await Promise.all(Array.from({ length: 8 }, () => get(guestDoor.address().port, '/version')));
-check('eight streams at once', many.every((t) => t.includes('"protocol":1')));
+const many = await Promise.all(Array.from({ length: 6 }, () => get(guestDoor.address().port, '/version')));
+check('six streams at once', many.every((t) => t.includes('"protocol":1')));
+// the doorkeeper also stands behind the tunnel: nothing but the hub and /version
+const others = await Promise.all(['/', '/index.html', '/api/host/stop', '/hub/../x', '/upload'].map((p) => get(guestDoor.address().port, p)));
+check('other paths through the tunnel never reach the server', others.every((t) => t === '' || /error|timeout/.test(t)) && refusals.length >= 5, `${refusals.length} refusals`);
 
 // an upgraded connection that stays open and carries bytes both ways
 const ws = net.connect({ host: '127.0.0.1', port: guestDoor.address().port });
@@ -72,6 +82,29 @@ const text = Buffer.concat(got).toString();
 check('an upgraded connection echoes 50 frames in order', text.includes('101 Switching') && text.endsWith(Array.from({ length: 50 }, (_, i) => `frame-${i};`).join('')), `${Date.now() - t0} ms`);
 
 check('a stranger (not in the lobby) is refused', /error|timeout/.test(await get(strangerDoor.address().port, '/version')) );
+
+// ---- hostile packets: nothing may throw, nothing may pile up ----
+let threw = null;
+const kinds = [() => Buffer.alloc(0), () => rb(1 + Math.floor(Math.random() * 4)), () => rb(5 + Math.floor(Math.random() * 300)), () => rb(70_000), () => Buffer.concat([Buffer.from([1 + Math.floor(Math.random() * 4)]), rb(4), rb(Math.floor(Math.random() * 2000))]),
+  () => Buffer.from([1, 0, 0, 0, Math.floor(Math.random() * 255)]), () => Buffer.from([9, 0, 0, 0, 1]), () => 'not a buffer', () => null, () => undefined, () => ({ length: 9 })];
+try { for (let i = 0; i < 4000; i++) host.receive(i % 3 ? 'stranger' : 'mallory', kinds[Math.floor(Math.random() * kinds.length)]()); } catch (e) { threw = e; }
+check('4000 random, short, oversized and non-buffer packets from non-members: nothing throws, no stream is made', threw === null && [...host.streams.keys()].every((k) => k.startsWith('guest:')), threw?.message ?? `${host.streams.size} streams`);
+// a member that turns hostile: streams over the limit and bad packets are counted, then the peer is cut off and reported
+threw = null;
+try {
+  for (let i = 0; i < 300; i++) host.receive('guest', Buffer.from([1, 0, 1, (i >> 8) & 255, i & 255])); // 300 OPENs
+  for (let i = 0; i < 100; i++) host.receive('guest', rb(70_000));
+} catch (e) { threw = e; }
+await new Promise((r) => setTimeout(r, 300));
+const guestStreams = [...host.streams.keys()].filter((k) => k.startsWith('guest:')).length;
+check('a member cannot hold more than 16 streams, and abuse is reported once', threw === null && guestStreams <= 16 && abused.filter((p) => p === 'guest').length === 1, `${guestStreams} streams, reported: ${abused.join(',')}`);
+// a stream nobody reads cannot fill the memory: the doorkeeper turns the connection away after its first kilobyte without a request line
+const flood = guest.connect('host');
+flood.on('error', () => {});
+for (let i = 0; i < 400; i++) flood.write(Buffer.alloc(32 * 1024, 0x41));
+await new Promise((r) => setTimeout(r, 1500));
+const waiting = [...host.streams.values()].reduce((n, s) => n + s.readableLength, 0);
+check('13 MB poured into a stream without a request: turned away, nothing is kept', waiting < 1024 * 1024, `${(waiting / 1024).toFixed(0)} KB waiting`);
 host.dropPeer('guest');
 await new Promise((r) => setTimeout(r, 300));
 check('when the peer goes its open connection ends', ws.destroyed || ws.readableEnded);

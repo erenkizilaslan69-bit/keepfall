@@ -82,7 +82,13 @@ else app.Logger.LogWarning("Director (cameraman) connection ON: a page with ?dir
 if (options.GuestPort > 0)
     app.Use(async (http, next) =>
     {
-        if (GameHub.IsGuestConnection(http, options) && !GuestGate.Allows(http.Request)) { http.Response.StatusCode = StatusCodes.Status404NotFound; return; }
+        if (GameHub.IsGuestConnection(http, options))
+        {
+            http.RequestServices.GetRequiredService<GuestGate>().Identify(http);
+            if (!GuestGate.Allows(http.Request)) { http.Response.StatusCode = StatusCodes.Status404NotFound; return; }
+            // (said before anything is read: the hub's own messages are a few hundred bytes)
+            if (http.Request.ContentLength is > 64 * 1024) { http.Response.StatusCode = StatusCodes.Status413PayloadTooLarge; http.Response.Headers.Connection = "close"; return; }
+        }
         await next();
     });
 else app.UseForwardedHeaders(); // (behind a hosting platform's proxy only: a guest of a friend-hosted game must not be able to name its own address)

@@ -36,13 +36,32 @@ public sealed class GuestGate
         return HttpMethods.IsGet(request.Method) && path.Equals("/version", StringComparison.Ordinal);
     }
 
-    public static string PeerOf(HttpContext? http)
+    private const string PeerItem = "keepfall.peer";
+    private readonly ConcurrentDictionary<string, string> _peerOfConnection = new(); // the server's TCP connection id → who the shell said it is
+
+    /// <summary>
+    /// Who this request comes from. The shell names the guest in the FIRST request of every connection it lets in; that name then belongs to the
+    /// connection: a later request on the same connection (a second request kept alive behind an allowed one, a socket upgrade) is the same guest
+    /// whatever it claims, so a guest can neither lose its name nor take another's. Called once per guest request (Program.cs).
+    /// </summary>
+    public string Identify(HttpContext http)
     {
-        var raw = http?.Request.Headers[PeerHeader].FirstOrDefault() ?? "";
-        // (the shell writes its header first; anything a guest adds comes after it)
-        var first = raw.Split(',')[0].Trim();
-        return first.Length is > 0 and <= 64 && first.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or ':' or '-') ? first : "unknown";
+        var id = http.Connection.Id;
+        if (!_peerOfConnection.TryGetValue(id, out var peer))
+        {
+            var raw = http.Request.Headers[PeerHeader].FirstOrDefault() ?? "";
+            // (the shell writes its header first; anything a guest adds comes after it)
+            var first = raw.Split(',')[0].Trim();
+            peer = first.Length is > 0 and <= 64 && first.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or ':' or '-') ? first : "unknown";
+            if (_peerOfConnection.TryAdd(id, peer))
+                http.Features.Get<Microsoft.AspNetCore.Connections.Features.IConnectionLifetimeFeature>()?.ConnectionClosed.Register(() => _peerOfConnection.TryRemove(id, out _));
+            else peer = _peerOfConnection.GetValueOrDefault(id, peer);
+        }
+        http.Items[PeerItem] = peer;
+        return peer;
     }
+
+    public static string PeerOf(HttpContext? http) => http?.Items.TryGetValue(PeerItem, out var p) == true && p is string s ? s : "unknown";
 
     /// <summary>A guest's hub connection opened. False: too many, close it.</summary>
     public bool Opened(HubCallerContext context)

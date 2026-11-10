@@ -1,7 +1,7 @@
 // The friend-hosted game of the desktop build, end to end over the LAN door (no Steam needed): one host and three guests on this machine.
 //   host    the packed desktop game (steam-build/Keepfall, node tools/pack-steam.mjs)
 //   guest B a second copy of the packed game, its line slowed (150 ± 50 ms each way, 2 % of the packets a resend later)
-//   guest C a headless browser that opened the host's address
+//   guest C a bare hub client (it drops and comes back with its token)
 //   guest D a bare hub client behind the same slow line: it writes down every message it is sent (the leak check) and measures the answers
 // Checked: the doors, a guest cannot make rooms or stop the host, a guest with another build is told before joining, a 4-player match starts,
 // commands and pictures over the slow line, a guest that drops is played by a stand-in after the grace time and gets the seat back, nothing of the
@@ -13,7 +13,6 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import net from 'node:net';
 import { dirname, join } from 'node:path';
 import { launch as launchApp, sleep, root, userDataDir } from './steam-launch.mjs';
-import { launch as launchChrome } from './cdp.mjs';
 
 const require = createRequire(import.meta.url);
 const { lagPipe } = require('./steam/shell/tunnel.js');
@@ -81,10 +80,10 @@ try {
   const code = await host.js(`document.querySelector('.title-ribbon .code').textContent.trim()`);
   const link = await host.js(`document.querySelector('.share-code').value`);
   const info = await host.js(`window.keepfallSteam.mp.info()`);
-  check('host: the lobby shows the address for friends', new RegExp(`^http://[0-9.]+:${LAN}/\\?room=${code}$`).test(link), link);
-  check('host: the LAN door is open', info?.hosting === true && info.lanPort === LAN, JSON.stringify({ lanPort: info?.lanPort, build: info?.build }));
+  check('host: the lobby shows the address for friends', new RegExp(`^[0-9.]+:${LAN}#${code}$`).test(link), link);
+  check('host: the LAN door is open, and the lobby says so', info?.hosting === true && info.lanPort === LAN && await host.js(`/${LAN}/.test(document.querySelector('#door-open')?.textContent ?? '')`), JSON.stringify({ lanPort: info?.lanPort, build: info?.build }));
   await host.shot('host-lobby');
-  const lanHost = new URL(link).hostname;
+  const lanHost = link.split(':')[0];
   const door = `http://127.0.0.1:${LAN}`;
   const version = await (await fetch(`http://${lanHost}:${LAN}/version`)).json().catch(() => null);
   check('the door answers on the LAN address with the build name', version?.hosted === true && version.build === info.build, JSON.stringify(version));
@@ -95,7 +94,29 @@ try {
   check('a guest cannot make a room on the host', made?.ok === false, made?.error);
   check('a guest cannot use the director', (await stranger.call('DirectorRooms', 'x'.repeat(24))) === null);
   check('a guest cannot stop the host', (await fetch(`${door}/api/host/stop`, { method: 'POST' })).status === 404);
+  const closedPaths = ['/', '/index.html', '/assets/', '/api/guide', '/health', '/ping', '/licenses/', '/hubx', '/version/x'];
+  const answers = [];
+  for (const path of closedPaths) answers.push(await fetch(door + path).then((r) => r.status, () => 0));
+  check('nothing but the hub and /version is served to a guest (no game files, no APIs)', answers.every((s) => s === 404 || s === 0), closedPaths.map((p, i) => `${p} ${answers[i]}`).join(', '));
+  check('host commands from a guest that sits nowhere are refused', (await Promise.all(['StartMatch', 'FinishMatch', 'BackToLobby'].map((m) => stranger.call(m)))).every((r) => r?.ok === false) && (await stranger.call('KickPlayer', 1))?.ok === false && (await stranger.call('AddBot', 'easy'))?.ok === false);
   stranger.ws.close();
+
+  // ---- the host puts a player out: the line is closed and that address cannot come back to the room ----
+  const viaLan = `http://${lanHost}:${LAN}`; // (another address than the other test guests', which come from 127.0.0.1)
+  const troll = hubClient(viaLan); await troll.ready;
+  const tJoin = await troll.call('JoinRoom', code, 'Troll', null, false);
+  check('a player joins from the LAN address', tJoin?.ok === true, `seat ${tJoin?.seat}`);
+  check('the host sees a "remove" button next to the player', await host.waitFor(`!!document.querySelector('[data-a="kick"][data-seat="${tJoin?.seat}"]')`, 10));
+  check('a guest cannot remove anybody', (await troll.call('KickPlayer', 1))?.ok === false);
+  await host.js(`document.querySelector('[data-a="kick"][data-seat="${tJoin?.seat}"]').click(); 1`);
+  check('removed: the player is told and its line is closed', await troll.waitFor(() => troll.got.some((g) => g.target === 'Kicked') && troll.closed === true, 10));
+  check('...the seat is free again', await host.waitFor(`document.querySelectorAll('#players li[data-color]').length === 1`, 10));
+  const again = hubClient(viaLan); await again.ready;
+  const tAgain = await again.call('JoinRoom', code, 'Troll', tJoin?.token, false);
+  check('...and the same address cannot join that room again', tAgain?.ok === false && /çıkardı/.test(tAgain.error ?? ''), tAgain?.error);
+  again.ws.close();
+  const idle = hubClient(door); await idle.ready;
+  const idleFrom = Date.now();
 
   // ---- a guest with another build is told before joining ----
   const old = await desktop('old', 9453, { KEEPFALL_BUILD: '0.0.9+old' });
@@ -111,25 +132,28 @@ try {
   apps.push(B);
   await B.js(`document.querySelector('#name').value='Bee'; document.querySelector('#code').value='127.0.0.1:${LAN}#${code}'; document.querySelector('#join').click(); 1`);
   check('guest B (desktop, slow line): in the host\'s lobby', await B.waitFor(`!!document.querySelector('.lobby .title-ribbon .code') && document.querySelector('.title-ribbon .code').textContent.trim()==='${code}'`, 25), await B.js(`document.querySelector('#error')?.textContent ?? ''`));
-  C = await launchChrome({ width: 1280, height: 720 });
-  await C.goto(`${door}/?room=${code}`);
-  check('guest C (browser on the host\'s address): in the lobby', await C.waitFor(`!!document.querySelector('.lobby .title-ribbon .code')`, 25));
+  C = hubClient(door); await C.ready;
+  const cJoin = await C.call('JoinRoom', code, 'Cee', null, false);
+  check('guest C (bare client): seated', cJoin?.ok === true && typeof cJoin.token === 'string', `seat ${cJoin?.seat}`);
   // D behind a slow line of its own
   slowDoor = net.createServer((s) => { const up = net.connect({ host: '127.0.0.1', port: LAN }); lagPipe(s, up, LAG); lagPipe(up, s, LAG); s.on('error', () => up.destroy()); up.on('error', () => s.destroy()); s.on('close', () => up.destroy()); up.on('close', () => s.destroy()); });
   await new Promise((r) => slowDoor.listen(0, '127.0.0.1', r));
   const D = hubClient(`http://127.0.0.1:${slowDoor.address().port}`); await D.ready;
   const dJoin = await D.call('JoinRoom', code, 'Dee', null, false);
   check('guest D (bare client, slow line): seated', dJoin?.ok === true && dJoin.seat >= 2, `seat ${dJoin?.seat}`);
+  check('a connection that takes no seat is closed by the host (20 s)', await idle.waitFor(() => idle.closed === true, 30), `${((Date.now() - idleFrom) / 1000).toFixed(0)} s`);
   await sleep(1500);
-  check('host: four players in the lobby', (await host.js(`document.querySelectorAll('#players li:not(.empty)').length`)) === 4);
+  check('host: four players in the lobby', (await host.js(`document.querySelectorAll('#players li[data-color]').length`)) === 4);
   await B.shot('guest-lobby');
 
   // ---- the match ----
   await D.call('SetReady', true);
-  for (const p of [B, C, host]) await p.js(`document.querySelector('#ready').click(); 1`);
+  await C.call('SetReady', true);
+  for (const p of [B, host]) await p.js(`document.querySelector('#ready').click(); 1`);
   check('host: Start becomes available', await host.waitFor(`!document.querySelector('#start').disabled`, 15));
   await host.js(`document.querySelector('#start').click(); 1`);
-  for (const [n, p] of [['host', host], ['guest B', B], ['guest C', C]]) check(`${n}: in the match`, await p.waitFor(`document.documentElement.classList.contains('in-game')`, 60));
+  for (const [n, p] of [['host', host], ['guest B', B]]) check(`${n}: in the match`, await p.waitFor(`document.documentElement.classList.contains('in-game')`, 60));
+  check('guest C: gets its castle and the map', await C.waitFor(() => !!C.last('CastleState') && !!C.last('MapState') && !!C.last('MapLayout'), 30));
   check('guest D: gets its castle and the map', await D.waitFor(() => !!D.last('CastleState') && !!D.last('MapState') && !!D.last('MapLayout'), 30));
   await sleep(6000);
   await B.shot('guest-match');
@@ -155,26 +179,26 @@ try {
   const l0 = load(hostServer), t0 = Date.now();
 
   // ---- a guest drops: the seat is kept, then a stand-in plays, and the guest gets it back ----
-  const cSeat = await C.js(`(() => { const k = Object.keys(localStorage).find((k) => /token|identity|seat/i.test(k)); return k ? localStorage.getItem(k) : '' })()`);
-  await C.send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 });
-  await C.js(`1`);
   const seatOf = (name) => D.last('RoomState')?.players.find((p) => p.name === name);
-  const cName = (D.last('RoomState')?.players ?? []).find((p) => !['Hosty', 'Bee', 'Dee'].includes(p.name))?.name;
+  const cName = 'Cee';
   const droppedAt = Date.now();
-  // (a browser that is "offline" keeps its open socket for a while: the page's line is cut by hand as well)
-  await C.send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0, connectionType: 'none' });
-  await C.js(`(() => { for (const k in window) { /* nothing to reach in a production build */ } })()`);
-  const seenGone = await D.waitFor(() => seatOf(cName)?.connected === false, 90);
-  check('a dropped guest is shown as disconnected to the others', seenGone, `${cName}, after ${((Date.now() - droppedAt) / 1000).toFixed(0)} s`);
+  C.ws.close(); // the guest's line is gone (its game crashed, its network dropped)
+  const seenGone = await D.waitFor(() => seatOf(cName)?.connected === false, 30);
+  check('a dropped guest is shown as disconnected to the others', seenGone, `after ${((Date.now() - droppedAt) / 1000).toFixed(0)} s`);
   const goneAt = Date.now();
   check('...and keeps the seat (no stand-in) during the grace time', seatOf(cName)?.deputy !== true);
   const taken = await D.waitFor(() => seatOf(cName)?.deputy === true, GRACE + 15);
   check(`after the grace time (${GRACE} s here) a stand-in plays the castle`, taken && Date.now() - goneAt >= (GRACE - 3) * 1000, `${((Date.now() - goneAt) / 1000).toFixed(0)} s after the drop was seen`);
   await host.shot('host-standin');
-  await C.send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
-  const back = await D.waitFor(() => seatOf(cName)?.connected === true && seatOf(cName)?.deputy !== true, 60);
-  check('the guest comes back: the seat is theirs again, the stand-in is gone', back && await C.js(`document.documentElement.classList.contains('in-game')`));
-  void cSeat;
+  // somebody else cannot take the empty-looking seat; the guest's own token can
+  const thief = hubClient(door); await thief.ready;
+  const stolen = await thief.call('JoinRoom', code, 'Cee', 'not-the-token-' + 'x'.repeat(30), false);
+  check('a stranger cannot take the dropped guest\'s seat (the match has started, the token is wrong)', stolen?.ok === false, stolen?.error);
+  thief.ws.close();
+  C = hubClient(door); await C.ready;
+  const cBack = await C.call('JoinRoom', code, 'Cee', cJoin.token, false);
+  const back = await D.waitFor(() => seatOf(cName)?.connected === true && seatOf(cName)?.deputy !== true, 30);
+  check('the guest comes back with its token: the seat is theirs again, the stand-in is gone', cBack?.ok === true && cBack.seat === cJoin.seat && back && await C.waitFor(() => !!C.last('CastleState'), 10));
 
   const l1 = load(hostServer), secs = (Date.now() - t0) / 1000;
   const shellMb = pids('Keepfall.exe').map((p) => load(p)).filter(Boolean);
@@ -183,10 +207,11 @@ try {
 
   // ---- nothing of the others reaches a guest ----
   const secrets = [];
-  for (const [n, p] of [['host', host], ['B', B], ['C', C]]) {
+  for (const [n, p] of [['host', host], ['B', B]]) {
     const store = await p.js(`JSON.stringify(Object.fromEntries(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)])))`);
     for (const m of store.matchAll(/[A-Za-z0-9_-]{20,}/g)) secrets.push([n, m[0]]);
   }
+  secrets.push(['C', cJoin.token]);
   const all = D.raw.join('\n');
   const leaked = secrets.filter(([, s]) => all.includes(s));
   check(`leak: none of the other players' secrets (${secrets.length} tokens from their storage) is in the ${D.raw.length} messages a guest got`, secrets.length >= 3 && leaked.length === 0, leaked.map(([n]) => n).join(','));
@@ -223,7 +248,7 @@ try {
   check('host quits: guests are told, the match ends with a result', told && room?.phase === 'ended' && !!room.result, D.got.slice(mark2).find((g) => g.target === 'HostLeft')?.args[0]);
   check('host quits: the summary (with the "who fooled whom" data) is delivered', !!ended && typeof ended === 'object', ended ? Object.keys(ended).slice(0, 8).join(',') : '');
   check('guest B shows the end screen and why', await B.waitFor(`!!document.querySelector('.screen.end') && /host has left|Ev sahibi oyundan ayr/i.test(document.getElementById('banner')?.textContent ?? '')`, 25), await B.js(`document.getElementById('banner')?.textContent ?? ''`));
-  check('guest C shows the end screen', await C.waitFor(`!!document.querySelector('.screen.end')`, 25));
+  check('guest C (back on its seat) gets the end and the summary too', await C.waitFor(() => C.got.some((g) => g.target === 'HostLeft') && C.got.some((g) => g.target === 'MatchEnded'), 10));
   await sleep(1500);
   await B.shot('guest-end');
   for (let i = 0; i < 30 && alive(hostServer); i++) await sleep(300);
@@ -237,7 +262,7 @@ try {
   if (!e?.done) check('the run finished', false, e.stack ?? String(e));
 } finally {
   for (const a of apps) { try { execSync(`taskkill /PID ${a.child.pid} /T /F`, { stdio: 'ignore' }); } catch { /* gone */ } }
-  C?.close();
+  try { C?.ws.close(); } catch { /* gone */ }
   slowDoor?.close();
   await sleep(1500);
   for (const p of pids('Keepfall.Server.exe').filter((p) => !before.has(p))) { try { process.kill(p); } catch { /* gone */ } }
