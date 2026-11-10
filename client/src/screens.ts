@@ -11,7 +11,6 @@ import { mountPortrait } from './ui/portraits';
 import { endArt } from './ui/tiny-ui';
 import { confetti } from './ui/juice';
 import { deceptionTimelineHtml } from './ui/deceptions';
-import { clipAvailable, clipDownload, clipSupported } from './ui/clip';
 import type { PlayerColor } from './types';
 import { asset } from './env';
 import { bannerUrl, frameClass } from './progress/looks';
@@ -456,7 +455,6 @@ export class EndScreen {
           <div id="others"></div>
         </div>
         <div class="start end-foot">
-          <button data-a="clip" id="clip" class="btn wide hidden">${t('Klibi kaydet')}</button>
           <button data-a="again" id="again" class="btn wide kf-btn--green hidden">${t('Aynı oyuncularla yeni maç')}</button>
           <button data-a="lobby" id="lobby" class="btn wide hidden">${t('Lobiye dön')}</button>
           <p class="muted small center" id="lobby-hint"></p>
@@ -476,11 +474,6 @@ export class EndScreen {
         const message = act === 'ch-retry' ? await this.challenge.retry() : act === 'ch-next' ? await this.challenge.next() : (this.challenge.list(), null);
         root.querySelectorAll<HTMLButtonElement>('.ch-foot button').forEach((b) => (b.disabled = false));
         if (error) error.textContent = tr(message ?? '');
-        return;
-      }
-      if ((e.target as HTMLElement).closest('button[data-a="clip"]')) {
-        const error = this.root.querySelector('#error');
-        if (error) error.textContent = clipDownload() ? '' : t('Kaydedilecek bir savaş klibi yok.');
         return;
       }
       if ((e.target as HTMLElement).closest('button[data-a="again"]')) {
@@ -571,7 +564,6 @@ export class EndScreen {
             <span class="muted small">${x.eliminated ? t('elendi') : t('nüfus {0}', x.population)}</span>
           </li>`).join('')}</ol>`;
       this.root.querySelector('#deceptions')!.innerHTML = deceptionTimelineHtml(r);
-      this.root.querySelector('#clip')!.classList.toggle('hidden', !(clipSupported() && clipAvailable() && import.meta.env.VITE_PLATFORM !== 'crazygames'));
       const mine = r.summaries.find((x) => x.seat === this.mySeat);
       if (mine) this.setSummary(mine.summary);
       this.root.querySelector('#others')!.innerHTML = r.summaries.filter((x) => x.seat !== this.mySeat).map((x) => `

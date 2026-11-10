@@ -409,8 +409,6 @@ export const EN_GUIDE: Record<string, string> = {
   "Ordu yola çıktı: önünü kesecek.": "The army has set out: it will intercept.",
   "Kim kimi kandırdı?": "Who fooled whom?",
   "Bu maçta kimse hile yapmadı.": "Nobody played a trick this match.",
-  "Klibi kaydet": "Save clip",
-  "Kaydedilecek bir savaş klibi yok.": "There is no battle clip to save.",
   "{0} sahte bir ordu raporu hazırladı ({1} asker gösteriyor).": "{0} prepared a fake army report (showing {1} soldiers).",
   "{1} gözcüsü, {0} kalesinde sahte raporu okudu.": "The scout of {1} read the fake report at the castle of {0}.",
   "Kâhin {1}, {0} kalesinin raporunun sahte olduğunu gördü.": "The Oracle {1} saw that the report of {0}'s castle was fake.",

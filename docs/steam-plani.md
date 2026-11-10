@@ -27,7 +27,7 @@ Eleştirinin ana bulguları: (1) çok oyunculu oyun boş lobiyle çıkarsa ölü
 
 ### D. Anlatı: maç sonu özeti ve tekrar — YAPILDI 2026-11-07 (dev; ayrıntı `docs/kandirma-ozeti.md`)
 - Maç sonunda "kim kimi kandırdı" zaman çizelgesi: sahte rapor, hayalet ordu, rüşvet, kılık değiştirme (gizli bilgi artık açık, maç bitti).
-- Savaş oynatmasından kısa paylaşılabilir klip.
+- Savaş oynatmasından kısa paylaşılabilir klip. (KALDIRILDI 2026-11-11, Eren kararı: maç sonu klip kaydı oyundan çıkarıldı; director/çekim araçları ayrı ve duruyor.)
 
 ### E. Denge ve ilk deneyim — YAPILDI 2026-11-07 (öneriler onay bekliyor)
 - Ölçüm ve öneriler: `docs/denge-sira-sonrasi.md` (ana öneri: `combat.meleeActiveRows: 2`, önce oynatma işi). Başlangıç modu kodlandı: `Room.SetStarter`/`StartChallenge(fullRules)`, `RoomView.Starter`, ayarlarda "Tam kurallarla oyna".

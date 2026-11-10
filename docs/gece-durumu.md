@@ -7,10 +7,11 @@ Sabah buradan devam edilir. Her adımdan sonra güncellenir.
 | Adım | Commit | Not |
 |---|---|---|
 | A1–A5 Ev sahibi güvenliği | `ec045a5`, `3a76468`, `22479ba` + belgeler | Saldırı yüzeyi ve sınırlar: `docs/steam-paketleme.md` §9. host-check 48/48, host-fuzz 38/38, tunnel-check 11/11, steam-check 17/17, 415 birim testi, duman geçti. |
+| B1 Klip yakalama kaldırıldı | (bu commit) | `ui/clip.ts`, sahne kancası, maç sonu düğmesi, 15 dildeki iki metin. Ayar yoktu. "Kim kimi kandırdı" ve director/`tools/clip.mjs` duruyor. |
 
 ## Sıradaki
 
-B1 klip özelliğini kaldır → B2 13 dil → B3 yıkık kale / sahte ordu efekti → C ayarlar → D ulak filtresi → E krallık kartları → F ana menü → G test + rapor.
+B2 13 dil → B3 yıkık kale / sahte ordu efekti → C ayarlar → D ulak filtresi → E krallık kartları → F ana menü → G test + rapor.
 
 ## Kararlar (soru sormadan verilenler)
 

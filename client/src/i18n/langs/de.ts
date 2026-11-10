@@ -940,8 +940,6 @@ const D: Record<string, string> = {
   "Ordu yola çıktı: önünü kesecek.": "Das Heer ist aufgebrochen: Es wird abfangen.",
   "Kim kimi kandırdı?": "Wer hat wen getäuscht?",
   "Bu maçta kimse hile yapmadı.": "In diesem Spiel hat niemand getrickst.",
-  "Klibi kaydet": "Clip speichern",
-  "Kaydedilecek bir savaş klibi yok.": "Es gibt keinen Kampfclip zum Speichern.",
   "{0} sahte bir ordu raporu hazırladı ({1} asker gösteriyor).": "{0} hat einen falschen Heeresbericht vorbereitet (zeigt {1} Soldaten).",
   "{1} gözcüsü, {0} kalesinde sahte raporu okudu.": "Der Späher von {1} las den falschen Bericht an der Burg von {0}.",
   "Kâhin {1}, {0} kalesinin raporunun sahte olduğunu gördü.": "Das Orakel {1} erkannte, dass der Bericht der Burg von {0} falsch war.",

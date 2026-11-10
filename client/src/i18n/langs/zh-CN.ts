@@ -940,8 +940,6 @@ const D: Record<string, string> = {
   "Ordu yola çıktı: önünü kesecek.": "军队已出发：它将进行拦截。",
   "Kim kimi kandırdı?": "谁骗了谁？",
   "Bu maçta kimse hile yapmadı.": "这场对局中没有人耍花招。",
-  "Klibi kaydet": "保存片段",
-  "Kaydedilecek bir savaş klibi yok.": "没有可保存的战斗片段。",
   "{0} sahte bir ordu raporu hazırladı ({1} asker gösteriyor).": "{0} 准备了一份虚假的军队报告（显示 {1} 名士兵）。",
   "{1} gözcüsü, {0} kalesinde sahte raporu okudu.": "{1} 的斥候在 {0} 的城堡读到了那份虚假报告。",
   "Kâhin {1}, {0} kalesinin raporunun sahte olduğunu gördü.": "先知 {1} 看出 {0} 城堡的报告是假的。",

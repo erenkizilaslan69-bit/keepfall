@@ -11,7 +11,6 @@ Maç sonu ekranında krallıkların hilelerinin zaman çizelgesi ve savaştan k�
 
 ## İstemci
 - `ui/deceptions.ts`: olay → cümle (TR/EN, `en-guide.ts`), oyuncu renk şeridi + amblem, `EndScreen` sıralamanın altında kaydırılabilir "Kim kimi kandırdı?" bölümü. Krallıksız maçta bölüm yok; krallıklı ama hilesiz maçta "Bu maçta kimse hile yapmadı."
-- **Klip** (`ui/clip.ts`): savaş oynatması başlayınca (yalnız oyuncunun içinde olduğu savaşlar oynatılır) oyun canvas'ı `captureStream` + `MediaRecorder` ile ≤10 sn (oynatma süresine göre) kaydedilir; en önemli klip bellekte tutulur (kaleyi düşüren kuşatma > kuşatma > yol savaşı, eşitte sonrakisi). Maç sonunda "Klibi kaydet" `.webm` indirir. Desteklemeyen tarayıcıda ya da klip yoksa düğme gizli; CrazyGames yapısında kapalı. Dosya yalnız kullanıcıya iner, sunucuya/repoya gitmez. Varsayım: kayıt maç boyunca ek CPU yükler (yalnız oynatma sırasında, ≤10 sn).
 - Araç: `node tools/shot-deceptions.mjs <önek>` (örnek olaylarla çizelge ekran görüntüsü + MediaRecorder denetimi; Vite 5174 açık olmalı). Görüntüler `art/shots/kandirma/` (git'e girmez).
 
 ## Açık

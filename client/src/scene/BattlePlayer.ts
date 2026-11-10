@@ -107,7 +107,6 @@ export class BattlePlayer {
   hasPlayed(id: string): boolean { return this.played.has(id); }
   /** A siege replay tells the scene how far the fight is (the scene smokes and burns the castle under attack): seat of the castle, 0..1, whether the attacker wins, over. */
   /** A replay began (the clip recorder listens). */
-  onStart: ((view: BattleStartedView, speed: number) => void) | null = null;
   onSiege: ((seat: number, progress: number, attackerWins: boolean, done: boolean) => void) | null = null;
   /** Set by the scene: where the soldiers of the column of this colour at this place (tiles) stand, so that they are not drawn anew somewhere else. */
   claimColumn: ((color: PlayerColor, at: Vec) => { kind: string; x: number; y: number }[] | null) | null = null;
@@ -151,7 +150,6 @@ export class BattlePlayer {
       return;
     }
     sfx.play('battleStart');
-    try { this.onStart?.(view, this.clock().speed); } catch { /* the clip is optional */ }
     const replay: Replay = { view, fighters, hit: 0, death: 0, advance: 0, heal: 0, gate: toWorld(view.at), ended: false };
     this.replays.set(view.id, replay);
     this.catchUp(replay);
