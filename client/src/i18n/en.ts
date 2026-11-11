@@ -87,7 +87,7 @@ export const EN: Record<string, string> = {
   "Savaş": "Battle",
   "(düştü)": "(fallen)",
   "Kale": "Castle",
-  "2–4 kişilik kale savunma ve fetih oyunu": "2–4 player castle defense & conquest game",
+  "Gizli krallıklar. Sahte ordular. Tek savaş.": "Hidden kingdoms. Fake armies. One battle.",
   "Adın": "Your Name",
   "Oyuncu": "Player",
   "Oda kur": "Private Room",

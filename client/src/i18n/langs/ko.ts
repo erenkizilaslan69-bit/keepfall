@@ -110,7 +110,6 @@ const D: Record<string, string> = {
   "Savaş": "전투",
   "(düştü)": "(함락됨)",
   "Kale": "성",
-  "2–4 kişilik kale savunma ve fetih oyunu": "2~4인용 성 방어·정복 게임",
   "Adın": "내 이름",
   "Oyuncu": "플레이어",
   "Oda kur": "비공개 방",
@@ -1118,5 +1117,6 @@ const D: Record<string, string> = {
   "Arkadaşlarla oyna": "친구와 플레이",
   "LAN / IP (gelişmiş)": "LAN / IP (고급)",
   "(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)": "(다음 게임부터 적용됩니다. 비워 두면 Steam 이름을 사용합니다)",
+  "Gizli krallıklar. Sahte ordular. Tek savaş.": "숨겨진 왕국. 가짜 군대. 단 한 번의 전투.",
 };
 export default D;

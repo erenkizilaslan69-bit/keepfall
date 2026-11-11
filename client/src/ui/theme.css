@@ -636,7 +636,9 @@ html.kf-calm .home .btn, html.kf-calm .home .btn:hover { transition: none; trans
 .screen.home.home-b { background: transparent; border-color: transparent; border-image: none; box-shadow: none; }
 .screen.home.home-b::before, .screen.home.home-b::after { display: none; }
 .home-b .kf-logo { filter: drop-shadow(0 calc(4px * var(--u, 1)) 0 rgba(20, 14, 8, .45)); }
-.home-b .kf-logo-sub { color: #fff8e4; text-shadow: 0 2px 0 rgba(20, 14, 8, .75), 0 0 calc(8px * var(--u, 1)) rgba(20, 14, 8, .6); font-size: 1.05em; }
+.home-b .kf-logo-sub { color: #fff8e4; text-shadow: 0 2px 0 rgba(20, 14, 8, .75), 0 0 calc(8px * var(--u, 1)) rgba(20, 14, 8, .6); font-size: 1.05em;
+  /* a soft dark band behind the line so it reads on any part of the living map */
+  display: table; margin-left: auto; margin-right: auto; padding: calc(3px * var(--u, 1)) calc(18px * var(--u, 1)); border-radius: calc(4px * var(--u, 1)); background: linear-gradient(90deg, rgba(20, 14, 8, 0), rgba(20, 14, 8, .55) 18%, rgba(20, 14, 8, .55) 82%, rgba(20, 14, 8, 0)); }
 .home-b .home-play { box-shadow: 0 calc(6px * var(--u, 1)) calc(14px * var(--u, 1)) rgba(20, 14, 8, .4); }
 .home-b .home-second .btn { box-shadow: 0 calc(4px * var(--u, 1)) calc(10px * var(--u, 1)) rgba(20, 14, 8, .35); }
 .home-b .home-friends, .home-b .home-foot { background: var(--parchment, #ecdcb8); color: var(--ink, #3a2c1c); border: calc(3px * var(--u, 1)) solid #8a6a3a; border-radius: calc(8px * var(--u, 1)); box-shadow: 0 calc(4px * var(--u, 1)) calc(10px * var(--u, 1)) rgba(20, 14, 8, .35); }

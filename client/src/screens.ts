@@ -127,7 +127,7 @@ export class HomeScreen {
     const root = mount(parent, `
       <div class="screen menu paper home home-${layout}">
         ${logoHtml()}
-        <p class="muted center kf-logo-sub">${t('2–4 kişilik kale savunma ve fetih oyunu')}</p>
+        <p class="muted center kf-logo-sub">${t('Gizli krallıklar. Sahte ordular. Tek savaş.')}</p>
         <button id="quick" class="btn wide kf-btn--green home-play"><span class="home-play-word">${t('Oyna')}</span> <small>${t('(3 bota karşı, hemen)')}</small></button>
         ${friends && hosted ? friends : ''}
         <div class="home-second">

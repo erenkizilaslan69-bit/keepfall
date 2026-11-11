@@ -110,7 +110,6 @@ const D: Record<string, string> = {
   "Savaş": "Batalla",
   "(düştü)": "(caído)",
   "Kale": "Castillo",
-  "2–4 kişilik kale savunma ve fetih oyunu": "Juego de defensa y conquista de castillos para 2–4 jugadores",
   "Adın": "Tu nombre",
   "Oyuncu": "Jugador",
   "Oda kur": "Sala privada",
@@ -1118,5 +1117,6 @@ const D: Record<string, string> = {
   "Arkadaşlarla oyna": "Jugar con amigos",
   "LAN / IP (gelişmiş)": "LAN / IP (avanzado)",
   "(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)": "(se aplica desde la próxima partida; si lo dejas vacío se usa tu nombre de Steam)",
+  "Gizli krallıklar. Sahte ordular. Tek savaş.": "Reinos ocultos. Ejércitos falsos. Una sola batalla.",
 };
 export default D;
