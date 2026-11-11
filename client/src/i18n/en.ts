@@ -371,5 +371,7 @@ export const EN: Record<string, string> = {
   "Haritaya yakınlaşmak için fare tekerleğini ya da sağ alttaki + / − düğmelerini kullan.": "To zoom the map use the mouse wheel or the + / − buttons at the bottom right.",
   "Dil değişince sayfa yenilenir; süren maça aynı koltukla dönersin.": "Changing the language reloads the page; you return to a running match in the same seat.",
   "Hafif küfürleri filtrele": "Filter mild swearing",
-  "(ulak mesajlarındaki küfürler yıldızla gösterilir; nefret söylemi bu ayardan bağımsız, her zaman filtrelenir)": "(swear words in envoy messages are shown as stars; hate speech is always filtered, whatever this setting says)"
+  "(ulak mesajlarındaki küfürler yıldızla gösterilir; nefret söylemi bu ayardan bağımsız, her zaman filtrelenir)": "(swear words in envoy messages are shown as stars; hate speech is always filtered, whatever this setting says)",
+  "Oyna": "Play",
+  "Oyundan çık": "Quit game"
 };

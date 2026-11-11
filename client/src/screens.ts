@@ -73,6 +73,13 @@ export function logoHtml(): string {
   return `<div class="kf-logo" role="img" aria-label="Keepfall"><img class="kf-logo-castle" src="${ART}Buildings/Blue%20Buildings/Castle.png" alt="" draggable="false">${word}</div>`;
 }
 
+/** Which entrance is drawn: 'b' unless the other one is asked for (?home=a, or localStorage keepfall_home). */
+function homeLayout(): 'a' | 'b' {
+  let v = new URLSearchParams(location.search).get('home') ?? '';
+  try { v ||= localStorage.getItem('keepfall_home') ?? ''; } catch { /* storage may be blocked */ }
+  return v === 'a' ? 'a' : 'b';
+}
+
 export class HomeScreen {
   constructor(
     parent: HTMLElement,
@@ -100,17 +107,36 @@ export class HomeScreen {
           <label class="field">${t('Oda kodu')} <input id="code" maxlength="6" value="${esc(defaults.code)}" placeholder="ABCDEF" autocapitalize="characters"></label>
           <button id="join" class="btn btn-red">${t('Odaya katıl')}</button>
         </div>`;
+    // The entrance: the living map behind, the logo, ONE plain main button ("Oyna"), the solo doors as second-rank buttons, the doors for friends as a
+    // small card of their own, the name and the way out small at the foot. Two layouts were drawn (art/shots/ui-tur/home-*.png): 'b' (in use: no big
+    // sheet of paper, the buttons stand on the map itself) and 'a' (everything on the paper panel, as before). 'a' comes back with ?home=a or
+    // localStorage keepfall_home = a.
+    const layout = homeLayout();
+    const desktop = !!(window as unknown as { keepfallSteam?: unknown }).keepfallSteam;
     const root = mount(parent, `
-      <div class="screen menu paper home">
+      <div class="screen menu paper home home-${layout}">
         ${logoHtml()}
         <p class="muted center kf-logo-sub">${t('2–4 kişilik kale savunma ve fetih oyunu')}</p>
-        <label class="field">${t('Adın')} <input id="name" maxlength="16" autocomplete="nickname" value="${esc(defaults.name)}" placeholder="${t('Oyuncu')}"></label>
-        <button id="quick" class="btn wide kf-btn--green">${t('Hızlı oyna')} <small>${t('(3 bota karşı, hemen)')}</small></button>
-        <button id="challenges" class="btn wide">${t('Meydan Okuma')} <small>${t('(tek kişilik, hedefli maçlar)')}</small></button>
-        <button id="progress" class="btn wide">${t('Başarımlar ve Ustalık')} <small>${t('(rozetler, flamalar)')}</small></button>
-        ${friends}
+        <button id="quick" class="btn wide kf-btn--green home-play"><span class="home-play-word">${t('Oyna')}</span> <small>${t('(3 bota karşı, hemen)')}</small></button>
+        <div class="home-second">
+          <button id="challenges" class="btn">${t('Meydan Okuma')} <small>${t('(tek kişilik, hedefli maçlar)')}</small></button>
+          <button id="progress" class="btn">${t('Başarımlar ve Ustalık')} <small>${t('(rozetler, flamalar)')}</small></button>
+        </div>
+        ${friends ? `<div class="home-friends">${friends}</div>` : ''}
+        <div class="home-foot">
+          <label class="field home-name">${t('Adın')} <input id="name" maxlength="16" autocomplete="nickname" value="${esc(defaults.name)}" placeholder="${t('Oyuncu')}"></label>
+          ${desktop ? `<button id="quit" class="btn small home-quit">${t('Oyundan çık')}</button>` : ''}
+        </div>
         <p class="error" id="error">${esc(defaults.error ?? '')}</p>
       </div>`);
+    // a soft tick when the pointer comes onto a button (the buttons lift a little: theme.css), at most a few a second
+    let lastHover: Element | null = null;
+    root.addEventListener('mouseover', (e) => {
+      const b = (e.target as HTMLElement).closest('button');
+      if (b && b !== lastHover && !b.disabled) sfx.play('click', 0.35);
+      lastHover = b;
+    });
+    root.querySelector('#quit')?.addEventListener('click', () => window.close());
     const name = root.querySelector<HTMLInputElement>('#name')!;
     const code = root.querySelector<HTMLInputElement>('#code') ?? name;
     const error = root.querySelector<HTMLElement>('#error')!;
