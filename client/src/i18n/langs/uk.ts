@@ -1115,5 +1115,8 @@ const D: Record<string, string> = {
   "(ulak mesajlarındaki küfürler yıldızla gösterilir; nefret söylemi bu ayardan bağımsız, her zaman filtrelenir)": "(лайка в посланнях гінців замінюється зірочками; мова ворожнечі приховується завжди, незалежно від цього налаштування)",
   "Oyna": "Грати",
   "Oyundan çık": "Вийти з гри",
+  "Arkadaşlarla oyna": "Грати з друзями",
+  "LAN / IP (gelişmiş)": "LAN / IP (додатково)",
+  "(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)": "(діє з наступної гри; якщо залишити порожнім, використовується ім'я Steam)",
 };
 export default D;

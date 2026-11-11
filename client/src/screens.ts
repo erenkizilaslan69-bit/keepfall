@@ -89,17 +89,26 @@ export class HomeScreen {
   ) {
     // The desktop build: no official server. "Oyun kur" makes this computer the host; friends join by its address or through Steam.
     const hosted = defaults.hosted ?? null;
-    const friends = !FEATURE_PRIVATE_ROOM ? '' : hosted ? `<div class="or">${t('ya da arkadaşlarınla')}</div>
-        <div class="join-row host-row">
-          ${hosted.steam ? `<label class="field">${t('Kimler katılabilir')} <select id="vis"><option value="friends">${t('Steam: arkadaşlar')}</option><option value="public">${t('Steam: herkese açık')}</option><option value="private">${t('Steam: özel (yalnız davet)')}</option><option value="lan">${t('LAN / IP adresiyle (Steam yok)')}</option></select></label>` : ''}
-          <button id="create" class="btn${hosted.steam ? '' : ' wide'}">${hosted.steam ? t('Oyun kur (ev sahibi)') : t('Oyun kur (LAN / IP)')}</button>
+    // The desktop build: ONE button "Arkadaşlarla oyna" that unfolds the doors (host a game + who may join, the list of open games); the address box and
+    // "join" live only inside the folded "LAN / IP (gelişmiş)" at the bottom. With Steam the name is Steam's (changed in the settings, Game tab).
+    const friendsOpen = !!defaults.code;
+    const friends = !FEATURE_PRIVATE_ROOM ? '' : hosted ? `<div class="home-friends-wrap">
+        <button id="friends-toggle" class="btn wide home-friends-toggle" aria-expanded="${friendsOpen}" aria-controls="friends-body">${t('Arkadaşlarla oyna')}</button>
+        <div class="home-friends" id="friends-body"${friendsOpen ? '' : ' hidden'}>
+          <div class="join-row host-row">
+            ${hosted.steam ? `<label class="field">${t('Kimler katılabilir')} <select id="vis"><option value="friends">${t('Steam: arkadaşlar')}</option><option value="public">${t('Steam: herkese açık')}</option><option value="private">${t('Steam: özel (yalnız davet)')}</option><option value="lan">${t('LAN / IP adresiyle (Steam yok)')}</option></select></label>` : ''}
+            <button id="create" class="btn${hosted.steam ? '' : ' wide'}">${hosted.steam ? t('Oyun kur (ev sahibi)') : t('Oyun kur (LAN / IP)')}</button>
+          </div>
+          ${hosted.steam ? `<div class="mp-lobbies"><button id="refresh" class="btn small">${t('Açık oyunları listele')}</button><ul id="lobbies" class="players"></ul></div>` : ''}
+          <details class="home-lan"${friendsOpen || !hosted.steam ? ' open' : ''}>
+            <summary>${t('LAN / IP (gelişmiş)')}</summary>
+            <div class="join-row">
+              <label class="field">${t('Ev sahibinin adresi')} <input id="code" maxlength="80" value="${esc(defaults.code)}" placeholder="192.168.1.5:47800#ABCDEF" autocomplete="off" spellcheck="false"></label>
+              <button id="join" class="btn btn-red">${t('Oyuna katıl')}</button>
+            </div>
+          </details>
         </div>
-        <div class="or">${t('ya da')}</div>
-        <div class="join-row">
-          <label class="field">${t('Ev sahibinin adresi')} <input id="code" maxlength="80" value="${esc(defaults.code)}" placeholder="192.168.1.5:47800#ABCDEF" autocomplete="off" spellcheck="false"></label>
-          <button id="join" class="btn btn-red">${t('Oyuna katıl')}</button>
-        </div>
-        ${hosted.steam ? `<div class="mp-lobbies"><button id="refresh" class="btn small">${t('Açık oyunları listele')}</button><ul id="lobbies" class="players"></ul></div>` : ''}`
+      </div>`
       : `<div class="or">${t('ya da arkadaşlarınla')}</div>
         <button id="create" class="btn wide">${t('Oda kur')}</button>
         <div class="or">${t('ya da')}</div>
@@ -112,19 +121,21 @@ export class HomeScreen {
     // sheet of paper, the buttons stand on the map itself) and 'a' (everything on the paper panel, as before). 'a' comes back with ?home=a or
     // localStorage keepfall_home = a.
     const layout = homeLayout();
+    const steamName = !!hosted?.steam; // (the Steam name is used; no name box here)
     const desktop = !!(window as unknown as { keepfallSteam?: unknown }).keepfallSteam;
     const root = mount(parent, `
       <div class="screen menu paper home home-${layout}">
         ${logoHtml()}
         <p class="muted center kf-logo-sub">${t('2–4 kişilik kale savunma ve fetih oyunu')}</p>
         <button id="quick" class="btn wide kf-btn--green home-play"><span class="home-play-word">${t('Oyna')}</span> <small>${t('(3 bota karşı, hemen)')}</small></button>
+        ${friends && hosted ? friends : ''}
         <div class="home-second">
           <button id="challenges" class="btn">${t('Meydan Okuma')} <small>${t('(tek kişilik, hedefli maçlar)')}</small></button>
           <button id="progress" class="btn">${t('Başarımlar ve Ustalık')} <small>${t('(rozetler, flamalar)')}</small></button>
         </div>
-        ${friends ? `<div class="home-friends">${friends}</div>` : ''}
-        <div class="home-foot">
-          <label class="field home-name">${t('Adın')} <input id="name" maxlength="16" autocomplete="nickname" value="${esc(defaults.name)}" placeholder="${t('Oyuncu')}"></label>
+        ${friends && !hosted ? `<div class="home-friends">${friends}</div>` : ''}
+        <div class="home-foot${steamName ? ' no-name' : ''}">
+          ${steamName ? '' : `<label class="field home-name">${t('Adın')} <input id="name" maxlength="16" autocomplete="nickname" value="${esc(defaults.name)}" placeholder="${t('Oyuncu')}"></label>`}
           ${desktop ? `<button id="quit" class="btn small home-quit">${t('Oyundan çık')}</button>` : ''}
         </div>
         <p class="error" id="error">${esc(defaults.error ?? '')}</p>
@@ -137,8 +148,15 @@ export class HomeScreen {
       lastHover = b;
     });
     root.querySelector('#quit')?.addEventListener('click', () => window.close());
-    const name = root.querySelector<HTMLInputElement>('#name')!;
-    const code = root.querySelector<HTMLInputElement>('#code') ?? name;
+    const nameBox = root.querySelector<HTMLInputElement>('#name');
+    const name = { get value() { return nameBox ? nameBox.value : defaults.name; } };
+    const code = root.querySelector<HTMLInputElement>('#code') ?? nameBox;
+    const toggle = root.querySelector<HTMLButtonElement>('#friends-toggle');
+    toggle?.addEventListener('click', () => {
+      const body = root.querySelector<HTMLElement>('#friends-body')!;
+      body.hidden = !body.hidden;
+      toggle.setAttribute('aria-expanded', String(!body.hidden));
+    });
     const error = root.querySelector<HTMLElement>('#error')!;
     const buttons = root.querySelectorAll<HTMLButtonElement>('button');
     const run = async (action: () => Promise<string | null>) => {
@@ -166,9 +184,9 @@ export class HomeScreen {
       const id = (e.target as HTMLElement).closest<HTMLElement>('[data-lobby]')?.dataset.lobby;
       if (id && actions.joinSteam) void run(() => actions.joinSteam!(name.value, id));
     });
-    root.querySelector('#join')?.addEventListener('click', () => run(() => actions.join(name.value, code.value)));
-    code.addEventListener('keydown', (e) => { if (e.key === 'Enter') void run(() => actions.join(name.value, code.value)); });
-    (defaults.code ? name : name.value ? code : name).focus();
+    root.querySelector('#join')?.addEventListener('click', () => run(() => actions.join(name.value, code?.value ?? '')));
+    code?.addEventListener('keydown', (e) => { if (e.key === 'Enter') void run(() => actions.join(name.value, code.value)); });
+    if (nameBox) (defaults.code ? nameBox : nameBox.value ? code ?? nameBox : nameBox).focus();
   }
 }
 

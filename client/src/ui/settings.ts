@@ -4,6 +4,8 @@ import { CRAZY } from '../crazy';
 import { playsFullRules, setFullRules, lowGraphics, setLowGraphics, setShowHints, showsHints, setReduceEffects, setShowFps, setShowMessages, showsFps, userReducesEffects, userShowsMessages, UI_SCALES, uiScalePref, setUiScalePref, filtersMild, setFilterMild } from '../prefs';
 import { toggleGuide } from './guide';
 import { setLang, t, type Lang } from '../i18n';
+import { loadName, saveName } from '../identity';
+import { esc } from '../format';
 import { langLabel, langSelectHtml, langTitle, toggleLangMenu } from './lang-menu';
 
 // The settings window (gear button, in the menus and in the game), in five sections with tabs: Sound (master / music / effects, mute), Display (quality,
@@ -24,6 +26,12 @@ const CREDITS: [string, string][] = [
 
 let open: HTMLElement | null = null;
 let leaveAction: (() => void) | null = null;
+
+/** The desktop build with Steam has no name box in the menu: the player's name is changed here (Game tab). Called once, with the Steam name (shown when none was chosen). */
+let nameFallback: string | null = null;
+export function enableNameSetting(steamName: string): void {
+  nameFallback = steamName || '';
+}
 
 /** Set while the player is in a running match: the settings then offer "Ana menüye dön". */
 export function setLeaveAction(action: (() => void) | null): void {
@@ -123,6 +131,7 @@ export function toggleSettings(): void {
           <p class="muted small">${t('Dil değişince sayfa yenilenir; süren maça aynı koltukla dönersin.')}</p>
         </section>
         <section data-pane="game">
+          ${nameFallback !== null ? `<div class="set-row"><label for="set-name">${t('Adın')} <small>${t('(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)')}</small></label><input id="set-name" class="set-input" maxlength="16" autocomplete="nickname" placeholder="${esc(nameFallback)}"></div>` : ''}
           <div class="set-row"><label for="set-hints">${t('İpuçlarını göster')} <small>${t('(boşta işçi, yemek azalması, yaklaşan ordu gibi anlarda kısa uyarılar)')}</small></label><input id="set-hints" type="checkbox" class="set-check"></div>
           <div class="set-row"><label for="set-msg">${t('Ulak mesajlarını göster')} <small>${t('(kapalıyken gelen mesajlar gizlenir ve mesaj kutusu çıkmaz)')}</small></label><input id="set-msg" type="checkbox" class="set-check"></div>
           <div class="set-row"><label for="set-mild">${t('Hafif küfürleri filtrele')} <small>${t('(ulak mesajlarındaki küfürler yıldızla gösterilir; nefret söylemi bu ayardan bağımsız, her zaman filtrelenir)')}</small></label><input id="set-mild" type="checkbox" class="set-check"></div>
@@ -192,6 +201,11 @@ export function toggleSettings(): void {
   fps.addEventListener('change', () => setShowFps(fps.checked));
   msg.addEventListener('change', () => setShowMessages(msg.checked));
   hintsBox.addEventListener('change', () => setShowHints(hintsBox.checked));
+  const nameBox = overlay.querySelector<HTMLInputElement>('#set-name');
+  if (nameBox) {
+    nameBox.value = loadName();
+    nameBox.addEventListener('change', () => saveName(nameBox.value.trim()));
+  }
   const mild = q<HTMLInputElement>('#set-mild');
   mild.checked = filtersMild();
   mild.addEventListener('change', () => setFilterMild(mild.checked));

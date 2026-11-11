@@ -1,5 +1,5 @@
 // The entrance (main menu) in both layouts ('b' in use, 'a' behind ?home=a), with a spill check. Needs the dev server (5081) and Vite (5174).
-//   node tools/shot-home.mjs [out-dir] [langs]      → art/shots/ui-tur/home-<layout>-<lang>.png     (SIZE=1920,1080; HOSTED=1 draws the desktop build's friends doors)
+//   node tools/shot-home.mjs [out-dir] [langs]      (EXPAND=1: the friends doors unfolded)  → art/shots/ui-tur/home-<layout>-<lang>.png     (SIZE=1920,1080; HOSTED=1 draws the desktop build's friends doors)
 import { mkdirSync } from 'node:fs';
 import { launch, sleep } from './cdp.mjs';
 
@@ -17,6 +17,7 @@ for (const layout of (process.env.LAYOUTS ?? 'b,a').split(',')) for (const lang 
     await b.goto(URL + '/');
     await b.waitFor(`!!document.querySelector('#quick')`);
     await sleep(3500);
+    if (process.env.EXPAND === '1') { await b.js(`document.querySelector('#friends-toggle')?.click(); document.querySelector('.home-lan')?.setAttribute('open', ''); 1`); await sleep(400); } // (the desktop build's friends doors unfolded, LAN / IP too)
     const r = await b.js(`(() => { const out = []; const box = document.querySelector('.screen.home'); const q = box.getBoundingClientRect();
       if (q.left < 0 || q.right > innerWidth + 1) out.push('menu off the screen sideways');
       if (q.bottom > innerHeight + 1 && document.scrollingElement.scrollHeight <= innerHeight + 1) out.push('menu cut at the bottom');
@@ -27,7 +28,7 @@ for (const layout of (process.env.LAYOUTS ?? 'b,a').split(',')) for (const lang 
       return { out, playBigger: play.height > second.height && play.width > second.width, scroll: document.scrollingElement.scrollHeight > innerHeight + 1 }; })()`);
     if (r.out.length || !r.playBigger) { bad++; console.log(`FAIL ${layout} ${lang}: ${r.out.join(' | ')} playBigger=${r.playBigger}`); }
     else console.log(`ok   ${layout} ${lang}${r.scroll ? ' (page scrolls)' : ''}`);
-    await b.shot(`${OUT}/home-${layout}-${lang}${process.env.HOSTED === '1' ? '-desktop' : ''}.png`);
+    await b.shot(`${OUT}/home-${layout}-${lang}${process.env.HOSTED === '1' ? '-desktop' : ''}${process.env.EXPAND === '1' ? '-open' : ''}.png`);
   } finally { b.close(); }
 }
 console.log(bad ? `\n${bad} problem(s)` : '\nNo problems');

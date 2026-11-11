@@ -1115,5 +1115,8 @@ const D: Record<string, string> = {
   "(ulak mesajlarındaki küfürler yıldızla gösterilir; nefret söylemi bu ayardan bağımsız, her zaman filtrelenir)": "(las groserías de los mensajes de emisarios se muestran con asteriscos; el discurso de odio se filtra siempre, sin importar este ajuste)",
   "Oyna": "Jugar",
   "Oyundan çık": "Salir del juego",
+  "Arkadaşlarla oyna": "Jugar con amigos",
+  "LAN / IP (gelişmiş)": "LAN / IP (avanzado)",
+  "(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)": "(se aplica desde la próxima partida; si lo dejas vacío se usa tu nombre de Steam)",
 };
 export default D;

@@ -41,7 +41,7 @@ import { CloudCurtain } from './ui/clouds';
 import { fadeFrom } from './ui/transitions';
 import { warmUp } from './preload';
 import { mountScenery } from './ui/scenery';
-import { confirmLeave, mountLangButton, mountSettingsButton, setLeaveAction } from './ui/settings';
+import { confirmLeave, enableNameSetting, mountLangButton, mountSettingsButton, setLeaveAction } from './ui/settings';
 import { startFpsMeter } from './ui/fps-meter';
 import { armTutorial, disarmTutorial, tutorialDone } from './ui/tutorial';
 import { CRAZY } from './crazy';
@@ -324,6 +324,8 @@ let musicInGame = false;
 
 /** The desktop shell's multiplayer door as it was when the page started (null: a browser). */
 let mpInfo: MpInfo | null = null;
+/** The menu's name box remembers what was typed; with Steam there is no box (the Steam name is used, changed in the settings), so nothing is stored for it. */
+const rememberName = (name: string): void => { if (!mpInfo?.steam) saveName(name); };
 /** The doors of the game we host (the LAN address for the lobby's invitation box). */
 let hostDoors: MpHost | null = null;
 /** The host told us it is quitting (or we found it gone): no "reconnecting" talk after that. */
@@ -417,7 +419,7 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
   const bridge = mpInfo ? mp() : null;
   new HomeScreen(app, { name: loadName() || siteName, code: defaults.code ?? '', error: defaults.error, hosted: bridge ? { steam: mpInfo!.steam } : null }, {
     create: async (name, visibility) => {
-      saveName(name);
+      rememberName(name);
       soloRoom = false;
       if (bridge) setHostedRole('host'); // (before the room's first picture arrives: the lobby is drawn as a host's)
       const r = await net.createRoom(name);
@@ -437,7 +439,7 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
     },
     joinSteam: async (name, lobbyId) => {
       if (!bridge) return null;
-      saveName(name);
+      rememberName(name);
       const error = await enterHost(await bridge.joinSteam(lobbyId), name);
       if (!error) rememberGuest({ kind: 'steam', lobbyId });
       return error;
@@ -446,20 +448,20 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
     challenges: () => void showChallenges(),
     progress: () => void showProgress(),
     quick: async (name) => {
-      saveName(name);
+      rememberName(name);
       return quickMatch(name);
     },
     join: async (name, code) => {
       if (bridge) {
         // the desktop build: a friend's game is at an address (the host's LAN door), not on a server of ours
-        saveName(name);
+        rememberName(name);
         const error = await enterHost(await bridge.joinLan(code), name);
         if (!error) rememberGuest({ kind: 'lan', address: code.trim() });
         return error;
       }
       const c = code.trim().toUpperCase();
       if (!/^[A-Z]{6}$/.test(c)) return t('Oda kodu 6 harf olmalı.');
-      saveName(name);
+      rememberName(name);
       const r = await net.joinRoom(c, name);
       if (!r.ok) return r.error;
       setRoute(`/oda/${r.code}${location.search}`);
@@ -847,6 +849,7 @@ async function main(): Promise<void> {
     mpInfo = await bridge.info().catch(() => null);
     if (mpInfo) {
       if (mpInfo.steamName && !siteName) siteName = mpInfo.steamName; // the Steam name is the name offered until the player types their own
+      if (mpInfo.steam) enableNameSetting(mpInfo.steamName); // (no name box in the menu then: the settings' Game tab holds it)
       bridge.onEvent((e) => {
         if (e.type === 'steam-join') void joinSteamLobby(e.lobbyId);
         else if (e.type === 'host-left' || e.type === 'line-failed') { if (hostedRole() === 'guest' && !hostGone) window.setTimeout(hostLost, e.type === 'host-left' ? 1500 : 0); }

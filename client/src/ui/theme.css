@@ -411,6 +411,7 @@ html.in-menu .settings-fab.btn-round { display: inline-grid; }
 .set-keys dt, .set-keys dd { margin: 0; }
 .set-keys kbd { display: inline-block; font: inherit; font-size: .9em; padding: calc(3px * var(--u, 1)) calc(8px * var(--u, 1)); background: #f4e8cd; border: calc(2px * var(--u, 1)) solid #7a5a36; border-bottom-width: calc(3px * var(--u, 1)); border-radius: calc(5px * var(--u, 1)); white-space: nowrap; }
 .set-row .set-select { flex: 0 1 auto; max-width: 55%; }
+.set-row .set-input { flex: 0 1 45%; min-width: 0; font: inherit; color: var(--ink, #3a2c1c); background: #f6ecd0; border: calc(2px * var(--u, 1)) solid #8a6a3a; border-radius: calc(5px * var(--u, 1)); padding: calc(4px * var(--u, 1)) calc(8px * var(--u, 1)); }
 .settings-body section { margin-bottom: calc(10px * var(--u, 1)); }
 .set-row { display: flex; align-items: center; gap: calc(10px * var(--u, 1)); margin: calc(6px * var(--u, 1)) 0; }
 .set-row label { flex: 1; }
@@ -589,6 +590,19 @@ html.kf-starter select[data-row], html.kf-starter select[data-d-row] { display: 
 .home .home-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: calc(10px * var(--u, 1)); margin-top: calc(10px * var(--u, 1)); }
 .home .home-foot .home-name { flex: 0 1 calc(240px * var(--u, 1)); margin: 0; font-size: max(var(--fs-xs, 0px), .9em); }
 .home .home-foot .home-quit { flex: none; opacity: .85; }
+.home .home-foot.no-name { justify-content: flex-end; }
+.home-b .home-foot.no-name { background: none; border: 0; box-shadow: none; padding: 0; } /* (only the way out is left: no card for it) */
+/* the friends' doors in the desktop build: one button, the doors unfold under it; the address box hides in a folded "LAN / IP" */
+.home .home-friends-wrap { margin-top: calc(8px * var(--u, 1)); }
+.home .home-friends-toggle { font-size: max(var(--fs-xs, 0px), 1.02em); }
+.home .home-friends-toggle::after { content: ''; display: inline-block; margin-left: calc(8px * var(--u, 1)); border: calc(5px * var(--u, 1)) solid transparent; border-top-color: currentColor; border-bottom-width: 0; vertical-align: middle; transition: transform .12s ease; }
+.home .home-friends-toggle[aria-expanded="true"]::after { transform: rotate(180deg); }
+.home .home-friends-wrap .home-friends { margin-top: calc(6px * var(--u, 1)); padding-top: calc(10px * var(--u, 1)); }
+.home .home-friends-wrap .home-friends[hidden] { display: none; }
+.home .home-lan { margin-top: calc(8px * var(--u, 1)); border-top: calc(2px * var(--u, 1)) dashed rgba(122, 90, 54, .45); padding-top: calc(6px * var(--u, 1)); }
+.home .home-lan summary { cursor: pointer; font-size: max(var(--fs-xs, 0px), .88em); opacity: .85; list-style-position: inside; }
+.home .home-lan summary:focus-visible { outline: calc(2px * var(--u, 1)) solid #3f86c7; outline-offset: calc(2px * var(--u, 1)); }
+.home .home-lan[open] summary { margin-bottom: calc(6px * var(--u, 1)); }
 .home .btn { transition: transform .1s ease, filter .1s ease; }
 .home .btn:hover:not(:disabled) { transform: translateY(calc(-2px * var(--u, 1))); filter: brightness(1.07); }
 .home .btn:active:not(:disabled) { transform: translateY(calc(1px * var(--u, 1))); }

@@ -1115,5 +1115,8 @@ const D: Record<string, string> = {
   "(ulak mesajlarındaki küfürler yıldızla gösterilir; nefret söylemi bu ayardan bağımsız, her zaman filtrelenir)": "(Flüche in Botennachrichten werden als Sterne gezeigt; Hassrede wird unabhängig von dieser Einstellung immer gefiltert)",
   "Oyna": "Spielen",
   "Oyundan çık": "Spiel beenden",
+  "Arkadaşlarla oyna": "Mit Freunden spielen",
+  "LAN / IP (gelişmiş)": "LAN / IP (erweitert)",
+  "(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)": "(gilt ab dem nächsten Spiel; leer lassen, um deinen Steam-Namen zu verwenden)",
 };
 export default D;

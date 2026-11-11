@@ -1115,5 +1115,8 @@ const D: Record<string, string> = {
   "(ulak mesajlarındaki küfürler yıldızla gösterilir; nefret söylemi bu ayardan bağımsız, her zaman filtrelenir)": "（使者のメッセージ内の悪口は伏せ字になります。ヘイト表現はこの設定に関係なく常に伏せられます）",
   "Oyna": "プレイ",
   "Oyundan çık": "ゲームを終了",
+  "Arkadaşlarla oyna": "友達と遊ぶ",
+  "LAN / IP (gelişmiş)": "LAN / IP（詳細設定）",
+  "(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)": "（次のゲームから有効。空欄ならSteam名を使います）",
 };
 export default D;

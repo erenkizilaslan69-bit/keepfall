@@ -1119,3 +1119,6 @@
 1119	(ulak mesajlarındaki küfürler yıldızla gösterilir; nefret söylemi bu ayardan bağımsız, her zaman filtrelenir)	(swear words in envoy messages are shown as stars; hate speech is always filtered, whatever this setting says)
 1120	Oyna	Play
 1121	Oyundan çık	Quit game
+1122	Arkadaşlarla oyna	Play with friends
+1123	LAN / IP (gelişmiş)	LAN / IP (advanced)
+1124	(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)	(applies from the next game; leave empty to use your Steam name)
