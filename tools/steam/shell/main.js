@@ -21,7 +21,7 @@ const root = path.resolve(__dirname, '..', '..');            // <package>/  (res
 const serverDir = process.env.KEEPFALL_SERVER_DIR || path.join(root, 'server');
 const serverExe = path.join(serverDir, process.platform === 'win32' ? 'Keepfall.Server.exe' : 'Keepfall.Server');
 const quietLog = process.env.KEEPFALL_SHELL_LOG;              // test hook: a file the shell writes its facts to
-const log = (line) => { if (quietLog) { try { fs.appendFileSync(quietLog, line + '\n'); } catch { /* ignore */ } } };
+const log = (line) => { if (quietLog) { try { fs.appendFileSync(quietLog, new Date().toISOString().slice(11, 23) + ' ' + line + '\n'); } catch { /* ignore */ } } };
 
 let server = null, port = 0, guestPort = 0, joinPort = 0, quitting = false, mainWindow = null, mp = null;
 /** The build's name: host and guest of a friend-hosted game must have the same one (tools/pack-steam.mjs writes build.json). */

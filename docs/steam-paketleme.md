@@ -167,10 +167,22 @@ Gereken: **iki Steam hesabı ve iki bilgisayar** (aynı hesap iki yerde aynı an
 5. Maçı başlat (boş koltuklar botla), 2–3 dakika oyna: gecikme hissi, ordu gönderme, ulak mesajı.
 6. **Kopma:** B'de Wi-Fi'yi 70 sn kapat → A'da B'nin şeridinde "yerine bot oynuyor"; aç → B kaldığı yerden sürer.
 7. **Ev sahibi çıkışı:** A pencereyi kapatsın → B'de maç sonu ekranı + "Ev sahibi oyundan ayrıldı".
-8. Sorun olursa iki bilgisayarın `shell.log` dosyasını gönder (`p2p`, `lobby`, `join` satırları).
+8. Sorun olursa iki bilgisayarın `shell.log` dosyasını gönder (`p2p`, `lobby`, `join`, `invite` satırları; satırların başında saat var).
 9. Steam'siz karşılaştırma: A "LAN / IP adresiyle (Steam yok)" seçip kursun; aynı ağda B, A'nın lobisindeki adresi "Ev sahibinin adresi"ne yazar (Windows güvenlik duvarı sorusuna A'da "İzin ver").
 
 Gerçek app id gelince: `steam.json` → `appId`, Steamworks panelinde Rich Presence dosyasını (`tools/steam/rich_presence_loc.vdf`) yeniden yükle; lobi/P2P için panelde ek ayar gerekmez.
+
+### Bilinen sorun: zip'ten çıkan Keepfall.exe "Erişim engellendi" (2026-11-12 testi)
+
+- **Belirti:** Gerçek testte arkadaşın bilgisayarında zip'ten çıkarılan `Keepfall.exe` "Erişim engellendi" verdi; dosyaya sağ tık → Özellikler → "Engellemeyi kaldır" ve başka bir klasöre çıkarma sonrası çalıştı.
+- **Sebep (büyük olasılık):** Windows internetten inen zip'lere "Web işareti" (Mark-of-the-Web) koyar; SmartScreen / antivirüs imzasız, az indirilen bir exe'yi engeller. Korumalı klasörlerde (Masaüstü, Belgeler, Program Files) "kontrollü klasör erişimi" de aynı hatayı verebilir.
+- **Steam'den kurulumda beklenmez:** Steam istemcisi dosyaları kendi indirir (işaret yok), oyuncu zip açmaz. Sorun yalnız zip ile elden dağıtılan test paketlerinde olur.
+- **Test paketi için çözüm:** zip'e sağ tık → Özellikler → "Engellemeyi kaldır" → sonra çıkar; ya da `Get-ChildItem -Recurse <klasör> | Unblock-File`; kullanıcı klasörüne (örn. `C:\Oyunlar\Keepfall`) çıkar.
+- **Kalıcı riskler:** exe imzasız (Electron kabuğu + `Keepfall.exe`); SmartScreen "Windows bilgisayarınızı korudu" uyarısı ve bazı antivirüslerin yanlış alarmı (false positive) olasıdır, özellikle yeni sürümlerde.
+- **Olası çözümler (HİÇBİRİ SATIN ALINMADI, yalnız not):**
+  1. **Kod imzalama sertifikası** (Authenticode): OV sertifikası yılda kabaca 200–400 USD; EV sertifikası ≈ 300–600 USD/yıl ve SmartScreen itibarını hemen verir (donanım anahtarı ister). Azure Trusted Signing ayda ≈ 10 USD civarı, ama kuruluş doğrulaması ister (bireysel uygunluk bölgeye göre değişir). Fiyatlar yaklaşık; satın almadan önce güncel fiyat bakılmalı.
+  2. **Steam üzerinden dağıtım:** Steam'in kendi indirmesi işaret koymaz; antivirüs yanlış alarmları için ilk yayında Microsoft'a ve büyük antivirüs firmalarına "false positive" bildirimi yapılır.
+  3. Test paketleri için zip yerine tek tıkla açılan kurulum yerine, yukarıdaki "Engellemeyi kaldır" adımını pakete `OKU.txt` olarak koymak.
 
 ### Açık riskler
 
