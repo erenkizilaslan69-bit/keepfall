@@ -34,6 +34,18 @@ const CHECK = `(() => {
     const clipX = e.scrollWidth > e.clientWidth + 2 && (/(hidden|clip|auto|scroll)/.test(cs.overflowX) || cs.whiteSpace === 'nowrap');
     const clipY = e.scrollHeight > e.clientHeight + 3 && /(hidden|clip)/.test(cs.overflowY);
     if (clipX || clipY) out.push({ kind: 'clipped', el: name(e), text: e.textContent.trim().slice(0, 50), box: [e.clientWidth, e.clientHeight], content: [e.scrollWidth, e.scrollHeight] });
+    // a word split across two lines (the box was too narrow for it and the text broke in the middle of the word, or at a hyphen the browser added): the last letter on the next line.
+    // (Chinese / Japanese have no spaces: a line may end anywhere there, so those words are skipped.)
+    for (const n of e.childNodes) {
+      if (n.nodeType !== 3) continue;
+      for (const m of n.textContent.matchAll(/[^\\s]{3,}/g)) {
+        if (/[-\\u2013\\u2014/]/.test(m[0])) continue; // (a line may end after a hyphen, a dash or a slash: that is not a split word)
+        if (/[\\u3040-\\u30ff\\u3400-\\u9fff\\uac00-\\ud7af]/.test(m[0])) continue;
+        const rg = document.createRange(); rg.setStart(n, m.index); rg.setEnd(n, m.index + m[0].length);
+        const rects = [...rg.getClientRects()].filter((q) => q.width > 1);
+        if (rects.length > 1 && rects[rects.length - 1].top - rects[0].top > rects[0].height * 0.6) { out.push({ kind: 'word-split', el: name(e), text: m[0], rect: [rects[0].left | 0, rects[0].top | 0, rects[0].right | 0, rects[0].bottom | 0] }); break; }
+      }
+    }
     const r = e.getBoundingClientRect();
     // cut off by a parent that hides its overflow (a card, a window body...)
     for (let n = e.parentElement; n && n !== document.body; n = n.parentElement) {
@@ -64,6 +76,9 @@ const run = async (lang) => {
     await bl.js(`(() => { const s = document.createElement('style'); s.textContent = '.kf-fps, .kf-debug, .tb-speed, .kf-lowfps, .tut-root, [class*="tutorial"] { display: none !important; }'; document.head.appendChild(s); return 1; })()`);
     await audit('match');
     await bl.js(`keepfallScene.centerOnCastle(); keepfallScene.select({ kind: 'building', type: 'forge' }); 1`); await sleep(900); await audit('forge-window');
+    // the castle window with each of its four tabs (Soldiers / Hire / Growth / Defence): the tab row is where a narrow box splits a word
+    await bl.js(`keepfallUi.windows.close(true); keepfallScene.select({ kind: 'castle' }); 1`); await sleep(900);
+    for (const [i, nm] of ['soldiers', 'hire', 'growth', 'defense'].entries()) { await bl.js(`document.querySelectorAll('.win .tab')[${i}]?.click(); 1`); await sleep(400); await audit('castle-' + nm); }
     await bl.js(`keepfallUi.windows.close(true); keepfallScene.select({ kind: 'building', type: 'farm' }); 1`); await sleep(900); await audit('farm-window');
     await bl.js(`keepfallUi.windows.close(true); document.querySelector('.kingdom-fab')?.click(); 1`); await sleep(900); await audit('kingdom-panel');
     // the Oracle's panel with a rival whose deck holds units ours does not: their names must be words, not ids
@@ -100,15 +115,15 @@ const run = async (lang) => {
 for (const l of langs) { const row = await run(l); results.push(row); const n = Object.values(row.screens).reduce((a, x) => a + x.length, 0); console.log(l, n, 'problems', row.error ?? ''); }
 
 // the report: a problem that English has too is the design as it is; what counts is what a language adds to it
-const SCREENS = ['home', 'lobby', 'match', 'forge-window', 'farm-window', 'kingdom-panel', 'oracle-deck', 'guide', 'settings'];
+const SCREENS = ['home', 'lobby', 'match', 'forge-window', 'castle-soldiers', 'castle-hire', 'castle-growth', 'castle-defense', 'farm-window', 'kingdom-panel', 'oracle-deck', 'guide', 'settings'];
 const base = results.find((r) => r.lang === 'en');
 const key = (x) => x.kind + '|' + x.el;
 const baseKeys = (scr) => new Set((base?.screens[scr] ?? []).map(key));
-const fresh = (r, scr) => (r.screens[scr] ?? []).filter((x) => x.kind === 'raw-id' || r.lang === 'en' || !baseKeys(scr).has(key(x))); // (a raw id is never "the design as it is")
+const fresh = (r, scr) => (r.screens[scr] ?? []).filter((x) => x.kind === 'raw-id' || x.kind === 'word-split' || r.lang === 'en' || !baseKeys(scr).has(key(x))); // (a raw id is never "the design as it is")
 const lines = ['# Dil yerleşim denetimi (masaüstü ' + W + 'x' + H + ')', '', 'Otomatik: `node tools/lang-audit.mjs`. Sayılar: İngilizcede olmayan, o dilin eklediği taşma/kırpılma sayısı (kutuya sığmayan metin, üst kutu tarafından kesilen öğe, ekran dışı). İngilizcenin kendi sayıları tasarım tabanı olarak ayrı satırdadır. Ekran görüntüleri `art/shots/langs/` (git dışı).', '', '| Dil | ' + SCREENS.join(' | ') + ' |', '|---|' + '---|'.repeat(SCREENS.length)];
 for (const r of results) lines.push(`| ${r.lang}${r.lang === 'en' ? ' (taban)' : ''}${r.error ? ' (hata: ' + r.error + ')' : ''} | ` + SCREENS.map((sc) => (r.screens[sc] ? fresh(r, sc).length : '–')).join(' | ') + ' |');
 lines.push('', '## Ayrıntı (dilin eklediği)', '');
-for (const r of results) for (const sc of SCREENS) { const list = fresh(r, sc); if (list.length && r.lang !== 'en') { lines.push(`### ${r.lang} · ${sc}`); for (const x of list.slice(0, 14)) lines.push(`- ${x.kind}: \`${x.el}\` "${x.text}" ` + (x.id ? `ham kimlik: ${x.id}` : x.box ? `kutu ${x.box.join('x')} içerik ${x.content.join('x')}` : `konum ${x.rect.join(',')}`)); if (list.length > 14) lines.push(`- … ${list.length - 14} tane daha`); lines.push(''); } }
+for (const r of results) for (const sc of SCREENS) { const list = fresh(r, sc); if (list.length && r.lang !== 'en') { lines.push(`### ${r.lang} · ${sc}`); for (const x of list.slice(0, 14)) lines.push(`- ${x.kind}: \`${x.el}\` "${x.text}" ` + (x.kind === 'word-split' ? `bölünen kelime` : x.id ? `ham kimlik: ${x.id}` : x.box ? `kutu ${x.box.join('x')} içerik ${x.content.join('x')}` : `konum ${x.rect.join(',')}`)); if (list.length > 14) lines.push(`- … ${list.length - 14} tane daha`); lines.push(''); } }
 writeFileSync(MD, lines.join('\r\n'), 'utf8');
 console.log('wrote', MD);
 process.exit(0);

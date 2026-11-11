@@ -141,7 +141,7 @@ html.in-game body { position: fixed; inset: 0; width: 100%; }
 .kingdom-panel, .win-body, .scroll-pop, .decree { overflow-x: hidden; }
 .kingdom-panel { max-width: calc(100% - 20px); box-sizing: border-box; }
 .kingdom-panel .kd-row { flex-wrap: wrap; }
-.kingdom-panel p, .kingdom-panel span, .kingdom-panel label { overflow-wrap: anywhere; }
+.kingdom-panel p, .kingdom-panel span, .kingdom-panel label { overflow-wrap: break-word; }
 .kingdom-panel select { max-width: 100%; }
 .kingdom-panel .kd-row .btn { flex: 0 0 auto; }
 /* the attack form of a rival's castle: a compact row: name and numbers on the first line, the row choice under it */
@@ -201,14 +201,14 @@ html.in-game body { position: fixed; inset: 0; width: 100%; }
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 86%, 0 100%); }
 .kd-card-banner .emblem-card { width: calc(46px * var(--u, 1)); height: calc(54px * var(--u, 1)); margin: 0; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .35)); }
 .kd-card-who { grid-area: who; min-width: 0; padding-right: calc(34px * var(--u, 1)); }
-.kd-card-who h3 { margin: 0; font-size: 1.2em; line-height: 1.1; color: var(--kd-dark); overflow-wrap: anywhere; }
+.kd-card-who h3 { margin: 0; font-size: 1.2em; line-height: 1.1; color: var(--kd-dark); overflow-wrap: break-word; }
 .kd-card-role { margin: 0; font-size: max(var(--fs-xs, 0px), .85em); color: var(--ink-soft, #6b5a44); }
 .kd-card-line { grid-area: line; margin: 0; font-family: var(--font-text); font-size: max(var(--fs-xs, 0px), .86em); line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .kd-tiles { grid-area: tiles; display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: calc(6px * var(--u, 1)); margin-top: calc(4px * var(--u, 1)); }
 .kd-tile { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: calc(3px * var(--u, 1)); min-width: 0; min-height: var(--tap, 0px); padding: calc(6px * var(--u, 1)) calc(4px * var(--u, 1)); font: inherit; color: var(--ink, #3a2c1c); cursor: pointer;
   background: #f1e3c2; border: calc(2px * var(--u, 1)) solid #7a5a36; border-bottom-width: calc(4px * var(--u, 1)); border-radius: calc(7px * var(--u, 1)); transition: transform .12s ease, box-shadow .12s ease, background .12s ease; }
 .kd-tile .ico { width: calc(26px * var(--u, 1)); height: calc(26px * var(--u, 1)); flex: none; }
-.kd-tile b { font-size: max(var(--fs-xs, 0px), .86em); line-height: 1.12; text-align: center; overflow-wrap: anywhere; hyphens: auto; }
+.kd-tile b { font-size: max(var(--fs-xs, 0px), .86em); line-height: 1.12; text-align: center; overflow-wrap: break-word; hyphens: none; }
 .kd-tile:hover { background: #f8ecd0; transform: translateY(calc(-1px * var(--u, 1))); }
 .kd-tile.active { background: #fff6dc; border-color: var(--kd-dark); transform: scale(1.04); box-shadow: 0 0 0 calc(2px * var(--u, 1)) var(--kd), 0 0 calc(12px * var(--u, 1)) var(--kd); z-index: 1; }
 .kd-tile:focus-visible { outline: calc(2px * var(--u, 1)) solid #f2c14e; outline-offset: 1px; }
