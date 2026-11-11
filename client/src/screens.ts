@@ -18,7 +18,7 @@ import { FEATURE_PRIVATE_ROOM } from './features';
 import type { MpLobby, Visibility } from './hosted';
 
 /** The friend-hosted game (desktop build): what the host's lobby offers for inviting; null everywhere else. Set by main.ts before the lobby is shown. */
-export interface HostedShare { link: string | null; steam: boolean; invite: () => void; /** the LAN door's port while it is open (0: no port is open on this computer) */ lanPort: number }
+export interface HostedShare { link: string | null; steam: boolean; invite: () => void | Promise<unknown>; /** the LAN door's port while it is open (0: no port is open on this computer) */ lanPort: number }
 let hostedShare: HostedShare | null = null;
 /** True for a guest of a friend-hosted game: the room's code is of no use to anybody (the host invites). */
 let hostedGuest = false;
@@ -211,6 +211,7 @@ export class LobbyScreen {
               <button class="btn" data-a="copylink">${t('Adresi kopyala')}</button>` : ''}
               ${hostedShare.steam ? `<button class="btn" data-a="invite">${t("Steam'den davet et")}</button>` : ''}
             </div>
+            ${hostedShare.steam ? `<p class="muted small invite-hint" id="invite-hint" hidden>${t('Davet penceresi açılmadıysa: Steam arkadaş listesinde arkadaşına sağ tık → Oyuna davet et.')}</p>` : ''}
             ${hostedShare.lanPort ? `<p class="tag warn door-open" id="door-open">${t('Ağ kapısı açık (port {0}): bu ağdaki herkes adresi bilirse katılmayı deneyebilir.', hostedShare.lanPort)}</p>` : ''}
             <p class="muted small">${hostedShare.lanPort
     ? t('Maç bu bilgisayarda çalışır: sen çıkarsan herkes için biter. Arkadaşların bu adresi oyunda "Ev sahibinin adresi"ne yazar.')
@@ -269,7 +270,11 @@ export class LobbyScreen {
       } else if (a === 'kick') {
         this.show(await this.net.kickPlayer(Number((e.target as HTMLElement).closest<HTMLElement>('[data-seat]')!.dataset.seat)));
       } else if (a === 'invite') {
-        hostedShare?.invite();
+        // the overlay cannot be asked whether it opened: when the shell says no (or the dialog stays shut), the hint with the friends-list way is shown
+        const hint = this.q<HTMLElement>('#invite-hint');
+        let opened = false;
+        try { opened = (await hostedShare?.invite()) === true; } catch { opened = false; }
+        if (hint) { hint.hidden = false; hint.classList.toggle('warn', !opened); }
       } else if (a === 'ready') {
         this.show(await this.net.setReady(!this.me(this.room!)?.ready));
       } else if (a === 'deckpick') {

@@ -256,7 +256,7 @@ function createMp(o) {
 
   function invite() {
     if (!hosting || !lobby) return false;
-    try { lobby.openInviteDialog(); return true; } catch { return false; }
+    try { lobby.openInviteDialog(); log('invite dialog asked'); return true; } catch (e) { log('invite dialog failed: ' + e.message); return false; }
   }
 
   function info() {

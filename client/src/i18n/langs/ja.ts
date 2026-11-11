@@ -1118,5 +1118,6 @@ const D: Record<string, string> = {
   "LAN / IP (gelişmiş)": "LAN / IP（詳細設定）",
   "(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)": "（次のゲームから有効。空欄ならSteam名を使います）",
   "Gizli krallıklar. Sahte ordular. Tek savaş.": "隠された王国。偽りの軍勢。ただ一度の戦い。",
+  "Davet penceresi açılmadıysa: Steam arkadaş listesinde arkadaşına sağ tık → Oyuna davet et.": "招待ウィンドウが開かない場合:Steam のフレンドリストで友達を右クリック → ゲームに招待。",
 };
 export default D;

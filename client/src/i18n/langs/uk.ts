@@ -1118,5 +1118,6 @@ const D: Record<string, string> = {
   "LAN / IP (gelişmiş)": "LAN / IP (додатково)",
   "(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)": "(діє з наступної гри; якщо залишити порожнім, використовується ім'я Steam)",
   "Gizli krallıklar. Sahte ordular. Tek savaş.": "Приховані королівства. Фальшиві армії. Одна битва.",
+  "Davet penceresi açılmadıysa: Steam arkadaş listesinde arkadaşına sağ tık → Oyuna davet et.": "Якщо вікно запрошення не відкрилося: у списку друзів Steam клацни друга правою кнопкою → Запросити до гри.",
 };
 export default D;

@@ -124,6 +124,13 @@ function steamAppId() {
   }
   return 0; // placeholder: no app id, Steam stays off
 }
+/** Steam's overlay needs two Chromium switches (in-process-gpu, disable-direct-composition) set BEFORE the app is ready: set later they do nothing,
+ *  and the overlay (the invite dialog, Shift+Tab) never opens. electronEnableSteamOverlay adds them, so it is called here, before whenReady. */
+function enableOverlay() {
+  const appId = steamAppId();
+  if (!appId || (appId === 480 && process.env.KEEPFALL_STEAM_DEV !== '1')) return;
+  try { const sw = require('steamworks.js'); if (sw.electronEnableSteamOverlay) { sw.electronEnableSteamOverlay(); log('steam overlay switches set'); } } catch (e) { log('steam overlay switches failed: ' + (e && e.message)); }
+}
 function startSteam() {
   const appId = steamAppId();
   if (!appId) { log('steam off (no app id)'); return; }
@@ -132,7 +139,6 @@ function startSteam() {
   try {
     const sw = require('steamworks.js');
     const client = sw.init(appId);
-    try { if (sw.electronEnableSteamOverlay) sw.electronEnableSteamOverlay(); } catch { /* the overlay is a nicety */ }
     steam = { client, appId };
     log('steam on ' + appId);
   } catch (e) { steam = null; log('steam off (' + (e && e.message) + ')'); }
@@ -231,6 +237,7 @@ async function boot() {
   // join.keepfall.localhost -> this shell's door to a friend's game (only the hub connection of a guest goes there).
   app.commandLine.appendSwitch('host-resolver-rules', 'MAP ' + JOIN_HOST + ' 127.0.0.1:' + joinPort + ', MAP ' + HOST + ' 127.0.0.1:' + port);
   app.commandLine.appendSwitch('disable-features', 'Translate');
+  enableOverlay();
   await app.whenReady();
   // Nothing leaves the machine: only the local page and the local hub are allowed.
   session.defaultSession.webRequest.onBeforeRequest((details, cb) => {

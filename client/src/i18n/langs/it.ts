@@ -1118,5 +1118,6 @@ const D: Record<string, string> = {
   "LAN / IP (gelişmiş)": "LAN / IP (avanzato)",
   "(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)": "(valido dalla prossima partita; lascia vuoto per usare il tuo nome Steam)",
   "Gizli krallıklar. Sahte ordular. Tek savaş.": "Regni nascosti. Eserciti falsi. Una sola battaglia.",
+  "Davet penceresi açılmadıysa: Steam arkadaş listesinde arkadaşına sağ tık → Oyuna davet et.": "Se la finestra dell'invito non si apre: nella tua lista amici di Steam, clic destro sul tuo amico → Invita al gioco.",
 };
 export default D;

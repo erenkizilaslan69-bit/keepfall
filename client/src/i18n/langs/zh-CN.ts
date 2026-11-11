@@ -1118,5 +1118,6 @@ const D: Record<string, string> = {
   "LAN / IP (gelişmiş)": "局域网 / IP（高级）",
   "(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)": "（下一局生效；留空则使用你的 Steam 名称）",
   "Gizli krallıklar. Sahte ordular. Tek savaş.": "隐秘的王国。虚假的军队。唯一的一战。",
+  "Davet penceresi açılmadıysa: Steam arkadaş listesinde arkadaşına sağ tık → Oyuna davet et.": "如果邀请窗口没有打开:在 Steam 好友列表中右键点击好友 → 邀请加入游戏。",
 };
 export default D;

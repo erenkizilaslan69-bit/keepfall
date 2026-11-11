@@ -431,7 +431,7 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
         hostDoors = await bridge.hostOpen({ code: r.code!, steam: lan ? null : (visibility as 'friends' | 'public' | 'private' | undefined) ?? 'friends', lan, name: name || siteName, players: 1, max: 4, phase: 'lobby' });
         if (!hostDoors.ok) { const error = joinError({ ok: false, error: hostDoors.error }); await leaveToMenu(); return error; }
         lastHostNote = '';
-        setHostedShare({ link: hostLink(hostDoors, r.code!), steam: hostDoors.steam, invite: () => void bridge.invite(), lanPort: hostDoors.lanPort });
+        setHostedShare({ link: hostLink(hostDoors, r.code!), steam: hostDoors.steam, invite: () => bridge.invite(), lanPort: hostDoors.lanPort });
         if (r.room) showLobby(r.room);
       }
       setRoute(`/oda/${r.code}${location.search}`);
@@ -868,7 +868,7 @@ async function main(): Promise<void> {
       } else if (mpInfo.hosting && loadActiveRoom()) {
         setHostedRole('host');
         hostDoors = { ok: true, lanPort: mpInfo.lanPort, addresses: mpInfo.addresses, steam: !!mpInfo.lobbyId, lobbyId: mpInfo.lobbyId };
-        setHostedShare({ link: hostLink(hostDoors, loadActiveRoom()!), steam: hostDoors.steam, invite: () => void bridge.invite(), lanPort: hostDoors.lanPort });
+        setHostedShare({ link: hostLink(hostDoors, loadActiveRoom()!), steam: hostDoors.steam, invite: () => bridge.invite(), lanPort: hostDoors.lanPort });
       } else if (mpInfo.hosting) await bridge.leave();
     }
   }

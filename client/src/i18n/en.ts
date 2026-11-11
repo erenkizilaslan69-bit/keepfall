@@ -338,6 +338,7 @@ export const EN: Record<string, string> = {
   "Açık oyun bulunamadı.": "No open games found.",
   "Adresi kopyala": "Copy address",
   "Steam'den davet et": "Invite through Steam",
+  "Davet penceresi açılmadıysa: Steam arkadaş listesinde arkadaşına sağ tık → Oyuna davet et.": "If the invite window did not open: in your Steam friends list, right-click your friend → Invite to Game.",
   "bağlantı yok, yerine bot oynuyor": "disconnected, a bot is playing for them",
   "Ağ kapısı açılamadı (47800–47809 portları dolu olabilir).": "The network door could not be opened (ports 47800–47809 may be in use).",
   "Steam: arkadaşlar": "Steam: friends",
