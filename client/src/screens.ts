@@ -24,6 +24,7 @@ let hostedShare: HostedShare | null = null;
 let hostedGuest = false;
 export function setHostedShare(share: HostedShare | null, guest = false): void { hostedShare = share; hostedGuest = guest; }
 import { crazyActive, crazyInviteLink, crazyVictory } from './crazy';
+import { skinSelect } from './ui/select';
 
 // Plain-HTML screens around the game: home, lobby and the end screen, in the same parchment-and-ribbon
 // look as the in-game UI (ui/ui.css).
@@ -151,6 +152,7 @@ export class HomeScreen {
     const nameBox = root.querySelector<HTMLInputElement>('#name');
     const name = { get value() { return nameBox ? nameBox.value : defaults.name; } };
     const code = root.querySelector<HTMLInputElement>('#code') ?? nameBox;
+    root.querySelectorAll<HTMLSelectElement>('select').forEach(skinSelect); // (the game's own drop-down look, as in the settings)
     const toggle = root.querySelector<HTMLButtonElement>('#friends-toggle');
     toggle?.addEventListener('click', () => {
       const body = root.querySelector<HTMLElement>('#friends-body')!;

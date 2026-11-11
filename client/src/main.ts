@@ -817,6 +817,8 @@ async function connectOnSite(): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  // the desktop (Electron) build is a window of its own, not a web page: no page scroll bar at the right edge (the wheel still scrolls a menu that is taller than the window)
+  if ((window as unknown as { keepfallSteam?: unknown }).keepfallSteam) document.documentElement.classList.add('kf-desktop');
   applyCalm(); // "Efektleri azalt" / low graphics: the interface's small movements are off
   // CrazyGames build only: loading starts here, before anything is fetched: the site's SDK (nothing happens anywhere else); loadingStop comes when the lobby is up.
   const onSite = await initCrazy();

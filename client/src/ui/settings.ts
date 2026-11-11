@@ -6,6 +6,7 @@ import { toggleGuide } from './guide';
 import { setLang, t, type Lang } from '../i18n';
 import { loadName, saveName } from '../identity';
 import { esc } from '../format';
+import { closeOpenSelect, skinSelect } from './select';
 import { langLabel, langSelectHtml, langTitle, toggleLangMenu } from './lang-menu';
 
 // The settings window (gear button, in the menus and in the game), in five sections with tabs: Sound (master / music / effects, mute), Display (quality,
@@ -70,7 +71,7 @@ export function closeSettings(): void {
 }
 
 function onKey(e: KeyboardEvent): void {
-  if (e.key === 'Escape') { e.stopPropagation(); closeSettings(); }
+  if (e.key === 'Escape') { e.stopPropagation(); if (!closeOpenSelect()) closeSettings(); } // (an open drop-down list closes first)
 }
 
 /** The sections of the settings window (tabs along its top); the one last looked at opens again. */
@@ -173,6 +174,8 @@ export function toggleSettings(): void {
     overlay.querySelectorAll<HTMLElement>('[data-pane]').forEach((s) => s.classList.toggle('hidden', s.dataset.pane !== id));
   };
   const master = q<HTMLInputElement>('#set-master'), music_ = q<HTMLInputElement>('#set-music'), sfx_ = q<HTMLInputElement>('#set-sfx'), mute = q<HTMLInputElement>('#set-mute'), fx = q<HTMLInputElement>('#set-fx'), quality = q<HTMLSelectElement>('#set-quality'), fps = q<HTMLInputElement>('#set-fps'), msg = q<HTMLInputElement>('#set-msg'), hintsBox = q<HTMLInputElement>('#set-hints'), fullBox = q<HTMLInputElement>('#set-full'), full = q<HTMLInputElement>('#set-fullscreen'), scale = q<HTMLSelectElement>('#set-scale');
+  // the drop-downs wear the game's own look (ui/select.ts); `redraw` repaints their faces after the code sets a value
+  const redraw = [...overlay.querySelectorAll<HTMLSelectElement>('select.set-select')].map(skinSelect);
   q<HTMLSelectElement>('#set-lang').addEventListener('change', (e) => { setLang((e.target as HTMLSelectElement).value as Lang); });
   const show = () => {
     master.value = String(Math.round(sfx.masterVolume * 100));
@@ -190,6 +193,7 @@ export function toggleSettings(): void {
     q('[data-o="master"]').textContent = `${master.value}%`;
     q('[data-o="music"]').textContent = `${music_.value}%`;
     q('[data-o="sfx"]').textContent = `${sfx_.value}%`;
+    redraw.forEach((f) => f());
   };
   master.addEventListener('input', () => { sfx.setMasterVolume(Number(master.value) / 100); show(); });
   master.addEventListener('change', () => sfx.play('sword'));

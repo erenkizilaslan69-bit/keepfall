@@ -23,7 +23,7 @@ for (const lang of LANGS) {
       await sleep(350);
       const spills = await b.js(`(() => { const out = []; const box = document.querySelector('.settings'); const r = box.getBoundingClientRect();
         if (r.left < 0 || r.right > innerWidth + 1 || r.top < 0) out.push('window off the screen');
-        for (const e of box.querySelectorAll('.set-tab, .set-row label, .set-row, .set-keys dd, .set-keys kbd, .btn, .guide-title, select')) {
+        for (const e of box.querySelectorAll('.set-tab, .set-row label, .set-row, .set-keys dd, .set-keys kbd, .btn, .guide-title, select, .kf-select-btn')) {
           if (e.offsetParent === null) continue;
           const q = e.getBoundingClientRect();
           if (e.scrollWidth > e.clientWidth + 2) out.push('clipped: ' + (e.textContent || '').trim().slice(0, 30));
