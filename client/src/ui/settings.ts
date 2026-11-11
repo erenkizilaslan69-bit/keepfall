@@ -1,12 +1,13 @@
 import { sfx } from '../audio';
 import { restartTutorial } from './tutorial';
 import { CRAZY } from '../crazy';
-import { playsFullRules, setFullRules, lowGraphics, setLowGraphics, setShowHints, showsHints, setReduceEffects, setShowFps, setShowMessages, showsFps, userReducesEffects, userShowsMessages } from '../prefs';
+import { playsFullRules, setFullRules, lowGraphics, setLowGraphics, setShowHints, showsHints, setReduceEffects, setShowFps, setShowMessages, showsFps, userReducesEffects, userShowsMessages, UI_SCALES, uiScalePref, setUiScalePref } from '../prefs';
 import { toggleGuide } from './guide';
 import { setLang, t, type Lang } from '../i18n';
 import { langLabel, langSelectHtml, langTitle, toggleLangMenu } from './lang-menu';
 
-// The settings window (gear button, in the menus and in the game): the two volumes, "reduce effects", a way to the guide and "About the game".
+// The settings window (gear button, in the menus and in the game), in five sections with tabs: Sound (master / music / effects, mute), Display (quality,
+// full screen, interface scale, effects, FPS), Language (the 15), Game (tips, envoy messages, rules, the tutorial) and Controls (the keys). Below them: about, privacy, leave.
 // Sound and effect choices take hold at once and are kept by their own modules.
 
 declare const __BUILD_DATE__: string;
@@ -64,43 +65,82 @@ function onKey(e: KeyboardEvent): void {
   if (e.key === 'Escape') { e.stopPropagation(); closeSettings(); }
 }
 
+/** The sections of the settings window (tabs along its top); the one last looked at opens again. */
+type Tab = 'sound' | 'display' | 'language' | 'game' | 'controls';
+let lastTab: Tab = 'sound';
+
+/** The keys of the game, for the "Kontroller" tab (what the map and the windows really listen to). */
+const CONTROLS = (): [string, string][] => [
+  ['W A S D / ← ↑ → ↓', t('Haritayı kaydır')],
+  [t('Fare tekerleği'), t('Yakınlaş / uzaklaş')],
+  [t('Sol tık + sürükle'), t('Haritayı sürükle')],
+  [t('Sol tık'), t('Bina, kale, ordu ya da orman yerini seç')],
+  [t('Boşluk'), t('Kendi kalene dön')],
+  ['Esc', t('Açık pencereyi kapat')],
+  ['F11', t('Tam ekran (masaüstü sürümü)')],
+];
+
+const fullscreenOn = (): boolean => !!document.fullscreenElement;
+async function setFullscreen(on: boolean): Promise<void> {
+  try {
+    if (on && !document.fullscreenElement) await document.documentElement.requestFullscreen();
+    else if (!on && document.fullscreenElement) await document.exitFullscreen();
+  } catch { /* refused (an embedded page): the box shows what is true */ }
+}
+
 /** Opens the settings (or closes them if they are open). */
 export function toggleSettings(): void {
   if (open) { closeSettings(); return; }
   const overlay = document.createElement('div');
   overlay.className = 'guide-overlay settings-overlay';
+  const tab = (id: Tab, label: string) => `<button class="set-tab" role="tab" data-tab="${id}" aria-selected="false">${label}</button>`;
   overlay.innerHTML = `
     <div class="guide settings paper" role="dialog" aria-label="${t('Ayarlar')}">
       <div class="ribbon ribbon-blue guide-title">${t('Ayarlar')}</div>
       <button class="btn-round btn-red guide-close" data-act="close" title="${t('Kapat (Esc)')}" aria-label="${t('Kapat')}"><i class="ico ico-close"></i></button>
+      <div class="set-tabs" role="tablist">
+        ${tab('sound', t('Ses'))}${tab('display', t('Görüntü'))}${tab('language', t('Dil'))}${tab('game', t('Oyun'))}${tab('controls', t('Kontroller'))}
+      </div>
       <div class="guide-body settings-body">
-        <section>
-          <h3>${t('Ses')}</h3>
+        <section data-pane="sound">
+          <div class="set-row"><label for="set-master">${t('Ana ses')}</label><input id="set-master" type="range" min="0" max="100" step="5"><output data-o="master"></output></div>
           <div class="set-row"><label for="set-music">${t('Müzik')}</label><input id="set-music" type="range" min="0" max="100" step="5"><output data-o="music"></output></div>
           <div class="set-row"><label for="set-sfx">${t('Efektler')}</label><input id="set-sfx" type="range" min="0" max="100" step="5"><output data-o="sfx"></output></div>
           <div class="set-row"><label for="set-mute">${t('Sesi kapat')}</label><input id="set-mute" type="checkbox" class="set-check"></div>
         </section>
-        <section>
-          <h3>${t('Dil')} · Language</h3>
-          <div class="set-row"><label for="set-lang">${t('Dil')}</label>${langSelectHtml()}</div>
-        </section>
-        <section>
-          <h3>${t('Görünüm')}</h3>
+        <section data-pane="display">
+          <div class="set-row"><label for="set-quality">${t('Grafik kalitesi')} <small>${t('(düşükte parçacık efektleri, duman, harita süsleri ve sis yumuşatması azalır; yavaş bilgisayarlar için)')}</small></label>
+            <select id="set-quality" class="set-select"><option value="high">${t('Yüksek')}</option><option value="low">${t('Düşük')}</option></select></div>
+          <div class="set-row"><label for="set-fullscreen">${t('Tam ekran')}</label><input id="set-fullscreen" type="checkbox" class="set-check"></div>
+          <div class="set-row"><label for="set-scale">${t('Arayüz ölçeği')} <small>${t('(düğmelerin, pencerelerin ve yazıların boyutu)')}</small></label>
+            <select id="set-scale" class="set-select">${UI_SCALES.map((v) => `<option value="${v}">${Math.round(v * 100)}%</option>`).join('')}</select></div>
           <div class="set-row"><label for="set-fx">${t('Efektleri azalt')} <small>${t('(kamera sarsıntısı, kıvılcım ve ok izleri)')}</small></label><input id="set-fx" type="checkbox" class="set-check"></div>
-          <div class="set-row"><label for="set-low">${t('Düşük grafik')} <small>${t('(parçacık efektleri, duman, harita süsleri ve sis yumuşatması azalır; yavaş bilgisayarlar için)')}</small></label><input id="set-low" type="checkbox" class="set-check"></div>
           <div class="set-row"><label for="set-fps">${t('FPS göster')} <small>${t('(köşede kare hızı ve sunucu gecikmesi)')}</small></label><input id="set-fps" type="checkbox" class="set-check"></div>
-          <div class="set-row"><label for="set-msg">${t('Ulak mesajlarını göster')} <small>${t('(kapalıyken gelen mesajlar gizlenir ve mesaj kutusu çıkmaz)')}</small></label><input id="set-msg" type="checkbox" class="set-check"></div>
+          <p class="muted small">${t('Haritaya yakınlaşmak için fare tekerleğini ya da sağ alttaki + / − düğmelerini kullan.')}</p>
+        </section>
+        <section data-pane="language">
+          <div class="set-row"><label for="set-lang">${t('Dil')} · Language</label>${langSelectHtml()}</div>
+          <p class="muted small">${t('Dil değişince sayfa yenilenir; süren maça aynı koltukla dönersin.')}</p>
+        </section>
+        <section data-pane="game">
           <div class="set-row"><label for="set-hints">${t('İpuçlarını göster')} <small>${t('(boşta işçi, yemek azalması, yaklaşan ordu gibi anlarda kısa uyarılar)')}</small></label><input id="set-hints" type="checkbox" class="set-check"></div>
+          <div class="set-row"><label for="set-msg">${t('Ulak mesajlarını göster')} <small>${t('(kapalıyken gelen mesajlar gizlenir ve mesaj kutusu çıkmaz)')}</small></label><input id="set-msg" type="checkbox" class="set-check"></div>
+          <!--envoy-filter-->
           <div class="set-row"><label for="set-full">${t('Tam kurallarla oyna')} <small>${t('(ilk maçlarda ve ilk meydan okumalarda da krallık yetenekleri ve savaş sırası seçimi açık olur)')}</small></label><input id="set-full" type="checkbox" class="set-check"></div>
+          <div class="set-links">
+            <button class="btn" data-act="tutorial">${t('Rehberi tekrar başlat')}</button>
+            <button class="btn" data-act="guide">${t('Nasıl oynanır?')}</button>
+          </div>
+          <p class="muted small hidden" data-f="tut-note"></p>
         </section>
-        <section class="set-links">
-          <button class="btn" data-act="guide">${t('Nasıl oynanır?')}</button>
-          <button class="btn" data-act="about">${t('Oyun hakkında')}</button>
-          <button class="btn" data-act="privacy">${t('Gizlilik')}</button>
-          <button class="btn" data-act="tutorial">${t('Rehberi tekrar başlat')}</button>
+        <section data-pane="controls">
+          <dl class="set-keys">${CONTROLS().map(([k, v]) => `<dt><kbd>${k}</kbd></dt><dd>${v}</dd>`).join('')}</dl>
         </section>
-        <p class="muted small hidden" data-f="tut-note"></p>
-        ${leaveAction ? `<section class="set-links"><button class="btn btn-red" data-act="leave">${t('Ana menüye dön')}</button></section>` : ''}
+        <section class="set-links set-foot">
+          <button class="btn small" data-act="about">${t('Oyun hakkında')}</button>
+          <button class="btn small" data-act="privacy">${t('Gizlilik')}</button>
+          ${leaveAction ? `<button class="btn small btn-red" data-act="leave">${t('Ana menüye dön')}</button>` : ''}
+        </section>
         <section class="set-about hidden" data-f="privacy">
           <h3>${t('Gizlilik')}</h3>
           <p>${t('Oyun hesap ya da e-posta adresi toplamaz.')}</p>
@@ -118,21 +158,32 @@ export function toggleSettings(): void {
       </div>
     </div>`;
   const q = <T extends HTMLElement>(sel: string) => overlay.querySelector<T>(sel)!;
-  const music_ = q<HTMLInputElement>('#set-music'), sfx_ = q<HTMLInputElement>('#set-sfx'), mute = q<HTMLInputElement>('#set-mute'), fx = q<HTMLInputElement>('#set-fx'), low = q<HTMLInputElement>('#set-low'), fps = q<HTMLInputElement>('#set-fps'), msg = q<HTMLInputElement>('#set-msg'), hintsBox = q<HTMLInputElement>('#set-hints'), fullBox = q<HTMLInputElement>('#set-full');
+  const pick = (id: Tab) => {
+    lastTab = id;
+    overlay.querySelectorAll<HTMLElement>('.set-tab').forEach((b) => { const on = b.dataset.tab === id; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
+    overlay.querySelectorAll<HTMLElement>('[data-pane]').forEach((s) => s.classList.toggle('hidden', s.dataset.pane !== id));
+  };
+  const master = q<HTMLInputElement>('#set-master'), music_ = q<HTMLInputElement>('#set-music'), sfx_ = q<HTMLInputElement>('#set-sfx'), mute = q<HTMLInputElement>('#set-mute'), fx = q<HTMLInputElement>('#set-fx'), quality = q<HTMLSelectElement>('#set-quality'), fps = q<HTMLInputElement>('#set-fps'), msg = q<HTMLInputElement>('#set-msg'), hintsBox = q<HTMLInputElement>('#set-hints'), fullBox = q<HTMLInputElement>('#set-full'), full = q<HTMLInputElement>('#set-fullscreen'), scale = q<HTMLSelectElement>('#set-scale');
   q<HTMLSelectElement>('#set-lang').addEventListener('change', (e) => { setLang((e.target as HTMLSelectElement).value as Lang); });
   const show = () => {
+    master.value = String(Math.round(sfx.masterVolume * 100));
     music_.value = String(Math.round(sfx.musicVolume * 100));
     sfx_.value = String(Math.round(sfx.volume * 100));
     mute.checked = sfx.muted;
     fx.checked = userReducesEffects();
-    low.checked = lowGraphics();
+    quality.value = lowGraphics() ? 'low' : 'high';
     fps.checked = showsFps();
     msg.checked = userShowsMessages();
     hintsBox.checked = showsHints();
-    music_.disabled = sfx_.disabled = sfx.muted;
+    full.checked = fullscreenOn();
+    scale.value = String(uiScalePref());
+    master.disabled = music_.disabled = sfx_.disabled = sfx.muted;
+    q('[data-o="master"]').textContent = `${master.value}%`;
     q('[data-o="music"]').textContent = `${music_.value}%`;
     q('[data-o="sfx"]').textContent = `${sfx_.value}%`;
   };
+  master.addEventListener('input', () => { sfx.setMasterVolume(Number(master.value) / 100); show(); });
+  master.addEventListener('change', () => sfx.play('sword'));
   music_.addEventListener('input', () => { sfx.setMusicVolume(Number(music_.value) / 100); show(); });
   sfx_.addEventListener('input', () => { sfx.setVolume(Number(sfx_.value) / 100); show(); });
   sfx_.addEventListener('change', () => sfx.play('sword')); // a sample at the new level
@@ -143,15 +194,21 @@ export function toggleSettings(): void {
   hintsBox.addEventListener('change', () => setShowHints(hintsBox.checked));
   fullBox.checked = playsFullRules();
   fullBox.addEventListener('change', () => setFullRules(fullBox.checked));
+  full.addEventListener('change', () => { void setFullscreen(full.checked).then(show); });
+  const onFull = () => { if (open === overlay) show(); else document.removeEventListener('fullscreenchange', onFull); };
+  document.addEventListener('fullscreenchange', onFull);
+  scale.addEventListener('change', () => setUiScalePref(Number(scale.value)));
   // The map's ornaments and fog are built with the map: in a running match the page loads again (the same seat comes back), in the menus it just applies to the next map.
-  low.addEventListener('change', () => {
-    setLowGraphics(low.checked);
+  quality.addEventListener('change', () => {
+    setLowGraphics(quality.value === 'low');
     if (document.documentElement.classList.contains('in-game')) location.reload();
   });
   overlay.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
     const act = target.closest<HTMLElement>('[data-act]')?.dataset.act;
-    if (target === overlay || act === 'close') closeSettings();
+    const tabId = target.closest<HTMLElement>('[data-tab]')?.dataset.tab as Tab | undefined;
+    if (tabId) pick(tabId);
+    else if (target === overlay || act === 'close') closeSettings();
     else if (act === 'guide') { closeSettings(); toggleGuide(); }
     else if (act === 'leave') { closeSettings(); confirmLeave(); }
     else if (act === 'about') q('[data-f="about"]').classList.toggle('hidden');
@@ -167,6 +224,7 @@ export function toggleSettings(): void {
   document.body.appendChild(overlay);
   open = overlay;
   window.addEventListener('keydown', onKey, true);
+  pick(lastTab);
   show();
 }
 

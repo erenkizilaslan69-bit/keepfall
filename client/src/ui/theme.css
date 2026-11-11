@@ -397,7 +397,20 @@ html.in-menu .guide-fab.btn-round { display: inline-grid; }
 /* ---- settings window and its gear ---------------------------------------------------------- */
 .settings-fab.btn-round { position: fixed; top: 12px; right: calc(12px + 52px * var(--u, 1)); z-index: 60; display: none; }
 html.in-menu .settings-fab.btn-round { display: inline-grid; }
-.settings { max-width: calc(520px * var(--u, 1)); }
+.settings { max-width: calc(600px * var(--u, 1)); width: min(94vw, calc(600px * var(--u, 1))); }
+/* the sections' tabs: wooden-button look of the pack, the open one pressed and blue; they wrap on a narrow window or in a long language */
+.set-tabs { display: flex; flex-wrap: wrap; gap: calc(4px * var(--u, 1)); margin: calc(4px * var(--u, 1)) calc(40px * var(--u, 1)) calc(8px * var(--u, 1)) 0; }
+.set-tab { flex: 1 1 auto; min-width: 0; font: inherit; font-size: max(var(--fs-xs, 0px), .92em); line-height: 1.15; padding: calc(7px * var(--u, 1)) calc(10px * var(--u, 1)); min-height: var(--tap, 0px);
+  color: var(--ink, #3a2c1c); background: #e2cfa6; border: calc(2px * var(--u, 1)) solid #7a5a36; border-bottom-width: calc(4px * var(--u, 1)); border-radius: calc(6px * var(--u, 1)); cursor: pointer; overflow-wrap: anywhere; }
+.set-tab:hover { background: #ecdcb8; }
+.set-tab.active { color: #fff; background: var(--kf-navy-hi, #3f6fb5); border-color: #1f3a66; border-bottom-width: calc(2px * var(--u, 1)); transform: translateY(calc(2px * var(--u, 1))); text-shadow: 0 1px 0 rgba(0, 0, 0, .35); }
+.set-tab:focus-visible { outline: calc(2px * var(--u, 1)) solid #f2c14e; outline-offset: 1px; }
+.settings-body { min-height: calc(250px * var(--u, 1)); }
+.set-foot { margin-top: calc(12px * var(--u, 1)); padding-top: calc(8px * var(--u, 1)); border-top: calc(2px * var(--u, 1)) dashed rgba(122, 90, 54, .45); }
+.set-keys { display: grid; grid-template-columns: auto 1fr; gap: calc(6px * var(--u, 1)) calc(12px * var(--u, 1)); margin: 0; align-items: center; }
+.set-keys dt, .set-keys dd { margin: 0; }
+.set-keys kbd { display: inline-block; font: inherit; font-size: .9em; padding: calc(3px * var(--u, 1)) calc(8px * var(--u, 1)); background: #f4e8cd; border: calc(2px * var(--u, 1)) solid #7a5a36; border-bottom-width: calc(3px * var(--u, 1)); border-radius: calc(5px * var(--u, 1)); white-space: nowrap; }
+.set-row .set-select { flex: 0 1 auto; max-width: 55%; }
 .settings-body section { margin-bottom: calc(10px * var(--u, 1)); }
 .set-row { display: flex; align-items: center; gap: calc(10px * var(--u, 1)); margin: calc(6px * var(--u, 1)) 0; }
 .set-row label { flex: 1; }

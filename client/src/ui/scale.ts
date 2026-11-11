@@ -12,8 +12,11 @@ export function uiScaleFor(width: number, height: number): number {
   return Math.max(phone ? 0.78 : 0.85, Math.min(1, base));
 }
 
+import { uiScalePref } from '../prefs';
+
 export function watchUiScale(): void {
-  const apply = () => document.documentElement.style.setProperty('--u', String(uiScaleFor(window.innerWidth, window.innerHeight)));
+  // (the player's own factor from the settings multiplies what the screen gives; rounded to keep the pixel art on whole steps)
+  const apply = () => document.documentElement.style.setProperty('--u', String(Math.round(uiScaleFor(window.innerWidth, window.innerHeight) * uiScalePref() * 100) / 100));
   apply();
   window.addEventListener('resize', apply);
 }

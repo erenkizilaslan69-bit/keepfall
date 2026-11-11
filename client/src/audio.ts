@@ -11,7 +11,7 @@ export type SoundName =
   | 'shield' | 'uiConfirm' | 'uiError' | 'uiOpen' | 'uiClose'
   | 'catapult' | 'stone' | 'upgrade' | 'march' | 'gallop' | 'arrowHit';
 
-interface Prefs { muted: boolean; volume: number; music: number }
+interface Prefs { muted: boolean; volume: number; music: number; /** over both (1 = as set) */ master?: number }
 
 const KEY = 'keepfall.sound';
 /** Quiet by default: the game is played with other things on. */
@@ -84,6 +84,7 @@ function loadPrefs(): Prefs {
       muted: p.muted === true,
       volume: typeof p.volume === 'number' && p.volume >= 0 && p.volume <= 1 ? p.volume : DEFAULTS.volume,
       music: typeof p.music === 'number' && p.music >= 0 && p.music <= 1 ? p.music : DEFAULTS.music,
+      master: typeof p.master === 'number' && p.master >= 0 && p.master <= 1 ? p.master : 1,
     };
   } catch {
     return { ...DEFAULTS };
@@ -115,6 +116,13 @@ class Sfx {
   get muted(): boolean { return this.prefs.muted; }
   get volume(): number { return this.prefs.volume; }
   get musicVolume(): number { return this.prefs.music; }
+  /** The level over both the effects and the music (1 = as they are set). */
+  get masterVolume(): number { return this.prefs.master ?? 1; }
+  setMasterVolume(master: number): void {
+    this.prefs = { ...this.prefs, master: Math.min(1, Math.max(0, master)) };
+    savePrefs(this.prefs);
+    this.applyLevel();
+  }
   /** The audio context, once there is one (after the first click). */
   get audioContext(): AudioContext | null { return this.ctx; }
 
@@ -407,8 +415,9 @@ class Sfx {
   setFire(level: number): void { this.setAmbient('fire', level); }
 
   private applyLevel(): void {
-    if (this.master) this.master.gain.value = this.silent ? 0 : this.prefs.volume * MASTER_SCALE;
-    if (this.musicBus) this.musicBus.gain.value = this.silent ? 0 : this.prefs.music * MUSIC_SCALE;
+    const all = this.prefs.master ?? 1;
+    if (this.master) this.master.gain.value = this.silent ? 0 : this.prefs.volume * all * MASTER_SCALE;
+    if (this.musicBus) this.musicBus.gain.value = this.silent ? 0 : this.prefs.music * all * MUSIC_SCALE;
   }
 
   private noiseBuffer(ctx: AudioContext): AudioBuffer {

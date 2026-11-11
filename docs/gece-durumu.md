@@ -11,10 +11,11 @@ Sabah buradan devam edilir. Her adımdan sonra güncellenir.
 | B2 Çok oyunculu metinleri 13 dilde | (bu commit) | 37 metin, `docs/ceviri-parca/14.tsv`; `i18n-check` 15 dilde %100. `i18n-extract --keep-order` artık silinen metnin numarasını boş satır olarak korur (yoksa sonraki numaralar kayıp çeviriler yanlış metne düşüyordu). lang-audit (tarayıcı) G adımında. |
 | B3a Düşen kale opak yıkıntı | (bu commit) | YAPILMAMIŞTI (rakip kale %45 saydamdı). Artık kalenin kendi resminden (sade ya da krallık) bellekte kesilen yıkıntı: tepe kırık, isli taş, dipte moloz; sur ve avlu da opak. Görüntü: `art/shots/ruin/cmp-castle.png` (sol ayakta, orta eski, sağ yeni). |
 | B3b Hayalet ordu dağılma efekti | (bu commit) | YAPILMAMIŞTI (ordu bir karede yok oluyordu). Artık askerler mora dönüp incelerek yükselir + koyu duman. Tetik: kendi hayaletimiz (Gölge), Kâhin'in sahte gördüğü ordu, ya da kapımıza kadar gelip savaşsız kaybolan ordu. Sunucuya dokunulmadı. Görüntü: `art/shots/ruin/cmp-phantom.png`. Araç: `node tools/shot-ruin.mjs`. |
+| C Ayarlar penceresi sekmeli | (bu commit) | Ses (ana / müzik / efekt ayrı + sessize al) · Görüntü (grafik kalitesi, tam ekran, arayüz ölçeği %85–130, efektleri azalt, FPS) · Dil (15) · Oyun (ipuçları, ulak mesajları, tam kurallar, rehberi sıfırla) · Kontroller (kısayol listesi). Altında Hakkında / Gizlilik / Ana menüye dön. Kalıcı (localStorage, try/catch). Ana ses yalnız düzey çarpanı; müzik akışına dokunulmadı. Harita ölçeği ayarı yok (oyunda tekerlek / + − var), not olarak yazıldı. Görüntüler `art/shots/ui-tur/settings/`; araç `node tools/shot-settings-tabs.mjs` (taşma denetimi: en, tr, de, ru temiz; kalan diller çeviri sonrası G'de). |
 
 ## Sıradaki
 
-C ayarlar → D ulak filtresi → E krallık kartları → F ana menü → G test + rapor.
+D ulak filtresi → E krallık kartları → F ana menü → G test + rapor.
 
 ## Kararlar (soru sormadan verilenler)
 

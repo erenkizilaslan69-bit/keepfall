@@ -2,14 +2,14 @@
 
 const KEY = 'keepfall.prefs';
 
-interface Prefs { reduceEffects: boolean; showFps: boolean; lowGraphics: boolean; showMessages: boolean; showHints: boolean; fullRules: boolean }
+interface Prefs { reduceEffects: boolean; showFps: boolean; lowGraphics: boolean; showMessages: boolean; showHints: boolean; fullRules: boolean; uiScale?: number }
 
 function load(): Prefs {
   try {
     const p = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<Prefs>;
     // A touch device (a phone) starts with low graphics until the player chooses otherwise.
     const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
-    return { reduceEffects: p.reduceEffects === true, showFps: p.showFps === true, lowGraphics: typeof p.lowGraphics === 'boolean' ? p.lowGraphics : touch, showMessages: p.showMessages !== false, showHints: p.showHints !== false, fullRules: p.fullRules === true };
+    return { reduceEffects: p.reduceEffects === true, showFps: p.showFps === true, lowGraphics: typeof p.lowGraphics === 'boolean' ? p.lowGraphics : touch, showMessages: p.showMessages !== false, showHints: p.showHints !== false, fullRules: p.fullRules === true, uiScale: typeof p.uiScale === 'number' ? p.uiScale : 1 };
   } catch {
     return { reduceEffects: false, showFps: false, lowGraphics: false, showMessages: true, showHints: true, fullRules: false };
   }
@@ -70,6 +70,14 @@ export function setSiteChatOff(off: boolean): void { siteChat.off = off; }
 export function messagesOn(): boolean { return prefs.showMessages && !siteChat.off; }
 export function userShowsMessages(): boolean { return prefs.showMessages; }
 export function setShowMessages(on: boolean): void { save({ ...prefs, showMessages: on }); }
+
+/** "Arayüz ölçeği": the player's own factor on top of the size the screen gives the interface (ui/scale.ts). */
+export const UI_SCALES = [0.85, 1, 1.15, 1.3];
+export function uiScalePref(): number { return UI_SCALES.includes(prefs.uiScale ?? 1) ? prefs.uiScale ?? 1 : 1; }
+export function setUiScalePref(scale: number): void {
+  save({ ...prefs, uiScale: UI_SCALES.includes(scale) ? scale : 1 });
+  window.dispatchEvent(new Event('resize')); // (ui/scale.ts measures again)
+}
 
 /** "İpuçlarını göster": the short contextual tips (idle workers, low food, an army on its way ...). On by default. */
 export function showsHints(): boolean { return prefs.showHints; }
