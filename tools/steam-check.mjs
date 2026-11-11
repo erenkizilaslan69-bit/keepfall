@@ -79,7 +79,7 @@ check('server stops even when the shell is killed', gone, `pid ${second.join(','
 // ---- third launch: an app id is set but Steam is not running (the usual case on a machine without the client): the game must still start, Steam stays off ----
 app = await launch('third', 9446, '480');
 check('with an app id but no running Steam the game still starts', await app.waitFor(`!!document.querySelector('#quick')`));
-const steamLine = readFileSync(app.log, 'utf8').split(/\r?\n/).find((l) => l.startsWith('steam ')) ?? '';
+const steamLine = readFileSync(app.log, 'utf8').split(/\r?\n/).map((l) => l.replace(/^\d\d:\d\d:\d\d\.\d{3} /, '')).find((l) => l.startsWith('steam ')) ?? ''; // (log lines start with the time)
 check('shell reports Steam state (on, or off with a reason)', /^steam (on|off)/.test(steamLine), steamLine);
 const third = serverPids().filter((p) => !before.has(p));
 execSync(`taskkill /PID ${app.child.pid} /F`, { stdio: 'ignore' });
