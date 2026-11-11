@@ -1,6 +1,7 @@
 import { COLOR_NAMES, esc } from '../format';
 import { t as tt, tr } from '../i18n';
 import { emblemHtml } from './emblem';
+import { UNIT_NAMES } from './challenges';
 import { whenGuideClosed } from './guide';
 import type { GameConnection } from '../net';
 import type { CastleView, KingdomView, MapStateView, RoomView } from '../types';
@@ -292,7 +293,7 @@ export class KingdomUi {
       const odds = c.odds?.find((o) => o.seat === r.seat);
       const chance = !odds || !odds.known ? tt('gözcü raporu gerek') : `%${Math.round(odds.low * 100)}–${Math.round(odds.high * 100)}`;
       const faked = c.scouting.reports.find((x) => x.targetSeat === r.seat)?.faked ? ` <b class="kd-fake">${tt('(raporu sahteydi, gerçeği görüyorsun)')}</b>` : '';
-      const deck = r.deck.map((id) => tr(c.units.find((u) => u.id === id)?.name ?? id)).join(', ');
+      const deck = r.deck.map((id) => { const own = c.units.find((u) => u.id === id)?.name; return own ? tr(own) : UNIT_NAMES[id] ?? id; }).join(', '); // (a rival's deck may hold units ours does not)
       return `<div class="kd-oracle"><b>${esc(tr(p?.name ?? '?'))}</b> · ${esc(kd)}<br><span class="muted-ink small">${tt('Deste:')} ${esc(deck)}</span><br><span>${tt('Kazanma şansın (evdeki askerlerle):')} <b>${chance}</b></span>${faked}</div>`;
     }).join('');
     const html = rows || `<p class="muted-ink small">${tt('Rakip yok.')}</p>`;

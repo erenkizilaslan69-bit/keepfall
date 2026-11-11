@@ -3,6 +3,10 @@
 // Needs the dev server (5081) and Vite (5174).   node tools/shot-kingdom-cards.mjs [out-dir] [langs]     → art/shots/ui-tur/kingdom-<layout>-<lang>-<id>.png
 import { mkdirSync } from 'node:fs';
 import { launch, sleep } from './cdp.mjs';
+import { execSync } from 'node:child_process';
+
+// each kingdom's OWN sentence and abilities, as the server holds them (a made-up kingdom must not keep the real one's words: that was a mix-up of this tool once)
+const FACTIONS = JSON.parse(execSync('node tools/kingdom-text-check.mjs --json', { encoding: 'utf8' }));
 
 const OUT = process.argv[2] ?? 'art/shots/ui-tur';
 const LANGS = (process.argv[3] ?? 'en,tr').split(',');
@@ -23,7 +27,7 @@ for (const layout of (process.env.LAYOUTS ?? 'a,b').split(',')) for (const lang 
     for (const id of ['golge', 'tuccar', 'kahin', 'entrikaci']) {
       const made = await b.js(`(() => { const k = window.keepfallUi.kingdom, c = k.castle; const cat = c.kingdom.catalog.find((x) => x.id === '${id}'); if (!cat) return 'no catalog entry';
         k.update = () => {}; k.setMap = () => {}; k.tile = 0;
-        const fake = { ...c.kingdom, id: '${id}', name: cat.name, title: cat.title, look: cat.look };
+        const own = ${JSON.stringify(FACTIONS.find((f) => f.id === id))}; const fake = { ...c.kingdom, id: '${id}', name: own.name, title: own.title, look: cat.look, decree: own.decree, abilities: own.abilities };
         k.castle = { ...c, kingdom: fake }; k.build(fake, k.castle); try { k.refreshDynamic(fake, k.castle); } catch (e) {} k.panel.classList.remove('hidden'); return 'ok'; })()`);
       await sleep(500);
       for (const tile of [0, 1]) {
@@ -37,6 +41,8 @@ for (const layout of (process.env.LAYOUTS ?? 'a,b').split(',')) for (const lang 
             else if (q.right > r.right + 1 || q.left < r.left - 1) out.push('outside: ' + (e.textContent || '').trim().slice(0, 28));
           }
           const active = document.querySelector('.kd-tile.active'); return { out, active: !!active, panes: [...box.querySelectorAll('.kd-pane:not(.hidden)')].length }; })()`);
+        const shown = await b.js(`document.querySelector('.kd-card-line')?.textContent ?? ''`);
+        if (lang === 'tr' && shown !== FACTIONS.find((f) => f.id === id).decree) { bad++; console.log(`FAIL ${layout} ${lang} ${id}: the card shows another sentence: ${shown}`); }
         if (made !== 'ok' || spills.out.length || !spills.active || spills.panes !== 1) { bad++; console.log(`FAIL ${layout} ${lang} ${id} tile ${tile}: ${made} ${spills.out.join(' | ')} active=${spills.active} panes=${spills.panes}`); }
         else console.log(`ok   ${layout} ${lang} ${id} tile ${tile}`);
         if (tile === 0) await b.shot(`${OUT}/kingdom-${layout}-${lang}-${id}.png`);

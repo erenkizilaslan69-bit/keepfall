@@ -87,7 +87,8 @@ function progressText(type: string, actual: number, target: number): string {
 const KINGDOM_NAMES: Record<string, string> = {
   golge: t('Gölge Krallığı'), tuccar: t('Tüccar Cumhuriyeti'), kahin: t('Kâhinler'), entrikaci: t('Entrikacılar'),
 };
-const UNIT_NAMES: Record<string, string> = {
+/** The seven units by id, in the player's language (also for places that name a unit the player's own deck does not hold). */
+export const UNIT_NAMES: Record<string, string> = {
   okcu: t('Okçu'), kilicli: t('Kılıçlı'), mizrakci: t('Mızrakçı'), kalkanli: t('Kalkanlı'), kesis: t('Keşiş'), mancinik: t('Mancınık'), suvari: t('Süvari'),
 };
 const LEVEL_NAMES: Record<string, string> = { easy: t('Kolay'), medium: t('Orta'), hard: t('Zor') };
