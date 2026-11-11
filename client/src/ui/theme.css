@@ -191,7 +191,7 @@
 .tb-clock { gap: calc(8px * var(--u, 1)); padding-left: calc(44px * var(--u, 1)); min-height: calc(40px * var(--u, 1)); position: relative; }
 .tb-clock::before {
   content: ''; position: absolute; left: calc(12px * var(--u, 1)); top: 50%; width: calc(26px * var(--u, 1)); height: calc(26px * var(--u, 1)); transform: translateY(-50%);
-  background: no-repeat center / contain url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%23f5d77a' stroke='%239a7220' stroke-width='3'/><circle cx='16' cy='16' r='10.5' fill='%23fff4d2'/><path d='M16 8v8l5 3' fill='none' stroke='%233a2a18' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/><rect x='13' y='0.5' width='6' height='3' rx='1' fill='%239a7220'/></svg>");
+  background: no-repeat center / contain url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%23f5d77a' stroke='%239a7220' stroke-width='3'/><circle cx='16' cy='16' r='10.5' fill='%23fff4d2'/><path d='M16 8v8l5 3' fill='none' stroke='%233a2a18' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/><rect x='13' y='0.5' width='6' height='3' rx='1' fill='%239a7220'/></svg>");
 }
 .tb-clock b { font-size: 1.55em; letter-spacing: .02em; }
 .tb-hp .gbar { margin: 0 calc(4px * var(--u, 1)); }
@@ -420,11 +420,11 @@ html.kf-desktop, html.kf-desktop body { scrollbar-width: none; } html.kf-desktop
 .set-row input[type="range"] { flex: 1.4; accent-color: var(--kf-navy-hi); }
 .set-row output { min-width: 3.2em; text-align: right; font-family: var(--font-text); }
 .set-check { -webkit-appearance: none; appearance: none; flex: none; width: calc(24px * var(--u, 1)); height: calc(24px * var(--u, 1)); margin: 0; cursor: pointer; box-sizing: border-box;
-  background: #f6ecd0 center / 78% no-repeat; border: calc(3px * var(--u, 1)) solid #8a6a3a; border-radius: calc(5px * var(--u, 1)); box-shadow: 0 calc(2px * var(--u, 1)) 0 #5a4226, inset 0 calc(2px * var(--u, 1)) 0 rgba(255, 255, 255, .55); transition: background-color .08s ease, transform .08s ease; }
+  background: #f6ecd0 center / 100% no-repeat; /* (the tick, when checked, fills the box: about 70% of it) */ border: calc(3px * var(--u, 1)) solid #8a6a3a; border-radius: calc(5px * var(--u, 1)); box-shadow: 0 calc(2px * var(--u, 1)) 0 #5a4226, inset 0 calc(2px * var(--u, 1)) 0 rgba(255, 255, 255, .55); transition: background-color .08s ease, transform .08s ease; }
 .set-check:hover:not(:disabled) { background-color: #fff6dc; }
 .set-check:active:not(:disabled) { transform: translateY(calc(1px * var(--u, 1))); box-shadow: 0 calc(1px * var(--u, 1)) 0 #5a4226, inset 0 calc(2px * var(--u, 1)) 0 rgba(255, 255, 255, .55); }
 .set-check:checked { background-color: #4f9a3a; border-color: #2c5e21; box-shadow: 0 calc(2px * var(--u, 1)) 0 #1d4016, inset 0 calc(2px * var(--u, 1)) 0 rgba(255, 255, 255, .3);
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' shape-rendering='crispEdges'><path d='M1 6h2v2h2v2h1V8h1V6h1V4h1V2h1v2h-1v2H9v2H8v2H4V8H3V6H1z' fill='white'/></svg>"); }
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M0.7 6.3L4.4 10L11.3 1.9' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='square' stroke-linejoin='miter'/></svg>"); }
 .set-check:focus-visible, .kf-select-btn:focus-visible { outline: calc(3px * var(--u, 1)) solid #f2c14e; outline-offset: calc(2px * var(--u, 1)); }
 .set-check:disabled { opacity: .5; cursor: default; }
 /* drop-downs (ui/select.ts): a wooden-framed parchment button, the list is a small parchment sheet */
