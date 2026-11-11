@@ -11,6 +11,8 @@ import type { CastleView, KingdomView, MapStateView, RoomView } from '../types';
 
 interface Ctx { net: GameConnection; say: (m: string) => void; info: (m: string) => void; seat: number }
 
+/** A unit's name in the player's language: from our own list when it is there, else from the table of all seven (never the raw id, e.g. "kesis"). */
+const unitName = (c: CastleView, id: string): string => { const own = c.units.find((u) => u.id === id)?.name; return own ? tr(own) : UNIT_NAMES[id] ?? id; };
 const FIGHTERS = ['kilicli', 'mizrakci', 'kalkanli', 'okcu', 'suvari'];
 
 /**
@@ -223,7 +225,7 @@ export class KingdomUi {
     set('decoy-state', tt('{0} · {1}/{2} yolda', wait(k.decoyReadyIn), k.decoysOut, k.numbers.decoyMax));
     set('bribe-state', wait(k.bribeReadyIn));
     set('disguise-state', wait(k.disguiseReadyIn));
-    set('fake-state', k.fakeReport ? tt('kurulu: {0}', Object.entries(k.fakeReport).map(([id, n]) => `${n} ${tr(c.units.find((u) => u.id === id)?.name ?? id)}`).join(', ')) : tt('kapalı'));
+    set('fake-state', k.fakeReport ? tt('kurulu: {0}', Object.entries(k.fakeReport).map(([id, n]) => `${n} ${unitName(c, id)}`).join(', ')) : tt('kapalı'));
     this.refreshCosts();
     if (k.id === 'kahin') this.renderOracle(c);
   }
@@ -293,7 +295,7 @@ export class KingdomUi {
       const odds = c.odds?.find((o) => o.seat === r.seat);
       const chance = !odds || !odds.known ? tt('gözcü raporu gerek') : `%${Math.round(odds.low * 100)}–${Math.round(odds.high * 100)}`;
       const faked = c.scouting.reports.find((x) => x.targetSeat === r.seat)?.faked ? ` <b class="kd-fake">${tt('(raporu sahteydi, gerçeği görüyorsun)')}</b>` : '';
-      const deck = r.deck.map((id) => { const own = c.units.find((u) => u.id === id)?.name; return own ? tr(own) : UNIT_NAMES[id] ?? id; }).join(', '); // (a rival's deck may hold units ours does not)
+      const deck = r.deck.map((id) => unitName(c, id)).join(', '); // (a rival's deck may hold units ours does not)
       return `<div class="kd-oracle"><b>${esc(tr(p?.name ?? '?'))}</b> · ${esc(kd)}<br><span class="muted-ink small">${tt('Deste:')} ${esc(deck)}</span><br><span>${tt('Kazanma şansın (evdeki askerlerle):')} <b>${chance}</b></span>${faked}</div>`;
     }).join('');
     const html = rows || `<p class="muted-ink small">${tt('Rakip yok.')}</p>`;

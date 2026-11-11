@@ -28,6 +28,8 @@ const CHECK = `(() => {
     if (!vis(e)) continue;
     const own = [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 1);
     if (!own) continue;
+    // a raw unit / kingdom id printed for the player ("kesis, suvari"): every name must come through the translation, in every language, English too
+    { const raw = [...e.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(' ').match(/\\b(kilicli|mizrakci|kalkanli|okcu|kesis|mancinik|suvari|golge|tuccar|kahin|entrikaci|lumberCamp)\\b/); if (raw) out.push({ kind: 'raw-id', el: name(e), text: e.textContent.trim().slice(0, 50), id: raw[1] }); }
     const cs = getComputedStyle(e);
     const clipX = e.scrollWidth > e.clientWidth + 2 && (/(hidden|clip|auto|scroll)/.test(cs.overflowX) || cs.whiteSpace === 'nowrap');
     const clipY = e.scrollHeight > e.clientHeight + 3 && /(hidden|clip)/.test(cs.overflowY);
@@ -64,6 +66,10 @@ const run = async (lang) => {
     await bl.js(`keepfallScene.centerOnCastle(); keepfallScene.select({ kind: 'building', type: 'forge' }); 1`); await sleep(900); await audit('forge-window');
     await bl.js(`keepfallUi.windows.close(true); keepfallScene.select({ kind: 'building', type: 'farm' }); 1`); await sleep(900); await audit('farm-window');
     await bl.js(`keepfallUi.windows.close(true); document.querySelector('.kingdom-fab')?.click(); 1`); await sleep(900); await audit('kingdom-panel');
+    // the Oracle's panel with a rival whose deck holds units ours does not: their names must be words, not ids
+    await bl.js(`(() => { const k = keepfallUi.kingdom, c = k.castle; const cat = c.kingdom.catalog.find((x) => x.id === 'kahin'); if (!cat) return 0; k.update = () => {}; k.setMap = () => {};
+      const fake = { ...c.kingdom, id: 'kahin', look: cat.look }; k.castle = { ...c, units: c.units.filter((u) => !['kesis', 'suvari'].includes(u.id)), kingdom: fake, rivals: [{ seat: 9, faction: 'golge', deck: ['kesis', 'suvari', 'mancinik', 'kalkanli'] }] };
+      k.build(fake, k.castle); k.refreshDynamic(fake, k.castle); k.panel.classList.remove('hidden'); document.querySelectorAll('.kd-tile').forEach((t) => t.dataset.tile === '1' && t.click()); return 1; })()`); await sleep(500); await audit('oracle-deck');
     await bl.js(`document.querySelector('.kingdom-panel .kd-x')?.click(); 1`);
     await bl.js(`(async () => { document.querySelector('[data-guide]')?.click(); return 1; })()`); await sleep(1500); await audit('guide');
     await bl.js(`document.querySelector('.guide-close, [data-act=close]')?.click(); 1`);
@@ -94,15 +100,15 @@ const run = async (lang) => {
 for (const l of langs) { const row = await run(l); results.push(row); const n = Object.values(row.screens).reduce((a, x) => a + x.length, 0); console.log(l, n, 'problems', row.error ?? ''); }
 
 // the report: a problem that English has too is the design as it is; what counts is what a language adds to it
-const SCREENS = ['home', 'lobby', 'match', 'forge-window', 'farm-window', 'kingdom-panel', 'guide', 'settings'];
+const SCREENS = ['home', 'lobby', 'match', 'forge-window', 'farm-window', 'kingdom-panel', 'oracle-deck', 'guide', 'settings'];
 const base = results.find((r) => r.lang === 'en');
 const key = (x) => x.kind + '|' + x.el;
 const baseKeys = (scr) => new Set((base?.screens[scr] ?? []).map(key));
-const fresh = (r, scr) => (r.screens[scr] ?? []).filter((x) => r.lang === 'en' || !baseKeys(scr).has(key(x)));
+const fresh = (r, scr) => (r.screens[scr] ?? []).filter((x) => x.kind === 'raw-id' || r.lang === 'en' || !baseKeys(scr).has(key(x))); // (a raw id is never "the design as it is")
 const lines = ['# Dil yerleşim denetimi (masaüstü ' + W + 'x' + H + ')', '', 'Otomatik: `node tools/lang-audit.mjs`. Sayılar: İngilizcede olmayan, o dilin eklediği taşma/kırpılma sayısı (kutuya sığmayan metin, üst kutu tarafından kesilen öğe, ekran dışı). İngilizcenin kendi sayıları tasarım tabanı olarak ayrı satırdadır. Ekran görüntüleri `art/shots/langs/` (git dışı).', '', '| Dil | ' + SCREENS.join(' | ') + ' |', '|---|' + '---|'.repeat(SCREENS.length)];
 for (const r of results) lines.push(`| ${r.lang}${r.lang === 'en' ? ' (taban)' : ''}${r.error ? ' (hata: ' + r.error + ')' : ''} | ` + SCREENS.map((sc) => (r.screens[sc] ? fresh(r, sc).length : '–')).join(' | ') + ' |');
 lines.push('', '## Ayrıntı (dilin eklediği)', '');
-for (const r of results) for (const sc of SCREENS) { const list = fresh(r, sc); if (list.length && r.lang !== 'en') { lines.push(`### ${r.lang} · ${sc}`); for (const x of list.slice(0, 14)) lines.push(`- ${x.kind}: \`${x.el}\` "${x.text}" ` + (x.box ? `kutu ${x.box.join('x')} içerik ${x.content.join('x')}` : `konum ${x.rect.join(',')}`)); if (list.length > 14) lines.push(`- … ${list.length - 14} tane daha`); lines.push(''); } }
+for (const r of results) for (const sc of SCREENS) { const list = fresh(r, sc); if (list.length && r.lang !== 'en') { lines.push(`### ${r.lang} · ${sc}`); for (const x of list.slice(0, 14)) lines.push(`- ${x.kind}: \`${x.el}\` "${x.text}" ` + (x.id ? `ham kimlik: ${x.id}` : x.box ? `kutu ${x.box.join('x')} içerik ${x.content.join('x')}` : `konum ${x.rect.join(',')}`)); if (list.length > 14) lines.push(`- … ${list.length - 14} tane daha`); lines.push(''); } }
 writeFileSync(MD, lines.join('\r\n'), 'utf8');
 console.log('wrote', MD);
 process.exit(0);
