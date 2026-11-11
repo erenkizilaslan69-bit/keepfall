@@ -12,6 +12,22 @@ interface Ctx { net: GameConnection; say: (m: string) => void; info: (m: string)
 
 const FIGHTERS = ['kilicli', 'mizrakci', 'kalkanli', 'okcu', 'suvari'];
 
+/**
+ * The panel is a CARD of the kingdom, not a form: the emblem on the kingdom's own colour, its name and one line of who it is, and its abilities as
+ * tiles (an icon and a short title; the long text on hover or touch). Picking a tile opens that ability's controls under the card, one at a time.
+ * Two layouts were drawn (art/shots/ui-tur/kingdom-*.png): 'a' (the one in use: the card on top, tiles in a row) and 'b' (the card as a banner down
+ * the left side, tiles stacked, the controls beside it). 'b' comes back with ?kd=b or localStorage keepfall_kd = b.
+ */
+function cardLayout(): 'a' | 'b' {
+  let v = new URLSearchParams(location.search).get('kd') ?? '';
+  try { v ||= localStorage.getItem('keepfall_kd') ?? ''; } catch { /* storage may be blocked */ }
+  return v === 'b' ? 'b' : 'a';
+}
+/** The icons of the abilities, in the order the panel lists them. */
+const ABILITY_ICONS: Record<string, string[]> = {
+  golge: ['ico-skull', 'ico-scout'], tuccar: ['ico-coin', 'ico-sword'], kahin: ['ico-people', 'ico-info'], entrikaci: ['ico-envoy', 'ico-shield'],
+};
+
 export class KingdomUi {
   private readonly fab: HTMLButtonElement;
   private readonly panel: HTMLElement;
@@ -20,6 +36,8 @@ export class KingdomUi {
   private room: RoomView | null = null;
   private built = '';
   private lists = '';
+  /** Which ability's controls are open (the tile that is picked). */
+  private tile = 0;
   private decreeShown = false;
 
   constructor(root: HTMLElement, private readonly ctx: Ctx) {
@@ -31,7 +49,11 @@ export class KingdomUi {
     root.appendChild(this.fab);
     this.panel = document.createElement('div');
     this.panel.className = 'kingdom-panel paper hit hidden';
-    this.panel.addEventListener('click', (e) => void this.click(e));
+    this.panel.addEventListener('click', (e) => {
+      const tile = (e.target as HTMLElement).closest<HTMLElement>('[data-tile]');
+      if (tile) { this.pickTile(Number(tile.dataset.tile)); return; }
+      void this.click(e);
+    });
     this.panel.addEventListener('input', () => this.refreshCosts());
     root.appendChild(this.panel);
   }
@@ -160,12 +182,38 @@ export class KingdomUi {
           </section>`;
         break;
     }
+    // The sections written above (one per ability) become the tiles of the card and the panes under it.
+    const holder = document.createElement('div');
+    holder.innerHTML = body;
+    const sections = [...holder.querySelectorAll<HTMLElement>(':scope > section')];
+    const icons = ABILITY_ICONS[k.id] ?? [];
+    const tiles = sections.map((s, i) => {
+      const h = s.querySelector('h4');
+      const title = (h?.childNodes[0]?.textContent ?? '').trim();
+      const long = s.querySelector('p.muted-ink')?.textContent?.trim() ?? title;
+      s.classList.add('kd-pane'); s.dataset.pane = String(i);
+      return `<button type="button" class="kd-tile" data-tile="${i}" title="${esc(long)}" aria-label="${esc(title)}"><i class="ico ${icons[i] ?? 'ico-crown'}"></i><b>${esc(title)}</b></button>`;
+    }).join('');
+    this.panel.className = `kingdom-panel paper hit kd-${esc(k.id)} kd-layout-${cardLayout()}${this.panel.classList.contains('hidden') ? ' hidden' : ''}`;
     this.panel.innerHTML = `
-      <div class="kd-head"><div class="ribbon ribbon-sm ribbon-blue kd-title">${esc(tr(k.name))}</div>
-      <button class="btn-round btn-red kd-x" data-a="close" title="${tt('Kapat')}" aria-label="${tt('Kapat')}"><i class="ico ico-close"></i></button></div>
-      <div class="kd-body">${body}</div>`;
+      <button class="btn-round btn-red kd-x" data-a="close" title="${tt('Kapat')}" aria-label="${tt('Kapat')}"><i class="ico ico-close"></i></button>
+      <div class="kd-card">
+        <div class="kd-card-banner">${emblemHtml(k.look, 'emblem-card')}</div>
+        <div class="kd-card-who"><h3>${esc(tr(k.name))}</h3><p class="kd-card-role">${esc(tr(k.title))}</p></div>
+        <p class="kd-card-line" title="${esc(tr(k.decree))}">${esc(tr(k.decree))}</p>
+        <div class="kd-tiles" role="tablist">${tiles}</div>
+      </div>
+      <div class="kd-body">${sections.map((s) => s.outerHTML).join('')}</div>`;
+    this.pickTile(Math.min(this.tile, Math.max(0, sections.length - 1)));
     const pick = (sel: string, index: number) => { const el = this.panel.querySelector<HTMLSelectElement>(sel); if (el && el.options.length > index) el.selectedIndex = index; };
     pick('[data-f="env-as"]', 1); pick('[data-f="dis-as"]', 1);
+  }
+
+  /** One ability's controls are open at a time: its tile is the one that stands out. */
+  private pickTile(index: number): void {
+    this.tile = index;
+    this.panel.querySelectorAll<HTMLElement>('.kd-tile').forEach((b) => { const on = Number(b.dataset.tile) === index; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
+    this.panel.querySelectorAll<HTMLElement>('.kd-pane').forEach((s) => s.classList.toggle('hidden', Number(s.dataset.pane) !== index));
   }
 
   private refreshDynamic(k: KingdomView, c: CastleView): void {

@@ -186,3 +186,45 @@ html.in-game body { position: fixed; inset: 0; width: 100%; }
 .ui-root:has(.bot-end:not(.hidden)) .cam-btns { display: none !important; }
 /* the flip icon of a deck card sits at the card's foot, away from the round buttons that float at the top right of the screen */
 .ucard-flip { top: auto !important; bottom: 3%; left: 3% !important; }
+
+/* ---- the kingdom panel as a card (ui/kingdom.ts): emblem on the kingdom's colour, who it is, abilities as tiles; the picked ability's controls below ---- */
+.kingdom-panel { --kd: #3f6fb5; --kd-dark: #1f3a66; --kd-soft: rgba(63, 111, 181, .16); }
+.kingdom-panel.kd-golge { --kd: #6b55a8; --kd-dark: #3a2c66; --kd-soft: rgba(107, 85, 168, .18); }
+.kingdom-panel.kd-tuccar { --kd: #c8952a; --kd-dark: #7a5512; --kd-soft: rgba(200, 149, 42, .2); }
+.kingdom-panel.kd-kahin { --kd: #2f8a96; --kd-dark: #17525b; --kd-soft: rgba(47, 138, 150, .18); }
+.kingdom-panel.kd-entrikaci { --kd: #a8423e; --kd-dark: #66211f; --kd-soft: rgba(168, 66, 62, .18); }
+.kingdom-panel > .kd-x { position: absolute; top: calc(6px * var(--u, 1)); right: calc(6px * var(--u, 1)); z-index: 5; width: calc(32px * var(--u, 1)); height: calc(32px * var(--u, 1)); }
+.kd-card { position: relative; display: grid; grid-template-columns: auto 1fr; grid-template-areas: "banner who" "banner line" "tiles tiles"; column-gap: calc(10px * var(--u, 1)); row-gap: calc(4px * var(--u, 1));
+  padding: calc(8px * var(--u, 1)); border: calc(3px * var(--u, 1)) solid var(--kd-dark); border-radius: calc(8px * var(--u, 1)); background: linear-gradient(180deg, var(--kd-soft), rgba(255, 250, 235, .35));
+  box-shadow: inset 0 0 0 calc(2px * var(--u, 1)) rgba(255, 255, 255, .35); }
+.kd-card-banner { grid-area: banner; align-self: start; display: grid; place-items: center; padding: calc(6px * var(--u, 1)) calc(8px * var(--u, 1)) calc(12px * var(--u, 1)); background: var(--kd); border: calc(2px * var(--u, 1)) solid var(--kd-dark);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 86%, 0 100%); }
+.kd-card-banner .emblem-card { width: calc(46px * var(--u, 1)); height: calc(54px * var(--u, 1)); margin: 0; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .35)); }
+.kd-card-who { grid-area: who; min-width: 0; padding-right: calc(34px * var(--u, 1)); }
+.kd-card-who h3 { margin: 0; font-size: 1.2em; line-height: 1.1; color: var(--kd-dark); overflow-wrap: anywhere; }
+.kd-card-role { margin: 0; font-size: max(var(--fs-xs, 0px), .85em); color: var(--ink-soft, #6b5a44); }
+.kd-card-line { grid-area: line; margin: 0; font-family: var(--font-text); font-size: max(var(--fs-xs, 0px), .86em); line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.kd-tiles { grid-area: tiles; display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: calc(6px * var(--u, 1)); margin-top: calc(4px * var(--u, 1)); }
+.kd-tile { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: calc(3px * var(--u, 1)); min-width: 0; min-height: var(--tap, 0px); padding: calc(6px * var(--u, 1)) calc(4px * var(--u, 1)); font: inherit; color: var(--ink, #3a2c1c); cursor: pointer;
+  background: #f1e3c2; border: calc(2px * var(--u, 1)) solid #7a5a36; border-bottom-width: calc(4px * var(--u, 1)); border-radius: calc(7px * var(--u, 1)); transition: transform .12s ease, box-shadow .12s ease, background .12s ease; }
+.kd-tile .ico { width: calc(26px * var(--u, 1)); height: calc(26px * var(--u, 1)); flex: none; }
+.kd-tile b { font-size: max(var(--fs-xs, 0px), .86em); line-height: 1.12; text-align: center; overflow-wrap: anywhere; hyphens: auto; }
+.kd-tile:hover { background: #f8ecd0; transform: translateY(calc(-1px * var(--u, 1))); }
+.kd-tile.active { background: #fff6dc; border-color: var(--kd-dark); transform: scale(1.04); box-shadow: 0 0 0 calc(2px * var(--u, 1)) var(--kd), 0 0 calc(12px * var(--u, 1)) var(--kd); z-index: 1; }
+.kd-tile:focus-visible { outline: calc(2px * var(--u, 1)) solid #f2c14e; outline-offset: 1px; }
+html.kf-calm .kd-tile, html.kf-calm .kd-tile.active { transition: none; transform: none; }
+.kingdom-panel .kd-body > section.kd-pane { margin: calc(8px * var(--u, 1)) 0 0; padding: calc(6px * var(--u, 1)) calc(4px * var(--u, 1)) 0; border-top: 0; }
+.kingdom-panel .kd-pane h4 { color: var(--kd-dark); }
+/* layout b (kept behind ?kd=b): the card as a banner down the left side, tiles stacked, the controls beside it; needs a wider panel */
+.kingdom-panel.kd-layout-b { width: min(calc(520px * var(--u, 1)), calc(100vw - 24px)); display: grid; grid-template-columns: calc(168px * var(--u, 1)) 1fr; column-gap: calc(10px * var(--u, 1)); align-items: start; }
+.kd-layout-b .kd-card { grid-template-columns: 1fr; grid-template-areas: "banner" "who" "line" "tiles"; justify-items: center; text-align: center; }
+.kd-layout-b .kd-card-banner { justify-self: stretch; }
+.kd-layout-b .kd-card-banner .emblem-card { width: calc(72px * var(--u, 1)); height: calc(86px * var(--u, 1)); }
+.kd-layout-b .kd-card-who { padding-right: 0; }
+.kd-layout-b .kd-card-line { -webkit-line-clamp: 5; }
+.kd-layout-b .kd-tiles { grid-template-columns: 1fr; width: 100%; }
+.kd-layout-b .kd-tile { flex-direction: row; justify-content: flex-start; padding: calc(6px * var(--u, 1)) calc(8px * var(--u, 1)); }
+.kd-layout-b .kd-tile b { text-align: left; }
+.kd-layout-b .kd-body { padding-right: calc(30px * var(--u, 1)); min-width: 0; }
+.kd-layout-b .kd-body > section.kd-pane { margin-top: 0; padding-top: 0; }
+@media (max-width: 620px) { .kingdom-panel.kd-layout-b { display: block; width: min(calc(360px * var(--u, 1)), calc(100vw - 24px)); } }

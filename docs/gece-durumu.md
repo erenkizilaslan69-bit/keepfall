@@ -13,10 +13,11 @@ Sabah buradan devam edilir. Her adımdan sonra güncellenir.
 | B3b Hayalet ordu dağılma efekti | (bu commit) | YAPILMAMIŞTI (ordu bir karede yok oluyordu). Artık askerler mora dönüp incelerek yükselir + koyu duman. Tetik: kendi hayaletimiz (Gölge), Kâhin'in sahte gördüğü ordu, ya da kapımıza kadar gelip savaşsız kaybolan ordu. Sunucuya dokunulmadı. Görüntü: `art/shots/ruin/cmp-phantom.png`. Araç: `node tools/shot-ruin.mjs`. |
 | C Ayarlar penceresi sekmeli | (bu commit) | Ses (ana / müzik / efekt ayrı + sessize al) · Görüntü (grafik kalitesi, tam ekran, arayüz ölçeği %85–130, efektleri azalt, FPS) · Dil (15) · Oyun (ipuçları, ulak mesajları, tam kurallar, rehberi sıfırla) · Kontroller (kısayol listesi). Altında Hakkında / Gizlilik / Ana menüye dön. Kalıcı (localStorage, try/catch). Ana ses yalnız düzey çarpanı; müzik akışına dokunulmadı. Harita ölçeği ayarı yok (oyunda tekerlek / + − var), not olarak yazıldı. Görüntüler `art/shots/ui-tur/settings/`; araç `node tools/shot-settings-tabs.mjs` (taşma denetimi: en, tr, de, ru temiz; kalan diller çeviri sonrası G'de). |
 | D Ulak filtresi iki katman | (bu commit) | Nefret söylemi sunucuda HER ZAMAN maskeli (kapatılamaz); hafif küfür alıcının oyununda, Ayarlar → Oyun → "Hafif küfürleri filtrele" (varsayılan açık). 15 dil listesi ikiye ayrıldı (`docs/kufur-filtresi.md`). `node tools/envoy-filter-check.mjs` geçti (filtre açık: `you **** and you ******`; kapalı: `you shit and you ******`). |
+| E Krallık paneli kart | (bu commit) | Form yerine kart: krallığın kendi renginde çerçeve + flama üstünde amblem, ad, unvan, 2 satır kimlik cümlesi; yetenekler ikon + kısa başlık karoları (uzun metin üzerine gelince `title`, dokununca altında açılır); seçilen karo hafif büyür ve krallık renginde parlar; bir seferde tek yeteneğin denetimleri açık. Gizli krallık kuralı aynen (panel yalnız kendi krallığını gösterir, sunucuya dokunulmadı). **Seçilen: A** (kart üstte, karolar yan yana). Neden: mevcut 360 px panele sığıyor, haritayı/avluyu örtmüyor, 1280x720'de kaydırma yok; B (kart solda dikey flama, denetimler sağda) 520 px istiyor ve avlunun üstüne biniyor. B geri gelir: `?kd=b` ya da `localStorage keepfall_kd = b`. Görüntüler: `art/shots/ui-tur/kingdom-compare.png` (sol+orta A, sağ B), `kingdom-{a,b}-en-*.png`. Araç: `node tools/shot-kingdom-cards.mjs` (taşma denetimi). |
 
 ## Sıradaki
 
-E krallık kartları → F ana menü → G test + rapor.
+F ana menü → G test + rapor.
 
 ## Kararlar (soru sormadan verilenler)
 
