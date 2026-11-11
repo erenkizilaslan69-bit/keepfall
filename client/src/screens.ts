@@ -99,8 +99,9 @@ export class HomeScreen {
           <div class="join-row host-row">
             ${hosted.steam ? `<label class="field">${t('Kimler katılabilir')} <select id="vis"><option value="friends">${t('Steam: arkadaşlar')}</option><option value="public">${t('Steam: herkese açık')}</option><option value="private">${t('Steam: özel (yalnız davet)')}</option><option value="lan">${t('LAN / IP adresiyle (Steam yok)')}</option></select></label>` : ''}
             <button id="create" class="btn${hosted.steam ? '' : ' wide'}">${hosted.steam ? t('Oyun kur (ev sahibi)') : t('Oyun kur (LAN / IP)')}</button>
+            ${hosted.steam ? `<button id="refresh" class="btn">${t('Açık oyunları listele')}</button>` : ''}
           </div>
-          ${hosted.steam ? `<div class="mp-lobbies"><button id="refresh" class="btn small">${t('Açık oyunları listele')}</button><ul id="lobbies" class="players"></ul></div>` : ''}
+          ${hosted.steam ? `<div class="mp-lobbies"><ul id="lobbies" class="players"></ul></div>` : ''}
           <details class="home-lan"${friendsOpen || !hosted.steam ? ' open' : ''}>
             <summary>${t('LAN / IP (gelişmiş)')}</summary>
             <div class="join-row">

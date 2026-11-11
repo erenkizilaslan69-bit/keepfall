@@ -611,7 +611,10 @@ html.kf-starter select[data-row], html.kf-starter select[data-d-row] { display: 
 .home .home-friends { margin-top: calc(10px * var(--u, 1)); padding: calc(4px * var(--u, 1)) calc(10px * var(--u, 1)) calc(10px * var(--u, 1)); border: calc(2px * var(--u, 1)) dashed rgba(122, 90, 54, .55); border-radius: calc(8px * var(--u, 1)); }
 .home .home-friends .btn, .home .home-friends input, .home .home-friends select { font-size: max(var(--fs-xs, 0px), .92em); }
 .home .home-friends .or { margin: calc(4px * var(--u, 1)) 0; }
-.home .home-friends .host-row { align-items: flex-end; }
+.home .home-friends .host-row { align-items: stretch; flex-wrap: wrap; }
+/* the select on its own line, then "Host a game" and "List open games" side by side, the same width */
+.home .home-friends-wrap .host-row .field { flex: 1 1 100%; }
+.home .home-friends-wrap .host-row .btn { flex: 1 1 0; min-width: 0; overflow-wrap: break-word; hyphens: auto; }
 .home .home-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: calc(10px * var(--u, 1)); margin-top: calc(10px * var(--u, 1)); }
 .home .home-foot .home-name { flex: 0 1 calc(240px * var(--u, 1)); margin: 0; font-size: max(var(--fs-xs, 0px), .9em); }
 .home .home-foot .home-quit { flex: none; opacity: .85; }
