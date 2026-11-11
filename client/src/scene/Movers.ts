@@ -99,6 +99,8 @@ function marchSlots(kinds: string[], soldiers: number): Slot[] {
 // How far the picture walks on by itself when no news arrives (a phone's network stalling, a throttled tab). A cap of 1.5 ticks made the column stand still
 // during a gap of four seconds and then jump seven tiles when the news came: a wrong place to the player. The armies keep to known roads, so walking on is safe.
 const MAX_AHEAD_TICKS = 6;
+/** How close (tiles) another army must stand to a vanished one for the vanishing to count as "met on the road" (the server's meeting radius is 1; the drawn places run a little off). */
+const MEET_TILES = 2.5;
 /** The column catches up at most this fast (tiles a second) when the news puts it farther ahead than a glide covers: it is seen running, not teleported. */
 const CATCH_UP_TILES_PER_SECOND = 14;
 
@@ -298,13 +300,28 @@ export class Movers {
       // soldiers fade and drift up like smoke. Known phantoms (our own, or seen through by the Oracle), and an army that marched up to OUR gate
       // and is gone without a battle: that is what a phantom does (a real one's column is taken over by the battle before it could get here).
       const phantom = !t.scout && !t.fighting && !this.inReplay(t.shown) && t.sprites.some((s) => s.visible)
-        && (t.phantom === true || (key.startsWith('seen:') && this.atOwnGate?.(t.shown) === true));
+        && (t.phantom === true || (key.startsWith('seen:') && (this.atOwnGate?.(t.shown) === true || this.metOnRoad(key, t, alive))));
       if (phantom) this.dissolve(t);
       else for (const s of t.sprites) s.destroy();
       this.labels.remove(`army:${key}`);
       t.zone?.destroy();
       this.tracks.delete(key);
     }
+  }
+
+  /**
+   * A seen army has gone, without a battle, right beside another army we see (ours, or a third one's, of another colour): on the road that is a phantom
+   * meeting a real army (a real pair would have started a battle, and a column cannot slip out of our sight beside an army we are looking at: that
+   * place is in our view). The rival of the Shadow sees the same fade the Shadow does. Cosmetic: nothing new is told, the army was
+   * gone from the picture either way.
+   */
+  private metOnRoad(key: string, gone: Track, alive: Set<string>): boolean {
+    if (gone.scout) return false;
+    for (const [k, o] of this.tracks) {
+      if (k === key || !alive.has(k) || o.scout || o.fighting || o.color === gone.color) continue;
+      if (Math.hypot(o.shown.x - gone.shown.x, o.shown.y - gone.shown.y) < MEET_TILES) return true;
+    }
+    return false;
   }
 
   /**
