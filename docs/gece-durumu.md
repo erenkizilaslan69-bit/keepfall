@@ -1,6 +1,32 @@
-# Gece durumu (2026-11-11 → 12, gözetimsiz oturum)
+# Gece durumu (2026-11-11, gözetimsiz oturum) — SABAH RAPORU
 
-Sabah buradan devam edilir. Her adımdan sonra güncellenir.
+## Kısaca
+
+A–G'nin hepsi bitti ve `dev`'e push'landı. Test sunucuları kapalı; 5090, Production (5080), main, Render, `balance.json` ve müziğe dokunulmadı.
+
+**Son test turu (hepsi son commit'lerle):**
+
+| Denetim | Sonuç |
+|---|---|
+| `dotnet test -c Release` | 432 / 432 |
+| Duman testi (`run-smoke`, gizli bilgi) | 273 geçti, 1 düştü: "every picture is of the live game (no delay)" (`CLAUDE.md`'de kayıtlı, ara sıra düşen zamanlama denetimi) |
+| `host-check` (ev sahibi + 3 konuk) | 47 / 48; düşen tek satır betiğin kendi beklentisiydi (düğme metninde "host" arıyordu, sayfa Türkçe açıldı), düzeltildi, **yeniden koşulmadı** |
+| `host-fuzz` | 38 / 38 |
+| `tunnel-check` | 11 / 11 |
+| `steam-check` (paket) | 17 / 17 |
+| `i18n-check` | 15 dil %100 (1114 metin) |
+| `envoy-filter-check` | geçti (D adımında; sonra yeniden koşulmadı) |
+| Rehberli maç ×1 (`tutorial-check`, en, 1280x720) | 7 / 7 adım, sayfa hatası yok |
+| Ayarlar sekmeleri taşma | 15 dil × 5 sekme = 75 / 75 |
+| Ana menü taşma | 15 dil (1920x1080) + 6 dil (1280x720), hepsi temiz |
+| Krallık kartı taşma | 8 dil × 4 krallık × 2 karo = 64 / 64 |
+| `ui-audit` masaüstü (1366x768, 1920x1080; en, tr, de, ru, zh-CN, ja; `--quick`) | 542 ekran; 2 kritik, 309 önemli, 496 küçük. Rapor `docs/ui-audit-gece.md` |
+
+**ui-audit bulguları (düzeltilmedi):**
+- Kritik (2): savaş raporu etiketi 1920x1080'de de ve zh-CN'de 2–3 px ekran dışına taşıyor.
+- Önemli: Almancada bina pencereleri (tarla, oduncu, maden) 46 px yatay kaydırıyor; ayarlar ve rehber 8 px (eskiden de vardı); 3 bildirimin aynı anda görünmesi.
+- Küçük: 496 "küçük yazı" (masaüstünde 12 px altı etiketler; eski bulgu).
+- `lang-audit` (15 dilin tamamı, tüm ekranlar) KOŞULMADI; yerine yukarıdaki üç hedefli taşma denetimi ve 6 dilli ui-audit yapıldı.
 
 ## Bitenler
 
@@ -18,7 +44,7 @@ Sabah buradan devam edilir. Her adımdan sonra güncellenir.
 
 ## Sıradaki
 
-G test + rapor.
+Listede kalan iş yok (A–G bitti). Sabah bakılacaklar aşağıda.
 
 ## Kararlar (soru sormadan verilenler)
 
@@ -39,3 +65,38 @@ G test + rapor.
 
 - Steam tüneli gerçek hatta (iki hesap) denenmedi.
 - Bkz. `docs/steam-paketleme.md` §9 "Kalan riskler".
+
+## Eren'in karar vermesi / bakması gerekenler
+
+1. **E ve F seçimleri**: krallık kartında A, ana menüde B uygulandı; görüntülere bak (`art/shots/ui-tur/kingdom-compare.png`, `home-compare.png`). Diğeri `?kd=b` / `?home=a` ile açılır.
+2. **Tarayıcıdan LAN'a katılma kaldırıldı** (konuğa dosya sunulmuyor). İstenirse geri gelmez; konuk oyunun kendi kopyasıyla katılır.
+3. **Nefret / hafif küfür ayrımı** (`docs/kufur-filtresi.md`): ölüm dilekleri ve engellilik hakaretleri "her zaman filtreli" tarafta. Liste kısa; anadil gözden geçirmesi yok.
+4. **Yıkık kale görünümü** (`art/shots/ruin/cmp-castle.png`): kalenin kendi resminden kodla kesiliyor; beğenmezsen elle çizilmiş yıkıntı ile değişir.
+5. **Çeviriler**: gece eklenen 65 metin (çok oyunculu 37 + ayarlar/menü 28) yapay zekâ çevirisi, 13 dilde gözden geçirilmedi.
+6. **Gerçek Steam testi** hâlâ senin elinde (`docs/steam-paketleme.md` §8); tünel, davet ve lobi listesi iki hesapla denenmedi.
+7. ui-audit'in 2 kritik + Almanca bina penceresi taşması düzeltilsin mi (küçük iş, bu gece yapılmadı).
+
+## Yapılamayanlar / eksik kalanlar
+
+- `lang-audit` tam turu koşulmadı (yukarıda).
+- `host-check` betik düzeltmesinden sonra yeniden koşulmadı (47/48'in düşeni betik hatasıydı).
+- Hayalet ordu yolda başka orduya rastlayıp dağılırsa rakip tarafında efekt yok (yalnız kapıda ve sahibinde).
+- Ayarlarda "harita ölçeği" yok (oyunda tekerlek ve + / − var).
+- Komut hız sınırı eklenmedi (risk olarak `steam-paketleme.md` §9'da).
+- Yeni ekranlara (ayarlar, krallık kartı, ana menü) İngilizce görüntülerde gözle bakıldı; diğer dillerde yalnız otomatik taşma denetimi var.
+- ui-audit için Playwright geçici klasöre kuruldu (oturum scratchpad'i); kalıcı değil.
+
+## Commit listesi (bu oturum, eskiden yeniye)
+
+| Commit | İş |
+|---|---|
+| `ec045a5`, `3a76468`, `22479ba`, `009cecf` | A: ev sahibi güvenliği (sunucu sınırları + kick, kapı bekçisi, fuzz, belgeler) |
+| `5ef82e4` | B1: klip yakalama kaldırıldı |
+| `368ec90` | B2: çok oyunculu metinleri 13 dilde + çeviri numaralandırma düzeltmesi |
+| `574e914` | B3: opak yıkık kale + hayalet ordu dağılması |
+| `e22bfa5` | C: sekmeli ayarlar |
+| `d33aaec` | D: ulak filtresi iki katman |
+| `3701226` | E: krallık kartı |
+| `ec5da88` | F: ana menü |
+| `17ebcee` | G: kalan metinler 13 dilde |
+| (bu commit) | G: test turu, `docs/ui-audit-gece.md`, sabah raporu, devir notu |

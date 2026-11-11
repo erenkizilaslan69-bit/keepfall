@@ -72,7 +72,7 @@ try {
   const host = await desktop('host', 9451, { KEEPFALL_LAN_PORT: String(LAN), KEEPFALL_TAKEOVER_SECONDS: String(GRACE) });
   apps.push(host);
   const hostServer = pids('Keepfall.Server.exe').filter((p) => !before.has(p))[0];
-  check('host: the menu offers hosting and joining by address', await host.js(`!!document.querySelector('#create') && !!document.querySelector('#code') && /host/i.test(document.querySelector('#create').textContent)`));
+  check('host: the menu offers hosting and joining by address', await host.js(`!!document.querySelector('#create') && !!document.querySelector('#code') && /host|LAN/i.test(document.querySelector('#create').textContent)`));
   await host.shot('host-menu');
   await host.js(`document.querySelector('#name').value='Hosty'; document.querySelector('#create').click(); 1`);
   check('host: the lobby is up', await host.waitFor(`!!document.querySelector('.lobby .title-ribbon .code') && !!document.querySelector('.share-code')`, 20));
