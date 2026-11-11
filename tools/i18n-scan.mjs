@@ -16,7 +16,7 @@ const files = [];
   for (const f of readdirSync(dir)) {
     const p = join(dir, f);
     if (statSync(p).isDirectory()) walk(p);
-    else if (/\.ts$/.test(f) && !p.includes('i18n') && f !== 'banner-lab.ts') files.push(p); // banner-lab: a dev-only preview page
+    else if (/\.ts$/.test(f) && !p.includes('i18n') && f !== 'banner-lab.ts' && !/^profanity/.test(f)) files.push(p); // banner-lab: a dev-only preview page; profanity*: word lists, not interface text
   }
 })(ROOT);
 

@@ -1,6 +1,6 @@
 # ja: swear words of the envoy message / player name filter (EnvoyMessage.cs). A curated subset of the CC BY 4.0 LDNOOBW list (see LICENSE-LDNOOBW.md).
 # `word` = whole word, `stem*` = any word beginning with it; for zh/ja/ko every entry is a substring match. Add a word here and it is filtered; remove one that masks an innocent word.
-死ね
+# MILD tier: masked for the receiver by their own game (a setting, on by default); the server masks these only in player names.
 くそ野郎
 クソ野郎
 ちんこ
@@ -19,7 +19,5 @@
 売女
 糞野郎
 うんこ野郎
-くたばれ
-ぶっ殺す
 クソババア
 クソジジイ

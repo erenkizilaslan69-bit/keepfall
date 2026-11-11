@@ -12,12 +12,16 @@ Sabah buradan devam edilir. Her adımdan sonra güncellenir.
 | B3a Düşen kale opak yıkıntı | (bu commit) | YAPILMAMIŞTI (rakip kale %45 saydamdı). Artık kalenin kendi resminden (sade ya da krallık) bellekte kesilen yıkıntı: tepe kırık, isli taş, dipte moloz; sur ve avlu da opak. Görüntü: `art/shots/ruin/cmp-castle.png` (sol ayakta, orta eski, sağ yeni). |
 | B3b Hayalet ordu dağılma efekti | (bu commit) | YAPILMAMIŞTI (ordu bir karede yok oluyordu). Artık askerler mora dönüp incelerek yükselir + koyu duman. Tetik: kendi hayaletimiz (Gölge), Kâhin'in sahte gördüğü ordu, ya da kapımıza kadar gelip savaşsız kaybolan ordu. Sunucuya dokunulmadı. Görüntü: `art/shots/ruin/cmp-phantom.png`. Araç: `node tools/shot-ruin.mjs`. |
 | C Ayarlar penceresi sekmeli | (bu commit) | Ses (ana / müzik / efekt ayrı + sessize al) · Görüntü (grafik kalitesi, tam ekran, arayüz ölçeği %85–130, efektleri azalt, FPS) · Dil (15) · Oyun (ipuçları, ulak mesajları, tam kurallar, rehberi sıfırla) · Kontroller (kısayol listesi). Altında Hakkında / Gizlilik / Ana menüye dön. Kalıcı (localStorage, try/catch). Ana ses yalnız düzey çarpanı; müzik akışına dokunulmadı. Harita ölçeği ayarı yok (oyunda tekerlek / + − var), not olarak yazıldı. Görüntüler `art/shots/ui-tur/settings/`; araç `node tools/shot-settings-tabs.mjs` (taşma denetimi: en, tr, de, ru temiz; kalan diller çeviri sonrası G'de). |
+| D Ulak filtresi iki katman | (bu commit) | Nefret söylemi sunucuda HER ZAMAN maskeli (kapatılamaz); hafif küfür alıcının oyununda, Ayarlar → Oyun → "Hafif küfürleri filtrele" (varsayılan açık). 15 dil listesi ikiye ayrıldı (`docs/kufur-filtresi.md`). `node tools/envoy-filter-check.mjs` geçti (filtre açık: `you **** and you ******`; kapalı: `you shit and you ******`). |
 
 ## Sıradaki
 
-D ulak filtresi → E krallık kartları → F ana menü → G test + rapor.
+E krallık kartları → F ana menü → G test + rapor.
 
 ## Kararlar (soru sormadan verilenler)
+
+- Ulak filtresi: `envoy.profanityFilter` (balance.json) anahtarı yerinde ama artık etkisiz (nefret katmanı kapatılamaz, hafif katman oyuncunun ayarı). Oyuncu ADLARI iki katmanla sunucuda maskelenmeye devam ediyor.
+- Ölüm dilekleri (ja 死ね vb.) ve engellilik hakaretleri (retard, 병신, 脑残) "emin değilsen her zaman filtreli" kuralıyla nefret katmanına kondu.
 
 - Hayalet ordu yolda başka orduya rastlayıp dağılırsa rakip tarafında efekt YOK (istemci bunu görüş dışına çıkmaktan ayıramaz; sunucuya/gizli bilgiye dokunmamak için böyle bırakıldı). Kapıda dağılma ve sahibinin kendi görünümü efektli.
 

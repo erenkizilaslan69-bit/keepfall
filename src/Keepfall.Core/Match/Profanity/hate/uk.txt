@@ -1,0 +1,6 @@
+# uk: swear words of the envoy message / player name filter (EnvoyMessage.cs). A curated subset of the CC BY 4.0 LDNOOBW list (see LICENSE-LDNOOBW.md); hand-written, no list exists for this language in that project.
+# `word` = whole word, `stem*` = any word beginning with it. Add a word here and it is filtered; remove one that masks an innocent word.
+# HATE tier: slurs and death wishes. Masked by the server ALWAYS, for everybody; no setting switches this off.
+підар*
+підор*
+підарас*

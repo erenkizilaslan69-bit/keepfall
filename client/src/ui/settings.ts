@@ -1,7 +1,7 @@
 import { sfx } from '../audio';
 import { restartTutorial } from './tutorial';
 import { CRAZY } from '../crazy';
-import { playsFullRules, setFullRules, lowGraphics, setLowGraphics, setShowHints, showsHints, setReduceEffects, setShowFps, setShowMessages, showsFps, userReducesEffects, userShowsMessages, UI_SCALES, uiScalePref, setUiScalePref } from '../prefs';
+import { playsFullRules, setFullRules, lowGraphics, setLowGraphics, setShowHints, showsHints, setReduceEffects, setShowFps, setShowMessages, showsFps, userReducesEffects, userShowsMessages, UI_SCALES, uiScalePref, setUiScalePref, filtersMild, setFilterMild } from '../prefs';
 import { toggleGuide } from './guide';
 import { setLang, t, type Lang } from '../i18n';
 import { langLabel, langSelectHtml, langTitle, toggleLangMenu } from './lang-menu';
@@ -125,7 +125,7 @@ export function toggleSettings(): void {
         <section data-pane="game">
           <div class="set-row"><label for="set-hints">${t('İpuçlarını göster')} <small>${t('(boşta işçi, yemek azalması, yaklaşan ordu gibi anlarda kısa uyarılar)')}</small></label><input id="set-hints" type="checkbox" class="set-check"></div>
           <div class="set-row"><label for="set-msg">${t('Ulak mesajlarını göster')} <small>${t('(kapalıyken gelen mesajlar gizlenir ve mesaj kutusu çıkmaz)')}</small></label><input id="set-msg" type="checkbox" class="set-check"></div>
-          <!--envoy-filter-->
+          <div class="set-row"><label for="set-mild">${t('Hafif küfürleri filtrele')} <small>${t('(ulak mesajlarındaki küfürler yıldızla gösterilir; nefret söylemi bu ayardan bağımsız, her zaman filtrelenir)')}</small></label><input id="set-mild" type="checkbox" class="set-check"></div>
           <div class="set-row"><label for="set-full">${t('Tam kurallarla oyna')} <small>${t('(ilk maçlarda ve ilk meydan okumalarda da krallık yetenekleri ve savaş sırası seçimi açık olur)')}</small></label><input id="set-full" type="checkbox" class="set-check"></div>
           <div class="set-links">
             <button class="btn" data-act="tutorial">${t('Rehberi tekrar başlat')}</button>
@@ -192,6 +192,9 @@ export function toggleSettings(): void {
   fps.addEventListener('change', () => setShowFps(fps.checked));
   msg.addEventListener('change', () => setShowMessages(msg.checked));
   hintsBox.addEventListener('change', () => setShowHints(hintsBox.checked));
+  const mild = q<HTMLInputElement>('#set-mild');
+  mild.checked = filtersMild();
+  mild.addEventListener('change', () => setFilterMild(mild.checked));
   fullBox.checked = playsFullRules();
   fullBox.addEventListener('change', () => setFullRules(fullBox.checked));
   full.addEventListener('change', () => { void setFullscreen(full.checked).then(show); });

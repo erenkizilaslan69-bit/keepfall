@@ -1,5 +1,6 @@
 # uk: swear words of the envoy message / player name filter (EnvoyMessage.cs). A curated subset of the CC BY 4.0 LDNOOBW list (see LICENSE-LDNOOBW.md); hand-written, no list exists for this language in that project.
 # `word` = whole word, `stem*` = any word beginning with it. Add a word here and it is filtered; remove one that masks an innocent word.
+# MILD tier: masked for the receiver by their own game (a setting, on by default); the server masks these only in player names.
 хуй*
 хуя
 хую
@@ -22,8 +23,6 @@
 сучк*
 курв*
 мудак*
-підар*
-підор*
 гандон*
 залуп*
 шльонд*
@@ -32,7 +31,6 @@
 довбоєб*
 уйобок*
 уйобк*
-підарас*
 срак*
 срати
 гівно*

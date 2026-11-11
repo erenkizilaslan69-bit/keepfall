@@ -1,6 +1,7 @@
 import { COLOR_CSS, botMark, esc } from '../format';
 import { t as tt, tr } from '../i18n';
-import { messagesOn } from '../prefs';
+import { filtersMild, messagesOn } from '../prefs';
+import { maskMild } from '../profanity';
 import type { BattleReportView, LetterView, ScoutReportView } from '../types';
 import { dot, reportHtml, resultWord } from './report-html';
 import { scoutReportHtml } from './scout-report';
@@ -148,7 +149,7 @@ export class ReportTags {
     } else if (l.message) {
       const quote = document.createElement('blockquote');
       quote.className = 'letter-text';
-      quote.textContent = l.message; // plain text, whatever it contains
+      quote.textContent = filtersMild() ? maskMild(l.message) : l.message; // plain text, whatever it contains (hate speech was masked by the server; swearing by our own setting)
       win.append(quote);
     }
     const foot = document.createElement('div');

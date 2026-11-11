@@ -198,8 +198,54 @@ public class EnvoyMessageTests
     [InlineData("ORospu çocuğu", "****** çocuğu")]
     [InlineData("PİÇ misin", "*** misin")]
     [InlineData("you ass", "you ***")]
-    public void With_the_filter_on_swear_words_become_stars(string text, string masked) =>
-        Assert.Equal(masked, EnvoyMessage.Check(text, On).Text);
+    public void Swear_words_become_stars_in_the_mild_tier_and_in_names(string text, string masked)
+    {
+        // Two tiers: the server leaves ordinary swearing in a MESSAGE (the receiver's own game masks it, by the receiver's setting)...
+        Assert.Equal(text, EnvoyMessage.Check(text, On).Text);
+        // ...the mild tier itself (what that game applies) and a player's name (both tiers, always) mask it.
+        Assert.Equal(masked, EnvoyMessage.MaskMild(text));
+        Assert.Equal(masked, EnvoyMessage.Mask(text));
+    }
+
+    // The hate tier: slurs and death wishes, in every language. The server masks them in every message, whatever the config or anybody's settings say.
+    [Theory]
+    [InlineData("tr", "seni ibne", "ibne")]
+    [InlineData("en", "you faggot", "faggot")]
+    [InlineData("en", "dirty kike", "kike")]
+    [InlineData("en", "what a retard", "retard")]
+    [InlineData("de", "du Kanake", "Kanake")]
+    [InlineData("de", "so eine Schwuchtel", "Schwuchtel")]
+    [InlineData("es", "eres un maricón", "maricón")]
+    [InlineData("fr", "sale pédé", "pédé")]
+    [InlineData("it", "sei un frocio", "frocio")]
+    [InlineData("pt", "seu viado", "viado")]
+    [InlineData("pl", "ty cwelu", "cwelu")]
+    [InlineData("ru", "ты пидор", "пидор")]
+    [InlineData("uk", "ти підор", "підор")]
+    [InlineData("zh", "你这个脑残", "脑残")]
+    [InlineData("ja", "死ね", "死ね")]
+    [InlineData("ko", "이 병신아", "병신")]
+    public void Hate_speech_is_always_masked_by_the_server(string lang, string text, string word)
+    {
+        Assert.NotEmpty(lang);
+        foreach (var rules in new[] { On, Off })
+        {
+            var sent = EnvoyMessage.Check(text, rules).Text!;
+            Assert.DoesNotContain(word, sent, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("*", sent);
+            Assert.Equal(text.Length, sent.Length);
+        }
+        // and the mild tier alone would NOT have caught it: the two lists do not overlap
+        Assert.Contains(word, EnvoyMessage.MaskMild(text), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void A_message_with_both_keeps_the_swearing_for_the_receiver_to_decide_and_loses_the_slur()
+    {
+        var sent = EnvoyMessage.Check("fuck you, you faggot, scheiße", Off).Text!;
+        Assert.Equal("fuck you, you ******, scheiße", sent);
+        Assert.Equal("**** you, you ******, *******", EnvoyMessage.MaskMild(sent)); // what a receiver with the filter on sees
+    }
 
     [Theory]
     [InlineData("class assignment")]
@@ -208,7 +254,7 @@ public class EnvoyMessageTests
     [InlineData("sikke ve altın")]
     [InlineData("Bütün hamle iyi niyetle")]
     public void Harmless_words_that_only_look_alike_are_left_alone(string text) =>
-        Assert.Equal(text, EnvoyMessage.Check(text, On).Text);
+        Assert.Equal(text, EnvoyMessage.Mask(EnvoyMessage.Check(text, On).Text!));
 
     // The embedded per-language lists (Match/Profanity/*.txt): at least two words of each language must be masked, and the word must be gone from the result.
     [Theory]
@@ -237,7 +283,7 @@ public class EnvoyMessageTests
     public void Swear_words_of_the_other_languages_are_masked(string lang, string text, string word)
     {
         Assert.NotEmpty(lang); // documents which list the sample comes from
-        var masked = EnvoyMessage.Check(text, On).Text!;
+        var masked = EnvoyMessage.Mask(EnvoyMessage.Check(text, On).Text!); // (either tier: this list of samples is older than the split)
         Assert.DoesNotContain(word, masked, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("*", masked);
     }
@@ -256,7 +302,7 @@ public class EnvoyMessageTests
     [InlineData("ナクソス島とエクソシスト")]
     [InlineData("안녕하세요 보지 말고 가세요")]
     public void Clean_sentences_in_the_other_languages_are_not_masked(string text) =>
-        Assert.Equal(text, EnvoyMessage.Check(text, On).Text);
+        Assert.Equal(text, EnvoyMessage.Mask(EnvoyMessage.Check(text, On).Text!));
 
     [Fact]
     public void The_limits_hold_in_characters_and_an_empty_message_is_no_message()

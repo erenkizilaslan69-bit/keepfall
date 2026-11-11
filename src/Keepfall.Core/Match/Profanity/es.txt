@@ -1,5 +1,6 @@
 # es: swear words of the envoy message / player name filter (EnvoyMessage.cs). A curated subset of the CC BY 4.0 LDNOOBW list (see LICENSE-LDNOOBW.md).
 # `word` = whole word, `stem*` = any word beginning with it. Add a word here and it is filtered; remove one that masks an innocent word.
+# MILD tier: masked for the receiver by their own game (a setting, on by default); the server masks these only in player names.
 mierda*
 puta
 putas
@@ -21,10 +22,6 @@ jilipollas*
 gilipuertas
 pendejo*
 pendeja*
-marica*
-maricón*
-maricon*
-mariconazo*
 verga
 vergas
 chingar*

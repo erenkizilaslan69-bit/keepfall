@@ -2,14 +2,14 @@
 
 const KEY = 'keepfall.prefs';
 
-interface Prefs { reduceEffects: boolean; showFps: boolean; lowGraphics: boolean; showMessages: boolean; showHints: boolean; fullRules: boolean; uiScale?: number }
+interface Prefs { reduceEffects: boolean; showFps: boolean; lowGraphics: boolean; showMessages: boolean; showHints: boolean; fullRules: boolean; uiScale?: number; /** mask ordinary swearing in envoy messages (the reader's choice; hate speech is always masked by the server) */ filterMild?: boolean }
 
 function load(): Prefs {
   try {
     const p = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<Prefs>;
     // A touch device (a phone) starts with low graphics until the player chooses otherwise.
     const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
-    return { reduceEffects: p.reduceEffects === true, showFps: p.showFps === true, lowGraphics: typeof p.lowGraphics === 'boolean' ? p.lowGraphics : touch, showMessages: p.showMessages !== false, showHints: p.showHints !== false, fullRules: p.fullRules === true, uiScale: typeof p.uiScale === 'number' ? p.uiScale : 1 };
+    return { reduceEffects: p.reduceEffects === true, showFps: p.showFps === true, lowGraphics: typeof p.lowGraphics === 'boolean' ? p.lowGraphics : touch, showMessages: p.showMessages !== false, showHints: p.showHints !== false, fullRules: p.fullRules === true, uiScale: typeof p.uiScale === 'number' ? p.uiScale : 1, filterMild: p.filterMild !== false };
   } catch {
     return { reduceEffects: false, showFps: false, lowGraphics: false, showMessages: true, showHints: true, fullRules: false };
   }
@@ -70,6 +70,10 @@ export function setSiteChatOff(off: boolean): void { siteChat.off = off; }
 export function messagesOn(): boolean { return prefs.showMessages && !siteChat.off; }
 export function userShowsMessages(): boolean { return prefs.showMessages; }
 export function setShowMessages(on: boolean): void { save({ ...prefs, showMessages: on }); }
+
+/** "Hafif küfürleri filtrele": ordinary swear words in the envoy messages we receive become stars. On unless the player switches it off. */
+export function filtersMild(): boolean { return prefs.filterMild !== false; }
+export function setFilterMild(on: boolean): void { save({ ...prefs, filterMild: on }); }
 
 /** "Arayüz ölçeği": the player's own factor on top of the size the screen gives the interface (ui/scale.ts). */
 export const UI_SCALES = [0.85, 1, 1.15, 1.3];
