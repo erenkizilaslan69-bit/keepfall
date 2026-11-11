@@ -116,7 +116,13 @@ const AUDIT_JS = `(opts) => {
   for (const w of document.querySelectorAll(WINS)) {
     if (!visible(w)) continue;
     const r = w.getBoundingClientRect();
-    if (w.scrollWidth > w.clientWidth + 2 && !/lobby|end/.test(w.className)) add('important', 'window-hscroll', w, 'scrollWidth ' + w.scrollWidth + ' > ' + w.clientWidth);
+    if (w.scrollWidth > w.clientWidth + 2 && !/lobby|end/.test(w.className)) {
+      // A window that does not scroll (overflow visible) lets its close cross hang off the corner on purpose, and that alone makes scrollWidth bigger:
+      // then only the window's real content counts (anything but the cross wider than the window).
+      const scrolls = /(auto|scroll)/.test(getComputedStyle(w).overflowX);
+      const wide = scrolls ? null : [...w.querySelectorAll('*')].find((c) => !c.closest('.win-close') && !c.closest('.win-title') && c.getBoundingClientRect().width > 0 && (c.getBoundingClientRect().right > r.right + 2 || c.getBoundingClientRect().left < r.left - 2));
+      if (scrolls || wide) add('important', 'window-hscroll', w, 'scrollWidth ' + w.scrollWidth + ' > ' + w.clientWidth + (wide ? ' (' + wide.tagName.toLowerCase() + '.' + String(wide.className).slice(0, 24) + ' sticks out)' : ''));
+    }
     if (r.left < -1 || r.right > iw + 1 || (r.top < -1 && !/lobby|end/.test(w.className)) || (r.bottom > ih + 1 && !/lobby|end/.test(w.className))) add('critical', 'window-outside', w, 'window sticks out of the screen');
     if (/^(win |win$)|kingdom-panel|scroll-pop|decree|settings|guide|modal/.test(w.className + ' ')) {
       const closers = [...document.querySelectorAll('.win-close, [data-close], .kd-x, .decree-x, [data-act=close], [data-a=close], .guide-close')].filter((c) => visible(c));
