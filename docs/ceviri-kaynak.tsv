@@ -1091,3 +1091,31 @@
 1091	Kendini çıkaramazsın.	You cannot remove yourself.
 1092	Ev sahibi seni odadan çıkardı.	The host removed you from the room.
 1093	O koltukta oyuncu yok.	There is no player in that seat.
+1094	Haritayı kaydır	Move the map
+1095	Fare tekerleği	Mouse wheel
+1096	Yakınlaş / uzaklaş	Zoom in / out
+1097	Sol tık + sürükle	Left click + drag
+1098	Haritayı sürükle	Drag the map
+1099	Sol tık	Left click
+1100	Bina, kale, ordu ya da orman yerini seç	Select a building, a castle, an army or a place in the forest
+1101	Boşluk	Space
+1102	Kendi kalene dön	Back to your own castle
+1103	Açık pencereyi kapat	Close the open window
+1104	Tam ekran (masaüstü sürümü)	Full screen (desktop version)
+1105	Görüntü	Display
+1106	Oyun	Game
+1107	Kontroller	Controls
+1108	Ana ses	Master volume
+1109	Grafik kalitesi	Graphics quality
+1110	(düşükte parçacık efektleri, duman, harita süsleri ve sis yumuşatması azalır; yavaş bilgisayarlar için)	(low: fewer particle effects, smoke, map ornaments and fog smoothing; for slow computers)
+1111	Yüksek	High
+1112	Düşük	Low
+1113	Tam ekran	Full screen
+1114	Arayüz ölçeği	Interface scale
+1115	(düğmelerin, pencerelerin ve yazıların boyutu)	(the size of buttons, windows and text)
+1116	Haritaya yakınlaşmak için fare tekerleğini ya da sağ alttaki + / − düğmelerini kullan.	To zoom the map use the mouse wheel or the + / − buttons at the bottom right.
+1117	Dil değişince sayfa yenilenir; süren maça aynı koltukla dönersin.	Changing the language reloads the page; you return to a running match in the same seat.
+1118	Hafif küfürleri filtrele	Filter mild swearing
+1119	(ulak mesajlarındaki küfürler yıldızla gösterilir; nefret söylemi bu ayardan bağımsız, her zaman filtrelenir)	(swear words in envoy messages are shown as stars; hate speech is always filtered, whatever this setting says)
+1120	Oyna	Play
+1121	Oyundan çık	Quit game
