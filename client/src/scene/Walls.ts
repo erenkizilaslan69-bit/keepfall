@@ -109,7 +109,7 @@ export class WallRing {
   ruin(fx?: { dust(x: number, y: number, scale: number, tint: number): void }): void {
     if (this.fallen) return;
     this.fallen = true;
-    this.rt?.setAlpha(0.45).setTint(0x888888);
+    this.rt?.setAlpha(1).setTint(0x6f6a68); // solid, sooty stone (the towers are gone below); never see-through
     this.floor?.ruin();
     for (const t of this.towers) { fx?.dust(t.x, t.y - 30, 1.6, 0x8a7a66); t.destroy(); }
     this.towers = [];

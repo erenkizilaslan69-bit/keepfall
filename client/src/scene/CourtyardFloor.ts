@@ -88,7 +88,7 @@ export class CourtyardFloor {
   ruin(): void {
     if (this.fallen) return;
     this.fallen = true;
-    this.image?.setAlpha(0.6).setTint(0x888888);
+    this.image?.setAlpha(1).setTint(0x8a8480);
   }
 
   destroy(): void {

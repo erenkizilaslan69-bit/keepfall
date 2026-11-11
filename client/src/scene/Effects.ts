@@ -270,13 +270,30 @@ export class Effects {
     this.scene.tweens.add({
       targets: image, scaleY: restScale * 0.8, duration: 1100, ease: 'Cubic.easeIn',
       onUpdate: (tw) => { const v = 255 - Math.round(tw.progress * 120); image.setTint(Phaser.Display.Color.GetColor(v, v, v)); },
+      onComplete: () => { if (image.active) this.ruin(image, restScale); },
     });
   }
 
-  /** A castle that was already down when we first saw it: no show, just the ruin. */
+  /**
+   * A fallen castle is a RUIN, solid as the stone it was: the same picture with its upper part broken off along a jagged line, a few fallen blocks
+   * and scorch marks, darkened (never see-through: a half-transparent castle reads as "not there", a ruin reads as "it fell"). Made from whatever
+   * picture the castle wears (plain or a kingdom's), in memory only. Also the castle that was already down when we first saw it: no show, just the ruin.
+   */
   ruin(image: Phaser.GameObjects.Image, restScale: number): void {
-    image.setScale(image.scaleX, restScale * 0.8).setTint(0x888888);
+    const key = ruinTexture(this.scene, image);
+    if (key) image.setTexture(key).clearTint().setScale(image.scaleX, restScale).setAlpha(1);
+    else image.setScale(image.scaleX, restScale * 0.8).setTint(0x777777).setAlpha(1); // (no canvas to cut the picture on: at least solid and dark)
+    this.ruined.add(image);
+    // The castle's look can change after it fell (a scout's report shows the kingdom's own castle): the ruin is cut again from the new picture.
+    this.ruinWatch ??= this.scene.time.addEvent({ delay: 600, loop: true, callback: () => {
+      for (const im of this.ruined) {
+        if (!im.active) { this.ruined.delete(im); continue; }
+        if (!im.texture.key.endsWith(RUIN_SUFFIX)) { const k = ruinTexture(this.scene, im); if (k) im.setTexture(k).clearTint().setAlpha(1); }
+      }
+    } });
   }
+  private readonly ruined = new Set<Phaser.GameObjects.Image>();
+  private ruinWatch: Phaser.Time.TimerEvent | null = null;
 
   destroy(): void {
     for (const list of this.burning.values()) list.forEach((s) => s.destroy());
@@ -285,6 +302,66 @@ export class Effects {
     this.trails?.destroy();
     this.puffs?.destroy();
   }
+}
+
+const RUIN_SUFFIX = ':ruin';
+
+/** The ruin of the picture an image shows, as a texture of its own (made once per picture); null if it cannot be made. */
+function ruinTexture(scene: Phaser.Scene, image: Phaser.GameObjects.Image): string | null {
+  const frame = image.frame, src = image.texture.key;
+  if (src.endsWith(RUIN_SUFFIX)) return src;
+  const key = `${src}/${frame.name}${RUIN_SUFFIX}`;
+  if (scene.textures.exists(key)) return key;
+  const w = frame.cutWidth, h = frame.cutHeight;
+  if (!(w > 8 && h > 8)) return null;
+  const canvas = scene.textures.createCanvas(key, w, h);
+  if (!canvas) return null;
+  const g = canvas.context;
+  try {
+    g.imageSmoothingEnabled = false;
+    g.drawImage(frame.source.image as CanvasImageSource, frame.cutX, frame.cutY, w, h, 0, 0, w, h);
+    // the picture's own box (the castle does not fill its frame): the break is measured on the stone, not on the empty margin
+    const data = g.getImageData(0, 0, w, h).data;
+    let top = h, left = w, right = 0, bottom = 0;
+    for (let y = 0; y < h; y += 2) for (let x = 0; x < w; x += 2) if (data[(y * w + x) * 4 + 3] > 40) { if (y < top) top = y; if (y > bottom) bottom = y; if (x < left) left = x; if (x > right) right = x; }
+    if (top >= h || right <= left) { canvas.refresh(); return key; }
+    const tall = bottom - top, wide = right - left;
+    // a seeded jagged line: the left of the keep stands higher, the middle is broken lowest (a breach), blocky steps like the pixel art
+    let seed = 0; for (let i = 0; i < src.length; i++) seed = (seed * 31 + src.charCodeAt(i)) >>> 0;
+    const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    const STEP = Math.max(4, Math.round(wide / 22));
+    const line: number[] = [];
+    for (let x = left; x <= right; x += STEP) {
+      const u = (x - left) / wide;
+      const breach = Math.exp(-((u - 0.55) ** 2) / 0.03) * 0.22;          // the gap the attackers made
+      const lean = 0.30 + 0.16 * Math.abs(u - 0.5) * (u < 0.5 ? -0.6 : 1); // one side lower than the other
+      line.push(top + tall * (lean + breach + (rnd() - 0.5) * 0.12));
+    }
+    g.globalCompositeOperation = 'destination-out';
+    g.fillStyle = '#000';
+    line.forEach((y, i) => g.fillRect(left + i * STEP - 1, 0, STEP + 2, Math.round(y / 2) * 2));
+    // what is left: dark and sooty stone (only where there is stone)
+    g.globalCompositeOperation = 'source-atop';
+    g.fillStyle = 'rgba(30, 25, 24, 0.62)';
+    g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 26; i++) { // scorch marks, more of them near the break
+      const x = left + rnd() * wide, y = top + tall * (0.3 + rnd() * rnd() * 0.6), s = 4 + Math.round(rnd() * 3) * 2;
+      g.fillStyle = `rgba(14, 10, 10, ${0.25 + rnd() * 0.3})`;
+      g.fillRect(Math.round(x / 2) * 2, Math.round(y / 2) * 2, s * 2, s);
+    }
+    // fallen blocks at the foot (drawn over everything: they lie in front)
+    g.globalCompositeOperation = 'source-over';
+    for (let i = 0; i < 22; i++) {
+      // small stones against the foot of the wall, a few larger ones; none below the stone's own bottom edge
+      const x = left + wide * (0.05 + rnd() * 0.9), sw = 4 + Math.round(rnd() * rnd() * 5) * 2, sh = Math.max(4, sw - 2 - Math.round(rnd()) * 2);
+      const y = Math.min(h - 1, bottom - 2 - Math.round(rnd() * tall * 0.07));
+      g.fillStyle = '#1f1b1a'; g.fillRect(Math.round(x) - 1, y - sh, sw + 2, sh + 1);
+      g.fillStyle = rnd() < 0.5 ? '#57524f' : '#48433f'; g.fillRect(Math.round(x), y - sh + 1, sw, sh - 1);
+      g.fillStyle = '#6f6964'; g.fillRect(Math.round(x), y - sh + 1, sw - 2, 2);
+    }
+    canvas.refresh();
+    return key;
+  } catch { scene.textures.remove(key); return null; } // (a tainted or missing source picture)
 }
 
 /** The two small particle textures, drawn once. */

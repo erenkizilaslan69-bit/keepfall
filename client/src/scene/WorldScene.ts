@@ -199,6 +199,8 @@ export class WorldScene extends Phaser.Scene {
     }));
     this.movers.inReplay = (at) => this.battles?.active.some((b) => Math.hypot(b.at.x - at.x, b.at.y - at.y) < 2.5) ?? false;
     this.movers.blocked = (p, from) => this.blockedAt(p, from);
+    // (our own gate, for the phantom army that reaches it and fades: Movers.dissolve)
+    this.movers.atOwnGate = (tile) => { const g = this.layout.regions.find((r) => r.seat === this.mySeat)?.gate; return !!g && Math.hypot(tile.x - g.x, tile.y - g.y) < 2.2; };
     this.fog = new Fog(this, this.layout.size, WATER_FAR);
     this.fx = new Effects(this);
     this.movers.setEffects(this.fx);
@@ -348,7 +350,7 @@ export class WorldScene extends Phaser.Scene {
   private markFallen(seat: number, c: { image: Phaser.GameObjects.Image; fallen?: boolean }, fallen: boolean): void {
     const was = c.fallen;
     c.fallen = fallen;
-    c.image.setAlpha(fallen ? 0.45 : 1);
+    c.image.setAlpha(1); // (a fallen castle is a solid ruin, see Effects.ruin; never see-through)
     if (fallen) this.walls.get(seat)?.ruin(this.fx);
     const rest = c.image.getData('rest') ?? CASTLE.scale;
     if (fallen && was === false) { this.fx.hitStop(70); this.fx.slowMo(); this.fx.collapse(c.image, c.image.x, c.image.y, rest, false); this.time.delayedCall(1300, () => this.fx.damage(`siege:${seat}`, c.image.x, c.image.y, 0, true)); }

@@ -122,6 +122,8 @@ interface Track {
   vision: number;
   /** In a battle: the battle replay draws its soldiers, so the marching column is hidden. */
   fighting: boolean;
+  /** Known to us as a phantom army (our own, as the Shadow; or the Oracle sees through it): when it goes, it fades. */
+  phantom?: boolean;
   receivedAt: number;
   /** When the column kicks up its next puff of dust (performance.now ms). */
   dustAt?: number;
@@ -158,6 +160,26 @@ export class Movers {
   private tracks = new Map<string, Track>();
   private gameSpeed = 1;
   private fx: Effects | null = null;
+  /** Set by the scene: is this place (tiles) right at our own castle's gate? */
+  atOwnGate: ((tile: Vec) => boolean) | null = null;
+
+  /** A phantom army comes apart: every soldier turns the colour of shadow, thins and rises, a moment apart; a wisp of dark smoke is left. Cosmetic only. */
+  private dissolve(t: Track): void {
+    const at = toWorld(t.shown);
+    trace('phantom-fades', t.key);
+    this.fx?.dust(at.x, at.y - 10, 1.5, 0x6f58a8);
+    t.sprites.forEach((s, i) => {
+      s.setData('track', null); // (no longer a column's soldier: the audit does not count it)
+      if (!s.visible) { s.destroy(); return; }
+      s.anims?.pause();
+      s.setTint(0x8a6fd0);
+      this.scene.tweens.add({
+        targets: s, alpha: 0, y: s.y - 26 - (i % 3) * 6, scaleX: s.scaleX * 0.7, scaleY: s.scaleY * 1.15, duration: 1300, delay: Math.min(700, i * 60), ease: 'Sine.easeIn',
+        onComplete: () => s.destroy(),
+      });
+    });
+    this.scene.time.delayedCall(420, () => this.fx?.dust(at.x + 6, at.y - 34, 1.1, 0x4a3a78));
+  }
   /** The effects the marching columns raise dust with. */
   setEffects(fx: Effects): void { this.fx = fx; }
   /** Development: how far a column was from where the server put its army when the news came (tiles), for the debug layer to judge. */
@@ -245,6 +267,7 @@ export class Movers {
       t.speed = o.speed;
       t.vision = o.visionRadius;
       t.fighting = o.fighting;
+      t.phantom = o.decoy === true;
       t.select = o.kind === 'envoy' ? null : o.kind === 'scout'
         ? { kind: 'scout', id: o.missionKind === 'explore' ? `q:${o.quarter}` : o.missionKind === 'chest' ? `c:${o.siteId}` : String(o.targetSeat) }
         : { kind: 'army', id: o.id };
@@ -262,6 +285,7 @@ export class Movers {
       t.position = s.position;
       t.velocity = s.velocity;
       this.followRoadOf(t, s.position, s.velocity);
+      t.phantom = s.kind === 'army' && s.fake === true && s.realSeat == null ? true : t.phantom;
       t.receivedAt = now;
       alive.add(t.key);
     }
@@ -270,7 +294,13 @@ export class Movers {
       // Out of sight (or home): it simply is not there any more.
       trace('track-removed', key, t.fighting ? 'while fighting' : '');
       this.remember(t);
-      for (const s of t.sprites) s.destroy();
+      // A phantom army of the Shadow that has just come apart (at the gate it marched on, or on meeting a real army) does not blink out: its
+      // soldiers fade and drift up like smoke. Known phantoms (our own, or seen through by the Oracle), and an army that marched up to OUR gate
+      // and is gone without a battle: that is what a phantom does (a real one's column is taken over by the battle before it could get here).
+      const phantom = !t.scout && !t.fighting && !this.inReplay(t.shown) && t.sprites.some((s) => s.visible)
+        && (t.phantom === true || (key.startsWith('seen:') && this.atOwnGate?.(t.shown) === true));
+      if (phantom) this.dissolve(t);
+      else for (const s of t.sprites) s.destroy();
       this.labels.remove(`army:${key}`);
       t.zone?.destroy();
       this.tracks.delete(key);
