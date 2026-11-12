@@ -68,6 +68,16 @@ const run = async (lang) => {
   try {
     await bl.goto(URL); await bl.waitFor("document.querySelector('#quick')", 40);
     await audit('home');
+    // counted texts: "1 village" / "5 villages" in every language (the plural marker of the dictionary), no leftover braces or bars, and, where the language has plural forms, a different
+    // text for 1 and for 5 (a text that reads the same for both is the "at least 1 villages" mistake)
+    row.screens['plural'] = JSON.parse(await bl.js(`(async () => { const { t, lang } = await import('/src/i18n/index.ts'); const KEYS = ["En çok {0} asker kaybet", "En çok {0} savaş kaybet", "En az {0} savaş kazan", "En az {0} kale düşür", "En az {0} düşman öldür", "En az {0} köy yağmala", "En az {0} haydut kampı temizle", "En az {0} sandık al", "En az {0} gözcü gönder", "En az {0} gözcü raporu al", "En az {0} ulak ulaştır", "En az {0} hayalet ordu gönder", "En az {0} askere rüşvet ver", "En az {0} haydut kampı kirala", "Kılık değiştirerek en az {0} kez gönder", "{0} yıldız kazandın.", "Gözcün döndü: {0} raporu", "En az {0} oyuncu gerekiyor. Oda kodunu paylaş.", "En az {0} oyuncu gerekiyor (botlar da sayılır).", "Hayalet ordu en fazla {0} kişilik olabilir.", "Aynı anda en fazla {0} hayalet ordu yürüyebilir.", "Savaşa en az {1} asker lazım ({0}/{1}): demirhaneye tıkla, silah sırala."]; const out = [];
+      const FORMS = ['zh-CN', 'zh-TW', 'ja', 'ko', 'tr'].includes(lang) ? 0 : 1;
+      for (const k of KEYS) {
+        for (const n of [0, 1, 2, 5, 11, 21, 22]) { const s = t(k, n, n); if (/[{}|]|undefined/.test(s)) out.push({ kind: 'plural', el: 'n=' + n, text: s.slice(0, 80) }); }
+        const strip = (s) => s.replace(/\\d+/g, 'N');
+        if (FORMS && strip(t(k, 1, 1)) === strip(t(k, 5, 5)) && !/^Zum Start|Banditenlager|Späher|Boten|-mal|au moins 1 fois/.test(t(k, 1, 1)) /* nouns that do not change */) out.push({ kind: 'plural', el: '1 = 5', text: t(k, 1, 1).slice(0, 80) });
+      }
+      return JSON.stringify(out); })()`));
     await bl.js(`(async () => { const n = keepfallNet; await n.createRoom('Eren'); for (const l of ['medium', 'easy', 'hard']) await n.addBot(l); return 1; })()`);
     await bl.waitFor("document.querySelector('.screen.lobby')", 20); await sleep(1200);
     await audit('lobby'); await shot('lobby', 1920, 1080);
@@ -115,15 +125,15 @@ const run = async (lang) => {
 for (const l of langs) { const row = await run(l); results.push(row); const n = Object.values(row.screens).reduce((a, x) => a + x.length, 0); console.log(l, n, 'problems', row.error ?? ''); }
 
 // the report: a problem that English has too is the design as it is; what counts is what a language adds to it
-const SCREENS = ['home', 'lobby', 'match', 'forge-window', 'castle-soldiers', 'castle-hire', 'castle-growth', 'castle-defense', 'farm-window', 'kingdom-panel', 'oracle-deck', 'guide', 'settings'];
+const SCREENS = ['home', 'lobby', 'match', 'forge-window', 'castle-soldiers', 'castle-hire', 'castle-growth', 'castle-defense', 'farm-window', 'kingdom-panel', 'oracle-deck', 'guide', 'settings', 'plural'];
 const base = results.find((r) => r.lang === 'en');
 const key = (x) => x.kind + '|' + x.el;
 const baseKeys = (scr) => new Set((base?.screens[scr] ?? []).map(key));
-const fresh = (r, scr) => (r.screens[scr] ?? []).filter((x) => x.kind === 'raw-id' || x.kind === 'word-split' || r.lang === 'en' || !baseKeys(scr).has(key(x))); // (a raw id is never "the design as it is")
+const fresh = (r, scr) => (r.screens[scr] ?? []).filter((x) => x.kind === 'raw-id' || x.kind === 'word-split' || x.kind === 'plural' || r.lang === 'en' || !baseKeys(scr).has(key(x))); // (a raw id is never "the design as it is")
 const lines = ['# Dil yerleşim denetimi (masaüstü ' + W + 'x' + H + ')', '', 'Otomatik: `node tools/lang-audit.mjs`. Sayılar: İngilizcede olmayan, o dilin eklediği taşma/kırpılma sayısı (kutuya sığmayan metin, üst kutu tarafından kesilen öğe, ekran dışı). İngilizcenin kendi sayıları tasarım tabanı olarak ayrı satırdadır. Ekran görüntüleri `art/shots/langs/` (git dışı).', '', '| Dil | ' + SCREENS.join(' | ') + ' |', '|---|' + '---|'.repeat(SCREENS.length)];
 for (const r of results) lines.push(`| ${r.lang}${r.lang === 'en' ? ' (taban)' : ''}${r.error ? ' (hata: ' + r.error + ')' : ''} | ` + SCREENS.map((sc) => (r.screens[sc] ? fresh(r, sc).length : '–')).join(' | ') + ' |');
 lines.push('', '## Ayrıntı (dilin eklediği)', '');
-for (const r of results) for (const sc of SCREENS) { const list = fresh(r, sc); if (list.length && r.lang !== 'en') { lines.push(`### ${r.lang} · ${sc}`); for (const x of list.slice(0, 14)) lines.push(`- ${x.kind}: \`${x.el}\` "${x.text}" ` + (x.kind === 'word-split' ? `bölünen kelime` : x.id ? `ham kimlik: ${x.id}` : x.box ? `kutu ${x.box.join('x')} içerik ${x.content.join('x')}` : `konum ${x.rect.join(',')}`)); if (list.length > 14) lines.push(`- … ${list.length - 14} tane daha`); lines.push(''); } }
+for (const r of results) for (const sc of SCREENS) { const list = fresh(r, sc); if (list.length && r.lang !== 'en') { lines.push(`### ${r.lang} · ${sc}`); for (const x of list.slice(0, 14)) lines.push(`- ${x.kind}: \`${x.el}\` "${x.text}" ` + (x.kind === 'plural' ? `çoğul: ${x.el}` : x.kind === 'word-split' ? `bölünen kelime` : x.id ? `ham kimlik: ${x.id}` : x.box ? `kutu ${x.box.join('x')} içerik ${x.content.join('x')}` : `konum ${x.rect.join(',')}`)); if (list.length > 14) lines.push(`- … ${list.length - 14} tane daha`); lines.push(''); } }
 writeFileSync(MD, lines.join('\r\n'), 'utf8');
 console.log('wrote', MD);
 process.exit(0);

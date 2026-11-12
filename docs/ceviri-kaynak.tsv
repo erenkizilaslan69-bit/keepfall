@@ -34,25 +34,25 @@
 34	Meydan okumalar	Challenges
 35	Kazan	Win
 36	Savaş başladıktan sonra {0} içinde kazan	Win within {0} of the war's start
-37	En çok {0} asker kaybet	Lose at most {0} soldiers
+37	En çok {0} asker kaybet	Lose at most {0} {0:soldier|soldiers}
 38	Hiç savaş kaybetme	Lose no battle
-39	En çok {0} savaş kaybet	Lose at most {0} battles
+39	En çok {0} savaş kaybet	Lose at most {0} {0:battle|battles}
 40	Nüfusun en az {0} olsun	End with a population of at least {0}
-41	En az {0} savaş kazan	Win at least {0} battles
-42	En az {0} kale düşür	Bring down at least {0} castles
-43	En az {0} düşman öldür	Kill at least {0} enemies
+41	En az {0} savaş kazan	Win at least {0} {0:battle|battles}
+42	En az {0} kale düşür	Bring down at least {0} {0:castle|castles}
+43	En az {0} düşman öldür	Kill at least {0} {0:enemy|enemies}
 44	En az {0} altın kazan	Gain at least {0} gold
-45	En az {0} köy yağmala	Plunder at least {0} villages
-46	En az {0} haydut kampı temizle	Clear at least {0} bandit camps
-47	En az {0} sandık al	Take at least {0} chests
-48	En az {0} gözcü gönder	Send at least {0} scouts
-49	En az {0} gözcü raporu al	Bring home at least {0} scout reports
-50	En az {0} ulak ulaştır	Deliver at least {0} envoys
-51	En az {0} hayalet ordu gönder	Send at least {0} phantom armies
+45	En az {0} köy yağmala	Plunder at least {0} {0:village|villages}
+46	En az {0} haydut kampı temizle	Clear at least {0} {0:bandit camp|bandit camps}
+47	En az {0} sandık al	Take at least {0} {0:chest|chests}
+48	En az {0} gözcü gönder	Send at least {0} {0:scout|scouts}
+49	En az {0} gözcü raporu al	Bring home at least {0} {0:scout report|scout reports}
+50	En az {0} ulak ulaştır	Deliver at least {0} {0:envoy|envoys}
+51	En az {0} hayalet ordu gönder	Send at least {0} {0:phantom army|phantom armies}
 52	Sahte bir ordu tablosu yaz	Write a false army table
-53	En az {0} askere rüşvet ver	Bribe at least {0} soldiers
-54	En az {0} haydut kampı kirala	Hire at least {0} bandit camps
-55	Kılık değiştirerek en az {0} kez gönder	Send in disguise at least {0} times
+53	En az {0} askere rüşvet ver	Bribe at least {0} {0:soldier|soldiers}
+54	En az {0} haydut kampı kirala	Hire at least {0} {0:bandit camp|bandit camps}
+55	Kılık değiştirerek en az {0} kez gönder	Send in disguise at least {0} {0:time|times}
 56	{0} / 3 yıldız	{0} / 3 stars
 57	1 rakip bot	1 rival bot
 58	{0} rakip bot	{0} rival bots
@@ -66,7 +66,7 @@
 66	Tek kişilik, sabit maçlar: her biri tek bir fikri öğretir. Hedefleri yap, yıldız topla.	Solo matches, fixed for everyone: each teaches one idea. Reach the goals, collect stars.
 67	Bu sefer olmadı — tekrar dene!	Not this time — try again!
 68	Üç yıldız! Kusursuz.	Three stars! Flawless.
-69	{0} yıldız kazandın.	You earned {0} stars.
+69	{0} yıldız kazandın.	You earned {0} {0:star|stars}.
 70	Yeni en iyi sonucun!	A new best for you!
 71	İpucu	Tip
 72	Ana menüye dön	Back to Main Menu
@@ -165,7 +165,7 @@
 165	Hazırım ✓	Ready ✓
 166	Hazırım	Ready
 167	Herkes hazır olunca oda sahibi maçı başlatır.	The host starts the match once everyone is ready.
-168	En az {0} oyuncu gerekiyor. Oda kodunu paylaş.	Need at least {0} players to start. Share the room code.
+168	En az {0} oyuncu gerekiyor. Oda kodunu paylaş.	Need at least {0} {0:player|players} to start. Share the room code.
 169	{0} oyuncu henüz hazır değil.	Waiting for {0} {0:player|players}…
 170	Herkes hazır.	Everyone is ready.
 171	Olmadı.	Something went wrong.
@@ -416,7 +416,7 @@
 416	Bu maçta deste yok.	There are no decks in this match.
 417	Destede tam {0} farklı birlik olmalı.	The deck must hold exactly {0} different units.
 418	Maçı sadece odayı kuran başlatabilir.	Only the host can start the match.
-419	En az {0} oyuncu gerekiyor (botlar da sayılır).	You need at least {0} players to start (bots count).
+419	En az {0} oyuncu gerekiyor (botlar da sayılır).	You need at least {0} {0:player|players} to start (bots count).
 420	Herkes hazır değil.	Not everyone is ready.
 421	Bot eklemek sadece odayı kuran için.	Only the host can add bots.
 422	Boş koltuk yok.	There is no empty seat.
@@ -487,9 +487,9 @@
 487	Hayalet ordu savaş fazında yürür.	A phantom army marches in the war phase.
 488	Kendi kalene gönderilmez.	It cannot be sent to your own castle.
 489	Hayalet ordunda kimse yok.	Your phantom army has nobody in it.
-490	Hayalet ordu en fazla {0} kişilik olabilir.	A phantom army can hold at most {0} soldiers.
+490	Hayalet ordu en fazla {0} kişilik olabilir.	A phantom army can hold at most {0} {0:soldier|soldiers}.
 491	Gölgeler dinleniyor: {0} sn.	The shadows are resting: {0}s.
-492	Aynı anda en fazla {0} hayalet ordu yürüyebilir.	At most {0} phantom armies can march at a time.
+492	Aynı anda en fazla {0} hayalet ordu yürüyebilir.	At most {0} {0:phantom army|phantom armies} can march at a time.
 493	Hayalet ordu için {0} altın gerekiyor.	A phantom army needs {0} gold.
 494	Rüşvet yalnız Tüccar Cumhuriyeti'nin.	Bribery belongs to the Merchant Republic alone.
 495	Rüşvet verebileceğin, sana yaklaşan bir ordu görmüyorsun.	You see no approaching army you could bribe.
@@ -560,7 +560,7 @@
 560	Kaleme dön	My Castle
 561	Kamerayı ormanın ortasına getirir	Brings the camera to the middle of the forest
 562	Orman	Forest
-563	Gözcün döndü: {0} raporu	Your scout is back: {0} report
+563	Gözcün döndü: {0} raporu	Your scout is back: {0} {0:report|reports}
 564	+{0} altın kasaya girdi	+{0} gold added to the treasury
 565	Keşif bitti: ormanın bu bölgesindeki yerler haritada	Exploration done: the places of this part of the forest are on the map
 566	Açlık! Yemek bitti, tüm üretim yarıya indi.	Hunger! The food has run out, all production is halved.
@@ -845,7 +845,7 @@
 845	Silah sırala: +{0}	Order weapons: press +{0}
 846	Silahları askere çevirmek için +{0}'e bas.	Press +{0} to turn weapons into soldiers.
 847	Silahları askere çevir ({0}/{1}): kaleye tıkla.	Turn weapons into soldiers ({0}/{1}): click your castle.
-848	Savaşa en az {1} asker lazım ({0}/{1}): demirhaneye tıkla, silah sırala.	You need at least {1} soldiers for the war ({0}/{1}): click the blacksmith and order weapons.
+848	Savaşa en az {1} asker lazım ({0}/{1}): demirhaneye tıkla, silah sırala.	You need at least {1} {1:soldier|soldiers} for the war ({0}/{1}): click the blacksmith and order weapons.
 849	Askerlerin hazırlanıyor… birazdan saldırabilirsin.	Your soldiers are getting ready… you can attack in a moment.
 850	Herkesi doyurmak için tarlaya yine tıkla ({0}/{1} çiftçi).	Click the farm again to feed everyone ({0}/{1} farmers).
 851	Tarlaya bir işçi daha ekle: + ({0}/{1} çiftçi)	Add another worker to the farm: press + ({0}/{1} farmers)

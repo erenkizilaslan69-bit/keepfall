@@ -17,7 +17,7 @@ const source = new Map(allRows.filter(([, v]) => v.tr));
 const dir = join(ROOT, 'docs', 'ceviri-parca');
 const rows = new Map(COLS.map((c) => [c, new Map()]));
 let warn = 0;
-const holes = (s) => [...s.matchAll(/\{(\d+)(?::[^{}]*)?\}/g)].map((m) => m[1]).sort().join(',');
+const holes = (s) => [...new Set([...s.matchAll(/\{(\d+)(?::[^{}]*)?\}/g)].map((m) => m[1]))].sort().join(','); // (a {0:one|other} marker names the same hole as {0})
 const tags = (s) => (s.match(/<\/?[a-z][^>]*>/gi) || []).join('');
 for (const f of existsSync(dir) ? readdirSync(dir).filter((x) => x.endsWith('.tsv')).sort() : []) {
   const lines = readFileSync(join(dir, f), 'utf8').split(/\r?\n/);

@@ -42,7 +42,7 @@ const extra = existsSync(EXTRA_SRC) ? JSON.parse(readFileSync(EXTRA_SRC, 'utf8')
 const SOURCE = { ...extra, ...EN_ALL }; // Turkish key → English
 const keys = Object.keys(SOURCE);
 
-const holes = (s) => [...s.matchAll(/\{(\d+)(?::[^{}]*)?\}/g)].map((m) => m[1]).sort().join(',');
+const holes = (s) => [...new Set([...s.matchAll(/\{(\d+)(?::[^{}]*)?\}/g)].map((m) => m[1]))].sort().join(','); // (a {0:one|other} marker names the same hole as {0})
 const tags = (s) => (s.match(/<\/?[a-z][^>]*>/gi) || []).join('');
 const results = {};
 for (const l of TRANSLATED) {
