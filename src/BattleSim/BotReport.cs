@@ -12,6 +12,8 @@ public sealed record BotReportOptions
     public int Players { get; init; } = 2;
     /// <summary>15 or 30 (the match modes).</summary>
     public int Minutes { get; init; } = 15;
+    /// <summary>"hizli" | "standart" | "uzun": plays the match mode of the config's mode table (overrides Minutes' lengths).</summary>
+    public string? MatchMode { get; init; }
     /// <summary>"bekleyen": every match has one Orta bot that only waits (builds, defends) against Orta bots that play normally; "orta", "kolay" or "karisik" (a mix of both, seats rotated from match to match).</summary>
     public string Difficulty { get; init; } = "karisik";
     public int Seed { get; init; } = 1;
@@ -39,12 +41,14 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
         int ChestsTaken, int VillagesPlundered, int CampsCleared, int BigCampsCleared, int Chests, int Villages, int Camps, int BigCamps, double FirstEliminationAt = double.NaN, int Jumps = 0);
 
     private readonly List<string> _findings = [];
+    private Keepfall.Core.Economy.MatchMode? Mode => options.MatchMode switch { "hizli" => Keepfall.Core.Economy.MatchMode.Quick, "standart" => Keepfall.Core.Economy.MatchMode.Standard, "uzun" => Keepfall.Core.Economy.MatchMode.Long, _ => null };
+    private double PrepSeconds => Mode is { } m ? rules.Match.ModeOf(m).PrepSeconds : options.Minutes == 30 ? rules.Match.LongModePrepSeconds : rules.Match.ShortModePrepSeconds;
+    private double WarSeconds => Mode is { } m ? rules.Match.ModeOf(m).WarSeconds : options.Minutes == 30 ? rules.Match.LongModeWarSeconds : rules.Match.ShortModeWarSeconds;
 
     public void Run()
     {
         var clock = Stopwatch.StartNew();
-        double prep = options.Minutes == 30 ? rules.Match.LongModePrepSeconds : rules.Match.ShortModePrepSeconds;
-        double war = options.Minutes == 30 ? rules.Match.LongModeWarSeconds : rules.Match.ShortModeWarSeconds;
+        double prep = PrepSeconds, war = WarSeconds;
         Console.WriteLine($"Bot maçları: {options.Matches} maç · {options.Players} oyuncu · {options.Minutes} dk ({prep / 60:0}+{war / 60:0}) · zorluk: {options.Difficulty} · tohum: {options.Seed}");
         Console.WriteLine();
 
@@ -85,7 +89,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
     {
         int seed = options.Seed * 100_003 + index;
         var levels = Levels(index);
-        var room = BotMatch.Create(rules, levels, prep, war, seed);
+        var room = Mode is { } mode ? BotMatch.Create(rules, levels, mode, seed) : BotMatch.Create(rules, levels, prep, war, seed);
         var game = room.Game!;
         var host = new BotHost.BotHost(rules, seed);
         if (options.Difficulty == "bekleyen") host.PassiveSeats.Add(room.Players[index % room.Players.Count].Seat);
@@ -163,7 +167,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
         int stalled = matches.Count(m => m.SiegeBattles == 0);
         Console.WriteLine($"   Hiç kale saldırısı olmayan maç: {stalled}/{matches.Length} ({Pct(stalled / (double)matches.Length)})");
         var firsts = matches.Where(m => !double.IsNaN(m.FirstEliminationAt)).ToList();
-        double warStartAt = options.Minutes == 30 ? rules.Match.LongModePrepSeconds : rules.Match.ShortModePrepSeconds;
+        double warStartAt = PrepSeconds;
         Console.WriteLine($"   İlk elemenin zamanı (savaş başlangıcından): {(firsts.Count == 0 ? "—" : F((firsts.Average(m => m.FirstEliminationAt) - warStartAt) / 60) + " dk")} ({firsts.Count} maçta eleme oldu)");
         Console.WriteLine($"   Işınlanma (süreklilik) ihlali: {matches.Sum(m => m.Jumps)} (hedef 0; ihlalli maç: {matches.Count(m => m.Jumps > 0)})");
         if (options.Difficulty == "bekleyen")
@@ -289,7 +293,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
         Heading("Özet");
         int stalled = matches.Count(m => m.SiegeBattles == 0);
         if (stalled > 0.5 * matches.Length) _findings.Add($"Maçların %{100.0 * stalled / matches.Length:0}'inde hiç kale saldırısı olmadı (botlar birbirine saldırmıyor).");
-        if (matches.Average(m => m.Duration) < 0.5 * (options.Minutes * 60)) _findings.Add("Maçlar süresinin yarısından önce bitiyor.");
+        if (matches.Average(m => m.Duration) < 0.5 * ((PrepSeconds + WarSeconds))) _findings.Add("Maçlar süresinin yarısından önce bitiyor.");
         if (_findings.Count == 0) Console.WriteLine("  Eşik dışında kalan bir şey yok.");
         foreach (var f in _findings) Console.WriteLine($"  ! {f}");
         Console.WriteLine();
@@ -308,7 +312,7 @@ public sealed class BotReport(GameRules rules, BotReportOptions options)
         double aggressorWins = lopsided.Count == 0 ? double.NaN
             : lopsided.Sum(m => { var top = m.Seats.OrderByDescending(s => s.Bot.GetValueOrDefault("attacks")).First(); return top.Won ? 1.0 / m.Seats.Count(x => x.Won) : 0; }) / lopsided.Count;
         var first = seats.Where(s => s.Bot.GetValueOrDefault("firstAttackAt") > 0).Select(s => s.Bot["firstAttackAt"]).ToList();
-        double warStart = options.Minutes == 30 ? rules.Match.LongModePrepSeconds : rules.Match.ShortModePrepSeconds;
+        double warStart = PrepSeconds;
         var fields = new[]
         {
             Pct(MediumShare()),

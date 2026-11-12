@@ -11,6 +11,16 @@
     "prepSpeed": 1.6,
     "longModeMinutes": 22.5,
     "longModePrepMinutes": 12.5,
+    // Maç modları (lobide ev sahibi seçer). Hızlı = hep var olan 5 dk + 10 dk (ekonomi 1,6 kat hızlı: 8 dk'lık hazırlığın sonucu 5'e sığar).
+    // Standart ve Uzun düz hızda (prepSpeed 1) çalışır: 10 ve 15 dk'lık hazırlık, Hızlı'nın eşdeğer 8 dk'sından sırasıyla ~%25 ve ~%88 fazla
+    // üretim demek, yani daha büyük ordu ve daha derin ekonomi; hızlandırma YOK çünkü uzun hazırlığın amacı oyuncuya düşünme/planlama payı vermek.
+    // noScoutLastPrepSeconds: "son 60 sn gözcü yok" kuralı saat saniyesidir; Hızlı'da 60/1,6 = 37,5, düz hızda 60.
+    // Mevcut Hızlı değerleri (match.prepSpeed, shortMode*) ve rehberli maç (guidedPrepSeconds 480, guidedShieldSeconds 240) AYNEN kalır.
+    "modes": {
+      "quick":    { "prepMinutes": 5,  "prepSpeed": 1.6, "warMinutes": 10, "noScoutLastPrepSeconds": 37.5 },
+      "standard": { "prepMinutes": 10, "prepSpeed": 1.0, "warMinutes": 10, "noScoutLastPrepSeconds": 60 },
+      "long":     { "prepMinutes": 15, "prepSpeed": 1.0, "warMinutes": 10, "noScoutLastPrepSeconds": 60 }
+    },
     // Sunucu bu aralıkla tick atar (sn); üretim ve tüketim her tick'te hesaplanır.
     "serverTickSeconds": 1,
     // Elenen oyuncu önce spectatorWaitSeconds oyun saniyesi süren bir geçiş ekranı görür, sonra tüm haritayı (sissiz)

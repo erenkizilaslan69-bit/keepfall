@@ -100,3 +100,11 @@ Listede kalan iş yok (A–G bitti). Sabah bakılacaklar aşağıda.
 | `ec5da88` | F: ana menü |
 | `17ebcee` | G: kalan metinler 13 dilde |
 | (bu commit) | G: test turu, `docs/ui-audit-gece.md`, sabah raporu, devir notu |
+
+---
+## Gece turu 2: modlar, XP, görev takibi (2026-11-12)
+- [x] A1/A2/A3 Çekirdek: `match.modes` tablosu, `MatchMode`, `Room.SetMode`, hub `SetMode`, bot hızı maçtan, 10 yeni test (442). Ölçüm: `docs/maç-modlari.md`.
+- [ ] A4/A5 Lobi seçici, açık oyunlar listesi, Steam lobi verisi, Rich Presence, 15 dil
+- [ ] B XP/seviye/ödül, profil, maç sonu, fuzz
+- [ ] C Görev takibi
+- [ ] D Testler + rapor

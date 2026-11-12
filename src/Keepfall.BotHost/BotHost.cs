@@ -44,6 +44,7 @@ public sealed class BotHost(GameRules rules, int seed)
             if (room.IsEliminated(player)) continue;
             if (!_bots.TryGetValue(player.Seat, out var bot))
                 _bots[player.Seat] = bot = new Bot(rules, level, player.Seat, MixSeed(seed, player.Seat), PassiveSeats.Contains(player.Seat));
+            bot.PrepPace = game.PrepSpeed;
             if (!bot.IsDue(game.ElapsedSeconds)) continue;
 
             _layout ??= MapViewMapper.LayoutOf(room);

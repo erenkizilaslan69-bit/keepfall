@@ -31,6 +31,16 @@ public sealed class BalanceConfig
     public Dictionary<string, Dictionary<string, JsonElement>> Counters { get; set; } = [];
 }
 
+public sealed class ModeConfig
+{
+    public double PrepMinutes { get; set; }
+    /// <summary>Economy speed during the preparation (1: plain).</summary>
+    public double PrepSpeed { get; set; } = 1;
+    public double WarMinutes { get; set; } = 10;
+    /// <summary>No scouts in the last this many seconds of the preparation (clock seconds); absent: scouting.noScoutLastPrepSeconds.</summary>
+    public double? NoScoutLastPrepSeconds { get; set; }
+}
+
 public sealed class MatchConfig
 {
     public double ShortModeMinutes { get; set; } = 15;
@@ -52,6 +62,8 @@ public sealed class MatchConfig
     public double PrepSpeed { get; set; } = 1;
     /// <summary>The guided first match (tutorial): preparation length in game seconds, plain economy speed (see MatchRules.GuidedPrepSeconds).</summary>
     public double GuidedPrepSeconds { get; set; } = 480;
+    /// <summary>The match modes the host picks from: quick / standard / long (see ModeConfig). Absent: only the short mode.</summary>
+    public Dictionary<string, ModeConfig>? Modes { get; set; }
     public int StartingPopulation { get; set; } = 10;
     public ProductionConfig StartingResources { get; set; } = new();
 }
@@ -397,6 +409,12 @@ public static class BalanceConfigLoader
             errors.Add("match.shortModePrepMinutes 0 ile shortModeMinutes arasında olmalı.");
         if (mc.LongModePrepMinutes <= 0 || mc.LongModePrepMinutes >= mc.LongModeMinutes)
             errors.Add("match.longModePrepMinutes 0 ile longModeMinutes arasında olmalı.");
+        if (mc.Modes is not null)
+            foreach (var (name, m) in mc.Modes)
+            {
+                if (!Enum.TryParse<MatchMode>(name, true, out _)) errors.Add($"match.modes.{name}: bilinmeyen mod (quick/standard/long).");
+                if (m.PrepMinutes <= 0 || m.WarMinutes <= 0 || m.PrepSpeed <= 0) errors.Add($"match.modes.{name}: süreler ve hız sıfırdan büyük olmalı.");
+            }
         if (mc.ServerTickSeconds <= 0) errors.Add("match.serverTickSeconds sıfırdan büyük olmalı.");
         if (mc.SpectatorDelaySeconds < 0) errors.Add("match.spectatorDelaySeconds negatif olamaz.");
         if (mc.SpectatorWaitSeconds < 0) errors.Add("match.spectatorWaitSeconds negatif olamaz.");
@@ -557,7 +575,8 @@ public static class BalanceConfigLoader
                 mc.ShortModePrepMinutes * 60, mc.LongModePrepMinutes * 60,
                 (mc.ShortModeMinutes - mc.ShortModePrepMinutes) * 60,
                 (mc.LongModeMinutes - mc.LongModePrepMinutes) * 60,
-                mc.ServerTickSeconds, mc.StartingPopulation, sr.Food, sr.Wood, sr.Iron, mc.SpectatorDelaySeconds, mc.SpectatorWaitSeconds, mc.SpectatorMinSeconds, mc.ArmSeconds, mc.GuidedShieldSeconds, mc.PrepSpeed, mc.GuidedPrepSeconds),
+                mc.ServerTickSeconds, mc.StartingPopulation, sr.Food, sr.Wood, sr.Iron, mc.SpectatorDelaySeconds, mc.SpectatorWaitSeconds, mc.SpectatorMinSeconds, mc.ArmSeconds, mc.GuidedShieldSeconds, mc.PrepSpeed, mc.GuidedPrepSeconds,
+                mc.Modes?.ToDictionary(kv => Enum.Parse<MatchMode>(kv.Key, true), kv => new ModeRules(kv.Value.PrepMinutes * 60, kv.Value.PrepSpeed, kv.Value.WarMinutes * 60, kv.Value.NoScoutLastPrepSeconds ?? -1))),
             new EconomyRules(
                 e.WorkerFoodPerMinute, e.SoldierFoodPerMinute, e.StarvationMultiplier,
                 e.NewPersonBaseCost, e.NewPersonCostGrowth, e.NewPersonBasePopulation, e.GrowthReserveSeconds,

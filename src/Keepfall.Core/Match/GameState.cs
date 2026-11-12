@@ -90,9 +90,14 @@ public sealed partial class GameState
     /// <param name="corners">Which corner of the map each player gets; default: <see cref="AssignCorners"/>.</param>
     public GameState(GameRules rules, IEnumerable<string> playerKeys, double? prepSeconds = null,
         double? warSeconds = null, Random? rng = null, IReadOnlyDictionary<string, Corner>? corners = null, int? forestSeed = null,
-        IReadOnlyDictionary<string, IReadOnlyList<string>>? decks = null, IReadOnlyDictionary<string, string>? factions = null)
+        IReadOnlyDictionary<string, IReadOnlyList<string>>? decks = null, IReadOnlyDictionary<string, string>? factions = null,
+        MatchMode? mode = null)
     {
         Rules = rules;
+        // A mode (quick / standard / long) brings its own preparation, economy speed, war length and scouting lock; an explicit length (a test, a challenge, the guided match) wins.
+        var modeRules = mode is { } md && prepSeconds is null ? rules.Match.ModeOf(md) : null;
+        Mode = mode;
+        _noScoutLast = modeRules is { NoScoutLastPrepSeconds: >= 0 } ? modeRules.NoScoutLastPrepSeconds : rules.Scouting.NoScoutLastPrepSeconds;
         if (factions is not null) foreach (var (k, f) in factions) _factions[k] = f;
         // Its own randomness, so seeded matches play their battles the same whatever the forest looks like.
         ForestSites = ForestLayout.Generate(WorldMap.Standard, rules.Forest, new Random(forestSeed ?? RandomNumberGenerator.GetInt32(int.MaxValue)));
@@ -102,10 +107,10 @@ public sealed partial class GameState
                 .ToDictionary(kv => rules.FindUnit(kv.Key)!, kv => kv.Value));
         _rng = rng ?? new Random(RandomNumberGenerator.GetInt32(int.MaxValue));
         _simulator = new BattleSimulator(rules);
-        PrepSeconds = prepSeconds ?? rules.Match.ShortModePrepSeconds;
+        PrepSeconds = prepSeconds ?? modeRules?.PrepSeconds ?? rules.Match.ShortModePrepSeconds;
         // The faster preparation applies to the standard one (a match, a bot measurement); a test or tool that asks for its own length gets the plain economy.
-        _prepSpeed = prepSeconds is null || Math.Abs(prepSeconds.Value - rules.Match.ShortModePrepSeconds) < 1e-9 ? Math.Max(1e-9, rules.Match.PrepSpeed) : 1;
-        WarSeconds = warSeconds ?? rules.Match.ShortModeWarSeconds;
+        _prepSpeed = modeRules is not null ? Math.Max(1e-9, modeRules.PrepSpeed) : prepSeconds is null || Math.Abs(prepSeconds.Value - rules.Match.ShortModePrepSeconds) < 1e-9 ? Math.Max(1e-9, rules.Match.PrepSpeed) : 1;
+        WarSeconds = warSeconds ?? modeRules?.WarSeconds ?? rules.Match.ShortModeWarSeconds;
         _players = playerKeys.Distinct().ToDictionary(k => k, _ => new PlayerEconomy(new Castle(rules)));
         if (decks is not null)
             foreach (var (key, ids) in decks)
@@ -145,6 +150,11 @@ public sealed partial class GameState
     public MatchPhase Phase { get; private set; } = MatchPhase.Preparation;
     public double PrepSeconds { get; }
     private readonly double _prepSpeed;
+    private readonly double _noScoutLast;
+    /// <summary>The mode this match was started in (null: an explicit length).</summary>
+    public MatchMode? Mode { get; }
+    /// <summary>How many times faster than the clock the castle's economy runs during the preparation (1: plain). Public: it only says the rules of the match.</summary>
+    public double PrepSpeed => _prepSpeed;
     public double WarSeconds { get; }
     public double ElapsedSeconds { get; private set; }
     /// <summary>Time left in the current phase.</summary>
@@ -545,12 +555,12 @@ public sealed partial class GameState
 
     /// <summary>The last stretch of the preparation (scouting.noScoutLastPrepSeconds): nobody can send a scout until the war begins.</summary>
     public bool ScoutingLocked =>
-        Phase == MatchPhase.Preparation && Rules.Scouting.NoScoutLastPrepSeconds > 0 && PrepSeconds - ElapsedSeconds <= Rules.Scouting.NoScoutLastPrepSeconds + 1e-9;
+        Phase == MatchPhase.Preparation && _noScoutLast > 0 && PrepSeconds - ElapsedSeconds <= _noScoutLast + 1e-9;
 
     /// <summary>One scout at a time (scouting.maxScouts): a new one cannot leave until the one out is home again.</summary>
     private CommandResult ScoutsAvailable(string from, bool envoy = false)
     {
-        if (ScoutingLocked && !envoy) return CommandResult.Fail($"Hazırlığın son {Rules.Scouting.NoScoutLastPrepSeconds:0} saniyesinde gözcü gönderilemez; savaş başlayınca gönderilebilir.");
+        if (ScoutingLocked && !envoy) return CommandResult.Fail($"Hazırlığın son {_noScoutLast:0} saniyesinde gözcü gönderilemez; savaş başlayınca gönderilebilir.");
         var away = _missions.Where(m => m.From == from).ToList();
         if (away.Count < Rules.Scouting.MaxScouts) return CommandResult.Success;
         return CommandResult.Fail($"Gözcün henüz dönmedi (yaklaşık {Math.Ceiling(away.Min(m => m.SecondsLeft))} sn).");

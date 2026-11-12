@@ -39,6 +39,8 @@ public sealed class Bot
     public BotDifficulty Difficulty { get; }
     public int Seat { get; }
     public BotStats Stats { get; } = new();
+    /// <summary>How many times faster than the clock the preparation's economy runs in this match (the match mode); null: the config's quick-mode speed.</summary>
+    public double? PrepPace { get; set; }
     public BotMemory Memory => _memory;
 
     public bool IsDue(double now) => now + 1e-9 >= _nextThink;
@@ -51,7 +53,7 @@ public sealed class Bot
         foreach (var module in _modules) module.Think(ctx);
         var commands = ctx.Decide(_level.Commands);
         // In a faster preparation (match.prepSpeed) a bot thinks as much more often: its thinking time runs on the preparation's clock.
-        double pace = input.Now < input.Castle.PrepSeconds ? Math.Max(1, _rules.Match.PrepSpeed) : 1;
+        double pace = input.Now < input.Castle.PrepSeconds ? Math.Max(1, PrepPace ?? _rules.Match.PrepSpeed) : 1;
         _nextThink = input.Now + (_level.ThinkMin + _rng.NextDouble() * (_level.ThinkMax - _level.ThinkMin)) / pace;
         Stats.Count("thinks");
         Stats.Count("commands", commands.Count);

@@ -33,6 +33,8 @@ public sealed record RoomOptions
     public bool AllowSpeedControl { get; init; }
     public double? PrepSeconds { get; init; }
     public double? WarSeconds { get; init; }
+    /// <summary>The match mode a new room starts with (null: quick, the preparation the game always had).</summary>
+    public Keepfall.Core.Economy.MatchMode? Mode { get; init; }
     /// <summary>Tests and the bot simulator: makes the whole match (corners, battles, forest) follow from this number. Null: random.</summary>
     public int? Seed { get; init; }
     /// <summary>Tests: a different forest with everything else (corners, battles) as <see cref="Seed"/> makes it.</summary>
@@ -114,6 +116,7 @@ public sealed class Room
         Code = code;
         _rules = rules;
         Options = options ?? new RoomOptions();
+        Mode = Options.Mode ?? Keepfall.Core.Economy.MatchMode.Quick;
     }
 
     public string Code { get; }
@@ -357,6 +360,17 @@ public sealed class Room
         return CommandResult.Success;
     });
 
+    /// <summary>The match length the host chose in the lobby (quick / standard / long). The guided match and the challenges keep their own lengths.</summary>
+    public Keepfall.Core.Economy.MatchMode Mode { get; private set; }
+
+    public CommandResult SetMode(string token, string mode) => InLobby(token, p =>
+    {
+        if (p.Seat != HostSeat) return CommandResult.Fail("Yalnız oda sahibi maç modunu seçebilir.");
+        if (!Enum.TryParse<Keepfall.Core.Economy.MatchMode>(mode, true, out var m) || !Enum.IsDefined(m) || mode.Length > 12) return CommandResult.Fail("Bilinmeyen maç modu.");
+        Mode = m;
+        return CommandResult.Success;
+    });
+
     /// <summary>The host asks for the guided first match (the tutorial): computer players leave the human alone for the first minutes of the war. Honoured only when one human plays.</summary>
     public bool Guided { get; private set; }
 
@@ -469,11 +483,13 @@ public sealed class Room
         bool guidedSolo = Guided && _players.Count(p => !p.IsBot) == 1;
         double? prep = Challenge?.PrepSeconds ?? Options.PrepSeconds ?? (guidedSolo ? _rules.Match.GuidedPrepSeconds : null);
         double? war = Challenge?.WarSeconds ?? Options.WarSeconds;
+        // (a mode brings its own lengths; an explicit length - challenge, guided match, tests - keeps its own)
+        var gameMode = prep is null && war is null ? Mode : (Keepfall.Core.Economy.MatchMode?)null;
         if (seedOpt is { } seed)
             Game = new GameState(_rules, keys, prep, war, new Random(seed),
-                GameState.AssignCorners(keys, new Random(seed + 17)), Options.ForestSeed ?? new Random(seed + 31).Next(), decks, factions);
+                GameState.AssignCorners(keys, new Random(seed + 17)), Options.ForestSeed ?? new Random(seed + 31).Next(), decks, factions, gameMode);
         else
-            Game = new GameState(_rules, keys, prep, war, forestSeed: Options.ForestSeed, decks: decks, factions: factions);
+            Game = new GameState(_rules, keys, prep, war, forestSeed: Options.ForestSeed, decks: decks, factions: factions, mode: gameMode);
         if (starter) Game.RowsLocked = true;
         if (guidedSolo)
             foreach (var human in _players.Where(p => !p.IsBot)) Game.ShieldedKeys.Add(human.CastleKey);

@@ -92,6 +92,7 @@ try
             new BotReport(rules, new BotReportOptions
             {
                 Matches = Int(flags, "mac", 200), Players = players, Minutes = minutes,
+                MatchMode = flags.GetValueOrDefault("mac-modu"),
                 Difficulty = level.Replace("karışık", "karisik"), Seed = Int(flags, "seed", 1),
                 ScoreRule = flags.GetValueOrDefault("puan", "hayir") is "evet" or "1" or "true", Summary = flags.ContainsKey("ozet"),
                 PointsPerElimination = Weights(flags)[0], PointsPerDamage = Weights(flags)[1], PointsPerKill = Weights(flags)[2], PointsPerPerson = Weights(flags)[3],

@@ -145,7 +145,7 @@ public sealed record ResultView(
 
 public sealed record RoomView(
     string Code, RoomPhase Phase, IReadOnlyList<PlayerView> Players, int MinPlayers, int MaxPlayers,
-    bool CanStart, double? RemainingSeconds, ResultView? Result, bool AllHumansOut = false, string? ChallengeId = null, bool Starter = false);
+    bool CanStart, double? RemainingSeconds, ResultView? Result, bool AllHumansOut = false, string? ChallengeId = null, bool Starter = false, string Mode = "quick");
 
 /// <summary>Answer to CreateRoom/JoinRoom: the caller's own secret token and seat.</summary>
 public sealed record JoinView(bool Ok, string? Error, string? Code, string? Token, int Seat, RoomView? Room);
@@ -156,7 +156,7 @@ public static class ViewMapper
         room.Code, room.Phase,
         room.Players.Select(p => new PlayerView(p.Seat, p.Name, p.Color, p.Ready, p.Connected, p.Seat == room.HostSeat, room.IsEliminated(p), p.IsBot, p.Bot, room.Game?.IsShielded(p.CastleKey) == true, p.Frame, p.Deputy is not null)).ToList(),
         room.Options.MinPlayers, room.Options.MaxPlayers, room.CanStart, room.Game?.RemainingSeconds,
-        room.Phase == RoomPhase.Ended ? ResultOf(room) : null, room.AllHumansOut, room.Challenge?.Id, room.StarterActive);
+        room.Phase == RoomPhase.Ended ? ResultOf(room) : null, room.AllHumansOut, room.Challenge?.Id, room.StarterActive, room.Mode.ToString().ToLowerInvariant());
 
     private static ResultView? ResultOf(Room room)
     {

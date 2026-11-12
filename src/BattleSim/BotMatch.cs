@@ -11,6 +11,10 @@ public static class BotMatch
     public static Room Create(GameRules rules, IReadOnlyList<BotDifficulty> levels, double prepSeconds, double warSeconds, int seed) =>
         Room.StartBotMatch("SIM", rules, new RoomOptions { MinPlayers = 1, PrepSeconds = prepSeconds, WarSeconds = warSeconds, Seed = seed }, levels);
 
+    /// <summary>A match in one of the three modes (the preparation, its economy speed and the war length all come from the mode's table).</summary>
+    public static Room Create(GameRules rules, IReadOnlyList<BotDifficulty> levels, Keepfall.Core.Economy.MatchMode mode, int seed) =>
+        Room.StartBotMatch("SIM", rules, new RoomOptions { MinPlayers = 1, Mode = mode, Seed = seed }, levels);
+
     /// <summary>Plays until the match ends; <paramref name="every"/> is called after each simulated second (for tracing).</summary>
     public static void Play(GameRules rules, Room room, int seed, Action<Room, BotHost.BotHost>? every = null, BotHost.BotHost? host = null)
     {

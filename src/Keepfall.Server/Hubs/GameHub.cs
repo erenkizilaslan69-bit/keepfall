@@ -232,6 +232,8 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     public Task<CommandResultView> SetCosmetics(string? frame, string[]? banners) => RoomCommand((room, token) => room.SetCosmetics(token, frame, banners));
     public Task<CommandResultView> SetReady(bool ready) => RoomCommand((room, token) => room.SetReady(token, ready));
     public Task<CommandResultView> SetGuided(bool on) => RoomCommand((room, token) => room.SetGuided(token, on));
+    /// <summary>The host's match length: "quick", "standard" or "long" (anything else is refused).</summary>
+    public Task<CommandResultView> SetMode(string mode) => RoomCommand((room, token) => room.SetMode(token, mode));
     public Task<CommandResultView> SetStarter(bool on) => RoomCommand((room, token) => room.SetStarter(token, on));
     public Task<CommandResultView> SetDeck(string[]? units) => RoomCommand((room, token) => room.SetDeck(token, units));
     /// <summary>The challenges and today's daily one: the same for everybody, nothing of any match.</summary>
