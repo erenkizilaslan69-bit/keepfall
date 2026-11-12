@@ -8,6 +8,8 @@ Ev sahibi lobide seçer (tek kişilik "Hızlı oyna" dahil; varsayılan Hızlı)
 | Standart | 10 dk | 10 dk | 1,0 | 60 sn |
 | Uzun | 15 dk | 10 dk | 1,0 | 60 sn |
 
+**Hızlı'nın süreleri ve hızı** `match.shortModeMinutes/shortModePrepMinutes/prepSpeed`'ten okunur (tablodaki `quick` satırından yalnız gözcü kilidi); böylece bu sayıları geçici config'le değiştiren araçlar (`tools/run-smoke.mjs`) çalışmaya devam eder.
+
 Savaş zaten 10 dk'ydı (`shortModeMinutes 15 − shortModePrepMinutes 5`); üç modda da 10 dk. Mevcut Hızlı değerleri, rehberli maç (480 sn hazırlık, düz hız, 240 sn kalkan) ve meydan okumaların kendi süreleri AYNEN kaldı (açık süre verilen maç mod almaz).
 
 **prepSpeed gerekçesi:** Hızlı'da 1,6 kat hız "8 dk'lık hazırlığın sonucu 5'e sığar" demek (eşdeğer 8 dk). Standart ve Uzun düz hızda: 10 ve 15 dk, Hızlı'nın eşdeğer 8 dk'sından ~%25 ve ~%88 fazla üretim; hızlandırmanın amacı kısa maçı sıkıştırmaktı, uzun hazırlığın amacı oyuncuya planlama/orman gezme payı vermek.
@@ -38,3 +40,9 @@ Savaş zaten 10 dk'ydı (`shortModeMinutes 15 − shortModePrepMinutes 5`); üç
 
 **Okuma:** botlar her modda hazırlığı kullanıyor: nüfus ve asker hazırlık uzadıkça büyüyor (Orta: 37→40→49 nüfus, 18→22→28 asker); kazanma oranları Hızlı'dakilere yakın (Orta/Kolay 68–73, Zor/Orta 61–69), yani ince denge bozulmadı. Elenen koltuk oranı Standart/Uzun'da artıyor (daha büyük ordular).
 **Bariz bozukluk yok.** Gözlem / açık: Uzun modda depodaki odun+demir savaş başlarken ~700'e çıkıyor (Hızlı 100). Botlar bu stoğu harcamıyor: ordu işçi sayısıyla sınırlı ve bina seviyeleri dolunca harcanacak yer kalmıyor. Oyuncu için bu fırsat (daha çok silah), botlar için israf; ince denge sayılacağı için dokunulmadı. İstenirse bot Uzun modda daha çok nüfus büyütür (yemek) ya da silahı depoda tutar (Zor zaten yapıyor, 543).
+
+## Arayüz ve veri (A4)
+- Lobi: üç düğmelik seçici (tek satır); ev sahibi değiştirir, herkes görür (misafirde devre dışı). Ana menüde "Oyna" altında aynı seçici (tarayıcıda hatırlanır; Hızlı oyna ve kurulan oda onu kullanır, rehberli ilk maç kendi 8 dk'sında kalır).
+- `RoomView.mode` ("quick"/"standard"/"long"); hub `SetMode(string)` (yalnız ev sahibi, bilinen üç kelime). Steam lobi verisine `mode` (üç bilinen kelimeden biri), açık oyunlar listesinde "5+10 dk" etiketi, Rich Presence `mode` ("5+10") ve metinlerde `{%mode%}` (`tools/steam/rich_presence_loc.vdf`; Steamworks panelinde yeniden yüklenmeli).
+- Maç ekranında kalan süre sunucunun `remainingSeconds/prepSeconds` sayılarından: moda göre doğru (mode-match-check: hazırlık 300/600/900 sn).
+- Kontroller: `tools/shot-modes.mjs` (görüntüler `art/shots/modes/`), `tools/mode-match-check.mjs` (her moddan bir tam maç, ×20), `MatchModeTests`.
