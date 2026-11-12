@@ -55,7 +55,11 @@ public static class MatchPush
             foreach (var p in session.Room.Players.Where(p => !p.IsBot))
             {
                 if (Keepfall.Core.Progress.Achievements.FactsOf(session.Room, p) is not { } facts) continue;
-                results.Add((p.Seat, new ProgressResultView(facts.Kingdom, facts.Won, !facts.Plain, Keepfall.Core.Progress.Achievements.Evaluate(facts))));
+                {
+                    var xp = Keepfall.Core.Progress.Xp.Of(facts, session.Room.Game?.Mode);
+                    results.Add((p.Seat, new ProgressResultView(facts.Kingdom, facts.Won, !facts.Plain, Keepfall.Core.Progress.Achievements.Evaluate(facts),
+                        new XpView(xp.Match, xp.Win, xp.ModeFactor, xp.Moments.Select(m => new MomentView(m.Id, m.Xp)).ToList(), xp.Goals, xp.Total))));
+                }
             }
         foreach (var (seat, result) in results)
             await clients.Group(Hubs.GameHub.PlayerGroup(session.Room.Code, seat)).SendAsync("ProgressResult", result);

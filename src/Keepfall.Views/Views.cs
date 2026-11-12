@@ -100,7 +100,8 @@ public sealed record CastleView(
     IReadOnlyList<string>? Deck = null,
     KingdomView? Kingdom = null,
     IReadOnlyList<RivalKingdomView>? Rivals = null,
-    IReadOnlyList<OddsView>? Odds = null);
+    IReadOnlyList<OddsView>? Odds = null,
+    LiveStatsView? Stats = null);
 
 // Kingdoms. A player always knows their own (KingdomView, with the waiting times of its abilities). Another player's is only ever sent for a castle in
 // live sight (MapStateView.Kingdoms), in a scout report, and, for the Oracle, in Rivals. Nothing here marks a lie as one except for the Oracle.
@@ -129,13 +130,20 @@ public sealed record CommandResultView(bool Ok, string? Error);
 
 /// <summary>Public facts about a player. Never the token.</summary>
 public sealed record PlayerView(int Seat, string Name, PlayerColor Color, bool Ready, bool Connected, bool IsHost, bool Eliminated,
-    bool IsBot = false, BotDifficulty? BotLevel = null, bool Sheltered = false, string? Frame = null, bool Deputy = false);
+    bool IsBot = false, BotDifficulty? BotLevel = null, bool Sheltered = false, string? Frame = null, bool Deputy = false,
+    string? Title = null, int Level = 0, string? Pattern = null);
 
 /// <summary>Sent to everyone once the match is over: the hidden-information rule ends with the match.</summary>
-public sealed record RankView(int Seat, string Name, PlayerColor Color, int Place, int Population, bool Eliminated, string? Kingdom = null, string? Frame = null, string? Banner = null);
+public sealed record RankView(int Seat, string Name, PlayerColor Color, int Place, int Population, bool Eliminated, string? Kingdom = null, string? Frame = null, string? Banner = null, string? Title = null, int Level = 0, string? Pattern = null);
 
 /// <summary>Progress of one player after a match, sent only to that player: the kingdom played, the result and the achievement ids this match earned (the client keeps the history).</summary>
-public sealed record ProgressResultView(string? Kingdom, bool Won, bool Lesson, IReadOnlyList<string> Earned);
+public sealed record MomentView(string Id, int Xp);
+/// <summary>The XP of the finished match for the one player it is about: the match, the win, the mode's factor, the moments, the challenge goals.</summary>
+public sealed record XpView(int Match, int Win, double ModeFactor, IReadOnlyList<MomentView> Moments, int Goals, int Total);
+public sealed record ProgressResultView(string? Kingdom, bool Won, bool Lesson, IReadOnlyList<string> Earned, XpView? Xp = null);
+/// <summary>The player's own running numbers (what the mission list counts). Only about their own castle.</summary>
+public sealed record LiveStatsView(int SoldiersLost, int EnemiesKilled, int BattlesWon, int BattlesLost, int CastlesFelled, double GoldGained, int Villages, int Camps, int Chests,
+    int Scouts, int Reports, int Envoys, int Decoys, int FakeReports, int Bribed, int CampsRented, int Disguises);
 public sealed record PlayerSummaryView(int Seat, string Name, PlayerColor Color, SummaryView Summary);
 /// <summary>One line of the "who fooled whom" timeline (seats; TargetSeat/AsSeat null when not applicable). Only ever sent inside <see cref="ResultView"/>.</summary>
 public sealed record DeceptionEventView(double At, string Kind, int ActorSeat, int? TargetSeat, int? AsSeat, int Count, string? Detail);
@@ -154,7 +162,7 @@ public static class ViewMapper
 {
     public static RoomView ToView(Room room) => new(
         room.Code, room.Phase,
-        room.Players.Select(p => new PlayerView(p.Seat, p.Name, p.Color, p.Ready, p.Connected, p.Seat == room.HostSeat, room.IsEliminated(p), p.IsBot, p.Bot, room.Game?.IsShielded(p.CastleKey) == true, p.Frame, p.Deputy is not null)).ToList(),
+        room.Players.Select(p => new PlayerView(p.Seat, p.Name, p.Color, p.Ready, p.Connected, p.Seat == room.HostSeat, room.IsEliminated(p), p.IsBot, p.Bot, room.Game?.IsShielded(p.CastleKey) == true, p.Frame, p.Deputy is not null, p.Title, p.Level, p.Pattern)).ToList(),
         room.Options.MinPlayers, room.Options.MaxPlayers, room.CanStart, room.Game?.RemainingSeconds,
         room.Phase == RoomPhase.Ended ? ResultOf(room) : null, room.AllHumansOut, room.Challenge?.Id, room.StarterActive, room.Mode.ToString().ToLowerInvariant());
 
@@ -210,7 +218,18 @@ public static class ViewMapper
             c.UnitTypes.Select(u => u.Id).ToList(),
             KingdomOf(room, game, player),
             game.OracleKnowledgeOf(player.CastleKey).Select(k => new RivalKingdomView(room.PlayerOfCastle(k.Player)?.Seat ?? 0, k.Faction, k.Deck)).ToList() is { Count: > 0 } rivals ? rivals : null,
-            game.OddsOf(player.CastleKey).Select(o => new OddsView(room.PlayerOfCastle(o.Target)?.Seat ?? 0, o.Known, o.Low, o.High)).ToList() is { Count: > 0 } odds ? odds : null);
+            game.OddsOf(player.CastleKey).Select(o => new OddsView(room.PlayerOfCastle(o.Target)?.Seat ?? 0, o.Known, o.Low, o.High)).ToList() is { Count: > 0 } odds ? odds : null,
+            LiveStatsOf(game, player.CastleKey, c));
+    }
+
+    private static LiveStatsView LiveStatsOf(GameState game, string key, Castle c)
+    {
+        var st = c.Stats;
+        var battles = game.BattlesOf(key);
+        bool Won(BattleReport b) => b.Winner == BattleWinner.Attacker ? b.Attacker == key : b.Winner == BattleWinner.Defender && b.Defender == key;
+        bool Lost(BattleReport b) => b.Winner == BattleWinner.Attacker ? b.Defender == key : b.Winner == BattleWinner.Defender && b.Attacker == key;
+        return new LiveStatsView(st.SoldiersLost, st.EnemiesKilled, battles.Count(Won), battles.Count(Lost), battles.Count(b => b.Attacker == key && b.DefenderEliminated), st.GoldGained,
+            st.VillagesPlundered, st.CampsCleared, st.ChestsLooted, st.ScoutsSent, st.ReportsRead, st.EnvoysDelivered, st.DecoysSent, st.FakeReportsSet, st.SoldiersBribed, st.CampsRented, st.Disguises);
     }
 
     private static KingdomView? KingdomOf(Room room, GameState game, RoomPlayer player)

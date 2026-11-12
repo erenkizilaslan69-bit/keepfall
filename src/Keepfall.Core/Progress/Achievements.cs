@@ -14,7 +14,9 @@ public sealed record MatchFacts(
     int SoldiersLost, int EnemiesKilled, int BattlesWon, int BattlesLost, int CastlesFelled,
     int Villages, int Camps, int Chests, int Scouts, int Reports, int Envoys,
     int Decoys, int FakeReports, int Bribed, int CampsRented, int Disguises,
-    bool IsChallenge, bool IsDaily, int ChallengeStars, bool Starter)
+    bool IsChallenge, bool IsDaily, int ChallengeStars, bool Starter,
+    // what the deception log and the battles say about this player (for the XP moments; nothing here is known to anyone before the match ends)
+    int DecoysSeen = 0, int FakeReportsRead = 0, bool EnvoyLieHeld = false, bool DisguiseHeld = false, int FelledTriple = 0, int GoalsPassed = 0)
 {
     /// <summary>A challenge or a starter match is a lesson, not a record: only the achievements marked <see cref="Def.InLessons"/> count there.</summary>
     public bool Plain => !IsChallenge && !Starter;
@@ -84,6 +86,8 @@ public static class Achievements
         };
         bool isWinner = result.Winners.Contains(key);
         var outcome = room.Challenge is null ? null : ChallengeEvaluator.Evaluate(room, player);
+        var log = game.DeceptionLog.Where(e => e.Actor == key).ToList();
+        bool unmasked = log.Any(e => e.Kind == DeceptionKind.Unmasked);
         return new MatchFacts(
             isWinner, isWinner && result.Winners.Count > 1, result.ByElimination, game.IsEliminated(key), game.KingdomStatusOf(key)?.Faction,
             Opponents: room.Players.Count - 1, HardBotPlayed: room.Players.Any(p => p.Bot == BotDifficulty.Hard),
@@ -94,6 +98,12 @@ public static class Achievements
             Villages: stats.VillagesPlundered, Camps: stats.CampsCleared, Chests: stats.ChestsLooted, Scouts: stats.ScoutsSent, Reports: stats.ReportsRead,
             Envoys: stats.EnvoysDelivered, Decoys: stats.DecoysSent, FakeReports: stats.FakeReportsSet, Bribed: stats.SoldiersBribed,
             CampsRented: stats.CampsRented, Disguises: stats.Disguises,
-            IsChallenge: room.Challenge is not null, IsDaily: room.Challenge?.Daily == true, ChallengeStars: outcome?.Stars ?? 0, Starter: room.StarterActive);
+            IsChallenge: room.Challenge is not null, IsDaily: room.Challenge?.Daily == true, ChallengeStars: outcome?.Stars ?? 0, Starter: room.StarterActive,
+            DecoysSeen: log.Count(e => e.Kind is DeceptionKind.DecoySighted or DeceptionKind.DecoyFaded),
+            FakeReportsRead: log.Count(e => e.Kind == DeceptionKind.FakeReportRead),
+            EnvoyLieHeld: !unmasked && log.Any(e => e.Kind == DeceptionKind.EnvoyAsDelivered),
+            DisguiseHeld: !unmasked && log.Any(e => e.Kind == DeceptionKind.ArmyAsSent),
+            FelledTriple: battles.Count(b => b.Attacker == key && b.DefenderEliminated && b.Rival is not null),
+            GoalsPassed: outcome?.Goals.Count(g => g.Passed) ?? 0);
     }
 }

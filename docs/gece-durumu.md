@@ -109,3 +109,5 @@ Listede kalan iş yok (A–G bitti). Sabah bakılacaklar aşağıda.
 - [ ] C Görev takibi
 - [ ] D Testler + rapor
 - [x] A4/A5 Lobi seçici (ev sahibi seçer, herkes görür), ana menüde "Oyna" altında seçici (tarayıcıda hatırlanır), açık oyunlar listesinde mod etiketi, Steam lobi verisi `mode`, Rich Presence `{%mode%}`, rehber metni, 15 dil (19.tsv, 20.tsv). Görüntü: `art/shots/modes/`.
+- [x] B-sunucu: `Progress/Xp.cs` (XP kuralları, anlar, seviye eğrisi 30 seviye, unvan/desen izin listeleri), `MatchFacts` genişledi (kandırma günlüğünden), `ProgressResultView.Xp`, hub `SetProfile` (unvan/seviye/desen, yalnız bilinen kimlik; tümden red), `PlayerView/RankView` Title/Level/Pattern, `CastleView.Stats` (görev takibi için kendi sayıların), 15 yeni test (457).
+- [ ] B-istemci: depo (xp, anlar), seviye hesabı, profil ekranı, maç sonu XP, lobi gösterimi, desenler; C görev takibi; i18n

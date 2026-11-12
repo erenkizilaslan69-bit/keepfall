@@ -230,6 +230,8 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     public Task<CommandResultView> SetName(string? name) => RoomCommand((room, token) => room.SetName(token, name));
     /// <summary>Cosmetic picks: an avatar frame and banner designs ("tuccar:b"). Only known ids are accepted; no balance number reads them.</summary>
     public Task<CommandResultView> SetCosmetics(string? frame, string[]? banners) => RoomCommand((room, token) => room.SetCosmetics(token, frame, banners));
+    /// <summary>The title, level and banner pattern shown beside the player's name (looks only; known ids and 1–30 only).</summary>
+    public Task<CommandResultView> SetProfile(string? title, int level, string? pattern) => RoomCommand((room, token) => room.SetProfile(token, title, level, pattern));
     public Task<CommandResultView> SetReady(bool ready) => RoomCommand((room, token) => room.SetReady(token, ready));
     public Task<CommandResultView> SetGuided(bool on) => RoomCommand((room, token) => room.SetGuided(token, on));
     /// <summary>The host's match length: "quick", "standard" or "long" (anything else is refused).</summary>

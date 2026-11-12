@@ -88,6 +88,10 @@ public sealed class RoomPlayer
     public string? Frame { get; internal set; }
     /// <summary>The banner designs the player picked ("kingdom:design" per kingdom). Cosmetic only; shown on the end screen, never earlier (it would tell the kingdom).</summary>
     public IReadOnlyList<string> Banners { get; internal set; } = [];
+    /// <summary>The title (a Progress.Titles id), level (1–30) and banner pattern (a Progress.Patterns id) the player shows beside their name. Looks only; public. The level is the player's own claim (their progress is kept on their side).</summary>
+    public string? Title { get; internal set; }
+    public int Level { get; internal set; }
+    public string? Pattern { get; internal set; }
     public int Connections { get; internal set; }
     public bool Connected => Connections > 0;
     public DateTime? DisconnectedAtUtc { get; internal set; }
@@ -357,6 +361,18 @@ public sealed class Room
         }
         p.Frame = string.IsNullOrEmpty(frame) ? null : frame;
         p.Banners = list;
+        return CommandResult.Success;
+    });
+
+    /// <summary>The profile shown beside a name: a title, a level and a banner pattern. Only known ids and 1–30 are accepted; anything else refuses the whole call.</summary>
+    public CommandResult SetProfile(string token, string? title, int level, string? pattern) => InLobby(token, p =>
+    {
+        if (!string.IsNullOrEmpty(title) && !Progress.Titles.IsTitle(title)) return CommandResult.Fail("Bilinmeyen unvan.");
+        if (!string.IsNullOrEmpty(pattern) && !Progress.Patterns.IsPattern(pattern)) return CommandResult.Fail("Bilinmeyen desen.");
+        if (level is < 1 or > Progress.Levels.Max) return CommandResult.Fail("Geçersiz seviye.");
+        p.Title = string.IsNullOrEmpty(title) ? null : title;
+        p.Pattern = string.IsNullOrEmpty(pattern) ? null : pattern;
+        p.Level = level;
         return CommandResult.Success;
     });
 
