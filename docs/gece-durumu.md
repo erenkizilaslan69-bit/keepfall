@@ -114,3 +114,7 @@ Listede kalan iş yok (A–G bitti). Sabah bakılacaklar aşağıda.
 - [x] B-istemci + C: depo (xp, anlar, unvan/desen seçimi, steam birleştirme), `progress/level.ts` (eğri, 13 unvan, 8 desen), profil bölümü, maç sonu XP dökümü + dolma animasyonu, lobi/sıralamada Sv·desen·unvan, ilk geçiş bonusu, görev takibi (J, ayar), 62+3 yeni metin 15 dilde. Görüntüler `art/shots/xp/`.
 - [ ] D: duman/fuzz genişletme, tam testler, rehberli maç, her moddan tam maç, ilerleme.md tablosu, rapor
 - [x] D: dotnet 457/457, duman geçti, host-check + host-fuzz + steam-check geçti, i18n-check 15 dil %100, lang-audit (bölünen kelime 0, ham kimlik 0), rehberli maç x1 (gerçek hız) geçti, her moddan tam maç (`mode-match-check`) geçti, paket yeniden derlendi. Görüntüler `art/shots/modes`, `art/shots/xp`.
+
+---
+## Cila turu 3 (2026-11-12)
+- [x] 1 çoğul · 2-4 lobi · 5 rehberli görev takibi · 6 bot stoku · 7 DE sekme (commit'ler dev'de). Kalan: test turu (tutorial x1, smoke, host-check, paket) → ardından gece turu (ulak, savaş müziği, tek kişilik lobi, krallık rozeti hatası).
