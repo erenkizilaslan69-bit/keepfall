@@ -1,3 +1,6 @@
 /* Long translations (de, ru, pl, fr, ...) must fit where the Turkish/English text did (tools/lang-audit.mjs lists what does not): wrap or shrink instead of being cut off. */
 .ucard-btns { flex-wrap: wrap; }
 .ucard-btns .btn { flex: 1 1 auto; min-width: 0; white-space: nowrap; }
+
+/* German has the longest tab words ("Verteidigung", "Anheuern", "Wachstum"): a little smaller so the four tabs of the castle window stay on one row */
+html[lang="de"] .tabs .tab { font-size: max(var(--fs-xs, 0px), .84em); padding-left: calc(2px * var(--u, 1)); padding-right: calc(2px * var(--u, 1)); }
