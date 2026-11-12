@@ -36,6 +36,10 @@ export function mergeProgress(local: ProgressData, remote: ProgressData): Progre
       out.achievements[id] = have === undefined ? at : Math.min(have, at);
     }
   }
+  out.xp = Math.max(local.xp, remote.xp);
+  for (const src of [remote, local]) for (const [id, n] of Object.entries(src.moments)) out.moments[id] = Math.max(out.moments[id] ?? 0, n);
+  out.picks.title = local.picks.title ?? remote.picks.title ?? null;
+  out.picks.pattern = local.picks.pattern ?? remote.picks.pattern ?? null;
   out.picks.frame = local.picks.frame ?? remote.picks.frame;
   out.picks.banners = { ...remote.picks.banners, ...local.picks.banners };
   return out;

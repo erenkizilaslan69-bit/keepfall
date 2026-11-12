@@ -219,5 +219,8 @@ export const EN_SERVER: Record<string, string> = {
   "Oyuncuyu sadece odayı kuran çıkarabilir.": "Only the room's host can remove a player.",
   "Kendini çıkaramazsın.": "You cannot remove yourself.",
   "Ev sahibi seni odadan çıkardı.": "The host removed you from the room.",
-  "O koltukta oyuncu yok.": "There is no player in that seat."
+  "O koltukta oyuncu yok.": "There is no player in that seat.",
+  "Geçersiz seviye.": "Invalid level.",
+  "Yalnız oda sahibi maç modunu seçebilir.": "Only the host can pick the match mode.",
+  "Bilinmeyen maç modu.": "Unknown match mode.",
 };

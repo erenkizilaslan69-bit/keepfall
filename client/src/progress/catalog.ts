@@ -1,5 +1,6 @@
 import { t } from '../i18n';
 import { KINGDOM_IDS, progressStore, type KingdomId, type ProgressData } from './store';
+import { levelOf, newRewards, type PatternInfo, type TitleInfo } from './level';
 
 // What can be earned. The ids are the contract with the server (match achievements are worked out there, see Keepfall.Core/Progress)
 // and with Steam later; names and descriptions are for this screen only. docs/basarimlar.md lists them with the Steam text.
@@ -142,6 +143,15 @@ export interface ProgressDelta {
   winsAfter: number;
   /** Cosmetics that opened with this match. */
   newCosmetics: Cosmetic[];
+  /** The XP this match paid (from the server), where it started and ended, and the titles and patterns the new level or moments opened. */
+  xp?: XpGain;
+}
+
+export interface XpGain {
+  match: number; win: number; modeFactor: number; moments: { id: string; xp: number }[]; goals: number;
+  /** challenge cleared for the first time (the client knows the history) */ firstClear: number;
+  total: number; before: number; after: number; levelBefore: number; levelAfter: number;
+  titles: TitleInfo[]; patterns: PatternInfo[];
 }
 
 const isKingdom = (k: string | null | undefined): k is KingdomId => !!k && (KINGDOM_IDS as readonly string[]).includes(k);
@@ -159,10 +169,11 @@ const info = (id: string): AchievementInfo | undefined => ACHIEVEMENTS.find((a) 
 
 /** The result of a match the server reported (only ids this client knows are taken). Saves and says what changed. */
 export function recordMatch(
-  result: { kingdom: string | null; won: boolean; lesson?: boolean; earned: string[] },
+  result: { kingdom: string | null; won: boolean; lesson?: boolean; earned: string[]; xp?: { match: number; win: number; modeFactor: number; moments: { id: string; xp: number }[]; goals: number; total: number } | null },
   ctx: Omit<MetaContext, 'data'>, now = Date.now(),
 ): ProgressDelta {
   const store = progressStore(), data = store.load();
+  const dataBefore = structuredClone(data);
   const cosmeticsBefore = new Set(unlockedCosmetics(data));
   const kingdom = isKingdom(result.kingdom) ? result.kingdom : null;
   const before = kingdom ? masteryLevel(data.kingdoms[kingdom].won) : 0;
@@ -174,8 +185,20 @@ export function recordMatch(
     if (info(id)?.kind === 'match' && data.achievements[id] === undefined) { data.achievements[id] = now; ids.push(id); }
   }
   ids.push(...addMeta(data, ctx, now));
+  // XP: only what the server paid, clamped to sane numbers; the moments are counted for the titles
+  let xp: XpGain | undefined;
+  if (result.xp && Number.isFinite(result.xp.total)) {
+    const moments = (result.xp.moments ?? []).filter((m) => /^[a-z_]{1,30}$/.test(m.id) && Number.isFinite(m.xp)).slice(0, 20).map((m) => ({ id: m.id, xp: Math.max(0, Math.min(500, Math.round(m.xp))) }));
+    const total = Math.max(0, Math.min(5000, Math.round(result.xp.total)));
+    data.xp += total;
+    for (const m of moments) data.moments[m.id] = (data.moments[m.id] ?? 0) + 1;
+    const rewards = newRewards(dataBefore, data);
+    xp = { match: result.xp.match, win: result.xp.win, modeFactor: result.xp.modeFactor, moments, goals: result.xp.goals, firstClear: 0, total, before: dataBefore.xp, after: data.xp,
+      levelBefore: levelOf(dataBefore.xp), levelAfter: levelOf(data.xp), titles: rewards.titles, patterns: rewards.patterns };
+  }
   store.save(data);
   return {
+    xp,
     newAchievements: ids.map(info).filter((a): a is AchievementInfo => !!a),
     kingdom, won: result.won, masteryBefore: before, masteryAfter: kingdom ? masteryLevel(data.kingdoms[kingdom].won) : 0,
     winsAfter: kingdom ? data.kingdoms[kingdom].won : 0,
@@ -192,5 +215,24 @@ export function recordMeta(ctx: Omit<MetaContext, 'data'>, now = Date.now()): Pi
   return {
     newAchievements: ids.map(info).filter((a): a is AchievementInfo => !!a),
     newCosmetics: COSMETICS.filter((c) => isUnlocked(c, data) && !cosmeticsBefore.has(c.id)),
+  };
+}
+
+/** XP the client alone can know (a challenge cleared for the first time): added to the saved progress and to what the end screen shows. */
+export function addBonusXp(delta: ProgressDelta | null, amount: number): ProgressDelta | null {
+  if (!delta?.xp || amount <= 0) return delta;
+  const store = progressStore(), data = store.load();
+  const prevAfter = data.xp;
+  data.xp += amount;
+  store.save(data);
+  const more = newRewards({ ...data, xp: prevAfter }, data);
+  const x = delta.xp;
+  return {
+    ...delta,
+    xp: {
+      ...x, firstClear: x.firstClear + amount, total: x.total + amount, after: x.after + amount, levelAfter: levelOf(data.xp),
+      titles: [...x.titles, ...more.titles.filter((a) => !x.titles.some((b) => b.id === a.id))],
+      patterns: [...x.patterns, ...more.patterns.filter((a) => !x.patterns.some((b) => b.id === a.id))],
+    },
   };
 }

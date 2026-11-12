@@ -1,4 +1,5 @@
 import { effectivePicks } from './progress/catalog';
+import { effectiveProfile } from './progress/level';
 import { progressStore } from './progress/store';
 import * as signalR from '@microsoft/signalr';
 import { loadIdentity, markActiveRoom, saveIdentity } from './identity';
@@ -193,6 +194,7 @@ export class GameConnection {
       this.on.status('connected');
       if (result.room) this.on.room(result.room);
       void this.setCosmetics();
+      void this.setProfile();
     }
     return result;
   }
@@ -215,6 +217,8 @@ export class GameConnection {
   /** Starter rules for this (single human) room: no kingdom abilities, fixed rows, the classic deck unless one was picked. */
   setStarter = (on: boolean) => this.call('SetStarter', on);
   /** Our avatar frame and banner designs (only what we have earned; the server accepts known ids only). A server that does not know them just says no. */
+  /** The title, level and banner pattern shown beside the player's name (looks only; the server keeps known ids and 1–30). */
+  setProfile = () => { const p = effectiveProfile(progressStore().load()); return this.call('SetProfile', p.title, p.level, p.pattern); };
   setCosmetics = () => { const p = effectivePicks(progressStore().load()); return this.call('SetCosmetics', p.frame, p.banners); };
   setDeck = (units: string[]) => this.call('SetDeck', units);
   startMatch = () => this.call('StartMatch');
@@ -227,7 +231,7 @@ export class GameConnection {
   /** The host puts a player out of the lobby. */
   kickPlayer = (seat: number) => this.call('KickPlayer', seat);
   finishMatch = () => this.call('FinishMatch');
-  backToLobby = () => this.call('BackToLobby');
+  backToLobby = async () => { const r = await this.call('BackToLobby'); void this.setProfile(); return r; }; // (the level may have changed with the match)
   /** Back to the main menu: the server unbinds this connection (a lobby seat is freed, a castle in a running match stays). */
   leaveRoom = async () => {
     const r = await this.call('LeaveRoom');

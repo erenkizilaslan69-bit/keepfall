@@ -17,7 +17,11 @@ export interface ProgressData {
   kingdoms: Record<KingdomId, KingdomRecord>;
   /** Achievement id → when it was earned (ms since 1970). */
   achievements: Record<string, number>;
-  picks: { frame: string | null; banners: Partial<Record<KingdomId, string>> };
+  picks: { frame: string | null; banners: Partial<Record<KingdomId, string>>; /** title id (progress/level.ts) */ title?: string | null; /** banner pattern id */ pattern?: string | null };
+  /** Experience points earned in all matches (the server pays them at the end of each match). */
+  xp: number;
+  /** How many matches held each moment (decoy, fake_report, felled … the ids of Keepfall.Core.Progress.Xp.Moments): the titles read them. */
+  moments: Record<string, number>;
 }
 
 export interface ProgressStore {
@@ -28,7 +32,7 @@ export interface ProgressStore {
 export const emptyProgress = (): ProgressData => ({
   v: 1, matches: 0, wins: 0,
   kingdoms: { golge: { played: 0, won: 0 }, tuccar: { played: 0, won: 0 }, kahin: { played: 0, won: 0 }, entrikaci: { played: 0, won: 0 } },
-  achievements: {}, picks: { frame: null, banners: {} },
+  achievements: {}, picks: { frame: null, banners: {}, title: null, pattern: null }, xp: 0, moments: {},
 });
 
 const count = (x: unknown): number => (typeof x === 'number' && Number.isFinite(x) && x >= 0 ? Math.floor(x) : 0);
@@ -51,6 +55,12 @@ export function sanitize(raw: unknown): ProgressData {
   const p = (r.picks ?? {}) as { frame?: unknown; banners?: Record<string, unknown> };
   out.picks.frame = typeof p.frame === 'string' ? p.frame : null;
   for (const id of KINGDOM_IDS) if (typeof p.banners?.[id] === 'string') out.picks.banners[id] = p.banners[id] as string;
+  const pk = p as { title?: unknown; pattern?: unknown };
+  out.picks.title = typeof pk.title === 'string' && /^[a-z_]{1,30}$/.test(pk.title) ? pk.title : null;
+  out.picks.pattern = typeof pk.pattern === 'string' && /^[a-z_]{1,30}$/.test(pk.pattern) ? pk.pattern : null;
+  out.xp = Math.min(count(r.xp), 10_000_000);
+  const m = (r.moments ?? {}) as Record<string, unknown>;
+  for (const [id, n] of Object.entries(m)) if (/^[a-z_]{1,30}$/.test(id)) out.moments[id] = Math.min(count(n), 100000);
   return out;
 }
 

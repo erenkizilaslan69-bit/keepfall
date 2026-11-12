@@ -56,7 +56,7 @@ export type RoomPhase = 'lobby' | 'preparation' | 'war' | 'ended';
 
 /** Public facts about a player; the server never sends anyone else's token or castle. */
 export type BotLevel = 'easy' | 'medium' | 'hard';
-export interface PlayerView { seat: number; name: string; color: PlayerColor; ready: boolean; connected: boolean; isHost: boolean; eliminated: boolean; isBot: boolean; botLevel: BotLevel | null; sheltered?: boolean; frame?: string | null; /** friend-hosted game: the player is away and a computer player holds the castle */ deputy?: boolean }
+export interface PlayerView { seat: number; name: string; color: PlayerColor; ready: boolean; connected: boolean; isHost: boolean; eliminated: boolean; isBot: boolean; botLevel: BotLevel | null; sheltered?: boolean; frame?: string | null; /** friend-hosted game: the player is away and a computer player holds the castle */ deputy?: boolean; /** looks beside the name: a title id, the level (1–30) and a banner pattern id (the server only passes known ids) */ title?: string | null; level?: number; pattern?: string | null }
 
 export interface RoomView {
   code: string;
@@ -98,10 +98,11 @@ export interface ChallengeCard {
 export interface ChallengeList { challenges: ChallengeCard[]; daily: ChallengeCard }
 export interface GoalResult { id: string; type: string; target: number; actual: number; passed: boolean; star: number }
 /** After a match, to the one player: the kingdom played, the result and the achievement ids the match earned (the browser keeps the history). */
-export interface ProgressResult { kingdom: string | null; won: boolean; lesson: boolean; earned: string[] }
+export interface XpResultView { match: number; win: number; modeFactor: number; moments: { id: string; xp: number }[]; goals: number; total: number }
+export interface ProgressResult { kingdom: string | null; won: boolean; lesson: boolean; earned: string[]; xp?: XpResultView | null }
 export interface ChallengeResult { id: string; won: boolean; stars: number; goals: GoalResult[] }
 
-export interface RankView { seat: number; name: string; color: PlayerColor; place: number; population: number; eliminated: boolean; kingdom?: string | null; frame?: string | null; banner?: string | null }
+export interface RankView { seat: number; name: string; color: PlayerColor; place: number; population: number; eliminated: boolean; kingdom?: string | null; frame?: string | null; banner?: string | null; title?: string | null; level?: number; pattern?: string | null }
 export interface DeceptionEventView { at: number; kind: string; actorSeat: number; targetSeat: number | null; asSeat: number | null; count: number; detail: string | null }
 export interface ResultView {
   winners: number[];
@@ -210,6 +211,11 @@ export interface ScoutingView {
   locked: boolean;
 }
 
+export interface LiveStats {
+  soldiersLost: number; enemiesKilled: number; battlesWon: number; battlesLost: number; castlesFelled: number; goldGained: number; villages: number; camps: number; chests: number;
+  scouts: number; reports: number; envoys: number; decoys: number; fakeReports: number; bribed: number; campsRented: number; disguises: number;
+}
+
 export interface CastleView {
   phase: MatchPhase;
   color: PlayerColor;
@@ -249,6 +255,8 @@ export interface CastleView {
   rivals?: { seat: number; faction: string; deck: string[] }[] | null;
   /** Oracle only: the chance (a range) our soldiers at home beat what the latest scout report says is at that castle. */
   odds?: { seat: number; known: boolean; low: number; high: number }[] | null;
+  /** The player's own running numbers (what the mission list counts). */
+  stats?: LiveStats | null;
 }
 
 export interface LetterView {

@@ -1132,3 +1132,68 @@
 1132	dk	min
 1133	Maç süresini yalnız oda sahibi seçer.	Only the host picks the match length.
 1134	<b>Hazırlık</b>: ekonomi, silah, orman. <b>Savaş</b> (10 dk): ordular yola çıkar. Oda sahibi süreyi seçer: Hızlı 5+10 dk, Standart 10+10 dk, Uzun 15+10 dk (hazırlık + savaş).	<b>Preparation</b>: economy, weapons, forest. <b>War</b> (10 min): armies set out. The host picks the length: Quick 5+10 min, Standard 10+10 min, Long 15+10 min (preparation + war).
+1135	Yeni Komutan	New Commander
+1136	Başlangıç unvanı	Starting title
+1137	Kale Bekçisi	Castle Keeper
+1138	Savaş Beyi	Warlord
+1139	Ordu Komutanı	Army Commander
+1140	Büyük Mareşal	Grand Marshal
+1141	Keepfall Efendisi	Master of Keepfall
+1142	Hayalet Generali	Ghost General
+1143	Hayalet ordunla 3 maçta rakibi kandır	Fool a rival with a phantom army in 3 matches
+1144	Yalancı Kral	Liar King
+1145	Sahte raporunu 3 maçta bir gözcüye okut	Have a scout read your false report in 3 matches
+1146	Maskeli Elçi	Masked Envoy
+1147	Başkasının adıyla ulak gönderip 3 maçta yakalanma	Send envoys in another's name and go unmasked in 3 matches
+1148	Altın Dilli	Golden Tongue
+1149	3 maçta bir orduya rüşvet ver	Bribe an army in 3 matches
+1150	Kale Yıkan	Castle Breaker
+1151	3 maçta bir kale düşür	Fell a castle in 3 matches
+1152	Üçlü Fatih	Triple Conqueror
+1153	Üç taraflı kuşatmada bir kale düşür	Fell a castle in a three-sided siege
+1154	Son Kale	Last Castle
+1155	3 maçta son ayakta kalan kale ol	Be the last castle standing in 3 matches
+1156	Şeritli	Striped
+1157	Sırma	Chevron
+1158	Haç	Cross
+1159	Baklava	Diamond
+1160	Kurdeleli	Ribboned
+1161	Yıldızlı	Starred
+1162	Armalı	Crested
+1163	Hayalet ordun rakibi kandırdı	Your phantom army fooled a rival
+1164	Sahte raporunu bir gözcü okudu	A scout read your false report
+1165	Başkasının adıyla ulak gönderdin, yakalanmadın	You sent an envoy in another's name and were not unmasked
+1166	Başkasının adıyla ordu yürüttün, yakalanmadın	You marched an army in another's name and were not unmasked
+1167	Bir orduya rüşvet verdin	You bribed an army
+1168	Bir haydut kampı kiraladın	You rented a bandit camp
+1169	Bir köyü yağmaladın	You plundered a village
+1170	Bir haydut kampını temizledin	You cleared a bandit camp
+1171	Bir kale düşürdün	You felled a castle
+1172	Üç taraflı kuşatmada kale düşürdün	You felled a castle in a three-sided siege
+1173	Son ayakta kalan kale oldun	You were the last castle standing
+1174	Profil	Profile
+1175	{0} XP · en üst seviye	{0} XP · top level
+1176	{0} XP · sonraki seviye için {1} XP daha	{0} XP · {1} XP to the next level
+1177	Seviyen ve unvanın lobide ve maç sonunda adının yanında görünür. Yalnız süstür: oyuna hiçbir güç katmaz.	Your level and title show beside your name in the lobby and on the end screen. They are looks only: they give no power in a match.
+1178	Unvan	Title
+1179	Sancak deseni	Banner pattern
+1180	Desen kendi renginde çizilir ve hangi krallığı oynadığını belli etmez.	The pattern is drawn in your own colour and never shows which kingdom you play.
+1181	Maç	Match
+1182	Galibiyet	Victory
+1183	Maç süresi çarpanı ×{0}	Match length bonus ×{0}
+1184	Görev hedefleri	Mission goals
+1185	Meydan okumayı ilk kez geçtin	First time clearing the challenge
+1186	Yeni unvan: {0}	New title: {0}
+1187	Yeni sancak deseni: {0}	New banner pattern: {0}
+1188	Deneyim	Experience
+1189	Toplam	Total
+1190	Seviye atladın: Sv {0}!	Level up: Lv {0}!
+1191	Görevler	Missions
+1192	Görev tamamlandı +{0} XP	Mission done +{0} XP
+1193	Aç / kapa	Fold / unfold
+1194	Görev listesini aç / kapa	Fold / unfold the mission list
+1195	Görev takibini göster	Show the mission tracker
+1196	(köşede hedeflerin ve ilerlemen; J tuşu açıp kapatır)	(your goals and progress in the corner; the J key folds it)
+1197	Geçersiz seviye.	Invalid level.
+1198	Yalnız oda sahibi maç modunu seçebilir.	Only the host can pick the match mode.
+1199	Bilinmeyen maç modu.	Unknown match mode.

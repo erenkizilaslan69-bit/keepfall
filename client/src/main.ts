@@ -55,7 +55,9 @@ import { countMatch, newPlayer, playsFullRules, setSiteChatOff } from './prefs';
 import { guarded, installErrorReporting } from './error-report';
 import { ChallengeScreen, loadStars, nextOf, resultHtml, saveStars } from './ui/challenges';
 import './ui/progress.css';
-import { ProgressScreen, mergeDelta, progressPanelHtml } from './ui/progress';
+import { ProgressScreen, animateXpBars, mergeDelta, progressPanelHtml } from './ui/progress';
+import { addBonusXp } from './progress/catalog';
+import { questTracker } from './ui/quests';
 import { recordMatch, recordMeta, type ProgressDelta } from './progress/catalog';
 import type { BattleStartedView, ProgressResult, BotLevel, CastleView, ChallengeList, ChallengeResult, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 import { currentRoute, embedded, setRoute } from './env';
@@ -233,7 +235,7 @@ function onRoom(r: RoomView): void {
   // The site (CrazyGames) learns which room we are in, and that friends may join only while it is a lobby.
   crazyRoom(r.code, r.phase === 'lobby' && !soloRoom);
   crazyGameplay(screen === 'game' && !lastCastle?.eliminated);
-  roomEnded = r.phase === 'ended'; roomChallenge = !!r.challengeId;
+  roomEnded = r.phase === 'ended'; roomChallenge = !!r.challengeId; roomChallengeId = r.challengeId ?? null;
   lobbyPlayers = r.phase === 'lobby' && r.players.some((p) => !p.isBot && p.seat !== net.seat) ? `${r.players.length}/${r.maxPlayers}` : '';
   noteHostedRoom(r);
   roomMode = r.challengeId ? '' : r.mode ? modeMinutes(r.mode) : '';
@@ -242,6 +244,7 @@ function onRoom(r: RoomView): void {
 
 /** Steam friends list ("Rich Presence"): what this player is doing now; does nothing without Steam. */
 let roomEnded = false, roomChallenge = false, lobbyPlayers = '', roomMode = '';
+let roomChallengeId: string | null = null;
 function announce(): void {
   if (screen === 'lobby' && (lobbyPlayers || hostedRole() !== 'none')) { steamStatus('lobby', lobbyPlayers || '1/4', net.roomCode ?? '', roomMode); return; }
   if (screen === 'home' || screen === 'challenges' || screen === 'progress' || screen === 'lobby' || screen === 'none') { steamStatus('menu'); return; }
@@ -258,6 +261,10 @@ function onCastle(c: CastleView): void {
   if (screen === 'game') {
     if (musicInGame) music.scene(c.phase === 'war' ? 'war' : 'prep'); // the lively track for the war, the calm one before it (once the clouds have parted)
     guarded('castle-state', () => ui?.update(c), 'ui');
+    guarded('castle-state', () => { // the mission list: the challenge's goals, or what is worth doing in an ordinary match (the player's own numbers only)
+      const card = roomChallengeId && challengeList ? (roomChallengeId.startsWith('daily') ? challengeList.daily : challengeList.challenges.find((x) => x.id === roomChallengeId) ?? null) : null;
+      if (c.eliminated) questTracker.hide(); else questTracker.update(c, card);
+    }, 'quests');
     guarded('castle-state', () => { if (!scene && lastLayout) startScene(c.color, lastLayout); }, 'start scene');
     guarded('castle-state', () => scene?.setState(c), 'scene');
   }
@@ -296,6 +303,7 @@ function clear(): void {
   document.documentElement.classList.remove('in-game', 'in-menu');
   game?.destroy(true);
   game = null; scene = null; lobby = null; end = null;
+  questTracker.hide();
   ui?.destroy();
   ui = null;
   app.innerHTML = '';
@@ -500,6 +508,7 @@ function onProgressResult(r: ProgressResult): void {
 function showProgressPanel(): void {
   if (!end) return;
   end.setProgressHtml(progressPanelHtml(progressDelta));
+  animateXpBars();
 }
 
 // ---- challenge mode ------------------------------------------------------------------------
@@ -544,6 +553,7 @@ function applyChallengeResult(): void {
   // (the stars may have opened history achievements: add them to the progress block)
   const more = recordMeta(metaContext());
   progressDelta = mergeDelta(progressDelta, more);
+  if (before === 0 && r.stars >= 1) progressDelta = addBonusXp(progressDelta, r.id.startsWith('daily-') ? 50 : 100); // (the first time a challenge is cleared; the server cannot know the history)
   if (progressDelta === null && (more.newAchievements.length || more.newCosmetics.length)) progressDelta = { newAchievements: more.newAchievements, newCosmetics: more.newCosmetics, kingdom: null, won: r.won, masteryBefore: 0, masteryAfter: 0, winsAfter: 0 };
   showProgressPanel();
   const list = challengeList;

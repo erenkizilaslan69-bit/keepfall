@@ -25,6 +25,7 @@ let hostedGuest = false;
 export function setHostedShare(share: HostedShare | null, guest = false): void { hostedShare = share; hostedGuest = guest; }
 import { crazyActive, crazyInviteLink, crazyVictory } from './crazy';
 import { skinSelect } from './ui/select';
+import { profileHtml } from './ui/profile-look';
 import { isModeId, modeMinutes, modeName, modePickerHtml, paintModePicker, saveMode, savedMode, type MatchModeId } from './ui/match-mode';
 
 // Plain-HTML screens around the game: home, lobby and the end screen, in the same parchment-and-ribbon
@@ -450,7 +451,7 @@ export class LobbyScreen {
     this.q('#players').innerHTML = seats.map((p, i) => p ? `
       <li class="${p.connected ? '' : 'offline'}" data-color="${p.color}">
         <i class="avatar${frameClass(p.frame)}" style="background-image:url('${avatar(p.seat)}')"></i>
-        <span class="pname">${botMark(p.seat)}${esc(tr(p.name))}${p.seat === this.mySeat ? ` <span class="muted">${t('(sen)')}</span>` : ''}</span>
+        <span class="pname">${botMark(p.seat)}${esc(tr(p.name))}${p.seat === this.mySeat ? ` <span class="muted">${t('(sen)')}</span>` : ''} ${profileHtml({ title: p.title, level: p.level, pattern: p.pattern, color: p.color })}</span>
         <span class="tags">
           ${p.isBot ? `<span class="tag">${t('bot · {0}', p.botLevel === 'easy' ? t('kolay') : p.botLevel === 'hard' ? t('zor') : t('orta'))}</span>` : ''}
           ${p.isBot && me?.isHost ? `<button class="btn small" data-a="rmbot" data-seat="${p.seat}">${t('Bot çıkar')}</button>` : ''}
@@ -635,7 +636,7 @@ export class EndScreen {
         <ol class="ranking">${r.ranking.map((x) => `
           <li class="${r.winners.includes(x.seat) ? 'winner' : ''}" data-color="${x.color}">
             <span class="place">${x.place}.</span><i class="avatar${frameClass(x.frame)}" style="background-image:url('${avatar(x.seat)}')"></i>
-            ${emblemHtml(x.kingdom, 'emblem-rank')}${rankBanner(x.kingdom, x.banner)}<span class="pname">${r.winners.includes(x.seat) ? `<i class="ico ico-crown" title="${t('Kazanan')}"></i>` : ''}${botMark(x.seat)}${esc(tr(x.name))}${x.seat === this.mySeat ? ` <span class="muted">${t('(sen)')}</span>` : ''}</span>
+            ${emblemHtml(x.kingdom, 'emblem-rank')}${rankBanner(x.kingdom, x.banner)}<span class="pname">${r.winners.includes(x.seat) ? `<i class="ico ico-crown" title="${t('Kazanan')}"></i>` : ''}${botMark(x.seat)}${esc(tr(x.name))}${x.seat === this.mySeat ? ` <span class="muted">${t('(sen)')}</span>` : ''} ${profileHtml({ title: x.title, level: x.level, pattern: x.pattern, color: x.color })}</span>
             <span class="muted small">${x.eliminated ? t('elendi') : t('nüfus {0}', x.population)}</span>
           </li>`).join('')}</ol>`;
       this.root.querySelector('#deceptions')!.innerHTML = deceptionTimelineHtml(r);
