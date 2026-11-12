@@ -19,7 +19,7 @@ let bad = 0;
 const marked = (v) => /\{\d:[^{}]*\|[^{}]*\}/.test(v);
 const listOnly = !process.argv.includes('--check');
 // counts that are never 1 (guide numbers, "(needs 3+ soldiers)"), "N/M soldiers" fractions, and sentences whose {0} is a player's name: no plural to choose
-const NO_PLURAL = /^(Rakibe yürüyen hayalet ordu|\(en az \{0\} asker\)|Silah için odun|Silahlar üretiliyor|\{0\} sahte bir ordu|\{0\}, \{1\} ordusundan|\{0\}, bir haydut kampını|\{0\} dolu:|\{0\} askerlerinin|\{0\} gözcüsü|\{0\} ulağı|\{0\} paralı asker)/;
+const NO_PLURAL = /^(Çiftlik, kereste|<b>\{0\}<\/b>: savaşın|Her köşenin|<b>Köy<\/b>|Rakibe yürüyen hayalet ordu|\(en az \{0\} asker\)|Silah için odun|Silahlar üretiliyor|\{0\} sahte bir ordu|\{0\}, \{1\} ordusundan|\{0\}, bir haydut kampını|\{0\} dolu:|\{0\} askerlerinin|\{0\} gözcüsü|\{0\} ulağı|\{0\} paralı asker)/;
 for (const [k, v] of en) {
   if (NO_PLURAL.test(k)) continue;
   if (!/\{\d\}/.test(k) && !/\{\d:/.test(v)) continue;
