@@ -4,6 +4,7 @@
 import { t } from '../i18n';
 import { esc } from '../format';
 import { goalText } from './challenges';
+import { tutorialArmed } from './tutorial';
 import type { CastleView, ChallengeCard, LiveStats } from '../types';
 import './profile-look.css';
 
@@ -72,6 +73,13 @@ class QuestTracker {
   private done = new Set<string>();
   private first = true;
   private items: Item[] = [];
+  /** The player opened the list with J while the tutorial was running (so the new player is not shown two lists at once unless they ask). */
+  private openedInTutorial = false;
+  hasItems(): boolean { return this.items.length > 0; }
+  /** The tutorial's own list is the only one a new player sees; this one waits until it is over (or J opens it). */
+  hiddenByTutorial(): boolean { return tutorialArmed() && !this.openedInTutorial; }
+  /** J: unfolds a list the tutorial was hiding, otherwise folds / unfolds it. */
+  key(): void { if (this.hiddenByTutorial()) { this.openedInTutorial = true; try { localStorage.setItem(FOLD, '0'); } catch { /* */ } this.paint(); } else this.toggle(); }
 
   private ensure(): HTMLElement {
     if (this.el?.isConnected) return this.el;
@@ -111,7 +119,7 @@ class QuestTracker {
   sync(): void { this.paint(); }
 
   private paint(): void {
-    const show = showsQuests() && this.items.length > 0;
+    const show = showsQuests() && this.items.length > 0 && !this.hiddenByTutorial();
     if (!show) { this.el?.classList.add('hidden'); return; }
     const el = this.ensure();
     el.classList.remove('hidden');
@@ -125,7 +133,7 @@ class QuestTracker {
       }).join('')}</ul>`;
   }
 
-  hide(): void { this.el?.remove(); this.el = null; this.items = []; this.done.clear(); this.first = true; }
+  hide(): void { this.el?.remove(); this.el = null; this.items = []; this.done.clear(); this.first = true; this.openedInTutorial = false; }
 }
 
 const quests = new QuestTracker();
@@ -136,5 +144,5 @@ window.addEventListener('keydown', (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const tag = (e.target as HTMLElement | null)?.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement | null)?.isContentEditable) return;
-  if (document.querySelector('.quests:not(.hidden)')) quests.toggle();
+  if (quests.hasItems() && showsQuests()) quests.key();
 });

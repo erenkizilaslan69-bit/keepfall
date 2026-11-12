@@ -12,7 +12,7 @@ const check = (ok, what) => { console.log((ok ? 'ok   ' : 'FAIL ') + what); if (
 const progress = { v: 1, matches: 24, wins: 11, kingdoms: { golge: { played: 8, won: 4 }, tuccar: { played: 6, won: 3 }, kahin: { played: 5, won: 2 }, entrikaci: { played: 5, won: 2 } },
   achievements: { first_win: 1, village_raid: 1, castle_felled: 1 }, picks: { frame: null, banners: {}, title: 'liar_king', pattern: 'chevron' }, xp: 2600, moments: { fake_report: 4, decoy: 1, felled: 3 } };
 for (const lang of LANGS) {
-  const b = await launch({ width: w, height: h, init: `try{localStorage.setItem('keepfall_lang','${lang}');localStorage.setItem('keepfall_progress_v1', ${JSON.stringify(JSON.stringify(progress))});localStorage.setItem('keepfall.prefs', JSON.stringify({ fullRules: true, showHints: false }));localStorage.setItem('keepfall_tutorial_done','1')}catch(e){}` });
+  const b = await launch({ width: w, height: h, init: `try{localStorage.setItem('keepfall_lang','${lang}');localStorage.setItem('keepfall_progress_v1', ${JSON.stringify(JSON.stringify(progress))});localStorage.setItem('keepfall.prefs', JSON.stringify({ fullRules: true, showHints: false }));localStorage.setItem('keepfall_tutorial_done','true')}catch(e){}` });
   try {
     await b.goto('http://localhost:5174/');
     await b.waitFor(`!!document.querySelector('#quick')`);
@@ -53,7 +53,7 @@ for (const lang of LANGS) {
 }
 // the mission list in a running match
 for (const lang of LANGS) {
-  const b = await launch({ width: w, height: h, init: `try{localStorage.setItem('keepfall_lang','${lang}');localStorage.setItem('keepfall.prefs', JSON.stringify({ fullRules: true, showHints: false }));localStorage.setItem('keepfall_tutorial_done','1')}catch(e){}` });
+  const b = await launch({ width: w, height: h, init: `try{localStorage.setItem('keepfall_lang','${lang}');localStorage.setItem('keepfall.prefs', JSON.stringify({ fullRules: true, showHints: false }));localStorage.setItem('keepfall_tutorial_done','true')}catch(e){}` });
   try {
     await b.goto('http://localhost:5174/');
     await b.waitFor(`!!document.querySelector('#quick')`);
@@ -70,6 +70,24 @@ for (const lang of LANGS) {
     await b.js(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'J' })); 1`);
     await sleep(300);
     check(await b.js(`document.querySelector('.quests')?.classList.contains('folded') === false`), `${lang}: J unfolds it`);
+  } finally { b.close(); }
+}
+// the guided first match: the tutorial's own list is all a new player sees; the mission list waits until J opens it
+{
+  const b = await launch({ width: w, height: h, init: `try{localStorage.setItem('keepfall_lang','en');localStorage.removeItem('keepfall_tutorial_done');sessionStorage.removeItem('keepfall.tut');localStorage.setItem('keepfall.prefs', JSON.stringify({ fullRules: true, showHints: false }))}catch(e){}` });
+  try {
+    await b.goto('http://localhost:5174/');
+    await b.waitFor(`!!document.querySelector('#quick')`);
+    await sleep(2000);
+    await b.js(`document.querySelector('#quick').click()`);
+    await b.waitFor(`!!keepfallScene?.state && keepfallScene.ready`, 90);
+    await sleep(7000);
+    const shown = () => b.js(`(() => { const q = document.querySelector('.quests'); return !!q && !q.classList.contains('hidden') && q.getBoundingClientRect().width > 0; })()`);
+    check(!(await shown()), 'guided match: the mission list starts hidden (the tutorial is the only list)');
+    await b.shot(`${OUT}/guided-en.png`);
+    await b.js(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'j' })); 1`);
+    await sleep(400);
+    check(await shown(), 'guided match: J opens the mission list');
   } finally { b.close(); }
 }
 console.log(bad ? `\n${bad} problem(s)` : '\nNo problems');
