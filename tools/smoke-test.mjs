@@ -400,7 +400,7 @@ check('the trail closes again after its time', await waitFor(() => X.of('MapStat
 
 // ---- the envoy: goods and a message that only the sender and the receiver ever see -------------------------------
 const note = 'Barış? <b>evet</b> & "belki" ışık';
-check('the castle picture carries the envoy limits', JSON.stringify(X.of('CastleState').at(-1).envoy) === '{"maxCargo":40,"maxMessageLength":140}');
+check('the castle picture carries the envoy limits', JSON.stringify(X.of('CastleState').at(-1).envoy) === '{"maxCargo":40,"maxMessageLength":140,"maxAtOnce":1,"sendsLeft":-1}');
 check('an envoy needs a load or a message', !(await X.call('SendEnvoy', 2, 0, 0, 0, 0, '  ', 'idle')).ok);
 check('a message with a line break is refused', !(await X.call('SendEnvoy', 2, 0, 0, 0, 0, 'iki' + String.fromCharCode(10) + 'satir', 'idle')).ok);
 check('too much is refused', !(await X.call('SendEnvoy', 2, 30, 30, 0, 0, note, 'idle')).ok);
@@ -409,7 +409,7 @@ const stock = X.of('CastleState').at(-1).resources;
 const giftFood = Math.min(2, Math.floor(stock.food)), giftWood = Math.min(3, Math.floor(stock.wood));
 const sentEnvoy = await X.call('SendEnvoy', 2, giftFood, giftWood, 0, 0, note, 'idle');
 check('X sends an envoy to Y', sentEnvoy.ok, sentEnvoy.error);
-check('the envoy takes the scouts place', !(await X.call('SendScout', 3, 'idle')).ok);
+check('one envoy at a time: a second one is refused while the first is on the road (the server holds the limit)', !(await X.call('SendEnvoy', 3, 1, 0, 0, 0, 'tekrar', 'idle')).ok);
 check('X sees its own envoy, with no sight', await waitFor(() => X.of('MapState').at(-1).own.some((o) => o.kind === 'envoy' && o.visionRadius === 0), 5000));
 check('Y gets the letter: who from, what and the message exactly', await waitFor(() => {
   const l = Y.of('CastleState').at(-1).letters;
