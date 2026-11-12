@@ -524,9 +524,11 @@ html.in-menu .lang-fab.btn-round { display: inline-grid; }
 @font-face { font-family: 'Pixelify Sans'; font-style: normal; font-display: swap; font-weight: 700; src: url(../../node_modules/@fontsource/pixelify-sans/files/pixelify-sans-latin-400-normal.woff2) format('woff2'); }
 @font-face { font-family: 'Pixelify Sans'; font-style: normal; font-display: swap; font-weight: 700; src: url(../../node_modules/@fontsource/pixelify-sans/files/pixelify-sans-latin-ext-400-normal.woff2) format('woff2'); }
 
-/* an empty slot keeps "Add Bot: Easy Medium Hard" on one row (the name gives way and wraps instead) */
-.players li.empty .tags { flex-wrap: nowrap; white-space: nowrap; align-items: center; flex: none; }
-.players li.empty .pname { min-width: 0; flex: 1 1 0; line-height: 1.15; }
+/* an empty slot: "Empty slot 3" stays on one line and the bot buttons sit beside it; when the row is too narrow for both, the buttons drop under the name (never the name breaking up) */
+.players li.empty { flex-wrap: wrap; row-gap: calc(4px * var(--u, 1)); }
+.players li.empty .pname { flex: 0 0 auto; min-width: 0; white-space: nowrap; line-height: 1.15; }
+.players li.empty .tags { flex: 1 1 auto; flex-wrap: wrap; justify-content: flex-end; white-space: nowrap; align-items: center; row-gap: calc(4px * var(--u, 1)); }
+.players li.empty .add-label { font-size: max(var(--fs-xs, 0px), .85em); opacity: .8; }
 
 /* ---- FPS counter and the low-frame-rate offer ------------------------------------------------- */
 .kf-fps { position: fixed; left: 8px; bottom: 8px; z-index: 70; padding: 2px 8px; border-radius: 4px; background: rgba(15, 20, 28, .72); color: #d8f0d0; font: 12px/1.4 var(--font-text, monospace); pointer-events: none; }
@@ -653,3 +655,5 @@ html.kf-calm .home .btn, html.kf-calm .home .btn:hover { transition: none; trans
   .home .home-second, .home .home-friends, .home .home-foot { margin-top: 4px; }
   .home .home-second .btn small { display: none; }
 }
+.players li.empty .tags .btn { padding-left: calc(8px * var(--u, 1)); padding-right: calc(8px * var(--u, 1)); font-size: max(var(--fs-xs, 0px), .88em); }
+.players li.empty .tags { column-gap: calc(4px * var(--u, 1)); }

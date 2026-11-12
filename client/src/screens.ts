@@ -226,7 +226,7 @@ export class LobbyScreen {
     ? t('Maç bu bilgisayarda çalışır: sen çıkarsan herkes için biter. Arkadaşların bu adresi oyunda "Ev sahibinin adresi"ne yazar.')
     : t('Maç bu bilgisayarda çalışır: sen çıkarsan herkes için biter. Yalnız Steam lobindekiler bağlanabilir; bu bilgisayarda ağa açık port yok.')}</p>`
             : `<div class="share"${FEATURE_PRIVATE_ROOM && !hostedGuest ? '' : ' hidden'}>
-              <input class="share-code" readonly value="${esc(`${t('Oda kodu')}: ${room.code}`)}" aria-label="${t('Oda kodu')}">
+              <input class="share-code kf-vh" readonly tabindex="-1" value="${esc(`${t('Oda kodu')}: ${room.code}`)}" aria-label="${t('Oda kodu')}">
               <button class="btn" data-a="copy">${t('Oda kodunu kopyala')}</button>
               ${inIframe() && !crazyActive() ? '' : `<button class="btn" data-a="copylink">${t('Bağlantıyı kopyala')}</button>`}
             </div>`}
@@ -343,12 +343,14 @@ export class LobbyScreen {
       card.classList.toggle('flipped'); // the two clicks of the double click turned it twice already: put it as it was
       void this.toggleDeck(card.dataset.unit!);
     });
+    const redrawFill = skinSelect(this.q<HTMLSelectElement>('#filllevel'));
     try {
       const saved = JSON.parse(localStorage.getItem('keepfall.fill') ?? 'null') as { on?: boolean; level?: string } | null;
       this.q<HTMLInputElement>('#fillbots').checked = saved?.on !== false;
       if (saved?.level === 'easy' || saved?.level === 'hard') this.q<HTMLSelectElement>('#filllevel').value = saved.level;
       else this.q<HTMLSelectElement>('#filllevel').value = newPlayer() ? 'easy' : 'medium';
     } catch { this.q<HTMLInputElement>('#fillbots').checked = true; this.q<HTMLSelectElement>('#filllevel').value = newPlayer() ? 'easy' : 'medium'; }
+    redrawFill();
     this.q('#fill').addEventListener('change', () => {
       try { localStorage.setItem('keepfall.fill', JSON.stringify(this.fill())); } catch { /* fine */ }
       if (this.room) this.update(this.room);
@@ -460,7 +462,7 @@ export class LobbyScreen {
           ${p.isBot ? '' : !p.connected ? `<span class="tag warn">${t('bağlantı yok')}</span>` : p.ready ? `<span class="tag ok">${t('hazır')}</span>` : `<span class="tag">${t('bekliyor')}</span>`}
         </span>
       </li>` : `<li class="empty"><i class="avatar"></i><span class="pname muted">${t('Boş yer {0}', i + 1)}</span>
-        ${me?.isHost ? `<span class="tags">${t('Bot ekle:')}
+        ${me?.isHost ? `<span class="tags"><span class="add-label">${t('Bot ekle:')}</span>
           <button class="btn small" data-a="addbot" data-level="easy">${t('Kolay')}</button>
           <button class="btn small" data-a="addbot" data-level="medium">${t('Orta')}</button>
           <button class="btn small" data-a="addbot" data-level="hard">${t('Zor')}</button></span>` : ''}</li>`).join('')

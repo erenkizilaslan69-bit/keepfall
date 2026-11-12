@@ -13,4 +13,6 @@
 .mode-field .mode-label { display: block; font-size: max(var(--fs-xs, 0px), .88em); opacity: .85; }
 .home .mode-pick { margin: calc(4px * var(--u, 1)) 0 0; }
 .tag.mode-tag { white-space: nowrap; }
+/* out of sight but still there (a copy button selects its text as the old way of copying) */
+.kf-vh { position: absolute !important; flex: none !important; width: 1px !important; height: 1px !important; min-width: 0 !important; padding: 0 !important; border: 0 !important; margin: 0 !important; opacity: 0; overflow: hidden; pointer-events: none; }
 .home .mode-btn:not(.on) { background: #e8d7ae; border-color: #7a5a36; opacity: 1; }
