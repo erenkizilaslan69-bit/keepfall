@@ -73,8 +73,8 @@ check('a made-up sound is not needed for the files that exist', (await run(`(() 
 const mp3 = JSON.parse(await run(`(async () => { const ctx = window.keepfallAudio.sfx.audioContext, out = []; for (const n of ['sword-slice-1', 'castle-collapse', 'ui-click-2', 'warning']) { const r = await fetch('/audio/sfx/' + n + '.mp3'); const b = await ctx.decodeAudioData(await r.arrayBuffer()); out.push(Math.round(b.duration * 100) / 100); } return JSON.stringify(out); })()`));
 check('the MP3 backups decode too (Safari)', mp3.every((d) => d > 0.005), JSON.stringify(mp3));
 const loops = JSON.parse(await run(`JSON.stringify([...window.keepfallAudio.music.buffers.values()].map((b) => Math.round(b.duration * 100) / 100))`));
-// the preparation loop lasts 149.44 s, the war loop 56.31 s (and the menu loop 185 s, the opening piece 5.7 s): MP3 encoder padding is trimmed, so the loops are as long as the originals
-check('the music loops decode to their exact length', loops.some((d) => Math.abs(d - 149.44) < 0.1) && loops.some((d) => Math.abs(d - 56.31) < 0.1), JSON.stringify(loops));
+// the preparation loop lasts 149.44 s, the war loop 99.11 s (Kulakovka, crossfaded; and the menu loop 185 s, the opening piece 5.7 s): MP3 encoder padding is trimmed, so the loops are as long as the originals
+check('the music loops decode to their exact length', loops.some((d) => Math.abs(d - 149.44) < 0.1) && loops.some((d) => Math.abs(d - 99.11) < 0.1), JSON.stringify(loops));
 await run(`window.keepfallAudio.music.intro('prep'); 1`);
 await sleep(2500);
 const intro = JSON.parse(await run(`(() => { const c = window.keepfallAudio.music.current; return JSON.stringify({ track: c.track, loop: c.src.loop, buffers: [...window.keepfallAudio.music.buffers.keys()] }); })()`));

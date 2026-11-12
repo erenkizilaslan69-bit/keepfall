@@ -1,6 +1,5 @@
 Pixabay (Pixabay Content License, https://pixabay.com/service/license-summary/): bow-shot, sword-clash-1, sword-slice-1, sword-slice-2 (Dragon Studio),
-catapult-launch, castle-collapse, campfire-loop, horse-gallop-loop, upgrade, victory, music/start, music/prep-bg, music/lobby.
+catapult-launch, castle-collapse, campfire-loop, horse-gallop-loop, upgrade, victory, music/start, music/prep-bg, music/lobby, music/war-epic (Kulakovka, "Epic Medieval").
 These recordings are part of the game only; they are not redistributed as standalone sound files.
 Kenney Interface Sounds / Impact Sounds (CC0 1.0), https://kenney.nl
-RandomMind: The Old Tower Inn, Medieval: Minstrel Dance (CC0 1.0), https://opengameart.org
 

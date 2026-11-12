@@ -75,7 +75,7 @@ Yerleşim:
 | `music/start.mp3` (music-start) | bulutlar açılınca BİR KEZ; ardından hazırlık müziği yumuşakça girer |
 | `music/prep.mp3` (music-bg-loop, 149 sn) | hazırlık müziği |
 | `music/lobby.mp3` (music-lobby-loop, 185 sn) | ana menü, lobi ve maç sonu müziği; maça geçerken yumuşak geçiş (opening piece altında kaybolur) |
-| `music/war.mp3` | savaş müziği: değişmedi (eski, RandomMind, CC0) |
+| `music/war-epic.ogg/.mp3` | savaş müziği (2026-11-12): Pixabay, **Kulakovka — "Epic Medieval"** (kaynak dosya `art/promo/kulakovka-epic-medieval-614879.mp3`, Pixabay Content License); eski RandomMind war.mp3 kaldırıldı |
 Ses sınırları (`MAX_SAME`: 3 ok, 3 saplanma, 4 kılıç…) ve perde/ses rastgeleliği duruyor.
 
 Eren'in `kaynaklar.txt` dosyası olduğu gibi:
@@ -115,3 +115,9 @@ music-lobby-loop.mp3  - LOBİ / ana menü müziği (~3 dk kesintisiz döngü; or
 | music-bg-loop | `music/prep-bg.ogg/.mp3` | hazırlık döngüsü |
 | music-lobby-loop | `music/lobby.ogg/.mp3` | ana menü, lobi, maç sonu |
 2026-11-10: müziklerin ogg'u eklendi (`ffmpeg -c:a libvorbis -q:a 5`, başka işlem yok); tarayıcı ogg çalabiliyorsa ogg, değilse mp3. `war.mp3` (RandomMind, CC0) mp3 kaldı: ogg'u daha büyük çıktı.
+
+## 2026-11-12 Savaş müziği: Kulakovka — "Epic Medieval" (Pixabay Content License)
+- Kaynak: `art/promo/kulakovka-epic-medieval-614879.mp3` (103,1 sn, −12,4 LUFS). Lisans: Pixabay Content License (ticari kullanım serbest; ses oyunun parçası olarak kullanılır, tek başına dağıtılmaz).
+- İşleme (`ffmpeg`): dönüş noktası kopuk duyulmasın diye son 4 sn, ilk 4 sn ile eş-güç (qsin) çapraz geçişle birleştirildi (döngü 99,1 sn; dikiş sıçraması 861 örnek, müziğin %99 adım sınırı 1815'in altında: tık yok); ses −1,2 dB ve sınırlayıcıyla −13,6 LUFS / tepe −1,5 dBFS (hazırlık müziği −14,9, lobi −15,7, eski savaş −12,9: dengeli, savaş biraz daha gür). `libvorbis -q:a 4` (ogg, gapless) ve `libmp3lame 176k` (yedek).
+- Oyunda: hazırlık müziği çalarken savaş müziği önceden yüklenir; savaş başlayınca 3,5 sn'lik yumuşak geçişle girer ve döngüde çalar. Maç sonu akışı (sessizlik → zafer sesi → lobi müziği) değişmedi.
+- Krediler: Ayarlar > Hakkında'da "Müzik" satırı (etiket 15 dilde), `client/public/licenses/AUDIO-LICENSES.txt`.

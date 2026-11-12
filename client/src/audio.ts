@@ -433,8 +433,9 @@ export const sfx = new Sfx();
 
 export type Track = 'lobby' | 'prep' | 'war' | 'start';
 /** The files (a new name when a recording is replaced: a browser keeps the old file under the old name; the preparation loop was `prep.mp3` first). */
-const MUSIC_FILE: Record<Track, string> = { lobby: 'lobby', prep: 'prep-bg', war: 'war', start: 'start' };
+const MUSIC_FILE: Record<Track, string> = { lobby: 'lobby', prep: 'prep-bg', war: 'war-epic', start: 'start' }; // (war-epic: Pixabay, Kulakovka; looped seamlessly at the file level, see docs/ses-lisanslari.md)
 const FADE = 2.5; // seconds of crossfade between the tracks
+const WAR_FADE = 3.5; // the preparation music gives way to the war music more slowly
 
 /**
  * The music, as a flow: the menu/lobby loop (`lobby`) in the menus, the lobby and after a match; when the clouds part on a match the opening piece (`start`)
@@ -461,7 +462,7 @@ class Music {
     window.clearTimeout(this.quietTimer);
     this.base = track;
     if (this.blocked) return;
-    this.go(track, FADE);
+    this.go(track, track === 'war' ? WAR_FADE : FADE); // (a slower crossfade from the preparation music into the war)
   }
 
   /** The clouds have parted on a match: the opening piece plays once (whatever plays fades out under it), then `after` comes in softly. */
@@ -527,6 +528,8 @@ class Music {
     src.connect(gain).connect(bus);
     src.start(t);
     this.current = { track: want, gain, src };
+    // the war music is fetched while the preparation plays, so it is there the moment the war begins
+    if ((want === 'prep' || want === 'start') && !this.buffers.has('war')) void this.fetch('war');
     if (want === 'start') {
       // the next track comes in softly while the piece is dying away
       window.clearTimeout(this.timer);
@@ -539,8 +542,8 @@ class Music {
     if (!ctx || this.loading.has(track)) return;
     this.loading.add(track);
     try {
-      // ogg where the browser plays it (smaller), mp3 otherwise and for the old war loop (its ogg came out larger than the mp3: none is shipped)
-      const res = await fetch(asset(`/audio/music/${MUSIC_FILE[track]}.${track === 'war' ? 'mp3' : EXT}`));
+      // ogg where the browser plays it (smaller and gapless for the loops), mp3 otherwise
+      const res = await fetch(asset(`/audio/music/${MUSIC_FILE[track]}.${EXT}`));
       if (!res.ok) throw new Error(String(res.status));
       this.buffers.set(track, await ctx.decodeAudioData(await res.arrayBuffer()));
       this.loading.delete(track);
