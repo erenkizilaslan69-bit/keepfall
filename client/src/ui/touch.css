@@ -112,6 +112,8 @@ html.in-game body { position: fixed; inset: 0; width: 100%; }
 @media (pointer: coarse) { .kingdom-panel .kd-unit input { min-height: 44px; } }
 .notes { position: fixed; left: 50%; transform: translateX(-50%); top: calc(var(--sa-t, 0px) + var(--top-h, 60px) + 6px); width: max-content; max-width: calc(100vw - var(--sa-l, 0px) - var(--sa-r, 0px) - 24px); z-index: 14; }
 .notes .ribbon { max-width: 100%; }
+/* with a mouse the strips (hunger, an army coming ...) stand at the top right, under the buttons: the middle of the screen is where the castle's name tag is, and they lay over it */
+@media (pointer: fine) { .notes { left: auto; right: calc(12px * var(--u)); top: calc(52px * var(--u)); transform: none; align-items: flex-end; max-width: min(calc(420px * var(--u)), 38vw); } }
 
 
 /* ---- (round 4) ---- */

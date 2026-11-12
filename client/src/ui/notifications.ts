@@ -41,14 +41,14 @@ export class Notifications {
   private avoidWindows(): void {
     const s = this.el.style;
     const win = document.querySelector<HTMLElement>('.ui-root .win:not(.hidden), .ui-root .scroll-pop:not(.hidden)');
-    if (!win || window.matchMedia('(pointer: coarse) and (max-height: 520px)').matches) { if (s.left) { s.left = s.top = s.width = s.maxWidth = s.transform = s.alignItems = ''; } return; }
+    if (!win || window.matchMedia('(pointer: coarse) and (max-height: 520px)').matches) { if (s.left) { s.left = s.top = s.right = s.width = s.maxWidth = s.transform = s.alignItems = ''; } return; }
     const r = win.getBoundingClientRect(), vw = window.innerWidth;
     const top = Math.max(document.querySelector<HTMLElement>('.topbar')?.getBoundingClientRect().bottom ?? 60, document.querySelector<HTMLElement>('.kingdom-fab:not(.hidden)')?.getBoundingClientRect().bottom ?? 0) + 10;
     const left = r.left - 24, right = vw - r.right - 24 - 240; // (the right edge keeps the rail of buttons and the minimap)
-    if (Math.max(left, right) < 200) { if (s.left) { s.left = s.top = s.width = s.maxWidth = s.transform = s.alignItems = ''; } return; }
+    if (Math.max(left, right) < 200) { if (s.left) { s.left = s.top = s.right = s.width = s.maxWidth = s.transform = s.alignItems = ''; } return; }
     const w = Math.min(340, Math.max(left, right));
     s.left = `${left >= right ? Math.max(12, r.left - 12 - w) : r.right + 12}px`;
-    s.top = `${top}px`; s.width = `${w}px`; s.maxWidth = `${w}px`; s.transform = 'none'; s.alignItems = 'flex-start';
+    s.right = 'auto'; s.top = `${top}px`; s.width = `${w}px`; s.maxWidth = `${w}px`; s.transform = 'none'; s.alignItems = 'flex-start';
   }
 
   private readonly recent = new Map<string, number>();
