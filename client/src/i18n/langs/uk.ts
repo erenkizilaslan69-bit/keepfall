@@ -585,7 +585,6 @@ const D: Record<string, string> = {
   "{0} dk": "{0} хв",
   "Amaç": "Мета",
   "2–4 kişi oynar, herkesin tek bir kalesi vardır. <b>Son ayakta kalan kale kazanır</b>; süre dolarsa en yüksek nüfus kazanır.": "Грають 2–4 людини, у кожної один замок. <b>Перемагає останній уцілілий замок</b>; якщо час вийде — найчисельніший народ.",
-  "<b>Hazırlık</b> ({0}): ekonomi, silah, orman. <b>Savaş</b> ({1}): ordular yola çıkar. {2} ve {3} modu var.": "<b>Підготовка</b> ({0}): економіка, зброя, ліс. <b>Війна</b> ({1}): армії вирушають. Режими: {2} або {3}.",
   "Kale tek seferde düşer: bir ordu kapıdaki savaşı kazanırsa (tek askeri kalsa bile) o kale elenir ve oyuncu izleyici olur. Kapıdaki okçular surun arkasından %{0} fazla hasar verir.": "Замок падає одним ударом: якщо армія перемагає в бою біля воріт (навіть із одним солдатом), цей замок вибуває, а його власник стає глядачем. Лучники біля воріт завдають із-за стіни на {0} % більше шкоди.",
   "Ekonomi: işçi mi asker mi?": "Економіка: робітники чи солдати?",
   "Her işçi çiftçi, oduncu, madenci ya da demirci olur. Boşta duran üretmez ama yemek yer. Kişi başı dakikada: yemek {0}, odun {1}, demir {2}.": "Кожен робітник стає землеробом, дроворубом, шахтарем або ковалем. Вільний нічого не виробляє, але все одно їсть. На людину за хвилину: їжі {0}, деревини {1}, заліза {2}.",
@@ -1119,5 +1118,13 @@ const D: Record<string, string> = {
   "(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)": "(діє з наступної гри; якщо залишити порожнім, використовується ім'я Steam)",
   "Gizli krallıklar. Sahte ordular. Tek savaş.": "Приховані королівства. Фальшиві армії. Одна битва.",
   "Davet penceresi açılmadıysa: Steam arkadaş listesinde arkadaşına sağ tık → Oyuna davet et.": "Якщо вікно запрошення не відкрилося: у списку друзів Steam клацни друга правою кнопкою → Запросити до гри.",
+  "Hızlı": "Швидкий",
+  "Standart": "Стандартний",
+  "Uzun": "Довгий",
+  "Maç süresi": "Тривалість матчу",
+  "Hazırlık {0} dk + savaş {1} dk": "Підготовка {0} хв + війна {1} хв",
+  "dk": "хв",
+  "Maç süresini yalnız oda sahibi seçer.": "Тривалість матчу обирає лише господар кімнати.",
+  "<b>Hazırlık</b>: ekonomi, silah, orman. <b>Savaş</b> (10 dk): ordular yola çıkar. Oda sahibi süreyi seçer: Hızlı 5+10 dk, Standart 10+10 dk, Uzun 15+10 dk (hazırlık + savaş).": "<b>Підготовка</b>: економіка, зброя, ліс. <b>Війна</b> (10 хв): армії вирушають. Тривалість обирає господар: Швидкий 5+10 хв, Стандартний 10+10 хв, Довгий 15+10 хв (підготовка + війна).",
 };
 export default D;

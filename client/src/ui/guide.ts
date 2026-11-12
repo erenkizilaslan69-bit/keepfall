@@ -73,12 +73,11 @@ const counts = (list: Count[]) => list.map((c) => `${c.count} ${tr(c.name)}`).jo
 /** What the decree says: short lists under small headings. */
 export function guideHtml(g: Guide): string {
   const [l1, l2, l3, l4] = g.levels;
-  const shortTotal = g.shortPrepSeconds + g.shortWarSeconds, longTotal = g.longPrepSeconds + g.longWarSeconds;
   const upgrades = g.levels.slice(1).map((l) => `${num(l.upgradeSeconds)}`).join(', ');
   const sections: [string, string[], boolean?][] = [
     [t('Amaç'), [
       t('2–4 kişi oynar, herkesin tek bir kalesi vardır. <b>Son ayakta kalan kale kazanır</b>; süre dolarsa en yüksek nüfus kazanır.'),
-      t('<b>Hazırlık</b> ({0}): ekonomi, silah, orman. <b>Savaş</b> ({1}): ordular yola çıkar. {2} ve {3} modu var.', minutes(g.shortPrepSeconds), minutes(g.shortWarSeconds), minutes(shortTotal), minutes(longTotal)),
+      t('<b>Hazırlık</b>: ekonomi, silah, orman. <b>Savaş</b> (10 dk): ordular yola çıkar. Oda sahibi süreyi seçer: Hızlı 5+10 dk, Standart 10+10 dk, Uzun 15+10 dk (hazırlık + savaş).'),
       t('Kale tek seferde düşer: bir ordu kapıdaki savaşı kazanırsa (tek askeri kalsa bile) o kale elenir ve oyuncu izleyici olur. Kapıdaki okçular surun arkasından %{0} fazla hasar verir.', num(g.archerDefenseBonusPercent)),
     ]],
     [t('Ekonomi: işçi mi asker mi?'), [

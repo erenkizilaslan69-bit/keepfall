@@ -585,7 +585,6 @@ const D: Record<string, string> = {
   "{0} dk": "{0}分",
   "Amaç": "目標",
   "2–4 kişi oynar, herkesin tek bir kalesi vardır. <b>Son ayakta kalan kale kazanır</b>; süre dolarsa en yüksek nüfus kazanır.": "2〜4人で遊び、各自の城は1つだけです。<b>最後まで残った城の勝ち</b>。時間切れなら人口が最も多い人の勝ちです。",
-  "<b>Hazırlık</b> ({0}): ekonomi, silah, orman. <b>Savaş</b> ({1}): ordular yola çıkar. {2} ve {3} modu var.": "<b>準備フェーズ</b>（{0}）：経済・武器・森。<b>戦争フェーズ</b>（{1}）：軍が出発します。モード：{2}または{3}。",
   "Kale tek seferde düşer: bir ordu kapıdaki savaşı kazanırsa (tek askeri kalsa bile) o kale elenir ve oyuncu izleyici olur. Kapıdaki okçular surun arkasından %{0} fazla hasar verir.": "城は一撃で落ちます。軍が城門での戦いに勝てば（兵士が1人残っただけでも）、その城は脱落し、持ち主は観戦者になります。城門の弓兵は城壁の陰から与えるダメージが{0}％増えます。",
   "Ekonomi: işçi mi asker mi?": "経済：労働者か兵士か？",
   "Her işçi çiftçi, oduncu, madenci ya da demirci olur. Boşta duran üretmez ama yemek yer. Kişi başı dakikada: yemek {0}, odun {1}, demir {2}.": "労働者は農夫・木こり・鉱夫・鍛冶屋のいずれかになります。待機中は何も生産しませんが、食事はします。1人あたり毎分：食料{0}、木材{1}、鉄{2}。",
@@ -1119,5 +1118,13 @@ const D: Record<string, string> = {
   "(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)": "（次のゲームから有効。空欄ならSteam名を使います）",
   "Gizli krallıklar. Sahte ordular. Tek savaş.": "隠された王国。偽りの軍勢。ただ一度の戦い。",
   "Davet penceresi açılmadıysa: Steam arkadaş listesinde arkadaşına sağ tık → Oyuna davet et.": "招待ウィンドウが開かない場合:Steam のフレンドリストで友達を右クリック → ゲームに招待。",
+  "Hızlı": "クイック",
+  "Standart": "スタンダード",
+  "Uzun": "ロング",
+  "Maç süresi": "マッチの長さ",
+  "Hazırlık {0} dk + savaş {1} dk": "準備 {0} 分 + 戦争 {1} 分",
+  "dk": "分",
+  "Maç süresini yalnız oda sahibi seçer.": "マッチの長さを選べるのはホストだけです。",
+  "<b>Hazırlık</b>: ekonomi, silah, orman. <b>Savaş</b> (10 dk): ordular yola çıkar. Oda sahibi süreyi seçer: Hızlı 5+10 dk, Standart 10+10 dk, Uzun 15+10 dk (hazırlık + savaş).": "<b>準備</b>:経済、武器、森。<b>戦争</b>(10分):軍が出発します。長さはホストが選びます:クイック 5+10分、スタンダード 10+10分、ロング 15+10分(準備 + 戦争)。",
 };
 export default D;

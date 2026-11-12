@@ -25,6 +25,7 @@ let hostedGuest = false;
 export function setHostedShare(share: HostedShare | null, guest = false): void { hostedShare = share; hostedGuest = guest; }
 import { crazyActive, crazyInviteLink, crazyVictory } from './crazy';
 import { skinSelect } from './ui/select';
+import { isModeId, modeMinutes, modeName, modePickerHtml, paintModePicker, saveMode, savedMode, type MatchModeId } from './ui/match-mode';
 
 // Plain-HTML screens around the game: home, lobby and the end screen, in the same parchment-and-ribbon
 // look as the in-game UI (ui/ui.css).
@@ -130,6 +131,7 @@ export class HomeScreen {
         ${logoHtml()}
         <p class="muted center kf-logo-sub">${t('Gizli krallıklar. Sahte ordular. Tek savaş.')}</p>
         <button id="quick" class="btn wide kf-btn--green home-play"><span class="home-play-word">${t('Oyna')}</span> <small>${t('(3 bota karşı, hemen)')}</small></button>
+        <div class="home-mode" id="home-mode">${modePickerHtml(savedMode(), true)}</div>
         ${friends && hosted ? friends : ''}
         <div class="home-second">
           <button id="challenges" class="btn">${t('Meydan Okuma')} <small>${t('(tek kişilik, hedefli maçlar)')}</small></button>
@@ -170,6 +172,11 @@ export class HomeScreen {
     root.querySelector('#quick')!.addEventListener('click', () => run(() => actions.quick(name.value)));
     root.querySelector('#challenges')!.addEventListener('click', () => actions.challenges());
     root.querySelector('#progress')!.addEventListener('click', () => actions.progress());
+    // the match length for "Oyna" (and for a game you host): kept in this browser
+    root.querySelector('#home-mode')?.addEventListener('click', (e) => {
+      const m = (e.target as HTMLElement).closest<HTMLButtonElement>('.mode-btn')?.dataset.mode;
+      if (m && isModeId(m)) { saveMode(m); paintModePicker(root.querySelector('#home-mode')!, m, true); }
+    });
     root.querySelector('#create')?.addEventListener('click', () => run(() => actions.create(name.value, (root.querySelector<HTMLSelectElement>('#vis')?.value as Visibility | undefined))));
     // Steam: the open games (public ones, and friends' as Steam lists them); one click joins.
     const list = root.querySelector<HTMLElement>('#lobbies');
@@ -179,7 +186,7 @@ export class HomeScreen {
       const found = await actions.lobbies();
       list.innerHTML = found.length ? found.map((l) => `
         <li><span class="pname">${esc(l.name || t('Oyuncu'))}</span>
-          <span class="tags"><span class="tag">${l.players}/${l.max}</span>
+          <span class="tags"><span class="tag">${l.players}/${l.max}</span><span class="tag mode-tag" title="${esc(modeName(isModeId(l.mode) ? l.mode : 'quick'))}">${modeMinutes(isModeId(l.mode) ? l.mode : 'quick')} ${t('dk')}</span>
           ${!l.compatible ? `<span class="tag warn">${t('farklı sürüm')}</span>` : l.phase !== 'lobby' ? `<span class="tag">${t('maçta')}</span>` : `<button class="btn small" data-lobby="${esc(l.id)}">${t('Katıl')}</button>`}</span></li>`).join('')
         : `<li class="empty"><span class="pname muted">${t('Açık oyun bulunamadı.')}</span></li>`;
     });
@@ -197,6 +204,7 @@ export class HomeScreen {
 
 export class LobbyScreen {
   private readonly root: HTMLElement;
+  private modeOffered = false;
 
   constructor(parent: HTMLElement, private readonly net: GameConnection, private readonly mySeat: number, room: RoomView,
     onName: (name: string) => void, onLeave: () => void) {
@@ -221,6 +229,7 @@ export class LobbyScreen {
               <button class="btn" data-a="copy">${t('Oda kodunu kopyala')}</button>
               ${inIframe() && !crazyActive() ? '' : `<button class="btn" data-a="copylink">${t('Bağlantıyı kopyala')}</button>`}
             </div>`}
+            <div class="mode-field" id="modefield"><span class="mode-label">${t('Maç süresi')}</span><div id="modebox"></div></div>
             <ul class="players" id="players"></ul>
           </div>
           <div class="lob-right">
@@ -254,6 +263,13 @@ export class LobbyScreen {
       this.show(await this.net.setName(nameInput.value));
     });
     root.addEventListener('click', async (e) => {
+      const picked = (e.target as HTMLElement).closest<HTMLButtonElement>('.mode-btn')?.dataset.mode;
+      if (picked && isModeId(picked) && this.me(this.room!)?.isHost) {
+        saveMode(picked);
+        paintModePicker(this.q('#modebox'), picked, true);
+        this.show(await this.net.setMode(picked));
+        return;
+      }
       const a = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-a]')?.dataset.a;
       if (a === 'copy' || a === 'copylink') {
         // The room code (all that matters inside an iframe such as itch.io) or the address of the room; the button says "Copied!" for two seconds.
@@ -457,6 +473,13 @@ export class LobbyScreen {
     ready.classList.toggle('btn-red', !!me?.ready);
 
     const isHost = !!me?.isHost;
+    // the host's saved length is offered once when the lobby opens; everybody sees the current one, only the host can change it
+    const mode: MatchModeId = isModeId(room.mode) ? room.mode : 'quick';
+    if (isHost && !this.modeOffered) { this.modeOffered = true; const want = savedMode(); if (want !== mode) void this.net.setMode(want); }
+    const box = this.q('#modebox');
+    if (!box.firstElementChild) box.innerHTML = modePickerHtml(mode, isHost);
+    else paintModePicker(box, mode, isHost);
+    this.q('#modefield').setAttribute('title', isHost ? '' : t('Maç süresini yalnız oda sahibi seçer.'));
     const start = this.q<HTMLButtonElement>('#start');
     start.classList.toggle('hidden', !isHost);
     this.q('#fill').classList.toggle('hidden', !isHost);

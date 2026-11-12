@@ -49,6 +49,7 @@ import { FEATURE_PRIVATE_ROOM } from './features';
 import { hostedRole, hostLink, joinError, mp, rememberGuest, rememberedGuest, setHostedRole, type MpHost, type MpInfo, type MpJoin } from './hosted';
 import { setHostedShare } from './screens';
 import { initSteam, steamStatus } from './steam';
+import { modeMinutes, savedMode } from './ui/match-mode';
 import { crazyGameplay, crazyInstant, crazyInviteRoom, crazyLoaded, crazyRoom, crazyUsername, crazyVictory, initCrazy, onCrazyJoin, watchCrazySettings } from './crazy';
 import { countMatch, newPlayer, playsFullRules, setSiteChatOff } from './prefs';
 import { guarded, installErrorReporting } from './error-report';
@@ -235,18 +236,19 @@ function onRoom(r: RoomView): void {
   roomEnded = r.phase === 'ended'; roomChallenge = !!r.challengeId;
   lobbyPlayers = r.phase === 'lobby' && r.players.some((p) => !p.isBot && p.seat !== net.seat) ? `${r.players.length}/${r.maxPlayers}` : '';
   noteHostedRoom(r);
+  roomMode = r.challengeId ? '' : r.mode ? modeMinutes(r.mode) : '';
   announce();
 }
 
 /** Steam friends list ("Rich Presence"): what this player is doing now; does nothing without Steam. */
-let roomEnded = false, roomChallenge = false, lobbyPlayers = '';
+let roomEnded = false, roomChallenge = false, lobbyPlayers = '', roomMode = '';
 function announce(): void {
-  if (screen === 'lobby' && (lobbyPlayers || hostedRole() !== 'none')) { steamStatus('lobby', lobbyPlayers || '1/4', net.roomCode ?? ''); return; }
+  if (screen === 'lobby' && (lobbyPlayers || hostedRole() !== 'none')) { steamStatus('lobby', lobbyPlayers || '1/4', net.roomCode ?? '', roomMode); return; }
   if (screen === 'home' || screen === 'challenges' || screen === 'progress' || screen === 'lobby' || screen === 'none') { steamStatus('menu'); return; }
   if (screen === 'end' || roomEnded) { steamStatus('ended'); return; }
   if (lastCastle?.eliminated) { steamStatus('spectating'); return; }
   const war = lastCastle?.phase === 'war';
-  steamStatus(roomChallenge ? (war ? 'challenge_war' : 'challenge_prep') : war ? 'war' : 'prep');
+  steamStatus(roomChallenge ? (war ? 'challenge_war' : 'challenge_prep') : war ? 'war' : 'prep', '', '', roomMode);
 }
 
 function onCastle(c: CastleView): void {
@@ -402,10 +404,10 @@ async function joinSteamLobby(lobbyId: string): Promise<void> {
 let lastHostNote = '';
 function noteHostedRoom(r: RoomView): void {
   if (hostedRole() !== 'host') return;
-  const note = `${r.players.length}/${r.maxPlayers}:${r.phase}`;
+  const note = `${r.players.length}/${r.maxPlayers}:${r.phase}:${r.mode ?? ''}`;
   if (note === lastHostNote) return;
   lastHostNote = note;
-  void mp()?.hostUpdate({ players: r.players.length, max: r.maxPlayers, phase: r.phase, name: r.players.find((p) => p.isHost)?.name ?? '' });
+  void mp()?.hostUpdate({ players: r.players.length, max: r.maxPlayers, phase: r.phase, mode: r.mode, name: r.players.find((p) => p.isHost)?.name ?? '' });
 }
 
 function showHome(defaults: { code?: string; error?: string } = {}): void {
@@ -574,6 +576,7 @@ async function quickMatch(name: string): Promise<string | null> {
   }
   if ((guided || newPlayer()) && !playsFullRules()) { const st = await net.setStarter(true); if (!st.ok) return fail(st.error); }
   if (guided) { const g = await net.setGuided(true); if (!g.ok) return fail(g.error); }
+  else { const md = await net.setMode(savedMode()); if (!md.ok) return fail(md.error); } // (the guided match keeps its own eight minutes)
   const ready = await net.setReady(true);
   if (!ready.ok) return fail(ready.error);
   if (guided) armTutorial();

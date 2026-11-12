@@ -9,15 +9,15 @@ export interface MpInfo {
 }
 export interface MpJoin { ok: boolean; code?: string; base?: string; error?: string; host?: string; mine?: string }
 export interface MpHost { ok: boolean; lanPort: number; addresses: string[]; steam: boolean; lobbyId: string | null; error?: string }
-export interface MpLobby { id: string; name: string; players: number; max: number; phase: string; compatible: boolean; build: string }
+export interface MpLobby { id: string; name: string; players: number; max: number; phase: string; compatible: boolean; build: string; mode?: string }
 export type MpEvent = { type: 'host-left' | 'line-failed' } | { type: 'steam-join'; lobbyId: string } | { type: 'lobby-members'; count: number };
 /** Who may come in: a Steam lobby (friends / anybody / invited only), or 'lan': no Steam, a door on the local network (direct IP). */
 export type Visibility = 'friends' | 'public' | 'private' | 'lan';
 
 export interface MpBridge {
   info(): Promise<MpInfo | null>;
-  hostOpen(options: { code: string; steam: 'friends' | 'public' | 'private' | null; lan: boolean; name: string; players: number; max: number; phase: string }): Promise<MpHost>;
-  hostUpdate(data: { name?: string; players?: number; max?: number; phase?: string }): Promise<boolean>;
+  hostOpen(options: { code: string; steam: 'friends' | 'public' | 'private' | null; lan: boolean; name: string; players: number; max: number; phase: string; mode?: string }): Promise<MpHost>;
+  hostUpdate(data: { name?: string; players?: number; max?: number; phase?: string; mode?: string }): Promise<boolean>;
   leave(): Promise<boolean>;
   joinLan(address: string): Promise<MpJoin>;
   joinSteam(lobbyId: string): Promise<MpJoin>;

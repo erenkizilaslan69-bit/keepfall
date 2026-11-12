@@ -585,7 +585,6 @@ const D: Record<string, string> = {
   "{0} dk": "{0} мин",
   "Amaç": "Цель",
   "2–4 kişi oynar, herkesin tek bir kalesi vardır. <b>Son ayakta kalan kale kazanır</b>; süre dolarsa en yüksek nüfus kazanır.": "Играют 2–4 человека, у каждого один замок. <b>Побеждает последний уцелевший замок</b>; если время выйдет — самое большое население.",
-  "<b>Hazırlık</b> ({0}): ekonomi, silah, orman. <b>Savaş</b> ({1}): ordular yola çıkar. {2} ve {3} modu var.": "<b>Подготовка</b> ({0}): экономика, оружие, лес. <b>Война</b> ({1}): армии выступают. Режимы: {2} или {3}.",
   "Kale tek seferde düşer: bir ordu kapıdaki savaşı kazanırsa (tek askeri kalsa bile) o kale elenir ve oyuncu izleyici olur. Kapıdaki okçular surun arkasından %{0} fazla hasar verir.": "Замок падает одним ударом: если армия побеждает в бою у ворот (пусть даже останется один солдат), этот замок выбывает, а его владелец становится наблюдателем. Лучники у ворот наносят из-за стены на {0} % больше урона.",
   "Ekonomi: işçi mi asker mi?": "Экономика: рабочие или солдаты?",
   "Her işçi çiftçi, oduncu, madenci ya da demirci olur. Boşta duran üretmez ama yemek yer. Kişi başı dakikada: yemek {0}, odun {1}, demir {2}.": "Каждый рабочий становится земледельцем, дровосеком, шахтёром или кузнецом. Свободный ничего не производит, но всё равно ест. На человека в минуту: еды {0}, дерева {1}, железа {2}.",
@@ -1119,5 +1118,13 @@ const D: Record<string, string> = {
   "(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)": "(действует со следующей игры; если оставить пустым, будет использоваться имя Steam)",
   "Gizli krallıklar. Sahte ordular. Tek savaş.": "Скрытые королевства. Ложные армии. Одна битва.",
   "Davet penceresi açılmadıysa: Steam arkadaş listesinde arkadaşına sağ tık → Oyuna davet et.": "Если окно приглашения не открылось: в списке друзей Steam нажмите на друга правой кнопкой → Пригласить в игру.",
+  "Hızlı": "Быстрый",
+  "Standart": "Стандартный",
+  "Uzun": "Долгий",
+  "Maç süresi": "Длительность матча",
+  "Hazırlık {0} dk + savaş {1} dk": "Подготовка {0} мин + война {1} мин",
+  "dk": "мин",
+  "Maç süresini yalnız oda sahibi seçer.": "Длительность матча выбирает только хозяин комнаты.",
+  "<b>Hazırlık</b>: ekonomi, silah, orman. <b>Savaş</b> (10 dk): ordular yola çıkar. Oda sahibi süreyi seçer: Hızlı 5+10 dk, Standart 10+10 dk, Uzun 15+10 dk (hazırlık + savaş).": "<b>Подготовка</b>: экономика, оружие, лес. <b>Война</b> (10 мин): армии выходят в поход. Длительность выбирает хозяин: Быстрый 5+10 мин, Стандартный 10+10 мин, Долгий 15+10 мин (подготовка + война).",
 };
 export default D;

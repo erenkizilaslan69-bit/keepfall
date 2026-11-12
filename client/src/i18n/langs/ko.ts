@@ -585,7 +585,6 @@ const D: Record<string, string> = {
   "{0} dk": "{0}분",
   "Amaç": "목표",
   "2–4 kişi oynar, herkesin tek bir kalesi vardır. <b>Son ayakta kalan kale kazanır</b>; süre dolarsa en yüksek nüfus kazanır.": "2~4명이 플레이하고 각자 성이 하나예요. <b>마지막까지 남은 성이 승리</b>해요. 시간이 다 되면 인구가 가장 많은 쪽이 이겨요.",
-  "<b>Hazırlık</b> ({0}): ekonomi, silah, orman. <b>Savaş</b> ({1}): ordular yola çıkar. {2} ve {3} modu var.": "<b>준비 단계</b>({0}): 경제, 무기, 숲. <b>전쟁 단계</b>({1}): 군대가 출발해요. 모드: {2} 또는 {3}.",
   "Kale tek seferde düşer: bir ordu kapıdaki savaşı kazanırsa (tek askeri kalsa bile) o kale elenir ve oyuncu izleyici olur. Kapıdaki okçular surun arkasından %{0} fazla hasar verir.": "성은 단 한 번에 함락돼요. 군대가 성문 전투에서 이기면(병사가 한 명만 남아도) 그 성은 탈락하고 주인은 관전자가 돼요. 성문의 궁수는 성벽 뒤에서 피해를 {0}% 더 줘요.",
   "Ekonomi: işçi mi asker mi?": "경제: 일꾼일까, 병사일까?",
   "Her işçi çiftçi, oduncu, madenci ya da demirci olur. Boşta duran üretmez ama yemek yer. Kişi başı dakikada: yemek {0}, odun {1}, demir {2}.": "일꾼은 각자 농부, 나무꾼, 광부, 대장장이가 돼요. 놀고 있는 일꾼은 아무것도 생산하지 않지만 먹기는 해요. 한 사람당 분당: 식량 {0}, 목재 {1}, 철 {2}.",
@@ -1119,5 +1118,13 @@ const D: Record<string, string> = {
   "(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)": "(다음 게임부터 적용됩니다. 비워 두면 Steam 이름을 사용합니다)",
   "Gizli krallıklar. Sahte ordular. Tek savaş.": "숨겨진 왕국. 가짜 군대. 단 한 번의 전투.",
   "Davet penceresi açılmadıysa: Steam arkadaş listesinde arkadaşına sağ tık → Oyuna davet et.": "초대 창이 열리지 않으면: Steam 친구 목록에서 친구를 마우스 오른쪽 버튼으로 클릭 → 게임에 초대.",
+  "Hızlı": "빠른",
+  "Standart": "표준",
+  "Uzun": "긴",
+  "Maç süresi": "매치 길이",
+  "Hazırlık {0} dk + savaş {1} dk": "준비 {0}분 + 전쟁 {1}분",
+  "dk": "분",
+  "Maç süresini yalnız oda sahibi seçer.": "매치 길이는 방장만 고를 수 있어요.",
+  "<b>Hazırlık</b>: ekonomi, silah, orman. <b>Savaş</b> (10 dk): ordular yola çıkar. Oda sahibi süreyi seçer: Hızlı 5+10 dk, Standart 10+10 dk, Uzun 15+10 dk (hazırlık + savaş).": "<b>준비</b>: 경제, 무기, 숲. <b>전쟁</b>(10분): 군대가 출발합니다. 방장이 길이를 고릅니다: 빠른 5+10분, 표준 10+10분, 긴 15+10분(준비 + 전쟁).",
 };
 export default D;

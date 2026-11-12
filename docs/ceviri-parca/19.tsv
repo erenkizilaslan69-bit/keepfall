@@ -1,0 +1,8 @@
+# Match modes (2026-11-12). AI-assisted; native review open.
+1127	快速	快速	Быстрый	Rápida	Rápida	Rápida	Schnell	Rapide	クイック	빠른	Szybki	Veloce	Швидкий
+1128	标准	標準	Стандартный	Estándar	Estándar	Padrão	Standard	Standard	スタンダード	표준	Standardowy	Standard	Стандартний
+1129	长	長	Долгий	Larga	Larga	Longa	Lang	Longue	ロング	긴	Długi	Lunga	Довгий
+1130	对局时长	對局時長	Длительность матча	Duración de la partida	Duración de la partida	Duração da partida	Matchdauer	Durée du match	マッチの長さ	매치 길이	Długość meczu	Durata della partita	Тривалість матчу
+1131	准备 {0} 分钟 + 战争 {1} 分钟	準備 {0} 分鐘 + 戰爭 {1} 分鐘	Подготовка {0} мин + война {1} мин	Preparación {0} min + guerra {1} min	Preparación {0} min + guerra {1} min	Preparação {0} min + guerra {1} min	Vorbereitung {0} Min. + Krieg {1} Min.	Préparation {0} min + guerre {1} min	準備 {0} 分 + 戦争 {1} 分	준비 {0}분 + 전쟁 {1}분	Przygotowanie {0} min + wojna {1} min	Preparazione {0} min + guerra {1} min	Підготовка {0} хв + війна {1} хв
+1132	分钟	分鐘	мин	min	min	min	Min.	min	分	분	min	min	хв
+1133	只有房主可以选择对局时长。	只有房主可以選擇對局時長。	Длительность матча выбирает только хозяин комнаты.	Solo el anfitrión elige la duración de la partida.	Solo el anfitrión elige la duración de la partida.	Só o anfitrião escolhe a duração da partida.	Nur der Gastgeber wählt die Matchdauer.	Seul l'hôte choisit la durée du match.	マッチの長さを選べるのはホストだけです。	매치 길이는 방장만 고를 수 있어요.	Długość meczu wybiera tylko gospodarz.	Solo l'host sceglie la durata della partita.	Тривалість матчу обирає лише господар кімнати.

@@ -32,13 +32,15 @@ const TOKEN: Record<SteamStatus, string> = {
 };
 let lastStatus: SteamStatus | null = null;
 let lastPlayers = '';
+let lastMode = '';
 /** `players`: "2/4" in a lobby with friends (the lobby line shows it; friends see the group as one party). */
-export function steamStatus(status: SteamStatus, players = '', group = ''): void {
-  if (!bridge || (status === lastStatus && players === lastPlayers)) return;
-  lastStatus = status; lastPlayers = players;
+export function steamStatus(status: SteamStatus, players = '', group = '', mode = ''): void {
+  if (!bridge || (status === lastStatus && players === lastPlayers && mode === lastMode)) return;
+  lastStatus = status; lastPlayers = players; lastMode = mode;
   const b = bridge;
   void (async () => {
     await b.presence('players', players || null);
+    await b.presence('mode', mode || null); // "5+10": preparation + war minutes of the match mode
     await b.presence('steam_player_group', group || null);
     await b.presence('steam_player_group_size', group ? players.split('/')[0] : null);
     await b.presence('steam_display', TOKEN[status]);

@@ -585,7 +585,6 @@ const D: Record<string, string> = {
   "{0} dk": "{0} 分钟",
   "Amaç": "目标",
   "2–4 kişi oynar, herkesin tek bir kalesi vardır. <b>Son ayakta kalan kale kazanır</b>; süre dolarsa en yüksek nüfus kazanır.": "2–4 人同玩，每人只有一座城堡。<b>最后一座屹立的城堡获胜</b>；时间耗尽时，人口最多者获胜。",
-  "<b>Hazırlık</b> ({0}): ekonomi, silah, orman. <b>Savaş</b> ({1}): ordular yola çıkar. {2} ve {3} modu var.": "<b>准备阶段</b>（{0}）：经济、武器、森林。<b>战争阶段</b>（{1}）：军队出发。模式：{2} 或 {3}。",
   "Kale tek seferde düşer: bir ordu kapıdaki savaşı kazanırsa (tek askeri kalsa bile) o kale elenir ve oyuncu izleyici olur. Kapıdaki okçular surun arkasından %{0} fazla hasar verir.": "城堡一击即倒：如果一支军队在城门赢得战斗（哪怕只剩一名士兵），那座城堡就被淘汰，其主人成为观战者。城门口的弓箭手隔着城墙多造成 {0}% 的伤害。",
   "Ekonomi: işçi mi asker mi?": "经济：工人还是士兵？",
   "Her işçi çiftçi, oduncu, madenci ya da demirci olur. Boşta duran üretmez ama yemek yer. Kişi başı dakikada: yemek {0}, odun {1}, demir {2}.": "每名工人都会成为农夫、伐木工、矿工或铁匠。闲置的什么也不产出，却照样吃饭。每人每分钟：食物 {0}、木材 {1}、铁 {2}。",
@@ -1119,5 +1118,13 @@ const D: Record<string, string> = {
   "(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)": "（下一局生效；留空则使用你的 Steam 名称）",
   "Gizli krallıklar. Sahte ordular. Tek savaş.": "隐秘的王国。虚假的军队。唯一的一战。",
   "Davet penceresi açılmadıysa: Steam arkadaş listesinde arkadaşına sağ tık → Oyuna davet et.": "如果邀请窗口没有打开:在 Steam 好友列表中右键点击好友 → 邀请加入游戏。",
+  "Hızlı": "快速",
+  "Standart": "标准",
+  "Uzun": "长",
+  "Maç süresi": "对局时长",
+  "Hazırlık {0} dk + savaş {1} dk": "准备 {0} 分钟 + 战争 {1} 分钟",
+  "dk": "分钟",
+  "Maç süresini yalnız oda sahibi seçer.": "只有房主可以选择对局时长。",
+  "<b>Hazırlık</b>: ekonomi, silah, orman. <b>Savaş</b> (10 dk): ordular yola çıkar. Oda sahibi süreyi seçer: Hızlı 5+10 dk, Standart 10+10 dk, Uzun 15+10 dk (hazırlık + savaş).": "<b>准备</b>:经济、武器、森林。<b>战争</b>(10 分钟):军队出发。房主选择时长:快速 5+10 分钟,标准 10+10 分钟,长 15+10 分钟(准备 + 战争)。",
 };
 export default D;

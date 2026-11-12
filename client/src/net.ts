@@ -210,6 +210,8 @@ export class GameConnection {
   setReady = (ready: boolean) => this.call('SetReady', ready);
   /** The guided first match: computer players leave this (single human) player alone for the first minutes of the war. */
   setGuided = (on: boolean) => this.call('SetGuided', on);
+  /** The host's match length: 'quick' | 'standard' | 'long'. */
+  setMode = (mode: string) => this.call('SetMode', mode);
   /** Starter rules for this (single human) room: no kingdom abilities, fixed rows, the classic deck unless one was picked. */
   setStarter = (on: boolean) => this.call('SetStarter', on);
   /** Our avatar frame and banner designs (only what we have earned; the server accepts known ids only). A server that does not know them just says no. */

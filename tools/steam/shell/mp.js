@@ -143,6 +143,8 @@ function createMp(o) {
   const cleanData = (d) => {
     const out = {};
     for (const k of ['code', 'name', 'players', 'max', 'phase']) if (d && d[k] != null) out[k] = String(d[k]).slice(0, 40);
+    // the match mode is one of three known words, nothing else goes into the lobby's data
+    if (d && ['quick', 'standard', 'long'].includes(d.mode)) out.mode = d.mode;
     return out;
   };
 
@@ -249,7 +251,7 @@ function createMp(o) {
       const list = await o.steam().client.matchmaking.getLobbies();
       return list.map((l) => ({ l, d: l.getFullData() })).filter((x) => x.d.kf === '1' && /^[A-Za-z]{6}$/.test(x.d.code || '')).slice(0, 50).map(({ l, d }) => ({
         id: String(l.id), name: String(d.name || '').slice(0, 24), players: Number(d.players) || Number(l.getMemberCount()) || 1, max: Number(d.max) || 4,
-        phase: String(d.phase || 'lobby').slice(0, 16), compatible: String(d.build || '') === build && Number(d.protocol) === mine, build: String(d.build || '?').slice(0, 40),
+        phase: String(d.phase || 'lobby').slice(0, 16), mode: ['quick', 'standard', 'long'].includes(d.mode) ? d.mode : 'quick', compatible: String(d.build || '') === build && Number(d.protocol) === mine, build: String(d.build || '?').slice(0, 40),
       }));
     } catch (e) { log('lobby list failed: ' + e.message); return []; }
   }

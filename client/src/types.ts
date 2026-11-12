@@ -74,6 +74,8 @@ export interface RoomView {
   challengeId?: string | null;
   /** This match plays by the starter rules (no kingdom abilities, battle rows fixed). Public: it only names the rules. */
   starter?: boolean;
+  /** The match length the host chose: quick 5+10, standard 10+10, long 15+10 minutes. */
+  mode?: 'quick' | 'standard' | 'long';
 }
 
 // ---- challenge mode (one player against computer players) ----

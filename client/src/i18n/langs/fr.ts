@@ -585,7 +585,6 @@ const D: Record<string, string> = {
   "{0} dk": "{0} min",
   "Amaç": "Objectif",
   "2–4 kişi oynar, herkesin tek bir kalesi vardır. <b>Son ayakta kalan kale kazanır</b>; süre dolarsa en yüksek nüfus kazanır.": "2 à 4 personnes jouent et chacune a un seul château. <b>Le dernier château debout l'emporte</b> ; si le temps s'écoule, la plus grande population gagne.",
-  "<b>Hazırlık</b> ({0}): ekonomi, silah, orman. <b>Savaş</b> ({1}): ordular yola çıkar. {2} ve {3} modu var.": "<b>Préparation</b> ({0}) : économie, armes, forêt. <b>Guerre</b> ({1}) : les armées se mettent en route. Modes : {2} ou {3}.",
   "Kale tek seferde düşer: bir ordu kapıdaki savaşı kazanırsa (tek askeri kalsa bile) o kale elenir ve oyuncu izleyici olur. Kapıdaki okçular surun arkasından %{0} fazla hasar verir.": "Un château tombe d'un seul coup : si une armée gagne le combat à la porte (même avec un seul soldat restant), ce château est éliminé et son propriétaire devient spectateur. Les archers à la porte infligent {0} % de dégâts en plus derrière le mur.",
   "Ekonomi: işçi mi asker mi?": "Économie : ouvriers ou soldats ?",
   "Her işçi çiftçi, oduncu, madenci ya da demirci olur. Boşta duran üretmez ama yemek yer. Kişi başı dakikada: yemek {0}, odun {1}, demir {2}.": "Chaque ouvrier devient fermier, bûcheron, mineur ou forgeron. Un ouvrier inactif ne produit rien mais mange quand même. Par personne et par minute : nourriture {0}, bois {1}, fer {2}.",
@@ -1119,5 +1118,13 @@ const D: Record<string, string> = {
   "(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)": "(s'applique dès la prochaine partie ; laisse vide pour utiliser ton nom Steam)",
   "Gizli krallıklar. Sahte ordular. Tek savaş.": "Royaumes cachés. Fausses armées. Une seule bataille.",
   "Davet penceresi açılmadıysa: Steam arkadaş listesinde arkadaşına sağ tık → Oyuna davet et.": "Si la fenêtre d'invitation ne s'ouvre pas : dans ta liste d'amis Steam, clic droit sur ton ami → Inviter à jouer.",
+  "Hızlı": "Rapide",
+  "Standart": "Standard",
+  "Uzun": "Longue",
+  "Maç süresi": "Durée du match",
+  "Hazırlık {0} dk + savaş {1} dk": "Préparation {0} min + guerre {1} min",
+  "dk": "min",
+  "Maç süresini yalnız oda sahibi seçer.": "Seul l'hôte choisit la durée du match.",
+  "<b>Hazırlık</b>: ekonomi, silah, orman. <b>Savaş</b> (10 dk): ordular yola çıkar. Oda sahibi süreyi seçer: Hızlı 5+10 dk, Standart 10+10 dk, Uzun 15+10 dk (hazırlık + savaş).": "<b>Préparation</b> : économie, armes, forêt. <b>Guerre</b> (10 min) : les armées se mettent en route. L'hôte choisit la durée : Rapide 5+10 min, Standard 10+10 min, Longue 15+10 min (préparation + guerre).",
 };
 export default D;

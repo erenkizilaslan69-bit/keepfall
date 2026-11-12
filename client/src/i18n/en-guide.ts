@@ -46,7 +46,7 @@ export const EN_GUIDE: Record<string, string> = {
   "{0} dk": "{0} min",
   "Amaç": "Goal",
   "2–4 kişi oynar, herkesin tek bir kalesi vardır. <b>Son ayakta kalan kale kazanır</b>; süre dolarsa en yüksek nüfus kazanır.": "2–4 people play and everyone has a single castle. <b>The last castle standing wins</b>; if time runs out the highest population wins.",
-  "<b>Hazırlık</b> ({0}): ekonomi, silah, orman. <b>Savaş</b> ({1}): ordular yola çıkar. {2} ve {3} modu var.": "<b>Preparation</b> ({0}): economy, weapons, forest. <b>War</b> ({1}): armies set out. Modes: {2} or {3}.",
+  "<b>Hazırlık</b>: ekonomi, silah, orman. <b>Savaş</b> (10 dk): ordular yola çıkar. Oda sahibi süreyi seçer: Hızlı 5+10 dk, Standart 10+10 dk, Uzun 15+10 dk (hazırlık + savaş).": "<b>Preparation</b>: economy, weapons, forest. <b>War</b> (10 min): armies set out. The host picks the length: Quick 5+10 min, Standard 10+10 min, Long 15+10 min (preparation + war).",
   "Kale tek seferde düşer: bir ordu kapıdaki savaşı kazanırsa (tek askeri kalsa bile) o kale elenir ve oyuncu izleyici olur. Kapıdaki okçular surun arkasından %{0} fazla hasar verir.": "A castle falls in one blow: if an army wins the fight at the gate (even with one soldier left), that castle is eliminated and its owner becomes a spectator. Archers at the gate deal {0}% more damage from behind the wall.",
   "Ekonomi: işçi mi asker mi?": "Economy: workers or soldiers?",
   "Her işçi çiftçi, oduncu, madenci ya da demirci olur. Boşta duran üretmez ama yemek yer. Kişi başı dakikada: yemek {0}, odun {1}, demir {2}.": "Every worker becomes a farmer, lumberjack, miner or blacksmith. An idle one produces nothing but still eats. Per person per minute: food {0}, wood {1}, iron {2}.",

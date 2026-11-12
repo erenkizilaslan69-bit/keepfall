@@ -108,3 +108,4 @@ Listede kalan iş yok (A–G bitti). Sabah bakılacaklar aşağıda.
 - [ ] B XP/seviye/ödül, profil, maç sonu, fuzz
 - [ ] C Görev takibi
 - [ ] D Testler + rapor
+- [x] A4/A5 Lobi seçici (ev sahibi seçer, herkes görür), ana menüde "Oyna" altında seçici (tarayıcıda hatırlanır), açık oyunlar listesinde mod etiketi, Steam lobi verisi `mode`, Rich Presence `{%mode%}`, rehber metni, 15 dil (19.tsv, 20.tsv). Görüntü: `art/shots/modes/`.
