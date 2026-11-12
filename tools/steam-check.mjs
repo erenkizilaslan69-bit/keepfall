@@ -50,6 +50,8 @@ await app.js(`document.querySelector('#quick').click()`);
 check('quick match reaches the game screen', await app.waitFor(`!!document.querySelector('canvas') && !!document.querySelector('.topbar, #hud, .kf-topbar, .hud')`, 40) || await app.waitFor(`document.querySelectorAll('canvas').length>0 && !document.querySelector('#quick')`, 20));
 await sleep(6000);
 await app.shot('match');
+// the developer diagnostics (the red "deviation ..." box, the F9 panel) are not in the shipped build at all
+check('no developer diagnostics in the packaged game', await app.js(`typeof window.keepfallDebug === 'undefined' && typeof window.keepfallScene === 'undefined' && !document.body.innerText.includes('deviation')`));
 
 // the page may not have asked anything outside; the shell cancelled and counted such requests
 const blocked = await app.js(`window.keepfallSteam.blockedRequests()`);
