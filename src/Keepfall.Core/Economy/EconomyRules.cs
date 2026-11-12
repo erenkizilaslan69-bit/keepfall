@@ -26,8 +26,15 @@ public sealed record MatchRules(
     IReadOnlyDictionary<MatchMode, ModeRules>? Modes = null)
 {
     /// <summary>The numbers of a mode; a config without a mode table gives the short mode for all of them.</summary>
-    public ModeRules ModeOf(MatchMode mode) =>
-        Modes is not null && Modes.TryGetValue(mode, out var m) ? m : new ModeRules(ShortModePrepSeconds, PrepSpeed, ShortModeWarSeconds, -1);
+    public ModeRules ModeOf(MatchMode mode)
+    {
+        ModeRules? m = null;
+        Modes?.TryGetValue(mode, out m);
+        // Quick IS the short mode the game always had: its lengths and speed stay the match.shortMode* / match.prepSpeed numbers (so every tool and test that sets them keeps working);
+        // the table only adds its scouting lock.
+        if (mode == MatchMode.Quick) return new ModeRules(ShortModePrepSeconds, PrepSpeed, ShortModeWarSeconds, m?.NoScoutLastPrepSeconds ?? -1);
+        return m ?? new ModeRules(ShortModePrepSeconds, PrepSpeed, ShortModeWarSeconds, -1);
+    }
 }
 
 /// <summary>The match lengths a host chooses from. Quick is the preparation the game always had.</summary>

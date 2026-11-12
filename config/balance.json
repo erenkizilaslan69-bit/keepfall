@@ -11,7 +11,7 @@
     "prepSpeed": 1.6,
     "longModeMinutes": 22.5,
     "longModePrepMinutes": 12.5,
-    // Maç modları (lobide ev sahibi seçer). Hızlı = hep var olan 5 dk + 10 dk (ekonomi 1,6 kat hızlı: 8 dk'lık hazırlığın sonucu 5'e sığar).
+    // Maç modları (lobide ev sahibi seçer). Hızlı = hep var olan kısa mod: süreleri ve hızı yukarıdaki shortMode*/prepSpeed belirler (5 dk + 10 dk, ekonomi 1,6 kat hızlı: 8 dk'lık hazırlığın sonucu 5'e sığar); tablodaki "quick" satırından yalnız noScoutLastPrepSeconds okunur.
     // Standart ve Uzun düz hızda (prepSpeed 1) çalışır: 10 ve 15 dk'lık hazırlık, Hızlı'nın eşdeğer 8 dk'sından sırasıyla ~%25 ve ~%88 fazla
     // üretim demek, yani daha büyük ordu ve daha derin ekonomi; hızlandırma YOK çünkü uzun hazırlığın amacı oyuncuya düşünme/planlama payı vermek.
     // noScoutLastPrepSeconds: "son 60 sn gözcü yok" kuralı saat saniyesidir; Hızlı'da 60/1,6 = 37,5, düz hızda 60.

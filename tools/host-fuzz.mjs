@@ -149,7 +149,7 @@ try {
   const gJoin = await G.call('JoinRoom', code, 'Mallory', null, false);
   check('the hostile guest takes a seat like anybody', gJoin?.ok === true, `seat ${gJoin?.seat}`);
   const hostSeat = gJoin.room?.players.find((p) => p.isHost)?.seat ?? 1;
-  const tries = { StartMatch: [], AddBot: ['hard'], RemoveBot: [hostSeat], KickPlayer: [hostSeat], SetSpeed: [20], SetGuided: [true], SetStarter: [true], StartChallenge: ['daily'], StartChallengeFullRules: ['daily'], BackToLobby: [], FinishMatch: [], DirectorRooms: ['k'.repeat(24)], DirectorWatch: ['k'.repeat(24), code], CreateRoom: ['second'] };
+  const tries = { StartMatch: [], SetMode: ['long'], AddBot: ['hard'], RemoveBot: [hostSeat], KickPlayer: [hostSeat], SetSpeed: [20], SetGuided: [true], SetStarter: [true], StartChallenge: ['daily'], StartChallengeFullRules: ['daily'], BackToLobby: [], FinishMatch: [], DirectorRooms: ['k'.repeat(24)], DirectorWatch: ['k'.repeat(24), code], CreateRoom: ['second'] };
   const got = {};
   for (const [m, a] of Object.entries(tries)) { const r = await G.call(m, ...a); got[m] = r === null ? 'null' : r?.ok === false ? 'refused' : JSON.stringify(r); }
   const roomNow = G.last('RoomState') ?? gJoin.room; // (the join's answer carries the room; a new picture only comes when something changes)
@@ -208,7 +208,7 @@ try {
     SendArmy: () => [rnd(seats), armies(), rows(), rnd(units), rnd(['attack', 'intercept', 'x', null, 3])], SendDecoy: () => [rnd(seats), armies()], SetFakeReport: () => [armies()], BribeArmy: () => [rnd(['1', '', null, 'x', 9]), rnd(ints)],
     HireCamp: () => [rnd(['camp-1', '', null]), rnd(seats)], SendEnvoyAs: () => [rnd(seats), rnd(seats), rnd(ints), rnd(ints), rnd(ints), rnd(ints), rnd([null, 'hi']), rnd(jobs)],
     SendArmyAs: () => [rnd(seats), rnd(seats), armies(), rows(), rnd(units), rnd(['attack', 'x'])], RecallArmy: () => [rnd(ints)], RedirectArmy: () => [rnd(ints), rnd(seats), rnd(['camp-1', null, ''])],
-    SetSiegeFocus: () => [rnd(seats)], SetDefense: () => [rows(), rnd(units)], SetSpeed: () => [rnd(ints)], FinishMatch: () => [], BackToLobby: () => [], StartMatch: () => [], SetDeck: () => [rnd([units, null, [], 'x'])], SetReady: () => [rnd([true, false, null])],
+    SetSiegeFocus: () => [rnd(seats)], SetDefense: () => [rows(), rnd(units)], SetSpeed: () => [rnd(ints)], FinishMatch: () => [], BackToLobby: () => [], StartMatch: () => [], SetDeck: () => [rnd([units, null, [], 'x'])], SetMode: () => [rnd(['quick', 'long', 'x', '', null, 9, 'standard'])], SetProfile: () => [rnd(['recruit', 'liar_king', 'x', '', null, '<b>', 'golge']), rnd([1, 12, 0, 31, -1, 'x', null, 1e9]), rnd(['plain', 'chevron', 'x', '', null, 'tuccar'])], SetReady: () => [rnd([true, false, null])],
     KickPlayer: () => [rnd(seats)], AddBot: () => [rnd(['easy', 'x', 9])], LeaveRoomX: () => [],
   };
   let sent = 0, answered = 0, accepted = 0;

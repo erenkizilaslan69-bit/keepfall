@@ -622,6 +622,17 @@ check('a refused call left nothing behind', K.of('RoomState').every((r) => r.pla
 check('known cosmetic ids are accepted', (await H.call('SetCosmetics', 'gold', ['tuccar:c', 'golge:b', 'kahin:c', 'entrikaci:b'])).ok);
 await sleep(300);
 check('the frame is public: the other player sees it in the lobby', K.of('RoomState').at(-1)?.players.find((x) => x.seat === jh.seat)?.frame === 'gold');
+// The profile beside a name (title, level, banner pattern) and the match mode: only known ids (and only the host for the mode), all public, nothing about a kingdom in them.
+check('an unknown title, pattern or level is refused as a whole',
+  await refusedCall(H, 'SetProfile', 'hacker', 5, 'plain') && await refusedCall(H, 'SetProfile', 'recruit', 5, 'golge') && await refusedCall(H, 'SetProfile', 'recruit', 0, 'plain')
+  && await refusedCall(H, 'SetProfile', 'recruit', 99, 'plain') && await refusedCall(H, 'SetProfile', '<img src=x onerror=1>', 5, 'plain') && await refusedCall(H, 'SetProfile', 'recruit', 'x', 'plain'));
+check('a known profile is accepted', (await H.call('SetProfile', 'liar_king', 12, 'chevron')).ok);
+await sleep(300);
+const pv = K.of('RoomState').at(-1)?.players.find((x) => x.seat === jh.seat);
+check('the profile is public: the other player sees title, level and pattern in the lobby', pv?.title === 'liar_king' && pv?.level === 12 && pv?.pattern === 'chevron', JSON.stringify(pv));
+check('no profile value names a kingdom', !/golge|tuccar|kahin|entrikaci/i.test(JSON.stringify([pv?.title, pv?.pattern])));
+check('only the host picks the match mode, and only a known one', !(await K.call('SetMode', 'long')).ok && await refusedCall(H, 'SetMode', 'marathon') && await refusedCall(H, 'SetMode', '') && (await H.call('SetMode', 'quick')).ok);
+check('the room says which mode it plays', K.of('RoomState').at(-1)?.mode === 'quick', JSON.stringify(K.of('RoomState').at(-1)?.mode));
 check('the match starts', (await H.call('StartMatch')).ok);
 check('the host sets ×20', (await H.call('SetSpeed', 20)).ok);
 // The humans do nothing; the bots scout them, find them undefended and take their gates.
@@ -673,6 +684,9 @@ if (allOut?.allHumansOut) {
   const prog = H.of('ProgressResult').at(-1);
   check('the host alone got a progress result (kingdom, outcome, known achievement ids), the guest none', !!prog && prog.kingdom === hRank.kingdom && typeof prog.won === 'boolean' && Array.isArray(prog.earned)
     && prog.earned.every((id) => /^[a-z][a-z0-9_]*$/.test(id)) && K.of('ProgressResult').length === 0, JSON.stringify(prog));
+  check('the progress result carries the match XP: a base for playing, known moment ids, a total that adds up',
+    prog?.xp && prog.xp.match >= 25 && prog.xp.total >= prog.xp.match && prog.xp.moments.every((m) => /^[a-z_]+$/.test(m.id) && m.xp > 0)
+    && prog.xp.total === Math.round((prog.xp.match + prog.xp.win) * prog.xp.modeFactor) + prog.xp.moments.reduce((n, m) => n + m.xp, 0) + prog.xp.goals, JSON.stringify(prog?.xp));
   check('the host got the summary, and the guest who left got nothing more', H.of('MatchEnded').length === 1 && K.of('MatchEnded').length === 0);
   check('it cannot be ended twice', !(await H.call('FinishMatch')).ok);
 }
