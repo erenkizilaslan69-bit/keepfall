@@ -10,7 +10,7 @@ const check = (ok, what, extra = '') => { console.log((ok ? 'ok   ' : 'FAIL ') +
 for (const lang of LANGS) for (const kase of ['quick', 'lobby', 'newplayer', 'guided']) {
   const matches = kase === 'newplayer' || kase === 'guided' ? '0' : '10';
   const tut = kase === 'guided' ? "localStorage.removeItem('keepfall_tutorial_done');" : "localStorage.setItem('keepfall_tutorial_done','true');";
-  const b = await launch({ width: 1280, height: 720, init: `try{localStorage.setItem('keepfall_lang','${lang}');${tut}localStorage.setItem('keepfall.matches','${matches}');localStorage.setItem('keepfall.normalMatches','${matches}');localStorage.setItem('keepfall.prefs', JSON.stringify({ showHints: false }))}catch(e){}` });
+  const b = await launch({ width: 1280, height: 720, init: `try{localStorage.setItem('keepfall_lang','${lang}');${tut}localStorage.setItem('keepfall.matches','${matches}');localStorage.setItem('keepfall.normalMatches','${matches}');localStorage.setItem('keepfall.prefs', JSON.stringify({ showHints: ${kase === 'newplayer'} }))}catch(e){}` });
   try {
     await b.goto('http://localhost:5174/'); await b.waitFor(`!!document.querySelector('#quick')`); await sleep(1500);
     if (kase === 'lobby') {
@@ -19,7 +19,7 @@ for (const lang of LANGS) for (const kase of ['quick', 'lobby', 'newplayer', 'gu
       await b.js(`document.querySelector('#ready').click(); 1`); await sleep(500); await b.js(`document.querySelector('#start').click(); 1`);
     } else await b.js(`document.querySelector('#quick').click()`);
     await b.waitFor(`!!keepfallScene?.state && keepfallScene.ready`, 90); await sleep(7000);
-    await b.js(`document.getElementById('kingdom-decree')?.remove(); 1`);
+    await b.js(`document.querySelector('#kingdom-decree [data-close]')?.click(); document.getElementById('kingdom-decree')?.remove(); 1`); await sleep(2500); // (the decree is closed like a player does: the tip held behind it comes out)
     const st = JSON.parse(await b.js(`JSON.stringify({ fab: document.querySelector('.kingdom-fab:not(.hidden)')?.textContent?.trim() ?? null, chip: document.querySelector('.starter-chip')?.textContent ?? null, tip: [...document.querySelectorAll('.hint, .toast, [class*=hint]')].map((e) => e.textContent).join('|').slice(0, 120) })`));
     if (kase === 'newplayer') check(await b.js(`/This is your kingdom|Bu senin krallığın/.test(document.body.innerText)`), `${lang} ${kase}: the first kingdom match shows the one-time kingdom tip`);
     if (kase === 'guided') check(!st.fab && !st.chip, `${lang} ${kase}: the guided match has no kingdoms (and no note)`, JSON.stringify(st));
