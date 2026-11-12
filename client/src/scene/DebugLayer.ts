@@ -119,6 +119,9 @@ export class DebugLayer {
       const a = Math.hypot(c.beforeVelocity.x, c.beforeVelocity.y), b = Math.hypot(c.velocity.x, c.velocity.y);
       const turned = a < 0.01 || b < 0.01 || (c.beforeVelocity.x * c.velocity.x + c.beforeVelocity.y * c.velocity.y) / (a * b) < 0.95;
       if (turned || c.fighting) continue;
+      // The page stalled (a heavy window opening, a busy machine, a throttled tab) and the news came in before the next frame: the picture runs to catch up
+      // at once (a run of a few tiles a frame, not a jump), so a measurement taken in that moment says nothing about the drawing.
+      if (c.frameGapMs > 400) continue;
       // 2 tiles, plus one server tick of the army's walking (news arrives in bursts when the machine or the network stalls for a moment: the
       // picture is then one tick behind, which is not a drawing fault): at x5 an army at 2.5 tiles/s moves 12.5 tiles between two news.
       const allowed = 2 + b * c.speed;
@@ -177,9 +180,12 @@ export class DebugLayer {
     this.reported.set(key, now);
     const v: Violation = { at: Math.round(now), game: Math.round(this.gameNow() * 10) / 10, kind, id, message, trace: traceOf(id.replace(/^(own|seen):/, (m) => m), 25, 20) };
     this.violations.push(v);
-    this.warn.textContent = `${kind}: ${id} — ${message}`;
-    this.warn.style.display = 'block';
-    window.setTimeout(() => { if (this.warn.textContent?.startsWith(`${kind}: ${id}`)) this.warn.style.display = 'none'; }, 6000);
+    // the red box is for whoever asked for it (?debug=1 or the F9 panel open): a plain dev session logs the fault but draws nothing over the game
+    if (this.visible || location.search.includes('debug=1')) {
+      this.warn.textContent = `${kind}: ${id} — ${message}`;
+      this.warn.style.display = 'block';
+      window.setTimeout(() => { if (this.warn.textContent?.startsWith(`${kind}: ${id}`)) this.warn.style.display = 'none'; }, 6000);
+    }
     if (this.posted < 300) {
       this.posted++;
       const body = JSON.stringify({ kind: 'debug-layer', message: `${kind} ${id}: ${message}`, stack: JSON.stringify({ game: v.game, speed: this.speed(), trace: v.trace }), url: location.href, userAgent: navigator.userAgent });
