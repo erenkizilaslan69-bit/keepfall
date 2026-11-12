@@ -113,3 +113,4 @@ Listede kalan iş yok (A–G bitti). Sabah bakılacaklar aşağıda.
 - [ ] B-istemci: depo (xp, anlar), seviye hesabı, profil ekranı, maç sonu XP, lobi gösterimi, desenler; C görev takibi; i18n
 - [x] B-istemci + C: depo (xp, anlar, unvan/desen seçimi, steam birleştirme), `progress/level.ts` (eğri, 13 unvan, 8 desen), profil bölümü, maç sonu XP dökümü + dolma animasyonu, lobi/sıralamada Sv·desen·unvan, ilk geçiş bonusu, görev takibi (J, ayar), 62+3 yeni metin 15 dilde. Görüntüler `art/shots/xp/`.
 - [ ] D: duman/fuzz genişletme, tam testler, rehberli maç, her moddan tam maç, ilerleme.md tablosu, rapor
+- [x] D: dotnet 457/457, duman geçti, host-check + host-fuzz + steam-check geçti, i18n-check 15 dil %100, lang-audit (bölünen kelime 0, ham kimlik 0), rehberli maç x1 (gerçek hız) geçti, her moddan tam maç (`mode-match-check`) geçti, paket yeniden derlendi. Görüntüler `art/shots/modes`, `art/shots/xp`.
