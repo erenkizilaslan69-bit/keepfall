@@ -19,3 +19,9 @@
 .players li .btn.bot-level { white-space: nowrap; }
 .players li:not(.empty) .tags .btn.small { padding-left: calc(8px * var(--u, 1)); padding-right: calc(8px * var(--u, 1)); font-size: max(var(--fs-xs, 0px), .88em); }
 .players li:not(.empty) .pname { min-width: 0; overflow-wrap: normal; }
+/* the lobby's bottom buttons take the width their words need (one line; never "Ana / menüye / dön"): the row wraps instead of squeezing them, the hint gives way first */
+.screen.lobby .lob-bottom { flex-wrap: wrap; }
+.screen.lobby .lob-bottom > .btn, .screen.lobby .lob-bottom .start { flex: 0 0 auto; }
+.screen.lobby .lob-bottom .btn { white-space: nowrap; }
+.screen.lobby .lob-bottom .start .btn.wide { width: auto; }
+.screen.lobby .lob-bottom #start-hint { flex: 1 1 calc(160px * var(--u, 1)); min-width: 0; }
