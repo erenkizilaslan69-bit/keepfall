@@ -17,3 +17,5 @@
 .kf-vh { position: absolute !important; flex: none !important; width: 1px !important; height: 1px !important; min-width: 0 !important; padding: 0 !important; border: 0 !important; margin: 0 !important; opacity: 0; overflow: hidden; pointer-events: none; }
 .home .mode-btn:not(.on) { background: #e8d7ae; border-color: #7a5a36; opacity: 1; }
 .players li .btn.bot-level { white-space: nowrap; }
+.players li:not(.empty) .tags .btn.small { padding-left: calc(8px * var(--u, 1)); padding-right: calc(8px * var(--u, 1)); font-size: max(var(--fs-xs, 0px), .88em); }
+.players li:not(.empty) .pname { min-width: 0; overflow-wrap: normal; }
