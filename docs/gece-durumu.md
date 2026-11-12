@@ -118,3 +118,9 @@ Listede kalan iş yok (A–G bitti). Sabah bakılacaklar aşağıda.
 ---
 ## Cila turu 3 (2026-11-12)
 - [x] 1 çoğul · 2-4 lobi · 5 rehberli görev takibi · 6 bot stoku · 7 DE sekme (commit'ler dev'de). Kalan: test turu (tutorial x1, smoke, host-check, paket) → ardından gece turu (ulak, savaş müziği, tek kişilik lobi, krallık rozeti hatası).
+- [x] Cila turu 3 testleri: dotnet 457/457, duman geçti, host-check geçti, rehberli maç x1 geçti, i18n-check 15 dil %100, lang-audit (çoğul/bölünen/ham kimlik 0), paket yeniden derlendi. Görüntüler: `art/shots/lobby/cila-collage.png`, `art/shots/xp/quests-en.png`.
+
+---
+## Gece turu (2026-11-12 gecesi; gözetimsiz): ulak, savaş müziği, "Oyna" lobisi, krallık rozeti
+Sıra: 1-5 ulak → 8 krallık rozeti hatası → 6 savaş müziği → 7 tek kişilik lobi → 9 test. (Her maddeden sonra bu dosya güncellenir.)
+Kural: 5090'a dokunulmadı/dokunulmayacak (oyuncu varsa), Production 5080/main/Render/Downloads'a dokunulmaz.
