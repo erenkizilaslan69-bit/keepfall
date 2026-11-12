@@ -1203,5 +1203,6 @@ const D: Record<string, string> = {
   "Ulak yük ve mesaj taşır; bilgi toplamaz, yakalanamaz. Yükü ve mesajı yalnız sen ve alıcı görür. Gözcüden bağımsızdır: aynı anda yolda tek ulağın olabilir.": "使者携带物资和信息,不收集情报,也不会被抓住。只有你和接收者能看到物资和信息。它与侦察兵互不影响:同一时间路上只能有一名使者。",
   "Zorluğu değiştirmek için tıkla": "点击更改难度",
   "(sonraki oyunda geçerli)": "(下一局生效)",
+  "Botun zorluğunu sadece odayı kuran değiştirebilir.": "只有房主可以更改机器人的难度。",
 };
 export default D;

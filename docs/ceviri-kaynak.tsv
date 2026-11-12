@@ -1209,3 +1209,4 @@
 1209	Ulak yük ve mesaj taşır; bilgi toplamaz, yakalanamaz. Yükü ve mesajı yalnız sen ve alıcı görür. Gözcüden bağımsızdır: aynı anda yolda tek ulağın olabilir.	An envoy carries goods and a message; it gathers no information and cannot be caught. Only you and the receiver see the goods and the message. It is independent of your scout: you can have one envoy on the road at a time.
 1210	Zorluğu değiştirmek için tıkla	Click to change the difficulty
 1211	(sonraki oyunda geçerli)	(applies from the next game)
+1212	Botun zorluğunu sadece odayı kuran değiştirebilir.	Only the host can change a bot's difficulty.

@@ -96,4 +96,19 @@ public class MatchModeTests
         Assert.Equal(480, room.Game!.PrepSeconds);
         Assert.Equal(1.0, room.Game.PrepSpeed);
     }
+
+    [Fact]
+    public void The_host_changes_a_bots_difficulty_in_place_and_nobody_else_or_nothing_else_can()
+    {
+        var (room, host) = Lobby();
+        var bot = room.Players.Single(p => p.IsBot);
+        Assert.True(room.SetBotLevel(host.Token, bot.Seat, BotDifficulty.Hard).Ok);
+        Assert.Equal(BotDifficulty.Hard, room.Players.Single(p => p.IsBot).Bot);
+        Assert.False(room.SetBotLevel(host.Token, bot.Seat, (BotDifficulty)99).Ok);
+        Assert.False(room.SetBotLevel(host.Token, host.Seat, BotDifficulty.Easy).Ok); // a human seat is not a bot
+        Assert.False(room.SetBotLevel(host.Token, 4, BotDifficulty.Easy).Ok);          // an empty seat neither
+        var guest = room.Join("Bob", null, false, DateTime.UtcNow).Player!;
+        Assert.False(room.SetBotLevel(guest.Token, bot.Seat, BotDifficulty.Easy).Ok);
+        Assert.Equal(BotDifficulty.Hard, room.Players.Single(p => p.IsBot).Bot);
+    }
 }

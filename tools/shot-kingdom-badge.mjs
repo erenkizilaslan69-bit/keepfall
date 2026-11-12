@@ -7,9 +7,10 @@ const OUT = process.argv[2] ?? 'art/shots/badge'; const LANGS = (process.argv[3]
 mkdirSync(OUT, { recursive: true });
 let bad = 0;
 const check = (ok, what, extra = '') => { console.log((ok ? 'ok   ' : 'FAIL ') + what + (extra ? ' — ' + extra : '')); if (!ok) bad++; };
-for (const lang of LANGS) for (const kase of ['quick', 'lobby', 'starter']) {
-  const matches = kase === 'starter' ? '0' : '10';
-  const b = await launch({ width: 1280, height: 720, init: `try{localStorage.setItem('keepfall_lang','${lang}');localStorage.setItem('keepfall_tutorial_done','true');localStorage.setItem('keepfall.matches','${matches}');localStorage.setItem('keepfall.prefs', JSON.stringify({ showHints: false }))}catch(e){}` });
+for (const lang of LANGS) for (const kase of ['quick', 'lobby', 'newplayer', 'guided']) {
+  const matches = kase === 'newplayer' || kase === 'guided' ? '0' : '10';
+  const tut = kase === 'guided' ? "localStorage.removeItem('keepfall_tutorial_done');" : "localStorage.setItem('keepfall_tutorial_done','true');";
+  const b = await launch({ width: 1280, height: 720, init: `try{localStorage.setItem('keepfall_lang','${lang}');${tut}localStorage.setItem('keepfall.matches','${matches}');localStorage.setItem('keepfall.normalMatches','${matches}');localStorage.setItem('keepfall.prefs', JSON.stringify({ showHints: false }))}catch(e){}` });
   try {
     await b.goto('http://localhost:5174/'); await b.waitFor(`!!document.querySelector('#quick')`); await sleep(1500);
     if (kase === 'lobby') {
@@ -19,8 +20,9 @@ for (const lang of LANGS) for (const kase of ['quick', 'lobby', 'starter']) {
     } else await b.js(`document.querySelector('#quick').click()`);
     await b.waitFor(`!!keepfallScene?.state && keepfallScene.ready`, 90); await sleep(7000);
     await b.js(`document.getElementById('kingdom-decree')?.remove(); 1`);
-    const st = JSON.parse(await b.js(`JSON.stringify({ fab: document.querySelector('.kingdom-fab:not(.hidden)')?.textContent?.trim() ?? null, chip: document.querySelector('.starter-chip')?.textContent ?? null })`));
-    if (kase === 'starter') check(!st.fab && !!st.chip, `${lang} ${kase}: no kingdom, the starter note is there`, JSON.stringify(st));
+    const st = JSON.parse(await b.js(`JSON.stringify({ fab: document.querySelector('.kingdom-fab:not(.hidden)')?.textContent?.trim() ?? null, chip: document.querySelector('.starter-chip')?.textContent ?? null, tip: [...document.querySelectorAll('.hint, .toast, [class*=hint]')].map((e) => e.textContent).join('|').slice(0, 120) })`));
+    if (kase === 'newplayer') check(await b.js(`/This is your kingdom|Bu senin krallığın/.test(document.body.innerText)`), `${lang} ${kase}: the first kingdom match shows the one-time kingdom tip`);
+    if (kase === 'guided') check(!st.fab && !st.chip, `${lang} ${kase}: the guided match has no kingdoms (and no note)`, JSON.stringify(st));
     else check(!!st.fab && !st.chip, `${lang} ${kase}: the own kingdom button is shown`, JSON.stringify(st));
     await b.shot(`${OUT}/badge-${kase}-${lang}.png`);
   } finally { b.close(); }

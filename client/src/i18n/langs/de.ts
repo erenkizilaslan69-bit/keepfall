@@ -1203,5 +1203,6 @@ const D: Record<string, string> = {
   "Ulak yük ve mesaj taşır; bilgi toplamaz, yakalanamaz. Yükü ve mesajı yalnız sen ve alıcı görür. Gözcüden bağımsızdır: aynı anda yolda tek ulağın olabilir.": "Ein Bote trägt Ware und eine Nachricht; er sammelt keine Informationen und kann nicht gefangen werden. Nur du und der Empfänger seht Ware und Nachricht. Er ist unabhängig vom Späher: Du kannst einen Boten gleichzeitig unterwegs haben.",
   "Zorluğu değiştirmek için tıkla": "Klicken, um die Schwierigkeit zu ändern",
   "(sonraki oyunda geçerli)": "(gilt ab dem nächsten Spiel)",
+  "Botun zorluğunu sadece odayı kuran değiştirebilir.": "Nur der Gastgeber kann die Schwierigkeit eines Bots ändern.",
 };
 export default D;

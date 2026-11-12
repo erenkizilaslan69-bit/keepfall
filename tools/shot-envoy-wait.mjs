@@ -20,6 +20,11 @@ for (const lang of LANGS) {
     await b.js(`keepfallScene.select({ kind: 'enemy', seat: ${seat} }); 1`); await sleep(1500);
     const st = await b.js(`(() => { const btn = document.querySelector('[data-act="envoy"]'); return { disabled: btn?.disabled, label: btn?.textContent, info: document.querySelector('[data-f="env-info"]')?.textContent }; })()`);
     check(st.disabled === true && /\d/.test(st.label ?? '') && (st.info ?? '').length > 10, `${lang}: button off, time shown, hint shown`, JSON.stringify(st));
+    // the scout button shows the SCOUT's state only: with an envoy on the road a scout can still go, and the button does not say "Envoy ..."
+    const sc = await b.js(`(() => { const btn = document.querySelector('[data-act="scout"]'); return { disabled: btn?.disabled, label: btn?.textContent }; })()`);
+    check(sc.disabled === false && !/Envoy|Ulak/.test(sc.label ?? ''), `${lang}: the scout button is on and says nothing of the envoy`, JSON.stringify(sc));
+    const sent = await b.js(`keepfallNet.sendScout(${seat}, 'idle')`);
+    check(sent?.ok === true, `${lang}: the server lets a scout go while the envoy is out`, JSON.stringify(sent));
     await b.shot(`${OUT}/envoy-wait-${lang}.png`);
   } finally { b.close(); }
 }

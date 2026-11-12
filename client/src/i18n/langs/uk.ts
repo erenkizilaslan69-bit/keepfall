@@ -1203,5 +1203,6 @@ const D: Record<string, string> = {
   "Ulak yük ve mesaj taşır; bilgi toplamaz, yakalanamaz. Yükü ve mesajı yalnız sen ve alıcı görür. Gözcüden bağımsızdır: aynı anda yolda tek ulağın olabilir.": "Гонець везе вантаж і повідомлення; він не збирає відомостей і його не можна впіймати. Вантаж і повідомлення бачите лише ви та отримувач. Він не залежить від розвідника: у дорозі може бути один гонець одночасно.",
   "Zorluğu değiştirmek için tıkla": "Натисни, щоб змінити складність",
   "(sonraki oyunda geçerli)": "(діє з наступної гри)",
+  "Botun zorluğunu sadece odayı kuran değiştirebilir.": "Складність бота може змінювати лише господар кімнати.",
 };
 export default D;

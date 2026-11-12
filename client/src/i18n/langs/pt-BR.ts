@@ -1203,5 +1203,6 @@ const D: Record<string, string> = {
   "Ulak yük ve mesaj taşır; bilgi toplamaz, yakalanamaz. Yükü ve mesajı yalnız sen ve alıcı görür. Gözcüden bağımsızdır: aynı anda yolda tek ulağın olabilir.": "Um mensageiro leva mercadorias e uma mensagem; não coleta informações e não pode ser capturado. Só você e o receptor veem a carga e a mensagem. Ele é independente do batedor: você pode ter um mensageiro na estrada por vez.",
   "Zorluğu değiştirmek için tıkla": "Clique para mudar a dificuldade",
   "(sonraki oyunda geçerli)": "(vale a partir da próxima partida)",
+  "Botun zorluğunu sadece odayı kuran değiştirebilir.": "Só o anfitrião pode mudar a dificuldade de um bot.",
 };
 export default D;
