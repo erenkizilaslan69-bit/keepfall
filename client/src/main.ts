@@ -47,7 +47,7 @@ import { armTutorial, disarmTutorial, tutorialDone } from './ui/tutorial';
 import { CRAZY } from './crazy';
 import { FEATURE_PRIVATE_ROOM } from './features';
 import { hostedRole, hostLink, joinError, mp, rememberGuest, rememberedGuest, setHostedRole, type MpHost, type MpInfo, type MpJoin } from './hosted';
-import { setHostedShare } from './screens';
+import { setHostedShare, setSoloLobby } from './screens';
 import { initSteam, steamStatus } from './steam';
 import { modeMinutes, savedMode } from './ui/match-mode';
 import { crazyGameplay, crazyInstant, crazyInviteRoom, crazyLoaded, crazyRoom, crazyUsername, crazyVictory, initCrazy, onCrazyJoin, watchCrazySettings } from './crazy';
@@ -319,7 +319,7 @@ async function leaveToMenu(): Promise<void> {
   disarmTutorial();
   crazyRoom(null, false);
   crazyGameplay(false);
-  soloRoom = false;
+  soloRoom = false; setSoloLobby(false);
   lastCastle = null; lastLayout = null; lastMap = null; lastSpectator = null; pendingBattles = []; summary = null; progressDelta = null; progressSeen = false;
   setRoute(`/${location.search}`);
   showHome();
@@ -328,7 +328,7 @@ async function leaveToMenu(): Promise<void> {
 /** The CrazyGames account's name, when there is one: the name offered while the player has not typed their own. */
 let siteName = '';
 /** A quick match (the player and bots only) is not a room to invite friends to: the CrazyGames invite button stays away from it. */
-let soloRoom = false;
+let soloRoom = false; setSoloLobby(false);
 
 /** The match's music has begun (the clouds have parted): until then the menu music plays on. */
 let musicInGame = false;
@@ -433,7 +433,7 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
   new HomeScreen(app, { name: loadName() || siteName, code: defaults.code ?? '', error: defaults.error, hosted: bridge ? { steam: mpInfo!.steam } : null }, {
     create: async (name, visibility) => {
       rememberName(name);
-      soloRoom = false;
+      soloRoom = false; setSoloLobby(false);
       if (bridge) setHostedRole('host'); // (before the room's first picture arrives: the lobby is drawn as a host's)
       const r = await net.createRoom(name);
       if (!r.ok) { setHostedRole('none'); return r.error; }
@@ -463,6 +463,10 @@ function showHome(defaults: { code?: string; error?: string } = {}): void {
     quick: async (name) => {
       rememberName(name);
       return quickMatch(name);
+    },
+    play: async (name) => {
+      rememberName(name);
+      return openSoloLobby(name);
     },
     join: async (name, code) => {
       if (bridge) {
@@ -535,7 +539,7 @@ async function playChallenge(id: string): Promise<string | null> {
   soloRoom = true;
   lastChallengeResult = null;
   const r = await net.createRoom(loadName() || siteName);
-  if (!r.ok) { soloRoom = false; return r.error ?? null; }
+  if (!r.ok) { soloRoom = false; setSoloLobby(false); return r.error ?? null; }
   setRoute(`/oda/${r.code}${location.search}`);
   const go = await net.startChallenge(id, playsFullRules());
   if (!go.ok) {
@@ -571,11 +575,37 @@ function applyChallengeResult(): void {
   end.update(lastEndRoom!);
 }
 
+/**
+ * "Oyna": the single-player lobby. A room of our own, local (no Steam lobby, no LAN door, no room code on the screen), with three Medium bots already in (the last
+ * bots the player played against are remembered; a new player's first matches have Easy ones), the saved deck and match length, and the player already ready: the
+ * match can be started without touching anything. The very first Play is still the guided match (quickMatch). Null when it worked.
+ */
+async function openSoloLobby(name: string): Promise<string | null> {
+  if (!tutorialDone()) return quickMatch(name);
+  soloRoom = true;
+  setSoloLobby(true);
+  const r = await net.createRoom(name);
+  if (!r.ok) { soloRoom = false; setSoloLobby(false); return r.error ?? null; }
+  setRoute(`/oda/${r.code}${location.search}`);
+  const fail = async (error: string | null | undefined): Promise<string | null> => { await leaveToMenu(); return error ?? null; };
+  let levels: BotLevel[] = newPlayer() ? ['easy', 'easy', 'easy'] : ['medium', 'medium', 'medium'];
+  try {
+    const saved = JSON.parse(localStorage.getItem('keepfall.soloBots') ?? 'null') as unknown;
+    if (!newPlayer() && Array.isArray(saved) && saved.length >= 1 && saved.length <= 3 && saved.every((l) => l === 'easy' || l === 'medium' || l === 'hard')) levels = saved as BotLevel[];
+  } catch { /* no memory of it: three Medium bots */ }
+  for (const level of levels) { const a = await net.addBot(level); if (!a.ok) return fail(a.error); }
+  if (newPlayer() && !playsFullRules()) { const st = await net.setStarter(true); if (!st.ok) return fail(st.error); }
+  const md = await net.setMode(savedMode());
+  if (!md.ok) return fail(md.error);
+  const ready = await net.setReady(true);
+  return ready.ok ? null : fail(ready.error);
+}
+
 /** "Hızlı oyna": a room of our own with three bots (a mix of Easy and Medium), everybody ready, and off it goes; deck and kingdom are drawn by lot. Null when it worked. */
 async function quickMatch(name: string): Promise<string | null> {
   soloRoom = true;
   const r = await net.createRoom(name);
-  if (!r.ok) soloRoom = false;
+  if (!r.ok) soloRoom = false; setSoloLobby(false);
   if (!r.ok) return r.error;
   setRoute(`/oda/${r.code}${location.search}`);
   // The very first Quick play is the guided one: three Easy bots and the interactive tutorial (ui/tutorial.ts).
@@ -660,7 +690,7 @@ const fallActions: FallActions = {
   newRoom: async () => {
     const name = loadName() || siteName;
     await leaveToMenu();
-    soloRoom = false;
+    soloRoom = false; setSoloLobby(false);
     const r = await net.createRoom(name);
     if (!r.ok) return r.error ?? null;
     setRoute(`/oda/${r.code}${location.search}`);

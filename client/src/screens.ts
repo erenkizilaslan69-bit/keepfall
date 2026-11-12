@@ -23,6 +23,10 @@ let hostedShare: HostedShare | null = null;
 /** True for a guest of a friend-hosted game: the room's code is of no use to anybody (the host invites). */
 let hostedGuest = false;
 export function setHostedShare(share: HostedShare | null, guest = false): void { hostedShare = share; hostedGuest = guest; }
+/** True for the single-player lobby that "Oyna" opens: local (no room code, no sharing, no Steam lobby, no LAN door), three bots already in, no "ready" to press. */
+let soloLobby = false;
+export function setSoloLobby(on: boolean): void { soloLobby = on; }
+
 import { crazyActive, crazyInviteLink, crazyVictory } from './crazy';
 import { skinSelect } from './ui/select';
 import { profileHtml } from './ui/profile-look';
@@ -87,7 +91,7 @@ export class HomeScreen {
   constructor(
     parent: HTMLElement,
     defaults: { name: string; code: string; error?: string; hosted?: { steam: boolean } | null },
-    actions: { create: (name: string, visibility?: Visibility) => Promise<string | null>; join: (name: string, code: string) => Promise<string | null>; quick: (name: string) => Promise<string | null>; challenges: () => void; progress: () => void;
+    actions: { create: (name: string, visibility?: Visibility) => Promise<string | null>; join: (name: string, code: string) => Promise<string | null>; play: (name: string) => Promise<string | null>; quick: (name: string) => Promise<string | null>; challenges: () => void; progress: () => void;
       joinSteam?: (name: string, lobbyId: string) => Promise<string | null>; lobbies?: () => Promise<MpLobby[]> },
   ) {
     // The desktop build: no official server. "Oyun kur" makes this computer the host; friends join by its address or through Steam.
@@ -131,8 +135,8 @@ export class HomeScreen {
       <div class="screen menu paper home home-${layout}">
         ${logoHtml()}
         <p class="muted center kf-logo-sub">${t('Gizli krallıklar. Sahte ordular. Tek savaş.')}</p>
-        <button id="quick" class="btn wide kf-btn--green home-play"><span class="home-play-word">${t('Oyna')}</span> <small>${t('(3 bota karşı, hemen)')}</small></button>
-        <div class="home-mode" id="home-mode">${modePickerHtml(savedMode(), true)}</div>
+        <button id="play" class="btn wide kf-btn--green home-play"><span class="home-play-word">${t('Oyna')}</span></button>
+        <button id="quick" class="kf-vh" hidden tabindex="-1" aria-hidden="true"></button><!-- (the old "start a match at once": kept out of sight for the test tools) -->
         ${friends && hosted ? friends : ''}
         <div class="home-second">
           <button id="challenges" class="btn">${t('Meydan Okuma')} <small>${t('(tek kişilik, hedefli maçlar)')}</small></button>
@@ -171,13 +175,10 @@ export class HomeScreen {
       buttons.forEach((b) => (b.disabled = false));
     };
     root.querySelector('#quick')!.addEventListener('click', () => run(() => actions.quick(name.value)));
+    root.querySelector('#play')!.addEventListener('click', () => run(() => actions.play(name.value)));
     root.querySelector('#challenges')!.addEventListener('click', () => actions.challenges());
     root.querySelector('#progress')!.addEventListener('click', () => actions.progress());
-    // the match length for "Oyna" (and for a game you host): kept in this browser
-    root.querySelector('#home-mode')?.addEventListener('click', (e) => {
-      const m = (e.target as HTMLElement).closest<HTMLButtonElement>('.mode-btn')?.dataset.mode;
-      if (m && isModeId(m)) { saveMode(m); paintModePicker(root.querySelector('#home-mode')!, m, true); }
-    });
+
     root.querySelector('#create')?.addEventListener('click', () => run(() => actions.create(name.value, (root.querySelector<HTMLSelectElement>('#vis')?.value as Visibility | undefined))));
     // Steam: the open games (public ones, and friends' as Steam lists them); one click joins.
     const list = root.querySelector<HTMLElement>('#lobbies');
@@ -214,8 +215,8 @@ export class LobbyScreen {
         <div class="lob-grid">
           <div class="lob-left">
             ${logoHtml()}
-            <div class="title-ribbon ribbon ribbon-blue">${t('Oda')} <span class="code">${esc(room.code)}</span></div>
-            ${hostedShare ? `<div class="share">
+            <div class="title-ribbon ribbon ribbon-blue">${soloLobby ? t('Tek kişilik maç') : `${t('Oda')} <span class="code">${esc(room.code)}</span>`}</div>
+            ${soloLobby ? '' : hostedShare ? `<div class="share">
               ${hostedShare.link ? `<input class="share-code" readonly value="${esc(hostedShare.link)}" aria-label="${t('Ev sahibinin adresi')}">
               <button class="btn" data-a="copylink">${t('Adresi kopyala')}</button>` : ''}
               ${hostedShare.steam ? `<button class="btn" data-a="invite">${t("Steam'den davet et")}</button>` : ''}
@@ -247,7 +248,7 @@ export class LobbyScreen {
               <label class="check"><input type="checkbox" id="fillbots"> ${t('Boş yerleri botla doldur')}</label>
               <select id="filllevel" aria-label="${t('Bot zorluğu')}"><option value="easy">${t('Kolay')}</option><option value="medium">${t('Orta')}</option><option value="hard">${t('Zor')}</option></select>
             </div>
-            <button class="btn" data-a="ready" id="ready"></button>
+            <button class="btn${soloLobby ? ' hidden' : ''}" data-a="ready" id="ready"></button>
             <button class="btn" data-a="leave" id="leave">${t('Odadan çık')}</button>
             <div class="start">
               <button data-a="start" id="start" class="btn btn-red wide">${t('Maçı başlat')}</button>
@@ -303,7 +304,8 @@ export class LobbyScreen {
       } else if (a === 'start') {
         // The host starts the match; empty seats are filled with computer players of the chosen level first (when that is switched on).
         const room = this.room!;
-        if (this.fill().on) {
+        if (soloLobby) { try { localStorage.setItem('keepfall.soloBots', JSON.stringify(room.players.filter((p) => p.isBot).map((p) => p.botLevel))); } catch { /* not remembered */ } }
+        if (!soloLobby && this.fill().on) {
           for (let n = room.players.length; n < room.maxPlayers; n++) {
             const added = await this.net.addBot(this.fill().level);
             if (!added.ok) { this.show(added); return; }
@@ -485,11 +487,15 @@ export class LobbyScreen {
     this.q('#modefield').setAttribute('title', isHost ? '' : t('Maç süresini yalnız oda sahibi seçer.'));
     const start = this.q<HTMLButtonElement>('#start');
     start.classList.toggle('hidden', !isHost);
-    this.q('#fill').classList.toggle('hidden', !isHost);
+    this.q('#fill').classList.toggle('hidden', !isHost || soloLobby);
+    // single player: nobody else has to be ready, so the player is (again after a match) without pressing anything
+    if (soloLobby && me && !me.ready) void this.net.setReady(true);
     const notReady = room.players.filter((p) => !p.isBot && (!p.ready || !p.connected)).length;
-    const filling = isHost && this.fill().on && room.players.length < room.maxPlayers;
+    const filling = isHost && !soloLobby && this.fill().on && room.players.length < room.maxPlayers;
     start.disabled = !(room.canStart || (filling && notReady === 0));
-    this.q('#start-hint').textContent = !isHost
+    this.q('#start-hint').textContent = soloLobby
+      ? (room.players.length < room.minPlayers ? t('Başlamak için en az bir bot ekle.') : '')
+      : !isHost
       ? t('Herkes hazır olunca oda sahibi maçı başlatır.')
       : filling && notReady === 0 ? t('Boş yerler botla dolacak.')
       : room.players.length < room.minPlayers

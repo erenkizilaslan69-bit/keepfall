@@ -1196,5 +1196,7 @@ const D: Record<string, string> = {
   "Ulağın yolda, dönünce yenisini gönderebilirsin (yaklaşık {0} sn).": "Твой гонец в пути: новый можно отправить, когда он вернётся (примерно {0} с).",
   "Bu maçta en fazla {0} ulak gönderebilirsin.": "В этом матче можно отправить не более {0} {0:гонца|гонцов|гонцов}.",
   "Başlangıç maçı: krallıklar ilk 3 maçtan sonra açılır": "Начальный матч: королевства откроются после первых 3 матчей",
+  "Tek kişilik maç": "Одиночный матч",
+  "Başlamak için en az bir bot ekle.": "Чтобы начать, добавь хотя бы одного бота.",
 };
 export default D;

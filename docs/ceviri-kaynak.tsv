@@ -1202,3 +1202,5 @@
 1202	Ulağın yolda, dönünce yenisini gönderebilirsin (yaklaşık {0} sn).	Your envoy is on the road: you can send a new one when it is back (about {0}s).
 1203	Bu maçta en fazla {0} ulak gönderebilirsin.	You can send at most {0} {0:envoy|envoys} in this match.
 1204	Başlangıç maçı: krallıklar ilk 3 maçtan sonra açılır	Starter match: kingdoms unlock after the first 3 matches
+1205	Tek kişilik maç	Single-player match
+1206	Başlamak için en az bir bot ekle.	Add at least one bot to start.

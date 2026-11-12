@@ -1196,5 +1196,7 @@ const D: Record<string, string> = {
   "Ulağın yolda, dönünce yenisini gönderebilirsin (yaklaşık {0} sn).": "Il tuo messaggero è in viaggio: potrai inviarne un altro quando sarà tornato (circa {0} s).",
   "Bu maçta en fazla {0} ulak gönderebilirsin.": "In questa partita puoi inviare al massimo {0} {0:messaggero|messaggeri}.",
   "Başlangıç maçı: krallıklar ilk 3 maçtan sonra açılır": "Partita iniziale: i regni si sbloccano dopo le prime 3 partite",
+  "Tek kişilik maç": "Partita singola",
+  "Başlamak için en az bir bot ekle.": "Aggiungi almeno un bot per iniziare.",
 };
 export default D;

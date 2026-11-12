@@ -1196,5 +1196,7 @@ const D: Record<string, string> = {
   "Ulağın yolda, dönünce yenisini gönderebilirsin (yaklaşık {0} sn).": "你的使者在路上,回來後才能再派新的(約 {0} 秒)。",
   "Bu maçta en fazla {0} ulak gönderebilirsin.": "本局最多只能派出 {0} 名使者。",
   "Başlangıç maçı: krallıklar ilk 3 maçtan sonra açılır": "入門對局:前 3 場之後開啟王國",
+  "Tek kişilik maç": "單人對局",
+  "Başlamak için en az bir bot ekle.": "至少新增一個機器人才能開始。",
 };
 export default D;
