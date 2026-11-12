@@ -179,6 +179,11 @@
     "weaponsFrom": 0.3,
     "armFrom": 0.75,
     "armyShare": 0.5,
+    // Uzun hazırlık (surplusMinPrepSeconds sn ve üstü; 0 = kapalı: Hızlı 300 ve Standart 600 sn'de hiç devreye girmez) ve Orta/Zor botlar için: hazırlığın ikinci yarısında odun+demir
+    // depoda surplusStock'u aşıp birikirse nüfusun armyShare'ine surplusShareBonus eklenir, yani fazla kaynak daha çok askere dönüşür (Uzun modda botlar ~700 odun+demir harcamadan bekletiyordu).
+    "surplusMinPrepSeconds": 840,
+    "surplusStock": 250,
+    "surplusShareBonus": 0.25,
     // Saldırı kararı: iyi bot rakibin son rapordaki gücünün attackMargin katını bekler ve ordusu hesaplanan savaşların en az attackRate kadarını kazanıyorsa gider
     // (savaş ilerledikçe ikisi de gevşer).
     "attackMargin": 1.2,

@@ -142,7 +142,11 @@ public sealed class BotContext(GameRules rules, BotInput input, BotMemory memory
         + Castle.War.Armies.SelectMany(a => a.Units).Where(u => u.UnitId == unitId).Sum(u => u.Count);
 
     /// <summary>How many more people may become soldiers (or weapons for them) before the castle would run short of workers.</summary>
-    public int ArmyRoom => Math.Max(0, (int)Math.Floor(Castle.Population * Rules.Bots.ArmyShare) - SoldiersTotal - WeaponsWaiting);
+    public int ArmyRoom => Math.Max(0, (int)Math.Floor(Castle.Population * (Rules.Bots.ArmyShare + (SurplusSpending ? Rules.Bots.SurplusShareBonus : 0))) - SoldiersTotal - WeaponsWaiting);
+
+    /// <summary>A long preparation in which wood and iron pile up unused: the bot turns more of its people into soldiers (bots.surplus*), so the long mode ends in a bigger army, not a full store.</summary>
+    public bool SurplusSpending => Difficulty != BotDifficulty.Easy && Rules.Bots.SurplusMinPrepSeconds > 0 && Castle.PrepSeconds >= Rules.Bots.SurplusMinPrepSeconds && PrepProgress >= 0.5
+        && Castle.Resources.Wood + Castle.Resources.Iron >= Rules.Bots.SurplusStock;
 
     /// <summary>How far into the preparation we are (0–1; 1 once the war has begun).</summary>
     public double PrepProgress => Castle.PrepSeconds <= 0 ? 1 : Math.Clamp(Castle.ElapsedSeconds / Castle.PrepSeconds, 0, 1);

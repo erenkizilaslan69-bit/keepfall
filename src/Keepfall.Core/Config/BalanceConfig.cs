@@ -90,6 +90,10 @@ public sealed class BotsConfig
     public double WeaponsFrom { get; set; } = 0.3;
     public double ArmFrom { get; set; } = 0.75;
     public double ArmyShare { get; set; } = 0.5;
+    /// <summary>A long preparation (this many seconds or more; 0 = off): wood + iron piling up beyond surplusStock lets this much more of the people become soldiers.</summary>
+    public double SurplusMinPrepSeconds { get; set; }
+    public double SurplusStock { get; set; } = 250;
+    public double SurplusShareBonus { get; set; }
     public double AttackMargin { get; set; } = 1.2;
     public double AttackRate { get; set; } = 0.85;
     public double OtherQuartersFrom { get; set; } = 0.5;
@@ -597,7 +601,8 @@ public static class BalanceConfigLoader
             new BotRules(BotLevel(config.Bots.Easy, false), BotLevel(config.Bots.Medium, true), config.Bots.Mix, config.Bots.WeaponsFrom, config.Bots.ArmFrom, config.Bots.ArmyShare,
                 config.Bots.AttackMargin, config.Bots.AttackRate, config.Bots.OtherQuartersFrom,
                 config.Bots.StaleReportSeconds, config.Bots.BlindMargin, config.Bots.BlindRivalShare, config.Bots.BlindAfterWarSeconds,
-                config.Bots.Hard is null ? null : BotLevel(config.Bots.Hard, true), config.Bots.GiftThreshold, config.Bots.GiftPeaceSeconds, config.Bots.Decks.Select(d => (IReadOnlyList<string>)d).ToList()),
+                config.Bots.Hard is null ? null : BotLevel(config.Bots.Hard, true), config.Bots.GiftThreshold, config.Bots.GiftPeaceSeconds, config.Bots.Decks.Select(d => (IReadOnlyList<string>)d).ToList(),
+                config.Bots.SurplusMinPrepSeconds, config.Bots.SurplusStock, config.Bots.SurplusShareBonus),
             new EnvoyRules(config.Envoy.MaxCargo, config.Envoy.MaxMessageLength, config.Envoy.ProfanityFilter),
             new WallRules(config.Walls.ArcherDefenseBonus),
             new DeckRules(config.Deck.Enabled, config.Deck.Size),

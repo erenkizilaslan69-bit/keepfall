@@ -38,6 +38,7 @@ public sealed record BotLevelRules(double ThinkMin, double ThinkMax, double Reac
 /// <param name="Mix">The army it builds: share of each unit type (by id), summing to about 1.</param>
 /// <param name="WeaponsFrom">Share of the preparation after which it starts forging weapons.</param>
 /// <param name="ArmFrom">Share of the preparation after which it turns stored weapons into soldiers.</param>
+/// <param name="SurplusMinPrepSeconds">In a preparation at least this long (the long match mode; 0 = never) a bot whose wood and iron pile up (<paramref name="SurplusStock"/> together) lets more of its people become soldiers, <paramref name="SurplusShareBonus"/> more of them, so a long preparation ends in a bigger army instead of an unused stock.</param>
 /// <param name="ArmyShare">The most of its people it lets become soldiers (the rest keep the castle fed and forging).</param>
 /// <param name="AttackMargin">A good bot expects this many times what the last report says (reports are approximate and out of date).</param>
 /// <param name="AttackRate">…and goes only if its army wins at least this share of the fights it calculates.</param>
@@ -51,7 +52,8 @@ public sealed record BotLevelRules(double ThinkMin, double ThinkMax, double Reac
 public sealed record BotRules(BotLevelRules Easy, BotLevelRules Medium, IReadOnlyDictionary<string, double> Mix, double WeaponsFrom, double ArmFrom, double ArmyShare,
     double AttackMargin = 1.2, double AttackRate = 0.85, double OtherQuartersFrom = 0.5,
     double StaleReportSeconds = 120, double BlindMargin = 0, double BlindRivalShare = 0.8, double BlindAfterWarSeconds = 0,
-    BotLevelRules? Hard = null, double GiftThreshold = 30, double GiftPeaceSeconds = 90, IReadOnlyList<IReadOnlyList<string>>? Decks = null)
+    BotLevelRules? Hard = null, double GiftThreshold = 30, double GiftPeaceSeconds = 90, IReadOnlyList<IReadOnlyList<string>>? Decks = null,
+    double SurplusMinPrepSeconds = 0, double SurplusStock = 250, double SurplusShareBonus = 0)
 {
     public static readonly BotRules Default = new(
         new BotLevelRules(6, 10, 8, 15, 2, 0.25, 2, 0.25, false, false, 1, 1, 1, false, 2, 0.1, 1.0, false, false), new BotLevelRules(2, 3, 3, 6, 4, 0.05, 1, 0.05),

@@ -46,3 +46,18 @@ Savaş zaten 10 dk'ydı (`shortModeMinutes 15 − shortModePrepMinutes 5`); üç
 - `RoomView.mode` ("quick"/"standard"/"long"); hub `SetMode(string)` (yalnız ev sahibi, bilinen üç kelime). Steam lobi verisine `mode` (üç bilinen kelimeden biri), açık oyunlar listesinde "5+10 dk" etiketi, Rich Presence `mode` ("5+10") ve metinlerde `{%mode%}` (`tools/steam/rich_presence_loc.vdf`; Steamworks panelinde yeniden yüklenmeli).
 - Maç ekranında kalan süre sunucunun `remainingSeconds/prepSeconds` sayılarından: moda göre doğru (mode-match-check: hazırlık 300/600/900 sn).
 - Kontroller: `tools/shot-modes.mjs` (görüntüler `art/shots/modes/`), `tools/mode-match-check.mjs` (her moddan bir tam maç, ×20), `MatchModeTests`.
+
+## Uzun modda stok birikimi düzeltildi (2026-11-12, cila turu madde 6)
+**Hata:** Uzun hazırlıkta Orta/Zor botlar savaş başlarken ~700 odun+demir depoda bekletiyordu (Hızlı ~100): ordu nüfusun `armyShare` (%50) kadarıyla sınırlı, üretim ise devam ediyordu.
+**Düzeltme (yalnız bot davranışı, yeni anahtarlar `bots.surplus*`):** hazırlık ≥ 840 sn (yalnız Uzun) ve hazırlığın ikinci yarısında odun+demir ≥ 250 birikince Orta/Zor botlar nüfusun `armyShare + 0,25`'ine kadar asker yapar (Kolay etkilenmez; Kolay'a da verilince Orta/Kolay farkı %70 → %52'ye düşüyordu). Hızlı (300 sn) ve Standart (600 sn) için kod yolu hiç çalışmaz: aynı tohumla 40'ar maç çıktıları **birebir aynı** (karışık, orta, zor-orta; 18 tablo karşılaştırıldı).
+
+| Uzun mod, 40 maç, tohum 11 | önce | sonra |
+|---|---|---|
+| Orta, Kolay'a karşı kazanma | %70,0 | %72,5 |
+| Orta vs Orta | %50 | %50 |
+| Zor, Orta'ya karşı kazanma | %61,3 | %80,0 |
+| Depo odun+demir (Orta, savaş başı) | 685–712 | ~369 |
+| Asker savaş başı (Orta) | 28–30 | 38–41 |
+| Nüfus savaş başı (Orta) | 49–51 | 47–51 |
+
+Aday değerler (denendi, 40 maç): bonus 0,10 → depo ~540 ama Orta/Kolay %62; 0,20 → depo ~415; 0,30 → depo ~350, Zor/Orta %87. 0,25 seçildi. **Açık:** Zor'un Uzun modda Orta'ya karşı kazanması %61'den %80'e çıktı (hata payı ±10; Zor silahı depoda tuttuğu için artan nüfus payından daha çok yararlanıyor olabilir). Depo ~370'e indi, 0'a değil (üretim sürüyor). Ayarlar `config/balance.json` → `bots.surplusMinPrepSeconds / surplusStock / surplusShareBonus` (0 = kapalı).
