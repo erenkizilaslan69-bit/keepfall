@@ -1,14 +1,15 @@
 /* The match-length picker (Quick / Standard / Long): three small buttons in the game's own paper-and-ink style. */
 .mode-pick { display: flex; gap: calc(6px * var(--u, 1)); margin: calc(6px * var(--u, 1)) 0; }
-.mode-btn { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(1px * var(--u, 1)); cursor: pointer; font: inherit; color: var(--ink, #3a2c1c);
-  background: rgba(90, 66, 34, .14); border: calc(2px * var(--u, 1)) solid rgba(90, 66, 34, .4); border-radius: calc(6px * var(--u, 1)); padding: calc(4px * var(--u, 1)) calc(4px * var(--u, 1)); line-height: 1.1; }
+.mode-btn { flex: 1 1 0; min-width: 0; display: flex; flex-flow: row wrap; align-items: baseline; justify-content: center; column-gap: calc(5px * var(--u, 1)); cursor: pointer; font: inherit; color: var(--ink, #3a2c1c);
+  background: rgba(90, 66, 34, .14); border: calc(2px * var(--u, 1)) solid rgba(90, 66, 34, .4); border-radius: calc(6px * var(--u, 1)); padding: calc(3px * var(--u, 1)) calc(4px * var(--u, 1)); line-height: 1.15; }
 .mode-btn b { font-weight: 400; overflow-wrap: normal; }
 .mode-btn small { opacity: .8; font-size: max(var(--fs-xs, 0px), .78em); }
 .mode-btn.on { background: #3f86c7; color: #fff; border-color: #1b4a73; text-shadow: 0 1px 0 rgba(0, 0, 0, .4); }
 .mode-btn:disabled { cursor: default; }
 .mode-btn:disabled:not(.on) { opacity: .6; }
 .mode-btn:focus-visible { outline: calc(2px * var(--u, 1)) solid #3f86c7; outline-offset: calc(2px * var(--u, 1)); }
-.mode-field { margin-top: calc(8px * var(--u, 1)); }
+.mode-field { margin-top: calc(4px * var(--u, 1)); }
+.mode-field .mode-pick { margin: calc(2px * var(--u, 1)) 0; }
 .mode-field .mode-label { display: block; font-size: max(var(--fs-xs, 0px), .88em); opacity: .85; }
 .home .mode-pick { margin: calc(4px * var(--u, 1)) 0 0; }
 .tag.mode-tag { white-space: nowrap; }

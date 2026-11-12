@@ -230,7 +230,7 @@ export class LobbyScreen {
               <button class="btn" data-a="copy">${t('Oda kodunu kopyala')}</button>
               ${inIframe() && !crazyActive() ? '' : `<button class="btn" data-a="copylink">${t('Bağlantıyı kopyala')}</button>`}
             </div>`}
-            <div class="mode-field" id="modefield"><span class="mode-label">${t('Maç süresi')}</span><div id="modebox"></div></div>
+            <div class="mode-field" id="modefield"><div id="modebox"></div></div>
             <ul class="players" id="players"></ul>
           </div>
           <div class="lob-right">
