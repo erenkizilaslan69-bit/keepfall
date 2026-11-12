@@ -18,10 +18,10 @@ export const scoutKey = (r: ScoutReportView) => `${r.targetSeat}:${r.deliveredAt
  * <paramref name="blocked"/> is any other reason the button must stay off (the label stays as it is then); <paramref name="taken"/>: a scout is already out for this very target.
  */
 export function scoutButton(button: HTMLButtonElement, label: string, s: CastleView, blocked: boolean, taken = false): void {
-  const away = s.scouting.missions;
+  const away = s.scouting.missions.filter((m) => m.kind !== 'envoy'); // (an envoy has its own slot: it never keeps a scout from going, nor shows here)
   const busy = away.length >= s.scouting.maxScouts;
   const locked = s.scouting.locked && !blocked;
-  const who = away.some((m) => m.kind === 'envoy') ? t('Ulak') : t('Gözcü');
+  const who = t('Gözcü');
   const text = locked ? t('Savaş başlayınca gönderilebilir') : busy && !blocked ? t('{0} dönüyor · {1} sn', who, Math.ceil(Math.min(...away.map((m) => m.remainingSeconds)))) : label;
   if (button.textContent !== text) button.textContent = text;
   button.disabled = blocked || busy || taken || s.scouting.locked;

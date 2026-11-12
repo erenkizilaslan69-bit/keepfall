@@ -211,6 +211,8 @@ export class GameConnection {
   setName = (name: string) => { this.name = name; return this.call('SetName', name); };
   setReady = (ready: boolean) => this.call('SetReady', ready);
   /** The guided first match: computer players leave this (single human) player alone for the first minutes of the war. */
+  /** The host changes a seated bot's difficulty. */
+  setBotLevel = (seat: number, level: BotLevel) => this.call('SetBotLevel', seat, level);
   setGuided = (on: boolean) => this.call('SetGuided', on);
   /** The host's match length: 'quick' | 'standard' | 'long'. */
   setMode = (mode: string) => this.call('SetMode', mode);

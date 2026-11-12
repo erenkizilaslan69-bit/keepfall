@@ -6,6 +6,9 @@ import { showsHints } from '../prefs';
 // war beginning. Each comes at most once per match, only while the tutorial is not running, and the player can switch them all off in the settings.
 
 const IDLE_WORKERS = 3, IDLE_SECONDS = 20;
+const KINGDOM_TIP = 'keepfall.kingdomTip';
+const kingdomTipSeen = (): boolean => { try { return localStorage.getItem(KINGDOM_TIP) === '1'; } catch { return false; } };
+const markKingdomTip = (): void => { try { localStorage.setItem(KINGDOM_TIP, '1'); } catch { /* shown again next time */ } };
 
 export class Hints {
   private readonly seen = new Set<string>();
@@ -37,6 +40,8 @@ export class Hints {
     if (s.war.incoming.length > 0) this.once('incoming', t('Bir düşman ordusu geliyor! Kale penceresinden işçileri askere çevir (kuşan) ve Savunma sekmesine bak.'), quiet ? 6000 : undefined);
     if (lostAttack) this.once('lost', t('Saldırı geri püskürtüldü. Bir sonraki dalgayı biriktir: daha çok silah üret, askere çevir, sonra yeniden saldır.'));
     if (quiet) return;
+    // the first match with kingdoms: one short introduction to the kingdom button (once in this browser)
+    if (s.kingdom && !kingdomTipSeen()) { markKingdomTip(); this.once('kingdom', t('Bu senin krallığın: yeteneklerini sol üstteki krallık düğmesinden kullan. Rakiplerin krallığı gizli.'), 10000); }
     if (newReport) this.once('report', t('Gözcün döndü: rapora tıklayıp rakibin ordusunu gör.'));
     if (this.idleSince && now - this.idleSince > IDLE_SECONDS * 1000) this.once('idle', t('{0} işçin boşta: yemek yerler ama üretmezler. Bir binaya + ile işçi ata.', idle));
     if (s.elapsedSeconds > 20 && s.rates.foodIn < s.rates.foodOut && s.resources.food < Math.max(40, s.rates.foodOut * 3)) {

@@ -390,4 +390,9 @@ export const EN: Record<string, string> = {
   "Başlangıç maçı: krallıklar ilk 3 maçtan sonra açılır": "Starter match: kingdoms unlock after the first 3 matches",
   "Tek kişilik maç": "Single-player match",
   "Başlamak için en az bir bot ekle.": "Add at least one bot to start.",
+  "Bu senin krallığın: yeteneklerini sol üstteki krallık düğmesinden kullan. Rakiplerin krallığı gizli.": "This is your kingdom: use its abilities from the kingdom button at the top left. Your rivals' kingdoms are hidden.",
+  "İlk maçların için botlar Kolay; istersen zorluğu bot satırından değiştir.": "Bots are Easy for your first matches; change a bot's difficulty on its row if you like.",
+  "Ulak yük ve mesaj taşır; bilgi toplamaz, yakalanamaz. Yükü ve mesajı yalnız sen ve alıcı görür. Gözcüden bağımsızdır: aynı anda yolda tek ulağın olabilir.": "An envoy carries goods and a message; it gathers no information and cannot be caught. Only you and the receiver see the goods and the message. It is independent of your scout: you can have one envoy on the road at a time.",
+  "Zorluğu değiştirmek için tıkla": "Click to change the difficulty",
+  "(sonraki oyunda geçerli)": "(applies from the next game)",
 };

@@ -272,6 +272,7 @@ public sealed class GameHub(RoomRegistry registry, Keepfall.Core.GameRules rules
     public Task<CommandResultView> StartMatch() => RoomCommand((room, token) => room.Start(token), pushCastles: true, pushLayout: true);
     public Task<CommandResultView> BackToLobby() => RoomCommand((room, token) => room.BackToLobby(token));
     public Task<CommandResultView> AddBot(BotDifficulty difficulty) => RoomCommand((room, token) => room.AddBot(token, difficulty));
+    public Task<CommandResultView> SetBotLevel(int seat, BotDifficulty level) => RoomCommand((room, token) => room.SetBotLevel(token, seat, level));
     public Task<CommandResultView> RemoveBot(int seat) => RoomCommand((room, token) => room.RemoveBot(token, seat));
 
     /// <summary>

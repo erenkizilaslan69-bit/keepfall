@@ -52,13 +52,13 @@ import { initSteam, steamStatus } from './steam';
 import { modeMinutes, savedMode } from './ui/match-mode';
 import { crazyGameplay, crazyInstant, crazyInviteRoom, crazyLoaded, crazyRoom, crazyUsername, crazyVictory, initCrazy, onCrazyJoin, watchCrazySettings } from './crazy';
 import { countMatch, newPlayer, playsFullRules, setSiteChatOff } from './prefs';
+import { countNormalMatch } from './prefs';
 import { guarded, installErrorReporting } from './error-report';
 import { ChallengeScreen, loadStars, nextOf, resultHtml, saveStars } from './ui/challenges';
 import './ui/progress.css';
 import { ProgressScreen, animateXpBars, mergeDelta, progressPanelHtml } from './ui/progress';
 import { addBonusXp } from './progress/catalog';
 import { questTracker } from './ui/quests';
-import { syncStarterChip } from './ui/starter-chip';
 import { recordMatch, recordMeta, type ProgressDelta } from './progress/catalog';
 import type { BattleStartedView, ProgressResult, BotLevel, CastleView, ChallengeList, ChallengeResult, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 import { currentRoute, embedded, setRoute } from './env';
@@ -216,7 +216,6 @@ function onRoom(r: RoomView): void {
   }
   // Starter rules hide the row pickers (the server ignores them anyway).
   document.documentElement.classList.toggle('kf-starter', r.starter === true);
-  syncStarterChip(r.starter === true && r.phase !== 'lobby' && r.phase !== 'ended');
   setBotSeats(r.players);
   mountScenery().setColors(r.players.map((p) => p.color));
   // In the lobby the browser already fetches what the map will need.
@@ -306,7 +305,6 @@ function clear(): void {
   game?.destroy(true);
   game = null; scene = null; lobby = null; end = null;
   questTracker.hide();
-  syncStarterChip(false);
   ui?.destroy();
   ui = null;
   app.innerHTML = '';
@@ -594,7 +592,6 @@ async function openSoloLobby(name: string): Promise<string | null> {
     if (!newPlayer() && Array.isArray(saved) && saved.length >= 1 && saved.length <= 3 && saved.every((l) => l === 'easy' || l === 'medium' || l === 'hard')) levels = saved as BotLevel[];
   } catch { /* no memory of it: three Medium bots */ }
   for (const level of levels) { const a = await net.addBot(level); if (!a.ok) return fail(a.error); }
-  if (newPlayer() && !playsFullRules()) { const st = await net.setStarter(true); if (!st.ok) return fail(st.error); }
   const md = await net.setMode(savedMode());
   if (!md.ok) return fail(md.error);
   const ready = await net.setReady(true);
@@ -617,14 +614,14 @@ async function quickMatch(name: string): Promise<string | null> {
     const a = await net.addBot(level);
     if (!a.ok) return fail(a.error);
   }
-  if ((guided || newPlayer()) && !playsFullRules()) { const st = await net.setStarter(true); if (!st.ok) return fail(st.error); }
+  if (guided && !playsFullRules()) { const st = await net.setStarter(true); if (!st.ok) return fail(st.error); }
   if (guided) { const g = await net.setGuided(true); if (!g.ok) return fail(g.error); }
   else { const md = await net.setMode(savedMode()); if (!md.ok) return fail(md.error); } // (the guided match keeps its own eight minutes)
   const ready = await net.setReady(true);
   if (!ready.ok) return fail(ready.error);
   if (guided) armTutorial();
   const go = await net.startMatch();
-  if (go.ok) countMatch();
+  if (go.ok) { countMatch(); if (!guided) countNormalMatch(); }
   return go.ok ? null : fail(go.error);
 }
 
@@ -863,6 +860,7 @@ async function connectOnSite(): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  enableNameSetting('', false); // (the name can always be changed in the settings; the single-player lobby has no name box)
   // the desktop (Electron) build is a window of its own, not a web page: no page scroll bar at the right edge (the wheel still scrolls a menu that is taller than the window)
   if ((window as unknown as { keepfallSteam?: unknown }).keepfallSteam) document.documentElement.classList.add('kf-desktop');
   applyCalm(); // "Efektleri azalt" / low graphics: the interface's small movements are off

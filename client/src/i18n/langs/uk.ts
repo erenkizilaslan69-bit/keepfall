@@ -1198,5 +1198,10 @@ const D: Record<string, string> = {
   "Başlangıç maçı: krallıklar ilk 3 maçtan sonra açılır": "Початковий матч: королівства відкриються після перших 3 матчів",
   "Tek kişilik maç": "Одиночний матч",
   "Başlamak için en az bir bot ekle.": "Щоб почати, додай хоча б одного бота.",
+  "Bu senin krallığın: yeteneklerini sol üstteki krallık düğmesinden kullan. Rakiplerin krallığı gizli.": "Це твоє королівство: його здібності — у кнопці королівства зліва вгорі. Королівства суперників приховані.",
+  "İlk maçların için botlar Kolay; istersen zorluğu bot satırından değiştir.": "У перших матчах боти легкі; складність можна змінити в рядку бота.",
+  "Ulak yük ve mesaj taşır; bilgi toplamaz, yakalanamaz. Yükü ve mesajı yalnız sen ve alıcı görür. Gözcüden bağımsızdır: aynı anda yolda tek ulağın olabilir.": "Гонець везе вантаж і повідомлення; він не збирає відомостей і його не можна впіймати. Вантаж і повідомлення бачите лише ви та отримувач. Він не залежить від розвідника: у дорозі може бути один гонець одночасно.",
+  "Zorluğu değiştirmek için tıkla": "Натисни, щоб змінити складність",
+  "(sonraki oyunda geçerli)": "(діє з наступної гри)",
 };
 export default D;

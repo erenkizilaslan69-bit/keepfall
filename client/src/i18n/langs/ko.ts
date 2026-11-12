@@ -1198,5 +1198,10 @@ const D: Record<string, string> = {
   "Başlangıç maçı: krallıklar ilk 3 maçtan sonra açılır": "입문 경기: 왕국은 처음 3경기 이후에 열립니다",
   "Tek kişilik maç": "싱글 플레이 경기",
   "Başlamak için en az bir bot ekle.": "시작하려면 봇을 하나 이상 추가하세요.",
+  "Bu senin krallığın: yeteneklerini sol üstteki krallık düğmesinden kullan. Rakiplerin krallığı gizli.": "이것이 당신의 왕국입니다. 능력은 왼쪽 위의 왕국 버튼에서 쓸 수 있습니다. 상대의 왕국은 숨겨져 있습니다.",
+  "İlk maçların için botlar Kolay; istersen zorluğu bot satırından değiştir.": "처음 몇 경기는 봇이 쉬움입니다. 원하면 봇 줄에서 난이도를 바꾸세요.",
+  "Ulak yük ve mesaj taşır; bilgi toplamaz, yakalanamaz. Yükü ve mesajı yalnız sen ve alıcı görür. Gözcüden bağımsızdır: aynı anda yolda tek ulağın olabilir.": "사절은 물건과 메시지를 나릅니다. 정보를 모으지 않고 잡히지 않습니다. 물건과 메시지는 당신과 받는 사람만 봅니다. 정찰병과는 별개이며, 길 위에는 한 번에 한 명의 사절만 둘 수 있습니다.",
+  "Zorluğu değiştirmek için tıkla": "클릭해서 난이도 변경",
+  "(sonraki oyunda geçerli)": "(다음 게임부터 적용)",
 };
 export default D;

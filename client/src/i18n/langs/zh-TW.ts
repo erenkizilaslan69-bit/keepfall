@@ -1198,5 +1198,10 @@ const D: Record<string, string> = {
   "Başlangıç maçı: krallıklar ilk 3 maçtan sonra açılır": "入門對局:前 3 場之後開啟王國",
   "Tek kişilik maç": "單人對局",
   "Başlamak için en az bir bot ekle.": "至少新增一個機器人才能開始。",
+  "Bu senin krallığın: yeteneklerini sol üstteki krallık düğmesinden kullan. Rakiplerin krallığı gizli.": "這是你的王國:透過左上角的王國按鈕使用它的能力。對手的王國是隱藏的。",
+  "İlk maçların için botlar Kolay; istersen zorluğu bot satırından değiştir.": "前幾場對局機器人為簡單難度;想改的話可在機器人那一行調整。",
+  "Ulak yük ve mesaj taşır; bilgi toplamaz, yakalanamaz. Yükü ve mesajı yalnız sen ve alıcı görür. Gözcüden bağımsızdır: aynı anda yolda tek ulağın olabilir.": "使者攜帶物資和訊息,不蒐集情報,也不會被抓住。只有你和接收者能看到物資和訊息。它與偵察兵互不影響:同一時間路上只能有一名使者。",
+  "Zorluğu değiştirmek için tıkla": "點擊更改難度",
+  "(sonraki oyunda geçerli)": "(下一局生效)",
 };
 export default D;

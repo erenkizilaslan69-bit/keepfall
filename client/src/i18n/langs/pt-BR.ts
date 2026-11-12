@@ -1198,5 +1198,10 @@ const D: Record<string, string> = {
   "Başlangıç maçı: krallıklar ilk 3 maçtan sonra açılır": "Partida inicial: os reinos são liberados após as 3 primeiras partidas",
   "Tek kişilik maç": "Partida individual",
   "Başlamak için en az bir bot ekle.": "Adicione pelo menos um bot para começar.",
+  "Bu senin krallığın: yeteneklerini sol üstteki krallık düğmesinden kullan. Rakiplerin krallığı gizli.": "Este é o seu reino: use as habilidades dele no botão de reino no canto superior esquerdo. Os reinos dos rivais são ocultos.",
+  "İlk maçların için botlar Kolay; istersen zorluğu bot satırından değiştir.": "Os bots são Fáceis nas suas primeiras partidas; mude a dificuldade na linha do bot se quiser.",
+  "Ulak yük ve mesaj taşır; bilgi toplamaz, yakalanamaz. Yükü ve mesajı yalnız sen ve alıcı görür. Gözcüden bağımsızdır: aynı anda yolda tek ulağın olabilir.": "Um mensageiro leva mercadorias e uma mensagem; não coleta informações e não pode ser capturado. Só você e o receptor veem a carga e a mensagem. Ele é independente do batedor: você pode ter um mensageiro na estrada por vez.",
+  "Zorluğu değiştirmek için tıkla": "Clique para mudar a dificuldade",
+  "(sonraki oyunda geçerli)": "(vale a partir da próxima partida)",
 };
 export default D;

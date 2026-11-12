@@ -44,7 +44,7 @@ export class EnemyWin extends Win {
       </div>
       <div class="win-sec" data-sec="envoy">
       <h4>${tt('Ulak')}</h4>
-      <p class="muted-ink small">${tt('Ulak yük ve mesaj taşır; bilgi toplamaz, yakalanamaz. Yükü ve mesajı yalnız sen ve alıcı görür. Gözcüyle aynı hakkı kullanır.')}</p>
+      <p class="muted-ink small">${tt('Ulak yük ve mesaj taşır; bilgi toplamaz, yakalanamaz. Yükü ve mesajı yalnız sen ve alıcı görür. Gözcüden bağımsızdır: aynı anda yolda tek ulağın olabilir.')}</p>
       <div class="envoy-goods">
         <label><i class="ico ico-meat"></i><input type="number" min="0" value="0" data-env="food" aria-label="${tt('Yemek')}"><small data-f="env-have-food"></small></label>
         <label><i class="ico ico-wood"></i><input type="number" min="0" value="0" data-env="wood" aria-label="${tt('Odun')}"><small data-f="env-have-wood"></small></label>

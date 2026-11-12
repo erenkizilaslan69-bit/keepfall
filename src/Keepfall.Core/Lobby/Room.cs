@@ -68,7 +68,7 @@ public sealed class RoomPlayer
     }
 
     /// <summary>The bot's difficulty; null for a human.</summary>
-    public BotDifficulty? Bot { get; }
+    public BotDifficulty? Bot { get; internal set; }
     public bool IsBot => Bot is not null;
     /// <summary>
     /// A human whose connection has been gone too long: a computer player of this level plays the castle (through the same views and commands) until
@@ -553,6 +553,16 @@ public sealed class Room
         kickedToken = found;
         return result;
     }
+
+    /// <summary>The host changes a seated bot's difficulty (no need to remove it and add another).</summary>
+    public CommandResult SetBotLevel(string token, int seat, BotDifficulty difficulty) => InLobby(token, p =>
+    {
+        if (p.Seat != HostSeat) return CommandResult.Fail("Botun zorluğunu sadece odayı kuran değiştirebilir.");
+        if (!Enum.IsDefined(difficulty)) return CommandResult.Fail("Geçersiz bot zorluğu.");
+        if (_players.FirstOrDefault(x => x.Seat == seat && x.IsBot) is not { } bot) return CommandResult.Fail("O koltukta bot yok.");
+        bot.Bot = difficulty;
+        return CommandResult.Success;
+    });
 
     public CommandResult RemoveBot(string token, int seat) => InLobby(token, p =>
     {

@@ -2,7 +2,7 @@ import { sfx } from './audio';
 import { botMark, clock, COLOR_CSS, esc, fmt } from './format';
 import { inIframe, t, tr } from './i18n';
 import { isTouch } from './ui/touch';
-import { countMatch, newPlayer } from './prefs';
+import { countMatch, countNormalMatch, newPlayer } from './prefs';
 import { emblemHtml } from './ui/emblem';
 import type { GameConnection } from './net';
 import type { BotLevel, RoomView, SummaryView } from './types';
@@ -243,16 +243,17 @@ export class LobbyScreen {
             </div>
           </div>
           <div class="lob-bottom">
-            <label class="field">${t('Adın')} <input id="myname" maxlength="16"></label>
+            <label class="field${soloLobby ? ' hidden' : ''}">${t('Adın')} <input id="myname" maxlength="16"></label>
             <div class="fill hidden" id="fill">
               <label class="check"><input type="checkbox" id="fillbots"> ${t('Boş yerleri botla doldur')}</label>
               <select id="filllevel" aria-label="${t('Bot zorluğu')}"><option value="easy">${t('Kolay')}</option><option value="medium">${t('Orta')}</option><option value="hard">${t('Zor')}</option></select>
             </div>
             <button class="btn${soloLobby ? ' hidden' : ''}" data-a="ready" id="ready"></button>
-            <button class="btn" data-a="leave" id="leave">${t('Odadan çık')}</button>
+            <button class="btn" data-a="leave" id="leave">${soloLobby ? t('Ana menüye dön') : t('Odadan çık')}</button>
             <div class="start">
               <button data-a="start" id="start" class="btn btn-red wide">${t('Maçı başlat')}</button>
             </div>
+            <p class="muted small center" id="solo-note" hidden></p>
             <p class="muted small center" id="start-hint"></p>
           </div>
         </div>
@@ -312,8 +313,12 @@ export class LobbyScreen {
           }
         }
         const started = await this.net.startMatch();
-        if (started.ok) countMatch();
+        if (started.ok) { countMatch(); countNormalMatch(); }
         this.show(started);
+      } else if (a === 'botlevel') {
+        const b = (e.target as HTMLElement).closest<HTMLElement>('[data-level]')!;
+        const next: BotLevel = b.dataset.level === 'easy' ? 'medium' : b.dataset.level === 'medium' ? 'hard' : 'easy';
+        this.show(await this.net.setBotLevel(Number(b.dataset.seat), next));
       } else if (a === 'addbot') {
         const level = (e.target as HTMLElement).closest<HTMLElement>('[data-level]')?.dataset.level as BotLevel;
         this.show(await this.net.addBot(level));
@@ -457,11 +462,13 @@ export class LobbyScreen {
         <i class="avatar${frameClass(p.frame)}" style="background-image:url('${avatar(p.seat)}')"></i>
         <span class="pname">${botMark(p.seat)}${esc(tr(p.name))}${p.seat === this.mySeat ? ` <span class="muted">${t('(sen)')}</span>` : ''} ${profileHtml({ title: p.title, level: p.level, pattern: p.pattern, color: p.color })}</span>
         <span class="tags">
-          ${p.isBot ? `<span class="tag">${t('bot · {0}', p.botLevel === 'easy' ? t('kolay') : p.botLevel === 'hard' ? t('zor') : t('orta'))}</span>` : ''}
+          ${p.isBot ? (me?.isHost
+            ? `<button class="btn small bot-level" data-a="botlevel" data-seat="${p.seat}" data-level="${p.botLevel ?? 'medium'}" title="${esc(t('Zorluğu değiştirmek için tıkla'))}">${t('bot · {0}', p.botLevel === 'easy' ? t('kolay') : p.botLevel === 'hard' ? t('zor') : t('orta'))} ⟳</button>`
+            : `<span class="tag">${t('bot · {0}', p.botLevel === 'easy' ? t('kolay') : p.botLevel === 'hard' ? t('zor') : t('orta'))}</span>`) : ''}
           ${p.isBot && me?.isHost ? `<button class="btn small" data-a="rmbot" data-seat="${p.seat}">${t('Bot çıkar')}</button>` : ''}
           ${!p.isBot && me?.isHost && p.seat !== this.mySeat ? `<button class="btn small" data-a="kick" data-seat="${p.seat}">${t('Çıkar')}</button>` : ''}
-          ${p.isHost ? `<span class="tag">${t('oda sahibi')}</span>` : ''}
-          ${p.isBot ? '' : !p.connected ? `<span class="tag warn">${t('bağlantı yok')}</span>` : p.ready ? `<span class="tag ok">${t('hazır')}</span>` : `<span class="tag">${t('bekliyor')}</span>`}
+          ${p.isHost && !soloLobby ? `<span class="tag">${t('oda sahibi')}</span>` : ''}
+          ${p.isBot || soloLobby ? '' : !p.connected ? `<span class="tag warn">${t('bağlantı yok')}</span>` : p.ready ? `<span class="tag ok">${t('hazır')}</span>` : `<span class="tag">${t('bekliyor')}</span>`}
         </span>
       </li>` : `<li class="empty"><i class="avatar"></i><span class="pname muted">${t('Boş yer {0}', i + 1)}</span>
         ${me?.isHost ? `<span class="tags"><span class="add-label">${t('Bot ekle:')}</span>
@@ -493,6 +500,9 @@ export class LobbyScreen {
     const notReady = room.players.filter((p) => !p.isBot && (!p.ready || !p.connected)).length;
     const filling = isHost && !soloLobby && this.fill().on && room.players.length < room.maxPlayers;
     start.disabled = !(room.canStart || (filling && notReady === 0));
+    const note = this.q('#solo-note');
+    note.hidden = !(soloLobby && newPlayer() && room.players.some((p) => p.isBot && p.botLevel === 'easy'));
+    note.textContent = t('İlk maçların için botlar Kolay; istersen zorluğu bot satırından değiştir.');
     this.q('#start-hint').textContent = soloLobby
       ? (room.players.length < room.minPlayers ? t('Başlamak için en az bir bot ekle.') : '')
       : !isHost

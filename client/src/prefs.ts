@@ -94,4 +94,8 @@ export function setFullRules(on: boolean): void { save({ ...prefs, fullRules: on
 const MATCHES_KEY = 'keepfall.matches';
 export const matchesStarted = (): number => { try { return Number(localStorage.getItem(MATCHES_KEY)) || 0; } catch { return 0; } };
 export function countMatch(): void { try { localStorage.setItem(MATCHES_KEY, String(matchesStarted() + 1)); } catch { /* not counted */ } }
-export const newPlayer = (): boolean => matchesStarted() < 3;
+// The first three NORMAL matches (not the guided one, not a challenge) have Easy bots; kingdoms are on from the first normal match on (only the guided match is a starter match).
+const NORMAL_KEY = 'keepfall.normalMatches';
+export const normalMatchesStarted = (): number => { try { return Number(localStorage.getItem(NORMAL_KEY)) || 0; } catch { return 0; } };
+export function countNormalMatch(): void { try { localStorage.setItem(NORMAL_KEY, String(normalMatchesStarted() + 1)); } catch { /* not counted */ } }
+export const newPlayer = (): boolean => normalMatchesStarted() < 3;

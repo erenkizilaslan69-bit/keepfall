@@ -32,8 +32,10 @@ let leaveAction: (() => void) | null = null;
 
 /** The desktop build with Steam has no name box in the menu: the player's name is changed here (Game tab). Called once, with the Steam name (shown when none was chosen). */
 let nameFallback: string | null = null;
-export function enableNameSetting(steamName: string): void {
+let nameIsSteam = false;
+export function enableNameSetting(steamName: string, steam = true): void {
   nameFallback = steamName || '';
+  nameIsSteam = steam;
 }
 
 /** Set while the player is in a running match: the settings then offer "Ana menüye dön". */
@@ -135,7 +137,7 @@ export function toggleSettings(): void {
           <p class="muted small">${t('Dil değişince sayfa yenilenir; süren maça aynı koltukla dönersin.')}</p>
         </section>
         <section data-pane="game">
-          ${nameFallback !== null ? `<div class="set-row"><label for="set-name">${t('Adın')} <small>${t('(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)')}</small></label><input id="set-name" class="set-input" maxlength="16" autocomplete="nickname" placeholder="${esc(nameFallback)}"></div>` : ''}
+          ${nameFallback !== null ? `<div class="set-row"><label for="set-name">${t('Adın')} <small>${nameIsSteam ? t('(sonraki oyunda geçerli; boş bırakırsan Steam adın kullanılır)') : t('(sonraki oyunda geçerli)')}</small></label><input id="set-name" class="set-input" maxlength="16" autocomplete="nickname" placeholder="${esc(nameFallback)}"></div>` : ''}
           <div class="set-row"><label for="set-hints">${t('İpuçlarını göster')} <small>${t('(boşta işçi, yemek azalması, yaklaşan ordu gibi anlarda kısa uyarılar)')}</small></label><input id="set-hints" type="checkbox" class="set-check"></div>
           <div class="set-row"><label for="set-quests">${t('Görev takibini göster')} <small>${t('(köşede hedeflerin ve ilerlemen; J tuşu açıp kapatır)')}</small></label><input id="set-quests" type="checkbox" class="set-check"></div>
           <div class="set-row"><label for="set-msg">${t('Ulak mesajlarını göster')} <small>${t('(kapalıyken gelen mesajlar gizlenir ve mesaj kutusu çıkmaz)')}</small></label><input id="set-msg" type="checkbox" class="set-check"></div>
