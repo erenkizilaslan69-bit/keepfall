@@ -133,3 +133,7 @@ Kural: 5090'a dokunulmadı/dokunulmayacak (oyuncu varsa), Production 5080/main/R
 - Savaş müziğini kulakla dinle (özellikle hazırlık→savaş geçişi ve döngü noktası).
 - Gerçek Steam testinde: davet overlay'i, tek kişilik lobi (Steam'siz yerel), ulak bekleme.
 - Başlangıç kipi (ilk 3 maçta krallık yok) hâlâ istenen davranış mı? Krallık rozeti şikâyeti buradan çıkıyordu.
+
+---
+## Düzeltme turu (2026-11-12): bitti
+1-5 yapıldı (devir notu 0A'da); test turu geçti (dotnet 459, duman, host-check, steam-check, host-fuzz, i18n-check, lang-audit, lobi 15 dil); rehberli maç x1 koşuyor/tamam. Not: normal maç sayacı yeni (`keepfall.normalMatches`): eski oyuncular ilk 3 maçta yeniden Kolay bot görür.
