@@ -58,6 +58,7 @@ import './ui/progress.css';
 import { ProgressScreen, animateXpBars, mergeDelta, progressPanelHtml } from './ui/progress';
 import { addBonusXp } from './progress/catalog';
 import { questTracker } from './ui/quests';
+import { syncStarterChip } from './ui/starter-chip';
 import { recordMatch, recordMeta, type ProgressDelta } from './progress/catalog';
 import type { BattleStartedView, ProgressResult, BotLevel, CastleView, ChallengeList, ChallengeResult, MapLayoutView, MapStateView, RoomView, SpectatorStateView, SummaryView } from './types';
 import { currentRoute, embedded, setRoute } from './env';
@@ -215,6 +216,7 @@ function onRoom(r: RoomView): void {
   }
   // Starter rules hide the row pickers (the server ignores them anyway).
   document.documentElement.classList.toggle('kf-starter', r.starter === true);
+  syncStarterChip(r.starter === true && r.phase !== 'lobby' && r.phase !== 'ended');
   setBotSeats(r.players);
   mountScenery().setColors(r.players.map((p) => p.color));
   // In the lobby the browser already fetches what the map will need.
@@ -304,6 +306,7 @@ function clear(): void {
   game?.destroy(true);
   game = null; scene = null; lobby = null; end = null;
   questTracker.hide();
+  syncStarterChip(false);
   ui?.destroy();
   ui = null;
   app.innerHTML = '';

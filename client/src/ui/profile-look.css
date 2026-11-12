@@ -42,3 +42,8 @@
 .quest-toast { position: fixed; left: calc(12px * var(--u, 1)); top: calc(112px * var(--u, 1)); z-index: 31; padding: calc(4px * var(--u, 1)) calc(10px * var(--u, 1)); border-radius: calc(6px * var(--u, 1)); background: #3f8f2a; color: #fff; border: calc(2px * var(--u, 1)) solid #1f5a14; animation: quest-toast 2.6s ease-out forwards; pointer-events: none; }
 @keyframes quest-toast { 0% { opacity: 0; transform: translateY(calc(-6px * var(--u, 1))); } 12% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .quest-toast { animation: none; } }
+
+/* the note that takes the place of the kingdom button in a starter match */
+.starter-chip { position: fixed; left: calc(10px * var(--u, 1)); top: calc(72px * var(--u, 1)); z-index: 12; max-width: calc(230px * var(--u, 1)); padding: calc(5px * var(--u, 1)) calc(10px * var(--u, 1)); font-size: max(var(--fs-xs, 0px), .85em); line-height: 1.2;
+  color: var(--ink, #3a2c1c); background: rgba(240, 226, 190, .92); border: calc(2px * var(--u, 1)) dashed #7a5a36; border-radius: calc(6px * var(--u, 1)); pointer-events: none; }
+html:not(.in-game) .starter-chip { display: none; }

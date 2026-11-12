@@ -1195,5 +1195,6 @@ const D: Record<string, string> = {
   "Bu maçta ulak hakkın bitti.": "Wykorzystałeś w tym meczu wszystkich posłańców.",
   "Ulağın yolda, dönünce yenisini gönderebilirsin (yaklaşık {0} sn).": "Twój posłaniec jest w drodze: nowego wyślesz, gdy wróci (około {0} s).",
   "Bu maçta en fazla {0} ulak gönderebilirsin.": "W tym meczu możesz wysłać najwyżej {0} {0:posłańca|posłańców|posłańców}.",
+  "Başlangıç maçı: krallıklar ilk 3 maçtan sonra açılır": "Mecz startowy: królestwa odblokują się po pierwszych 3 meczach",
 };
 export default D;

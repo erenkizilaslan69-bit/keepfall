@@ -387,4 +387,5 @@ export const EN: Record<string, string> = {
   "Oyundan çık": "Quit game",
   "Ulağın yolda, dönünce yenisini gönderebilirsin.": "Your envoy is on the road: you can send a new one when it is back.",
   "Bu maçta ulak hakkın bitti.": "You have used all your envoys for this match.",
+  "Başlangıç maçı: krallıklar ilk 3 maçtan sonra açılır": "Starter match: kingdoms unlock after the first 3 matches",
 };

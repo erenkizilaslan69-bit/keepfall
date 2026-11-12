@@ -1195,5 +1195,6 @@ const D: Record<string, string> = {
   "Bu maçta ulak hakkın bitti.": "このマッチの使者の回数を使い切りました。",
   "Ulağın yolda, dönünce yenisini gönderebilirsin (yaklaşık {0} sn).": "使者は移動中です。戻ったら新しい使者を送れます(約 {0} 秒)。",
   "Bu maçta en fazla {0} ulak gönderebilirsin.": "このマッチで送れる使者は最大 {0} 人です。",
+  "Başlangıç maçı: krallıklar ilk 3 maçtan sonra açılır": "入門マッチ:王国は最初の3試合の後に解放されます",
 };
 export default D;
