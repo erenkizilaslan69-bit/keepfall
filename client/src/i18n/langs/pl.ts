@@ -1191,5 +1191,9 @@ const D: Record<string, string> = {
   "Geçersiz seviye.": "Nieprawidłowy poziom.",
   "Yalnız oda sahibi maç modunu seçebilir.": "Tryb meczu może wybrać tylko gospodarz.",
   "Bilinmeyen maç modu.": "Nieznany tryb meczu.",
+  "Ulağın yolda, dönünce yenisini gönderebilirsin.": "Twój posłaniec jest w drodze: nowego wyślesz, gdy wróci.",
+  "Bu maçta ulak hakkın bitti.": "Wykorzystałeś w tym meczu wszystkich posłańców.",
+  "Ulağın yolda, dönünce yenisini gönderebilirsin (yaklaşık {0} sn).": "Twój posłaniec jest w drodze: nowego wyślesz, gdy wróci (około {0} s).",
+  "Bu maçta en fazla {0} ulak gönderebilirsin.": "W tym meczu możesz wysłać najwyżej {0} {0:posłańca|posłańców|posłańców}.",
 };
 export default D;

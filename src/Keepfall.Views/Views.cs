@@ -124,7 +124,7 @@ public sealed record LetterView(int Id, int FromSeat, string FromName, PlayerCol
     bool Fake = false, int? RealSeat = null);
 
 /// <summary>The envoy limits the client shows in its form.</summary>
-public sealed record EnvoyRulesView(int MaxCargo, int MaxMessageLength);
+public sealed record EnvoyRulesView(int MaxCargo, int MaxMessageLength, int MaxAtOnce = 1, int SendsLeft = -1);
 
 public sealed record CommandResultView(bool Ok, string? Error);
 
@@ -214,7 +214,8 @@ public static class ViewMapper
                 return new LetterView(l.Id, from?.Seat ?? 0, from?.Name ?? "?", from?.Color ?? PlayerColor.Blue, l.At, l.Food, l.Wood, l.Iron, l.Gold, l.Message,
                     oracle, oracle ? room.PlayerOfCastle(l.RealFrom!)?.Seat : null);
             }).ToList(),
-            new EnvoyRulesView(game.Rules.Envoy.MaxCargo, game.Rules.Envoy.MaxMessageLength),
+            new EnvoyRulesView(game.Rules.Envoy.MaxCargo, game.Rules.Envoy.MaxMessageLength, game.Rules.Envoy.MaxAtOnce,
+                game.Rules.Envoy.MaxPerMatch > 0 ? Math.Max(0, game.Rules.Envoy.MaxPerMatch - c.Stats.EnvoysSent) : -1),
             c.UnitTypes.Select(u => u.Id).ToList(),
             KingdomOf(room, game, player),
             game.OracleKnowledgeOf(player.CastleKey).Select(k => new RivalKingdomView(room.PlayerOfCastle(k.Player)?.Seat ?? 0, k.Faction, k.Deck)).ToList() is { Count: > 0 } rivals ? rivals : null,

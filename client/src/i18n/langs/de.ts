@@ -1191,5 +1191,9 @@ const D: Record<string, string> = {
   "Geçersiz seviye.": "Ungültige Stufe.",
   "Yalnız oda sahibi maç modunu seçebilir.": "Nur der Gastgeber kann den Matchmodus wählen.",
   "Bilinmeyen maç modu.": "Unbekannter Matchmodus.",
+  "Ulağın yolda, dönünce yenisini gönderebilirsin.": "Dein Bote ist unterwegs: Sobald er zurück ist, kannst du einen neuen schicken.",
+  "Bu maçta ulak hakkın bitti.": "Du hast in diesem Match alle Boten verbraucht.",
+  "Ulağın yolda, dönünce yenisini gönderebilirsin (yaklaşık {0} sn).": "Dein Bote ist unterwegs: Sobald er zurück ist, kannst du einen neuen schicken (etwa {0} s).",
+  "Bu maçta en fazla {0} ulak gönderebilirsin.": "In diesem Match kannst du höchstens {0} {0:Boten|Boten} schicken.",
 };
 export default D;

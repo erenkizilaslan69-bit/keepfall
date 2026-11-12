@@ -175,6 +175,7 @@ export class KingdomUi {
             <label>${tt('Adına')} <select data-f="env-as">${this.rivalOptions()}</select></label>
             <label>${tt('Mesaj')} <input data-f="env-msg" maxlength="${c.envoy.maxMessageLength}" placeholder="${tt('En az bir mesaj yaz')}"></label>
             <button class="btn" data-a="envoy">${tt('Sahte ulak gönder')}</button>
+            <span class="muted-ink small" data-f="envoy-hint"></span>
           </section>
           <section><h4>${tt('Kılık değiştirme')} <small data-f="disguise-state"></small></h4>
             <p class="muted-ink small">${tt('Ordun başka bir oyuncunun renginde saldırır; gerçek kimlik ilk savaştan {0} sn sonra ya da gözcü raporuyla çıkar. Gönderdiğin birlikler evdeki askerlerinden.', Math.round(k.numbers.disguiseRevealSeconds))}</p>
@@ -225,6 +226,16 @@ export class KingdomUi {
     set('decoy-state', tt('{0} · {1}/{2} yolda', wait(k.decoyReadyIn), k.decoysOut, k.numbers.decoyMax));
     set('bribe-state', wait(k.bribeReadyIn));
     set('disguise-state', wait(k.disguiseReadyIn));
+    // the disguised envoy is an envoy like any other: one on the road at a time (the server checks it too)
+    const envoys = c.scouting.missions.filter((m) => m.kind === 'envoy');
+    const envoyBtn = this.panel.querySelector<HTMLButtonElement>('[data-a="envoy"]');
+    if (envoyBtn) {
+      const hold = envoys.length >= (c.envoy.maxAtOnce ?? 1) || (c.envoy.sendsLeft ?? -1) === 0;
+      envoyBtn.disabled = hold;
+      const hint = hold ? ((c.envoy.sendsLeft ?? -1) === 0 ? tt('Bu maçta ulak hakkın bitti.') : tt('Ulağın yolda, dönünce yenisini gönderebilirsin.')) : '';
+      if (envoyBtn.title !== hint) envoyBtn.title = hint;
+      set('envoy-hint', hint);
+    }
     set('fake-state', k.fakeReport ? tt('kurulu: {0}', Object.entries(k.fakeReport).map(([id, n]) => `${n} ${unitName(c, id)}`).join(', ')) : tt('kapalı'));
     this.refreshCosts();
     if (k.id === 'kahin') this.renderOracle(c);

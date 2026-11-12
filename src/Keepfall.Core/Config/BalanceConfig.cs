@@ -270,6 +270,10 @@ public sealed class EnvoyConfig
     public int MaxCargo { get; set; } = 40;
     public int MaxMessageLength { get; set; } = 140;
     public bool ProfanityFilter { get; set; }
+    /// <summary>Envoys on the road at once, per player (1: the next one goes when the last is back).</summary>
+    public int MaxAtOnce { get; set; } = 1;
+    /// <summary>Envoys in a whole match, per player (0: no limit).</summary>
+    public int MaxPerMatch { get; set; }
 }
 
 public sealed class ScoutingConfig
@@ -419,6 +423,8 @@ public static class BalanceConfigLoader
                 if (!Enum.TryParse<MatchMode>(name, true, out _)) errors.Add($"match.modes.{name}: bilinmeyen mod (quick/standard/long).");
                 if (m.PrepMinutes <= 0 || m.WarMinutes <= 0 || m.PrepSpeed <= 0) errors.Add($"match.modes.{name}: süreler ve hız sıfırdan büyük olmalı.");
             }
+        if (config.Envoy.MaxAtOnce < 1) errors.Add("envoy.maxAtOnce en az 1 olmalı.");
+        if (config.Envoy.MaxPerMatch < 0) errors.Add("envoy.maxPerMatch negatif olamaz (0 = sınırsız).");
         if (mc.ServerTickSeconds <= 0) errors.Add("match.serverTickSeconds sıfırdan büyük olmalı.");
         if (mc.SpectatorDelaySeconds < 0) errors.Add("match.spectatorDelaySeconds negatif olamaz.");
         if (mc.SpectatorWaitSeconds < 0) errors.Add("match.spectatorWaitSeconds negatif olamaz.");
@@ -603,7 +609,7 @@ public static class BalanceConfigLoader
                 config.Bots.StaleReportSeconds, config.Bots.BlindMargin, config.Bots.BlindRivalShare, config.Bots.BlindAfterWarSeconds,
                 config.Bots.Hard is null ? null : BotLevel(config.Bots.Hard, true), config.Bots.GiftThreshold, config.Bots.GiftPeaceSeconds, config.Bots.Decks.Select(d => (IReadOnlyList<string>)d).ToList(),
                 config.Bots.SurplusMinPrepSeconds, config.Bots.SurplusStock, config.Bots.SurplusShareBonus),
-            new EnvoyRules(config.Envoy.MaxCargo, config.Envoy.MaxMessageLength, config.Envoy.ProfanityFilter),
+            new EnvoyRules(config.Envoy.MaxCargo, config.Envoy.MaxMessageLength, config.Envoy.ProfanityFilter, config.Envoy.MaxAtOnce, config.Envoy.MaxPerMatch),
             new WallRules(config.Walls.ArcherDefenseBonus),
             new DeckRules(config.Deck.Enabled, config.Deck.Size),
             new KingdomRules(config.Kingdoms.Enabled, config.Kingdoms.DecoyGoldPerSoldier, config.Kingdoms.DecoyMaxSoldiers, config.Kingdoms.DecoyCooldownSeconds,

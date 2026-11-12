@@ -1191,5 +1191,9 @@ const D: Record<string, string> = {
   "Geçersiz seviye.": "Недопустимый уровень.",
   "Yalnız oda sahibi maç modunu seçebilir.": "Режим матча выбирает только хозяин комнаты.",
   "Bilinmeyen maç modu.": "Неизвестный режим матча.",
+  "Ulağın yolda, dönünce yenisini gönderebilirsin.": "Твой гонец в пути: новый можно отправить, когда он вернётся.",
+  "Bu maçta ulak hakkın bitti.": "В этом матче ты исчерпал всех гонцов.",
+  "Ulağın yolda, dönünce yenisini gönderebilirsin (yaklaşık {0} sn).": "Твой гонец в пути: новый можно отправить, когда он вернётся (примерно {0} с).",
+  "Bu maçta en fazla {0} ulak gönderebilirsin.": "В этом матче можно отправить не более {0} {0:гонца|гонцов|гонцов}.",
 };
 export default D;

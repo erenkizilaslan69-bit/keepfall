@@ -561,7 +561,8 @@ public sealed partial class GameState
     private CommandResult ScoutsAvailable(string from, bool envoy = false)
     {
         if (ScoutingLocked && !envoy) return CommandResult.Fail($"Hazırlığın son {_noScoutLast:0} saniyesinde gözcü gönderilemez; savaş başlayınca gönderilebilir.");
-        var away = _missions.Where(m => m.From == from).ToList();
+        // (envoys have a slot of their own: envoy.maxAtOnce)
+        var away = _missions.Where(m => m.From == from && m.Kind != MissionKind.Envoy).ToList();
         if (away.Count < Rules.Scouting.MaxScouts) return CommandResult.Success;
         return CommandResult.Fail($"Gözcün henüz dönmedi (yaklaşık {Math.Ceiling(away.Min(m => m.SecondsLeft))} sn).");
     }
@@ -608,7 +609,10 @@ public sealed partial class GameState
         var message = EnvoyMessage.Check(c.Message, Rules.Envoy);
         if (!message.Ok) return CommandResult.Fail(message.Error!);
         if (total == 0 && message.Text is null) return CommandResult.Fail("Ulağın taşıyacak bir şeyi yok: yük ya da mesaj ekle.");
-        if (ScoutsAvailable(from, envoy: true) is { Ok: false } busy) return busy;
+        // Checked here, on the server, whatever the client shows: so many envoys on the road at once, and (when set) so many in a match. A disguised envoy (Schemer) is an envoy like any other.
+        var flying = _missions.Where(m => m.From == from && m.Kind == MissionKind.Envoy).ToList();
+        if (flying.Count >= Rules.Envoy.MaxAtOnce) return CommandResult.Fail($"Ulağın yolda, dönünce yenisini gönderebilirsin (yaklaşık {Math.Ceiling(flying.Min(m => m.SecondsLeft))} sn).");
+        if (Rules.Envoy.MaxPerMatch > 0 && player.Castle.Stats.EnvoysSent >= Rules.Envoy.MaxPerMatch) return CommandResult.Fail($"Bu maçta en fazla {Rules.Envoy.MaxPerMatch} ulak gönderebilirsin.");
         if (CheckAs(from, c.AsKey, c.TargetKey) is { Ok: false } badAs) return badAs;
         string? asKey = c.AsKey;
         var castle = player.Castle;
@@ -617,6 +621,7 @@ public sealed partial class GameState
         var sent = castle.SendScout(c.From);
         if (!sent.Ok) return sent;
         castle.TrySpendCargo(c.Food, c.Wood, c.Iron, c.Gold);
+        castle.Stats.EnvoysSent++;
         if (asKey is not null) { castle.Stats.Disguises++; LogDeception(DeceptionKind.EnvoyAsSent, from, c.TargetKey, asKey); }
         _missions.Add(new ScoutMission(NewPublicId(), from, c.TargetKey, ElapsedSeconds, RouteBetween(from, c.TargetKey), ScoutSpeedNow, MissionKind.Envoy)
         {

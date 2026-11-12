@@ -231,7 +231,12 @@
     // Mesajın en uzun hali (karakter); denetim karakteri içeremez.
     "maxMessageLength": 140,
     // Kısa bir küfür listesi yıldızla maskelenir (Türkçe + İngilizce); ulak mesajları ve oyuncu adları. Açık (CrazyGames kuralı: sohbet denetimi).
-    "profanityFilter": true
+    "profanityFilter": true,
+    // Aynı anda yolda olabilecek ulak (oyuncu başına; gidiş ve dönüş dahil). Ulağın kendi hakkı var, gözcü hakkını (maxScouts) kullanmaz.
+    // Dönünce (ya da yolda yok olunca) yenisi gönderilebilir. Entrikacının sahte ulağı da bu kurala bağlıdır.
+    "maxAtOnce": 1,
+    // Bir maçta oyuncu başına toplam ulak sınırı; 0 = sınırsız.
+    "maxPerMatch": 0
   },
 
   // Krallıklar (2026-10-28 gece; ayrıntı: src/Keepfall.Core/Match/Factions.cs). Maç başında her oyuncuya rastgele, tekrarsız bir krallık verilir.

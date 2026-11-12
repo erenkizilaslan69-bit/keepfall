@@ -1191,5 +1191,9 @@ const D: Record<string, string> = {
   "Geçersiz seviye.": "Niveau invalide.",
   "Yalnız oda sahibi maç modunu seçebilir.": "Seul l'hôte peut choisir le mode de match.",
   "Bilinmeyen maç modu.": "Mode de match inconnu.",
+  "Ulağın yolda, dönünce yenisini gönderebilirsin.": "Ton messager est en route : tu pourras en envoyer un autre à son retour.",
+  "Bu maçta ulak hakkın bitti.": "Tu as utilisé tous tes messagers pour ce match.",
+  "Ulağın yolda, dönünce yenisini gönderebilirsin (yaklaşık {0} sn).": "Ton messager est en route : tu pourras en envoyer un autre à son retour (environ {0} s).",
+  "Bu maçta en fazla {0} ulak gönderebilirsin.": "Dans ce match, tu peux envoyer au plus {0} {0:messager|messagers}.",
 };
 export default D;

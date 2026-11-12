@@ -1191,5 +1191,9 @@ const D: Record<string, string> = {
   "Geçersiz seviye.": "等级无效。",
   "Yalnız oda sahibi maç modunu seçebilir.": "只有房主可以选择对局模式。",
   "Bilinmeyen maç modu.": "未知的对局模式。",
+  "Ulağın yolda, dönünce yenisini gönderebilirsin.": "你的使者在路上,回来后才能再派新的。",
+  "Bu maçta ulak hakkın bitti.": "本局的使者次数已用完。",
+  "Ulağın yolda, dönünce yenisini gönderebilirsin (yaklaşık {0} sn).": "你的使者在路上,回来后才能再派新的(约 {0} 秒)。",
+  "Bu maçta en fazla {0} ulak gönderebilirsin.": "本局最多只能派出 {0} 名使者。",
 };
 export default D;

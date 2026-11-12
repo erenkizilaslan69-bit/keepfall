@@ -211,6 +211,12 @@ try {
     SetSiegeFocus: () => [rnd(seats)], SetDefense: () => [rows(), rnd(units)], SetSpeed: () => [rnd(ints)], FinishMatch: () => [], BackToLobby: () => [], StartMatch: () => [], SetDeck: () => [rnd([units, null, [], 'x'])], SetMode: () => [rnd(['quick', 'long', 'x', '', null, 9, 'standard'])], SetProfile: () => [rnd(['recruit', 'liar_king', 'x', '', null, '<b>', 'golge']), rnd([1, 12, 0, 31, -1, 'x', null, 1e9]), rnd(['plain', 'chevron', 'x', '', null, 'tuccar'])], SetReady: () => [rnd([true, false, null])],
     KickPlayer: () => [rnd(seats)], AddBot: () => [rnd(['easy', 'x', 9])], LeaveRoomX: () => [],
   };
+  // envoys back to back: the server lets one envoy at a time be on the road, however fast the client asks (the hub is the only judge)
+  const foe = (G.last('RoomState')?.players ?? []).find((p) => p.seat !== gJoin.seat)?.seat;
+  const burst = await Promise.all(Array.from({ length: 15 }, () => G.call('SendEnvoy', foe, 1, 0, 0, 0, 'hi', 'idle')));
+  const goneThrough = burst.filter((r) => r?.ok === true).length;
+  check('fifteen envoys sent back to back: at most ONE gets on the road (the server holds the limit)', goneThrough <= 1 && burst.every((r) => r === null || r === undefined || r.ok !== undefined), `${goneThrough} accepted`);
+  check('...and the refusal says why', burst.some((r) => r?.ok === false && /Ulağın yolda|ulak/i.test(r.error ?? '')), burst.find((r) => r?.ok === false)?.error ?? '');
   let sent = 0, answered = 0, accepted = 0;
   const names2 = Object.keys(makers);
   let fz = G;

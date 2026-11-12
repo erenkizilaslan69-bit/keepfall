@@ -223,4 +223,6 @@ export const EN_SERVER: Record<string, string> = {
   "Geçersiz seviye.": "Invalid level.",
   "Yalnız oda sahibi maç modunu seçebilir.": "Only the host can pick the match mode.",
   "Bilinmeyen maç modu.": "Unknown match mode.",
+  "Ulağın yolda, dönünce yenisini gönderebilirsin (yaklaşık {0} sn).": "Your envoy is on the road: you can send a new one when it is back (about {0}s).",
+  "Bu maçta en fazla {0} ulak gönderebilirsin.": "You can send at most {0} {0:envoy|envoys} in this match.",
 };

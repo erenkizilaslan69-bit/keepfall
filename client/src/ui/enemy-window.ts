@@ -165,14 +165,18 @@ export class EnemyWin extends Win {
     text.maxLength = s.envoy.maxMessageLength;
     const message = text.value.trim();
     const mission = s.scouting.missions.find((m) => m.kind === 'envoy' && m.targetSeat === this.seat);
-    const busy = s.scouting.missions.length >= s.scouting.maxScouts;
+    // an envoy has its own slot: one on the road at a time (the server checks it too); a scout out does not stop it
+    const envoys = s.scouting.missions.filter((m) => m.kind === 'envoy');
+    const busy = envoys.length >= (s.envoy.maxAtOnce ?? 1);
+    const noneLeft = (s.envoy.sendsLeft ?? -1) === 0;
     this.q('[data-f="env-total"]').textContent = tt('Yük {0} / {1} · mesaj {2} / {3}', total, s.envoy.maxCargo, message.length, s.envoy.maxMessageLength);
     const button = this.q<HTMLButtonElement>('[data-act="envoy"]');
-    const label = busy && !mission ? tt('{0} dönüyor · {1} sn', s.scouting.missions.some((m) => m.kind === 'envoy') ? tt('Ulak') : tt('Gözcü'), Math.ceil(Math.min(...s.scouting.missions.map((m) => m.remainingSeconds)))) : tt('Ulak gönder');
+    const label = busy ? tt('Ulak yolda · {0} sn', Math.ceil(Math.min(...envoys.map((m) => m.remainingSeconds)))) : tt('Ulak gönder');
     if (button.textContent !== label) button.textContent = label;
-    button.disabled = busy || out || s.eliminated || (total === 0 && message === '') || total > s.envoy.maxCargo;
-    this.q('[data-f="env-info"]').textContent = mission
-      ? (mission.arrived ? tt('Ulak yükünü bıraktı, dönüyor · {0} sn', Math.ceil(mission.remainingSeconds)) : tt('Ulak yolda · {0} sn', Math.ceil(mission.remainingSeconds))) : '';
+    button.disabled = busy || noneLeft || out || s.eliminated || (total === 0 && message === '') || total > s.envoy.maxCargo;
+    this.q('[data-f="env-info"]').textContent = noneLeft ? tt('Bu maçta ulak hakkın bitti.') : busy
+      ? tt('Ulağın yolda, dönünce yenisini gönderebilirsin.')
+      : mission ? (mission.arrived ? tt('Ulak yükünü bıraktı, dönüyor · {0} sn', Math.ceil(mission.remainingSeconds)) : tt('Ulak yolda · {0} sn', Math.ceil(mission.remainingSeconds))) : '';
   }
 
   private refreshSend(): void {

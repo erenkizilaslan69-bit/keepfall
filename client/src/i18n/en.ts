@@ -384,5 +384,7 @@ export const EN: Record<string, string> = {
   "Hafif küfürleri filtrele": "Filter mild swearing",
   "(ulak mesajlarındaki küfürler yıldızla gösterilir; nefret söylemi bu ayardan bağımsız, her zaman filtrelenir)": "(swear words in envoy messages are shown as stars; hate speech is always filtered, whatever this setting says)",
   "Oyna": "Play",
-  "Oyundan çık": "Quit game"
+  "Oyundan çık": "Quit game",
+  "Ulağın yolda, dönünce yenisini gönderebilirsin.": "Your envoy is on the road: you can send a new one when it is back.",
+  "Bu maçta ulak hakkın bitti.": "You have used all your envoys for this match.",
 };

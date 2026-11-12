@@ -82,7 +82,9 @@ public sealed record DeckRules(bool Enabled, int Size)
 /// <param name="MaxCargo">An envoy carries at most this many goods in all (food, wood, iron and gold together).</param>
 /// <param name="MaxMessageLength">Longest message an envoy carries (characters).</param>
 /// <param name="ProfanityFilter">Messages have a short list of swear words masked with stars (on in the shipped config).</param>
-public sealed record EnvoyRules(int MaxCargo = 40, int MaxMessageLength = 140, bool ProfanityFilter = false)
+/// <param name="MaxAtOnce">Most envoys one player can have on the road at once (out or walking home); a new one can go once it is back (or it was lost). Envoys no longer share the scout's slot.</param>
+/// <param name="MaxPerMatch">Most envoys one player can send in a whole match (0 = no limit).</param>
+public sealed record EnvoyRules(int MaxCargo = 40, int MaxMessageLength = 140, bool ProfanityFilter = false, int MaxAtOnce = 1, int MaxPerMatch = 0)
 {
     public static EnvoyRules Default { get; } = new();
 }

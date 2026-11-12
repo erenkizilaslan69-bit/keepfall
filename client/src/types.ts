@@ -246,7 +246,8 @@ export interface CastleView {
   armSeconds: number;
   /** What envoys left at our castle (newest last). Plain text only: show the message with textContent. */
   letters: LetterView[];
-  envoy: { maxCargo: number; maxMessageLength: number };
+  /** `maxAtOnce`: envoys on the road at once; `sendsLeft`: envoys the player may still send this match (-1: no limit). */
+  envoy: { maxCargo: number; maxMessageLength: number; maxAtOnce?: number; sendsLeft?: number };
   /** The units we can make (our deck). */
   deck?: string[];
   /** Our kingdom and its abilities (null when the match has none). */

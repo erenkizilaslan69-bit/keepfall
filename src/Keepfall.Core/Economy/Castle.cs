@@ -44,6 +44,8 @@ public sealed class CastleStats
     public int ScoutsSent { get; internal set; }
     public int ReportsRead { get; internal set; }
     public int EnvoysDelivered { get; internal set; }
+    /// <summary>Envoys sent so far (for envoy.maxPerMatch).</summary>
+    public int EnvoysSent { get; internal set; }
     public int DecoysSent { get; internal set; }
     public int FakeReportsSet { get; internal set; }
     public int SoldiersBribed { get; internal set; }

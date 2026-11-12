@@ -1197,3 +1197,7 @@
 1197	Geçersiz seviye.	Invalid level.
 1198	Yalnız oda sahibi maç modunu seçebilir.	Only the host can pick the match mode.
 1199	Bilinmeyen maç modu.	Unknown match mode.
+1200	Ulağın yolda, dönünce yenisini gönderebilirsin.	Your envoy is on the road: you can send a new one when it is back.
+1201	Bu maçta ulak hakkın bitti.	You have used all your envoys for this match.
+1202	Ulağın yolda, dönünce yenisini gönderebilirsin (yaklaşık {0} sn).	Your envoy is on the road: you can send a new one when it is back (about {0}s).
+1203	Bu maçta en fazla {0} ulak gönderebilirsin.	You can send at most {0} {0:envoy|envoys} in this match.

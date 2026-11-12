@@ -6,7 +6,7 @@ using Keepfall.Core.World;
 
 namespace Keepfall.Core.Tests;
 
-/// <summary>Envoys: goods and a message to a rival's castle. They share the scout's right and speed, gather nothing and cannot be caught.</summary>
+/// <summary>Envoys: goods and a message to a rival's castle. They have a slot of their own (one on the road at a time), the scout's speed, gather nothing and cannot be caught.</summary>
 public class EnvoyTests
 {
     private static readonly GameRules Rules = BalanceConfigLoader.LoadFromFile(
@@ -61,21 +61,28 @@ public class EnvoyTests
     }
 
     [Fact]
-    public void An_envoy_uses_the_scouts_right_and_speed_and_the_last_minute_ban_does_not_apply_to_it()
+    public void An_envoy_has_a_slot_of_its_own_one_at_a_time_and_the_next_goes_when_it_is_home_and_the_last_minute_ban_does_not_apply_to_it()
     {
         Assert.Equal(1, Rules.Scouting.MaxScouts);
+        Assert.Equal(1, Rules.Envoy.MaxAtOnce);
+        Assert.Equal(0, Rules.Envoy.MaxPerMatch);
         var game = NewGame();
         Ok(game.Execute(A, new SendEnvoy(B, 1, 0, 0, 0)));
-        Assert.False(game.Execute(A, new SendScout(C)).Ok); // the right is taken
+        var second = game.Execute(A, new SendEnvoy(C, 0, 0, 0, 1)); // one envoy on the road at a time, checked by the server
+        Assert.False(second.Ok);
+        Assert.Contains("Ulağın yolda", second.Error);
+        Ok(game.Execute(A, new SendScout(C))); // the scout's slot is its own: an envoy out does not block it
         Assert.False(game.Execute(A, new SendEnvoy(C, 0, 0, 0, 1)).Ok);
-        var m = Assert.Single(game.MissionsOf(A));
+        var m = game.MissionsOf(A).Single(x => x.Kind == MissionKind.Envoy);
         Assert.Equal(MissionKind.Envoy, m.Kind);
         Assert.Equal(Rules.Map.ScoutSpeed * Rules.Match.PrepSpeed, m.Leg.Speed); // a scout (and an envoy) leaves in the preparation: it walks as much faster as the economy
         UntilHome(game, A);
 
+        // and with a scout out, an envoy can still go (they do not share a slot any more); once the envoy is home the next one goes
         Ok(game.Execute(A, new SendScout(C)));
-        Assert.False(game.Execute(A, new SendEnvoy(B, 1, 0, 0, 0)).Ok); // and the other way round
+        Ok(game.Execute(A, new SendEnvoy(B, 1, 0, 0, 0)));
         UntilHome(game, A);
+        for (int i = 0; i < 3; i++) { Ok(game.Execute(A, new SendEnvoy(B, 1, 0, 0, 0))); Assert.False(game.Execute(A, new SendEnvoy(B, 1, 0, 0, 0)).Ok); UntilHome(game, A); }
 
         var late = NewGame(prep: 100);
         for (int t = 0; t < 70; t++) late.Tick(1);
@@ -171,6 +178,31 @@ public class EnvoyTests
         Assert.False(game.Execute(A, new SendEnvoy(B, 1, 0, 0, 0)).Ok);
         Assert.False(game.Execute(B, new SendEnvoy(A, 1, 0, 0, 0)).Ok); // and the fallen send nothing
     }
+
+    [Fact]
+    public void A_disguised_envoy_follows_the_same_one_at_a_time_rule_and_a_per_match_limit_counts_every_envoy()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"kf-envoy-{Guid.NewGuid():N}.json");
+        var text = File.ReadAllText(BalanceConfigLoader.FindDefaultPath(AppContext.BaseDirectory)!).TrimStart('﻿');
+        File.WriteAllText(path, text.Replace("\"maxPerMatch\": 0", "\"maxPerMatch\": 2"));
+        try
+        {
+            var rules = BalanceConfigLoader.LoadFromFile(path);
+            Assert.Equal(2, rules.Envoy.MaxPerMatch);
+            var game = new GameState(rules, [A, B, C], prepSeconds: 300, warSeconds: 1000, rng: new Random(1),
+                corners: new Dictionary<string, Corner> { [A] = Corner.NorthWest, [B] = Corner.SouthEast, [C] = Corner.NorthEast });
+            game.CastleOf(A)!.AddGoods(100, 100, 100);
+            Ok(game.Execute(A, new SendEnvoy(B, 1, 0, 0, 0)));
+            for (int t = 0; t < 600 && game.MissionsOf(A).Count > 0; t++) game.Tick(1);
+            Ok(game.Execute(A, new SendEnvoy(B, 1, 0, 0, 0)));
+            for (int t = 0; t < 600 && game.MissionsOf(A).Count > 0; t++) game.Tick(1);
+            var third = game.Execute(A, new SendEnvoy(B, 1, 0, 0, 0));
+            Assert.False(third.Ok);
+            Assert.Contains("en fazla 2 ulak", third.Error);
+        }
+        finally { File.Delete(path); }
+    }
+
 }
 
 /// <summary>The message checks and the optional swear-word mask.</summary>
@@ -315,4 +347,5 @@ public class EnvoyMessageTests
         Assert.False(EnvoyMessage.Check("a\u2028b", Off).Ok); // line separator
         Assert.False(EnvoyMessage.Check("a\uE000b", Off).Ok); // private use
     }
+
 }

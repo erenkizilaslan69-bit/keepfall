@@ -124,3 +124,4 @@ Listede kalan iş yok (A–G bitti). Sabah bakılacaklar aşağıda.
 ## Gece turu (2026-11-12 gecesi; gözetimsiz): ulak, savaş müziği, "Oyna" lobisi, krallık rozeti
 Sıra: 1-5 ulak → 8 krallık rozeti hatası → 6 savaş müziği → 7 tek kişilik lobi → 9 test. (Her maddeden sonra bu dosya güncellenir.)
 Kural: 5090'a dokunulmadı/dokunulmayacak (oyuncu varsa), Production 5080/main/Render/Downloads'a dokunulmaz.
+- [x] Gece 1-5 ULAK: ulağın kendi hakkı (`envoy.maxAtOnce` 1, `envoy.maxPerMatch` 0=sınırsız); gözcü hakkından ayrıldı (ulak yoldayken gözcü gidebilir, tersi de). Sunucu doğrular (`LaunchEnvoy`), Entrikacı sahte ulağı aynı kurala bağlı (kendi bekleme süresi yok, değişmedi). Botlar hiç ulak göndermez (kod taranıdı): yağdırma riski yok. Arayüz: düğme pasif "Ulak yolda · N sn" + ipucu (15 dil); Entrikacı panelinde de. Testler: EnvoyTests (458), host-fuzz "art arda 15 ulak", `tools/shot-envoy-wait.mjs`. Mesaj uzunluğu/küfür filtresi aynen.

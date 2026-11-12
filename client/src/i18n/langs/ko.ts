@@ -1191,5 +1191,9 @@ const D: Record<string, string> = {
   "Geçersiz seviye.": "잘못된 레벨입니다.",
   "Yalnız oda sahibi maç modunu seçebilir.": "경기 모드는 방장만 고를 수 있습니다.",
   "Bilinmeyen maç modu.": "알 수 없는 경기 모드입니다.",
+  "Ulağın yolda, dönünce yenisini gönderebilirsin.": "사절이 길을 가는 중입니다. 돌아오면 새로 보낼 수 있습니다.",
+  "Bu maçta ulak hakkın bitti.": "이번 경기의 사절 횟수를 모두 사용했습니다.",
+  "Ulağın yolda, dönünce yenisini gönderebilirsin (yaklaşık {0} sn).": "사절이 길을 가는 중입니다. 돌아오면 새로 보낼 수 있습니다(약 {0}초).",
+  "Bu maçta en fazla {0} ulak gönderebilirsin.": "이번 경기에서는 사절을 최대 {0}명까지 보낼 수 있습니다.",
 };
 export default D;

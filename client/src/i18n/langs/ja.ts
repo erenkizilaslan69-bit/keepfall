@@ -1191,5 +1191,9 @@ const D: Record<string, string> = {
   "Geçersiz seviye.": "無効なレベルです。",
   "Yalnız oda sahibi maç modunu seçebilir.": "マッチモードを選べるのはホストだけです。",
   "Bilinmeyen maç modu.": "不明なマッチモードです。",
+  "Ulağın yolda, dönünce yenisini gönderebilirsin.": "使者は移動中です。戻ったら新しい使者を送れます。",
+  "Bu maçta ulak hakkın bitti.": "このマッチの使者の回数を使い切りました。",
+  "Ulağın yolda, dönünce yenisini gönderebilirsin (yaklaşık {0} sn).": "使者は移動中です。戻ったら新しい使者を送れます(約 {0} 秒)。",
+  "Bu maçta en fazla {0} ulak gönderebilirsin.": "このマッチで送れる使者は最大 {0} 人です。",
 };
 export default D;
