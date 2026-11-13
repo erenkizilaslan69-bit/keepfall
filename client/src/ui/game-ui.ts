@@ -156,6 +156,7 @@ export class GameUi {
     });
     root.appendChild(this.scroll);
     this.reports = new ReportTags(root);
+    this.reports.onOpened = () => this.updateFinish(); this.reports.onClosed = () => this.updateFinish();
     // Quick camera buttons next to the minimap: our castle, each rival's castle (in their colour) and the forest in the middle.
     this.cam = document.createElement('div');
     this.cam.className = 'cam-btns';
@@ -448,7 +449,8 @@ export class GameUi {
   private updateFinish(): void {
     const room = this.room;
     const show = this.eliminated && !!room && room.phase !== 'ended' && !room.challengeId && !this.finishDismissed;
-    this.finish.classList.toggle('hidden', !show);
+    // one window at a time: while a battle report is open the card waits (it comes back as the report closes), so there is a single shade
+    this.finish.classList.toggle('hidden', !show || this.reports.isOpen);
     if (!show || !room) return;
     const host = this.isHost();
     const humans = room.players.filter((p) => !p.isBot).length;

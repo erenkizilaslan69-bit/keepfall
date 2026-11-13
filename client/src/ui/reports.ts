@@ -59,7 +59,10 @@ export class ReportTags {
 
   close(): void {
     this.modal.classList.add('hidden');
+    this.onClosed?.();
   }
+  /** Told when the report window closes (the fallen-castle card waits for it). */
+  onClosed: (() => void) | null = null;
 
   /** The latest battle reports (newest first, as the server sends them); <paramref name="now"/> ages the scout report shown by <see cref="showScout"/>. */
   update(battles: BattleReportView[], now = 0): void {
@@ -172,5 +175,7 @@ export class ReportTags {
         <div class="win-foot"><button class="btn" data-close>${tt('Tamam')}</button></div>
       </div>`;
     this.modal.classList.remove('hidden');
+    this.onOpened?.();
   }
+  onOpened: (() => void) | null = null;
 }
