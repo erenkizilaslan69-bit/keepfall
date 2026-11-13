@@ -134,6 +134,7 @@ async function setFullscreen(on: boolean): Promise<void> {
 
 /** Opens the settings (or closes them if they are open). */
 export function toggleSettings(): void {
+  if (open && !open.isConnected) open = null; // (a window removed from outside leaves no stale handle behind)
   if (open) { closeSettings(); return; }
   const overlay = document.createElement('div');
   overlay.className = 'guide-overlay settings-overlay';

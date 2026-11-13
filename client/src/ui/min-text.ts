@@ -4,8 +4,11 @@
 
 const MIN = 14;
 const PANELS = '.win, .kingdom-panel, .settings, .info-win, .report-win, .scout-report, .tut-card';
+/** The HUD and signs (resource rates, deck card tags, the "0/4" of a building sign): a floor of 12 px. */
+const HUD = '.topbar, .world-labels, .ucard, .rank-chart, .xp-block';
+const HUD_MIN = 12;
 
-function floorIn(root: Element): void {
+function floorIn(root: Element, min = MIN): void {
   const els = [root, ...root.querySelectorAll('*')];
   for (const el of els) {
     if (!(el instanceof HTMLElement) || el.dataset.floor === '1') continue;
@@ -13,11 +16,11 @@ function floorIn(root: Element): void {
     let own = false;
     for (const n of el.childNodes) if (n.nodeType === Node.TEXT_NODE && n.textContent!.trim()) { own = true; break; }
     if (!own) continue;
-    if (parseFloat(getComputedStyle(el).fontSize) < MIN - 0.05) { el.style.fontSize = `${MIN}px`; el.dataset.floor = '1'; }
+    if (parseFloat(getComputedStyle(el).fontSize) < min - 0.05) { el.style.fontSize = `${min}px`; el.dataset.floor = '1'; }
   }
 }
 
-function floorAll(): void { document.querySelectorAll(PANELS).forEach((p) => floorIn(p)); }
+function floorAll(): void { document.querySelectorAll(PANELS).forEach((p) => floorIn(p)); document.querySelectorAll(HUD).forEach((p) => floorIn(p, HUD_MIN)); }
 
 function liftAll(): void {
   document.querySelectorAll<HTMLElement>('[data-floor="1"]').forEach((el) => { el.style.removeProperty('font-size'); delete el.dataset.floor; });
@@ -29,7 +32,8 @@ export function watchMinText(): void {
   new MutationObserver((muts) => {
     for (const m of muts) {
       const t = m.target instanceof Element ? m.target : m.target.parentElement;
-      if (t?.closest(PANELS) || [...m.addedNodes].some((n) => n instanceof Element && (n.matches(PANELS) || !!n.querySelector(PANELS)))) { run(); return; }
+      const both = `${PANELS}, ${HUD}`;
+      if (t?.closest(both) || [...m.addedNodes].some((n) => n instanceof Element && (n.matches(both) || !!n.querySelector(both)))) { run(); return; }
     }
   }).observe(document.body, { childList: true, subtree: true, characterData: true });
   window.addEventListener('resize', () => { liftAll(); run(); });
