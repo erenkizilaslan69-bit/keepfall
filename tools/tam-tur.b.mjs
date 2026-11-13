@@ -20,7 +20,8 @@ stage('B', async () => {
   // the host lobby of the packed game (no Steam: the LAN door), made from a web room with the desktop game's share box
   s = await session({ extra: '' });
   await s.waitFor(`!!document.querySelector('#create')`, 30); await s.sleep(1500);
-  await s.b.js(`import('/src/screens.ts').then((m) => m.setHostedShare({ link: '192.168.1.24:47800#KQZ7MD', steam: false, invite() {}, lanPort: 47800 })); 1`); await s.sleep(500);
+  // (the address carries the room's own code: one code everywhere)
+  await s.b.js(`import('/src/screens.ts').then((m) => m.setHostedShare({ get link() { return '192.168.1.24:47800#' + (window.keepfallNet.roomCode ?? ''); }, steam: false, invite() {}, lanPort: 47800 })); 1`); await s.sleep(500);
   await take(s, 'lobi-ev-sahibi', async () => {
     await s.click('#create'); await s.waitFor(`!!document.querySelector('.screen.lobby #players li')`, 30); await s.sleep(800);
     await s.click('[data-a="addbot"], #addbot'); await s.sleep(600); await s.click('[data-a="addbot"], #addbot'); await s.sleep(900);

@@ -96,18 +96,22 @@ export async function startSolo(s, { kingdom = null, tries = 14, bots = null } =
 export async function economy(s, { untilSeconds = 200, soldiers = 8, speed = 5, hook = null } = {}) {
   const c0 = await castle(s); const deck = c0.deck ?? c0.units.map((u) => u.id);
   const net = (m, ...a) => call(s, `${NET}.${m}(${a.map((x) => JSON.stringify(x)).join(',')})`);
-  await net('moveWorkers', 'idle', 'farmer', 3); await net('moveWorkers', 'idle', 'lumberjack', 3); await net('moveWorkers', 'idle', 'miner', 4); await net('moveWorkers', 'idle', 'blacksmith', 2);
+  await net('moveWorkers', 'idle', 'farmer', 4); await net('moveWorkers', 'idle', 'lumberjack', 2); await net('moveWorkers', 'idle', 'miner', 3); await net('moveWorkers', 'idle', 'blacksmith', 2);
   await net('setSpeed', speed);
   const t0 = Date.now(); let step = 0, up = 0;
   for (;;) {
     const c = await castle(s); if (!c || c.phase !== 'preparation' && c.phase !== 'war' || c.elapsedSeconds >= untilSeconds || Date.now() - t0 > 300_000) break;
     step++;
     if (hook) await hook(c, step);
-    for (const u of c.units) if (u.weapons > 0 && c.soldiers + (u.arming ?? 0) < soldiers) await net('armWorkers', u.id, Math.min(u.weapons, 2), 'idle');
+    for (const u of c.units) if (u.weapons > 0 && c.resources.food > 60 && c.soldiers + (u.arming ?? 0) < soldiers) await net('armWorkers', u.id, Math.min(u.weapons, 2), 'idle');
     if (c.queue.length < 2) await net('queueWeapon', deck[step % deck.length], 2);
     const idle = c.jobs.find((j) => j.job === 'idle')?.count ?? 0;
-    if (idle > 3) await net('moveWorkers', 'idle', ['miner', 'farmer', 'lumberjack'][step % 3], 1);
-    if (c.resources.wood > 160 && c.resources.iron > 110) await net('upgradeBuilding', ['mine', 'farm', 'forge', 'lumberCamp'][up++ % 4]);
+    const farmers = c.jobs.find((j) => j.job === 'farmer')?.count ?? 0;
+    // food first: a farm needs its workers, and nobody goes hungry in the preparation (a made-up famine would show in every picture)
+    if (idle > 0 && (c.resources.food < 120 || c.starving)) await net('moveWorkers', 'idle', 'farmer', 1);
+    else if (c.starving && farmers < 6) await net('moveWorkers', 'miner', 'farmer', 1);
+    else if (idle > 3) await net('moveWorkers', 'idle', ['miner', 'lumberjack'][step % 2], 1);
+    if (c.resources.wood > 160 && c.resources.iron > 110) await net('upgradeBuilding', ['farm', 'mine', 'forge', 'lumberCamp'][up++ % 4]);
     await s.sleep(900);
   }
   await net('setSpeed', 1);

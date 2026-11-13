@@ -78,8 +78,8 @@ async function generic() {
     await take(s, 'rakip-gozcu', async () => { await openWin({ kind: 'enemy', seat: rival }); await s.click('[data-tab-sec="scout"]'); await s.sleep(500); return s.exists('.win'); });
     await take(s, 'rakip-ulak', async () => { await s.click('[data-tab-sec="envoy"]'); await s.sleep(400);
       await s.b.js(`(() => { const m = document.querySelector('.win textarea, .win input[maxlength="140"], .win [data-f="env-msg"]'); if (m) { m.value = ${JSON.stringify(LANG === 'tr' ? 'Barış olsun, ittifak?' : 'Peace be with you, an alliance?')}; m.dispatchEvent(new Event('input', { bubbles: true })); } return 1; })()`);
-      await s.click('.win [data-act="more"]'); await s.click('.win [data-act="more"]'); await s.sleep(400); return true; });
-    await take(s, 'rakip-saldiri', async () => { await s.click('[data-tab-sec="attack"]'); await s.sleep(500); await s.click('.win [data-act="half"]'); await s.sleep(400); return true; });
+      await s.click('.win [data-act="more"]'); await s.click('.win [data-act="more"]'); await s.b.js(`document.querySelector('.win [data-act="envoy"]')?.scrollIntoView({ block: 'center' }); 1`); await s.sleep(400); return true; });
+    await take(s, 'rakip-saldiri', async () => { await s.click('[data-tab-sec="attack"]'); await s.sleep(500); await s.click('.win [data-act="half"]'); await s.b.js(`document.querySelector('.win [data-act="send"]')?.scrollIntoView({ block: 'end' }); 1`); await s.sleep(500); return true; });
     await s.js(`keepfallUi.windows.close(); 1`);
 
     // the forest: scout a quarter, wait for the report and the sites

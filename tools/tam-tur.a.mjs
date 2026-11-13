@@ -8,7 +8,7 @@ stage('A', async () => {
   await take(s, 'menu-ana');
   await take(s, 'menu-arkadaslarla', async () => { await s.click('#friends-toggle'); await s.sleep(500); return s.exists('#friends-body'); });
   await s.click('#friends-toggle'); await s.sleep(300);
-  await take(s, 'dil-secici', async () => { await s.mouse(1760, 32); await s.sleep(700);
+  await take(s, 'dil-secici', async () => { const r = JSON.parse(await s.js(`(() => { const b = document.querySelector('[data-lang]').getBoundingClientRect(); return JSON.stringify({ x: b.x + b.width / 2, y: b.y + b.height / 2 }); })()`)); await s.mouse(r.x, r.y); await s.sleep(700);
     // (in the dev client a later `.paper { position: relative }` beats `.lang-menu { position: fixed }` and the list lands below the screen: the picture shows it as designed)
     await s.js(`(() => { const m = document.querySelector('.lang-menu'); if (m) m.style.position = 'fixed'; return 1; })()`); await s.sleep(300); return s.exists('.lang-menu'); });
   await s.b.js(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); 1`); await s.sleep(300);
