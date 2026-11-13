@@ -68,13 +68,43 @@ export function confirmLeave(): void {
   document.body.appendChild(box);
 }
 
+/** "Gizlilik" and "Oyun hakkında" open in a window of their own (over the settings), not as a long text under their tabs. Esc / the cross / a click outside close only this window. */
+function showInfo(kind: 'about' | 'privacy'): void {
+  document.querySelector('.info-overlay')?.remove();
+  const box = document.createElement('div');
+  box.className = 'guide-overlay settings-overlay info-overlay';
+  const body = kind === 'privacy' ? `
+          <h3>${t('Gizlilik')}</h3>
+        <p>${t('Oyun hesap ya da e-posta adresi toplamaz.')}</p>
+        <p>${t('Oyuncu adın ve maç verisi yalnızca maç sürdüğü kadar sunucuda tutulur.')}</p>
+        <p>${t('Hata kayıtları anonim cihaz bilgisi (tarayıcı ve ekran gibi) içerir.')}</p>
+        <p>${t('Tarayıcında yalnızca ayarların ve rehber durumun saklanır.')}</p>` : `
+          <h3>${t('Oyun hakkında')}</h3>
+        <p><b>Keepfall</b> — ${t('sürüm')} ${VERSION} (${typeof __BUILD_DATE__ === 'string' ? __BUILD_DATE__ : ''})</p>
+        <p>${t('Yapımcı:')} <b>Red Lion Games</b></p>
+        <h4>${t('Kaynaklar ve lisanslar')}</h4>
+        <dl>${CREDITS.map(([k, v]) => `<dt>${k}</dt><dd>${CRAZY ? v.replace(/\s*\(pixelfrog-assets\.itch\.io\/tiny-swords\)/, '') : v}</dd>`).join('')}</dl>`;
+  box.innerHTML = `
+    <div class="guide settings paper info-win" role="dialog" aria-label="${kind === 'privacy' ? t('Gizlilik') : t('Oyun hakkında')}">
+      <button class="btn-round btn-red guide-close" data-act="close-info" title="${t('Kapat (Esc)')}" aria-label="${t('Kapat')}"><i class="ico ico-close"></i></button>
+      <div class="guide-body settings-body set-about">${body}</div>
+    </div>`;
+  const end = (): void => { box.remove(); window.removeEventListener('keydown', onInfoKey, true); };
+  const onInfoKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') { e.stopPropagation(); end(); } };
+  box.addEventListener('click', (e) => { const t = e.target as HTMLElement; if (t === box || t.closest('[data-act="close-info"]')) end(); });
+  window.addEventListener('keydown', onInfoKey, true);
+  document.body.appendChild(box);
+}
+
 export function closeSettings(): void {
+  document.querySelector('.info-overlay')?.remove();
   open?.remove();
   open = null;
   window.removeEventListener('keydown', onKey, true);
 }
 
 function onKey(e: KeyboardEvent): void {
+  if (document.querySelector('.info-overlay')) return; // (the About / Privacy window on top closes first)
   if (e.key === 'Escape') { e.stopPropagation(); if (!closeOpenSelect()) closeSettings(); } // (an open drop-down list closes first)
 }
 
@@ -157,20 +187,6 @@ export function toggleSettings(): void {
           <button class="btn small" data-act="privacy">${t('Gizlilik')}</button>
           ${leaveAction ? `<button class="btn small btn-red" data-act="leave">${t('Ana menüye dön')}</button>` : ''}
         </section>
-        <section class="set-about hidden" data-f="privacy">
-          <h3>${t('Gizlilik')}</h3>
-          <p>${t('Oyun hesap ya da e-posta adresi toplamaz.')}</p>
-          <p>${t('Oyuncu adın ve maç verisi yalnızca maç sürdüğü kadar sunucuda tutulur.')}</p>
-          <p>${t('Hata kayıtları anonim cihaz bilgisi (tarayıcı ve ekran gibi) içerir.')}</p>
-          <p>${t('Tarayıcında yalnızca ayarların ve rehber durumun saklanır.')}</p>
-        </section>
-        <section class="set-about hidden" data-f="about">
-          <h3>${t('Oyun hakkında')}</h3>
-          <p><b>Keepfall</b> — ${t('sürüm')} ${VERSION} (${typeof __BUILD_DATE__ === 'string' ? __BUILD_DATE__ : ''})</p>
-          <p>${t('Yapımcı:')} <b>Red Lion Games</b></p>
-          <h4>${t('Kaynaklar ve lisanslar')}</h4>
-          <dl>${CREDITS.map(([k, v]) => `<dt>${k}</dt><dd>${CRAZY ? v.replace(/\s*\(pixelfrog-assets\.itch\.io\/tiny-swords\)/, '') : v}</dd>`).join('')}</dl>
-        </section>
       </div>
     </div>`;
   const q = <T extends HTMLElement>(sel: string) => overlay.querySelector<T>(sel)!;
@@ -240,8 +256,7 @@ export function toggleSettings(): void {
     else if (target === overlay || act === 'close') closeSettings();
     else if (act === 'guide') { closeSettings(); toggleGuide(); }
     else if (act === 'leave') { closeSettings(); confirmLeave(); }
-    else if (act === 'about') q('[data-f="about"]').classList.toggle('hidden');
-    else if (act === 'privacy') q('[data-f="privacy"]').classList.toggle('hidden');
+    else if (act === 'about' || act === 'privacy') showInfo(act);
     else if (act === 'tutorial') {
       const now = restartTutorial();
       const note = q('[data-f="tut-note"]');
