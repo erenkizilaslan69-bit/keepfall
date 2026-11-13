@@ -775,6 +775,7 @@ function showBanner(text: string, onClick?: () => void): void {
     document.body.prepend(el);
   }
   el.textContent = text;
+  const old = document.getElementById('error'); if (old && document.querySelector('.screen.home')) old.textContent = ''; // (a menu error of an earlier event does not stay beside the new message)
   el.style.pointerEvents = onClick ? 'auto' : '';
   el.style.cursor = onClick ? 'pointer' : '';
   el.onclick = onClick ?? null;

@@ -170,6 +170,7 @@ export class HomeScreen {
     const error = root.querySelector<HTMLElement>('#error')!;
     const buttons = root.querySelectorAll<HTMLButtonElement>('button');
     const run = async (action: () => Promise<string | null>) => {
+      error.textContent = ''; // (an old message is gone the moment a new try starts)
       buttons.forEach((b) => (b.disabled = true));
       error.textContent = tr((await action()) ?? '');
       buttons.forEach((b) => (b.disabled = false));
