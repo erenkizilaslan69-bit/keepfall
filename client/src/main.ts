@@ -6,6 +6,7 @@ import { GameConnection, type ConnectionStatus } from './net';
 import { WorldScene } from './scene/WorldScene';
 import { loadUiArt } from './ui/sprites';
 import { watchUiScale } from './ui/scale';
+import { watchMinText } from './ui/min-text';
 import './ui/ui.css';
 import './ui/theme.css';
 import './ui/kf-art.css';
@@ -874,6 +875,7 @@ async function main(): Promise<void> {
     onCrazyJoin((code) => void joinInvite(code));
   }
   watchUiScale();
+  watchMinText();
   // The UI art is cut once; without it the UI falls back to plain boxes. Never wait long for it: it
   // can stall in a background tab, and it switches itself on whenever it is ready.
   await Promise.race([loadUiArt(), new Promise((resolve) => setTimeout(resolve, 2500))]);

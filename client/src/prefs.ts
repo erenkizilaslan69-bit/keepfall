@@ -9,7 +9,7 @@ function load(): Prefs {
     const p = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<Prefs>;
     // A touch device (a phone) starts with low graphics until the player chooses otherwise.
     const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
-    return { reduceEffects: p.reduceEffects === true, showFps: p.showFps === true, lowGraphics: typeof p.lowGraphics === 'boolean' ? p.lowGraphics : touch, showMessages: p.showMessages !== false, showHints: p.showHints !== false, fullRules: p.fullRules === true, uiScale: typeof p.uiScale === 'number' ? p.uiScale : 1, filterMild: p.filterMild !== false };
+    return { reduceEffects: p.reduceEffects === true, showFps: p.showFps === true, lowGraphics: typeof p.lowGraphics === 'boolean' ? p.lowGraphics : touch, showMessages: p.showMessages !== false, showHints: p.showHints !== false, fullRules: p.fullRules === true, uiScale: typeof p.uiScale === 'number' ? p.uiScale : undefined, filterMild: p.filterMild !== false };
   } catch {
     return { reduceEffects: false, showFps: false, lowGraphics: false, showMessages: true, showHints: true, fullRules: false };
   }
@@ -77,7 +77,12 @@ export function setFilterMild(on: boolean): void { save({ ...prefs, filterMild: 
 
 /** "Arayüz ölçeği": the player's own factor on top of the size the screen gives the interface (ui/scale.ts). */
 export const UI_SCALES = [0.85, 1, 1.15, 1.3];
-export function uiScalePref(): number { return UI_SCALES.includes(prefs.uiScale ?? 1) ? prefs.uiScale ?? 1 : 1; }
+/** The player's choice when there is one; otherwise 115% on a big screen (1920x1080 and up, with a mouse), 100% elsewhere. */
+export function uiScalePref(): number {
+  if (prefs.uiScale !== undefined && UI_SCALES.includes(prefs.uiScale)) return prefs.uiScale;
+  const big = window.innerWidth >= 1920 && window.innerHeight >= 1080 && !(window.matchMedia?.('(pointer: coarse)').matches ?? false);
+  return big ? 1.15 : 1;
+}
 export function setUiScalePref(scale: number): void {
   save({ ...prefs, uiScale: UI_SCALES.includes(scale) ? scale : 1 });
   window.dispatchEvent(new Event('resize')); // (ui/scale.ts measures again)

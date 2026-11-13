@@ -14,7 +14,7 @@ const [W, H] = arg('size', '1280,720').split(',').map(Number);
 const SHOTS = resolve(arg('shots', 'art/shots/langs'));
 const MD = resolve(arg('md', 'docs/lang-audit.md'));
 const SHOT = !process.argv.includes('--no-shots');
-const URL = 'http://localhost:5174/';
+const URL = (process.env.URL ?? 'http://localhost:5174').replace(/\/?$/, '/');
 mkdirSync(SHOTS, { recursive: true });
 
 // what does not fit: an element whose own text is wider/taller than the box that holds it (hidden/clipped overflow, or a nowrap label), and anything cut off by the screen edge
