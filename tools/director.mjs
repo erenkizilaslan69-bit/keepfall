@@ -31,6 +31,8 @@ const KEY = opt('--key', process.env.KEEPFALL_DIRECTOR_KEY ?? null);
 if (!BASE || !KEY) { console.log('usage: node tools/director.mjs <client url> --key <key> [--room CODE] [--lang en] [--minutes 25] [--out dir] [--demo] [--no-record]'); process.exit(2); }
 const ROOM = opt('--room', null), LANG = opt('--lang', 'en'), MAX_MIN = Number(opt('--minutes', '25'));
 const RECORD = !flag('--no-record'), DEMO = flag('--demo');
+// --mode quick|standard|long and --bots medium,hard,medium: the demo match's length and its three bots (default: the room's own mode, three Medium bots)
+const MODE = opt('--mode', null), BOTS = opt('--bots', 'medium,medium,medium').split(',');
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const d0 = new Date(), pad = (n) => String(n).padStart(2, '0');
 const stamp = `${d0.getFullYear()}${pad(d0.getMonth() + 1)}${pad(d0.getDate())}-${pad(d0.getHours())}${pad(d0.getMinutes())}`; // (local time)
@@ -73,7 +75,8 @@ if (DEMO) {
   if (!(await player.waitFor('!!window.keepfallNet && !!document.querySelector("#quick")', 40))) { console.error('--demo needs the Vite dev client (window.keepfallNet)'); process.exit(1); }
   const made = await player.js(`(async () => { const n = keepfallNet; let r = await n.createRoom('Player');
     if (!r.ok) return 'create ' + r.error;
-    for (const l of ['medium', 'medium', 'medium']) { r = await n.addBot(l); if (!r.ok) return 'bot ' + r.error; }
+    ${MODE ? `r = await n.setMode('${MODE}'); if (!r.ok) return 'mode ' + r.error;` : ''}
+    for (const l of ${JSON.stringify(BOTS)}) { r = await n.addBot(l); if (!r.ok) return 'bot ' + r.error; }
     r = await n.setReady(true); r = await n.startMatch(); return r.ok ? 'ok ' + n.roomCode : 'start ' + r.error; })()`);
   if (!String(made).startsWith('ok')) { console.error('demo match:', made); process.exit(1); }
   log('demo match', made.slice(3), '(a headless player tab + 3 Medium bots)');
