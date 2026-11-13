@@ -93,6 +93,13 @@ for (;;) {
   await sleep(2000);
 }
 await dir.waitFor('!!document.querySelector("#stage canvas")', 60);
+// --shot-zoom three-way-siege=2,gate-battle=3: a fixed zoom for those shots instead of the fitted one (the camera still centres on the soldiers' box). Only the recorder's own page is touched.
+const SHOT_ZOOM = Object.fromEntries(opt('--shot-zoom', '').split(',').filter(Boolean).map((x) => x.split('=')).map(([k, v]) => [k, Number(v)]));
+if (Object.keys(SHOT_ZOOM).length) {
+  const ok = await dir.js(`(() => { const cam = keepfallDirector.cam; if (!cam || !cam.eventTarget) return false; const orig = cam.eventTarget.bind(cam), Z = ${JSON.stringify(SHOT_ZOOM)};
+    cam.eventTarget = (ev, c, now) => { const t = orig(ev, c, now); const z = Z[ev.type]; if (!t || !z) return t; ev.zoom = z; return { x: t.x, y: t.y, span: c.width / z }; }; return true; })()`);
+  log('fixed shot zoom', JSON.stringify(SHOT_ZOOM), ok ? 'on' : 'NOT applied (camera not found)');
+}
 await sleep(3000);
 
 // ---- recording -----------------------------------------------------------------------------------
