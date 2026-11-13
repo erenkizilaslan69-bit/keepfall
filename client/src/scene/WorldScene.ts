@@ -672,7 +672,7 @@ export class WorldScene extends Phaser.Scene {
     else if (s.eliminated && this.ownFallen === null) { this.fx.ruin(this.castleSprite, rest); this.fx.damage(`siege:${this.mySeat}`, CASTLE.x, CASTLE.y, 0, true); }
     if (s.eliminated) this.lord.setFallen(true, this.ownFallen === false);
     this.ownFallen = s.eliminated;
-    this.castleSprite.setAlpha(s.eliminated ? 0.55 : 1);
+    this.castleSprite.setAlpha(1); // (a fallen castle is a solid ruin in every view; never see-through)
   }
 
   // ---- ground ------------------------------------------------------------------------------
