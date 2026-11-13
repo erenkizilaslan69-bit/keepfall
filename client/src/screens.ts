@@ -64,7 +64,7 @@ const dot = (color: string) => `<span class="dot" style="background:${COLOR_CSS[
 
 const ART = asset('/assets/tiny-swords/Tiny%20Swords%20(Free%20Pack)/');
 const avatar = (seat: number) =>
-  `${ART}UI%20Elements/UI%20Elements/Human%20Avatars/Avatars_${String(((seat - 1) % 25) + 1).padStart(2, '0')}.png`;
+  `${ART}UI%20Elements/UI%20Elements/Human%20Avatars/Avatars_${String((((seat - 1) % 25 + 25) % 25 + 1)).padStart(2, '0')}.png`;
 
 // ---- home ----------------------------------------------------------------------------------
 

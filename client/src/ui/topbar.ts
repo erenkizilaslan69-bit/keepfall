@@ -158,7 +158,7 @@ export class TopBar {
 
 function chip(p: PlayerView, me: boolean): string {
   const state = p.eliminated ? 'out' : p.connected ? '' : 'away';
-  const avatar = `${AVATAR_ROOT}Avatars_${String(((p.seat - 1) % 25) + 1).padStart(2, '0')}.png`;
+  const avatar = `${AVATAR_ROOT}Avatars_${String((((p.seat - 1) % 25 + 25) % 25 + 1).padStart(2, '0')}.png`;
   const title = `${tr(p.name)}${p.isBot ? ` ${t('(bot)')}` : ''}${me ? ` ${t('(sen)')}` : ''}${p.eliminated ? ` — ${t('elendi')}` : p.connected ? '' : p.deputy ? ` — ${t('bağlantı yok, yerine bot oynuyor')}` : ` — ${t('bağlantı yok')}`}`;
   return `<span class="chip ${state} ${me ? 'me' : ''}" data-seat="${p.seat}" data-color="${p.color}" title="${esc(title)}">
     <i class="avatar" style="background-image:url('${avatar}')"></i><span class="chip-name">${botMark(p.seat)}${esc(tr(p.name))}</span></span>`;
