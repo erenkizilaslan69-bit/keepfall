@@ -166,4 +166,28 @@ public class AchievementTests
         Assert.Equal("silver", mine.Frame);
         Assert.Equal("b", mine.Banner);                                                    // the pick for the kingdom the player actually had
     }
+
+    [Fact]
+    public void The_xp_moments_and_the_who_fooled_whom_list_are_fed_by_the_same_log()
+    {
+        var room = new Room("ABCDEF", Rules, new RoomOptions { MinPlayers = 1 });
+        var human = room.Join("Ada", null, false, T0).Player!;
+        var def = new ChallengeDef
+        {
+            Id = "t", Order = 1, Name = new() { Tr = "t", En = "t" }, Description = new() { Tr = "t", En = "t" }, Kingdom = Factions.Shadow, Seed = 5,
+            PlayerDeck = ["okcu", "kilicli", "mizrakci", "kalkanli"], Bots = [new ChallengeBot { Difficulty = "medium" }], WarSeconds = 300,
+            Goals = [new ChallengeGoal { Id = "win", Type = GoalTypes.Win, Value = 1, Star = 1 }, new ChallengeGoal { Id = "a", Type = GoalTypes.MaxSoldiersLost, Value = 50, Star = 2 }, new ChallengeGoal { Id = "b", Type = GoalTypes.WinWithin, Value = 250, Star = 3 }]
+        };
+        var started = room.StartChallenge(human.Token, def); Assert.True(started.Ok, started.Error);
+        // the player writes a false army table: a rival's scout that reads it is logged once, and both screens must say so
+        var fr = room.Game!.Execute(human.CastleKey, new SetFakeReport(new Dictionary<string, int> { ["kilicli"] = 30 })); Assert.True(fr.Ok, fr.Error);
+        for (int t = 0; t < 4000 && room.Phase != RoomPhase.Ended; t++) room.Tick(1);
+        Assert.Equal(RoomPhase.Ended, room.Phase);
+        var facts = Achievements.FactsOf(room, human)!;
+        var shown = ViewMapper.ToView(room).Result!.Deceptions!.Where(e => e.ActorSeat == human.Seat).ToList();
+        Assert.Equal(shown.Count(e => e.Kind == "FakeReportRead"), facts.FakeReportsRead);                 // XP "a scout read your table" = the list's rows
+        Assert.Equal(shown.Count(e => e.Kind is "DecoySighted" or "DecoyFaded"), facts.DecoysSeen);
+        Assert.Equal(shown.Count(e => e.Kind == "FakeReportRead") > 0, Xp.MomentsOf(facts).Any(m => m.Id == "fake_report"));
+        Assert.Contains(shown, e => e.Kind == "FakeReportSet");                                            // the list is not empty when the player did something
+    }
 }
