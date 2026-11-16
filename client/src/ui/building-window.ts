@@ -40,6 +40,8 @@ export class BuildingWin extends Win {
       <h4>${t('Silah üretimi')} <small data-f="speed"></small></h4>
       <div data-f="units"></div>
       <div data-f="queue" class="queue"></div>` : ''}`;
+    // the forge: no production box (its speed is in the weapons heading), compact weapon rows, each order under its own weapon: the window fits without scrolling
+    this.body.classList.toggle('forge', b.product === null);
     this.body.addEventListener('click', (e) => void this.click(e));
     this.update({ castle: s, room: null });
   }
@@ -103,9 +105,10 @@ export class BuildingWin extends Win {
       this.unitsBuilt = true;
       this.q('[data-f="units"]').innerHTML = s.units.map((u) => `
         <div class="unit-row" data-unit="${u.id}">
-          <div class="unit-head">${weaponChip(u.id, '', u.weapons, 'wstock')}<b>${esc(tr(u.name))}</b></div>
-          <div class="unit-cost">${cost('ico-wood', u.wood)} ${cost('ico-iron', u.iron)} <small>${t('{0} sn', u.buildSeconds)}</small></div>
+          <div class="unit-head">${weaponChip(u.id, '', u.weapons, 'wstock')}<span class="unit-name"><b>${esc(tr(u.name))}</b> <small>${t('{0} sn', u.buildSeconds)}</small></span></div>
+          <div class="unit-cost">${cost('ico-wood', u.wood)} ${cost('ico-iron', u.iron)}</div>
           <span class="stepper"><button class="btn" data-act="queue" data-n="1">+1</button><button class="btn" data-act="queue" data-n="5">+5</button></span>
+          <div class="uorders" data-f="orders"></div>
         </div>`).join('');
     }
     this.q('[data-f="speed"]').textContent = s.rates.forgeSpeed > 0 ? t('hız ×{0}', s.rates.forgeSpeed.toFixed(2)) : t('(demirci yok)');
@@ -117,20 +120,54 @@ export class BuildingWin extends Win {
         btn.disabled = s.resources.wood + 1e-6 < u.wood * n || s.resources.iron + 1e-6 < u.iron * n || s.eliminated;
       }
     }
-    // Rebuild the queue only when its lines change, so a click on "İptal" is never lost to a refresh.
+    // Each order sits under its own weapon's row (several orders: several lines, in the queue's order).
+    // Rebuilt only when the lines change, so a click on the cancel button is never lost to a refresh.
     const key = s.queue.map((o) => `${o.unitId}:${o.remaining}`).join(',');
-    const queue = this.q('[data-f="queue"]');
+    const orphans = this.q('[data-f="queue"]'); // (an order for a weapon with no row: not expected, kept visible all the same)
     if (key !== this.queueKey) {
       this.queueKey = key;
-      queue.innerHTML = s.queue.length === 0 ? `<p class="muted-ink">${t('Üretim sırası boş.')}</p>` : s.queue.map((o, i) => `
-        <div class="order">${weaponChip(o.unitId, esc(tr(o.name)), o.remaining)}
-          <div class="gbar"><div class="fill"></div></div>
-          <button class="btn-round btn-red" data-act="cancel" data-n="${i}" title="${t('Kalanları iptal et, kaynakları geri al')}">×</button></div>`).join('');
+      this.body.querySelectorAll<HTMLElement>('[data-f="orders"]').forEach((box) => { box.innerHTML = ''; });
+      orphans.innerHTML = '';
+      s.queue.forEach((o, i) => {
+        const box = this.body.querySelector<HTMLElement>(`[data-unit="${o.unitId}"] [data-f="orders"]`) ?? orphans;
+        box.insertAdjacentHTML('beforeend', `
+          <div class="order" data-order="${i}">${box === orphans ? weaponChip(o.unitId, esc(tr(o.name)), o.remaining) : `<b class="order-n">×${o.remaining}</b>`}
+            <div class="gbar"><div class="fill"></div><span class="gbar-text" data-f="eta"></span></div>
+            <button class="btn-round btn-red" data-act="cancel" data-n="${i}" title="${t('Kalanları iptal et, kaynakları geri al')}" aria-label="${t('Kalanları iptal et, kaynakları geri al')}">×</button></div>`);
+      });
     }
-    queue.querySelectorAll<HTMLElement>('.order .fill').forEach((fill, i) => {
-      if (s.queue[i]) fill.style.width = `${(100 * s.queue[i].progress) / s.queue[i].buildSeconds}%`;
+    // the time left: the queue is worked through in order, so an order is done after everything before it; the forge's real pace
+    // (it runs faster in the preparation, slower while starving) is read from how fast the work goes down, the shown speed until then
+    const left = s.queue.map((o) => o.remaining * o.buildSeconds - o.progress);
+    const rate = this.pace(left.reduce((a, b) => a + b, 0), s.rates.forgeSpeed);
+    let before = 0;
+    s.queue.forEach((o, i) => {
+      const line = this.body.querySelector<HTMLElement>(`.order[data-order="${i}"]`);
+      if (!line) return;
+      line.querySelector<HTMLElement>('.fill')!.style.width = `${i === 0 ? (100 * o.progress) / o.buildSeconds : 0}%`;
+      before += left[i];
+      const eta = line.querySelector<HTMLElement>('[data-f="eta"]')!;
+      const secs = rate > 0 ? t('{0} sn', Math.max(1, Math.ceil(before / rate))) : '';
+      eta.textContent = i === 0 ? secs : secs ? `${t('bekliyor')} · ${secs}` : t('bekliyor');
     });
   }
+
+  /** Forge work done per real second, smoothed over the last states; `shown` (the view's speed) until it has been measured. */
+  private pace(work: number, shown: number): number {
+    if (shown !== BuildingWin.shown) { BuildingWin.shown = shown; BuildingWin.rate = 0; } // a smith more or less, hunger: the old pace is no longer true
+    const now = performance.now(), last = BuildingWin.lastWork;
+    if (last && work < last.work - 1e-6 && now - last.at > 200) {
+      const r = (last.work - work) / ((now - last.at) / 1000);
+      BuildingWin.rate = BuildingWin.rate > 0 ? BuildingWin.rate * 0.7 + r * 0.3 : r;
+      BuildingWin.lastWork = { work, at: now };
+    } else if (!last || work > last.work + 1e-6 || now - last.at > 5000 || work === 0) BuildingWin.lastWork = work > 0 ? { work, at: now } : null; // new orders / a pause: measure again from here
+    if (shown <= 0) return 0;
+    return BuildingWin.rate > 0 ? BuildingWin.rate : shown;
+  }
+
+  private static lastWork: { work: number; at: number } | null = null;
+  private static rate = 0;
+  private static shown = -1;
 
   private async click(e: Event): Promise<void> {
     const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-act]');

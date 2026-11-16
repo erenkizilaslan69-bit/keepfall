@@ -394,6 +394,28 @@ html.in-menu .guide-fab.btn-round { display: inline-grid; }
 .tb-players[data-n="2"] .chip-name, .tb-players[data-n="1"] .chip-name { max-width: 10em; }
 .tb-menu-label { font-size: max(var(--fs-xs, 0px), .85em); margin-bottom: calc(-4px * var(--u, 1)); }
 
+/* ---- the forge: compact weapon rows (the chip beside name + cost), each order's bar and time under its own weapon; no production box
+   (the speed is in the weapons heading), so the window fits on first open ---------------------------------------------------- */
+.win-body.forge .kf-prod { display: none; }
+.win-body.forge .kf-crew { margin-top: 0; }
+.win-body.forge h4 { margin-top: calc(8px * var(--u, 1)); margin-bottom: calc(2px * var(--u, 1)); }
+.win-body.forge .unit-row { grid-template-columns: auto minmax(0, 1fr) auto; column-gap: calc(8px * var(--u, 1)); row-gap: 0; padding: calc(3px * var(--u, 1)) 0; }
+.win-body.forge .unit-head { display: contents; }
+.win-body.forge .unit-head .chip { grid-column: 1; grid-row: 1 / span 2; margin-right: 0; }
+.win:has(> .win-body.forge) { width: calc(380px * var(--u, 1)); }
+.win-body.forge .unit-name { grid-column: 2; grid-row: 1; min-width: 0; overflow-wrap: break-word; line-height: 1.15; }
+.win-body.forge .unit-name small { color: var(--ink-soft); font-family: var(--font-text); white-space: nowrap; }
+.win-body.forge .unit-cost { grid-column: 2; grid-row: 2; white-space: nowrap; }
+.win-body.forge .unit-row .stepper { grid-column: 3; grid-row: 1 / span 2; }
+.uorders { grid-column: 1 / -1; display: flex; flex-direction: column; gap: calc(3px * var(--u, 1)); }
+.uorders:empty { display: none; }
+.uorders:not(:empty) { margin-top: calc(4px * var(--u, 1)); }
+.uorders .order { grid-template-columns: auto minmax(0, 1fr) auto; gap: calc(6px * var(--u, 1)); padding: 0 0 0 calc(4px * var(--u, 1)); }
+.uorders .order-n { font-variant-numeric: tabular-nums; min-width: calc(26px * var(--u, 1)); }
+.uorders .gbar { min-width: 0; }
+.uorders .btn-round { width: calc(24px * var(--u, 1)); height: calc(24px * var(--u, 1)); }
+.win-body.forge .queue:empty { display: none; }
+
 /* ---- settings window and its gear ---------------------------------------------------------- */
 .settings-fab.btn-round { position: fixed; top: 12px; right: calc(12px + 52px * var(--u, 1)); z-index: 60; display: none; }
 html.in-menu .settings-fab.btn-round { display: inline-grid; }
