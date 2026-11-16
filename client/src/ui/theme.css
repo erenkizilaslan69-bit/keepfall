@@ -407,6 +407,12 @@ html.in-menu .settings-fab.btn-round { display: inline-grid; }
 .set-tab:focus-visible { outline: calc(2px * var(--u, 1)) solid #f2c14e; outline-offset: 1px; }
 .settings-body { min-height: calc(250px * var(--u, 1)); }
 .set-foot { margin-top: calc(12px * var(--u, 1)); padding-top: calc(8px * var(--u, 1)); border-top: calc(2px * var(--u, 1)) dashed rgba(122, 90, 54, .45); }
+/* one size in every tab: the panes share one grid cell (the box takes the tallest), the shut ones stay laid out but unseen; a short screen scrolls the panes only
+   (the title, the tabs, the close button and the foot stay put) */
+.set-panes { display: grid; grid-template: 1fr / minmax(0, 1fr); flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.set-panes > [data-pane] { grid-area: 1 / 1; margin-bottom: 0; }
+.set-panes > .set-off { visibility: hidden; pointer-events: none; }
+.settings > .set-foot { flex: 0 0 auto; margin: 0 calc(14px * var(--u, 1)) calc(10px * var(--u, 1)); }
 .set-keys { display: grid; grid-template-columns: auto 1fr; gap: calc(6px * var(--u, 1)) calc(12px * var(--u, 1)); margin: 0; align-items: center; }
 .set-keys dt, .set-keys dd { margin: 0; }
 .set-keys kbd { display: inline-block; font: inherit; font-size: .9em; padding: calc(3px * var(--u, 1)) calc(8px * var(--u, 1)); background: #f4e8cd; border: calc(2px * var(--u, 1)) solid #7a5a36; border-bottom-width: calc(3px * var(--u, 1)); border-radius: calc(5px * var(--u, 1)); white-space: nowrap; }

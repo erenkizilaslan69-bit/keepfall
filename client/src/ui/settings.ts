@@ -146,7 +146,7 @@ export function toggleSettings(): void {
       <div class="set-tabs" role="tablist">
         ${tab('sound', t('Ses'))}${tab('display', t('Görüntü'))}${tab('language', t('Dil'))}${tab('game', t('Oyun'))}${tab('controls', t('Kontroller'))}
       </div>
-      <div class="guide-body settings-body">
+      <div class="guide-body settings-body set-panes">
         <section data-pane="sound">
           <div class="set-row"><label for="set-master">${t('Ana ses')}</label><input id="set-master" type="range" min="0" max="100" step="5"><output data-o="master"></output></div>
           <div class="set-row"><label for="set-music">${t('Müzik')}</label><input id="set-music" type="range" min="0" max="100" step="5"><output data-o="music"></output></div>
@@ -183,18 +183,20 @@ export function toggleSettings(): void {
         <section data-pane="controls">
           <dl class="set-keys">${CONTROLS().map(([k, v]) => `<dt><kbd>${k}</kbd></dt><dd>${v}</dd>`).join('')}</dl>
         </section>
-        <section class="set-links set-foot">
-          <button class="btn small" data-act="about">${t('Oyun hakkında')}</button>
-          <button class="btn small" data-act="privacy">${t('Gizlilik')}</button>
-          ${leaveAction ? `<button class="btn small btn-red" data-act="leave">${t('Ana menüye dön')}</button>` : ''}
-        </section>
+      </div>
+      <div class="set-links set-foot">
+        <button class="btn small" data-act="about">${t('Oyun hakkında')}</button>
+        <button class="btn small" data-act="privacy">${t('Gizlilik')}</button>
+        ${leaveAction ? `<button class="btn small btn-red" data-act="leave">${t('Ana menüye dön')}</button>` : ''}
       </div>
     </div>`;
   const q = <T extends HTMLElement>(sel: string) => overlay.querySelector<T>(sel)!;
   const pick = (id: Tab) => {
     lastTab = id;
     overlay.querySelectorAll<HTMLElement>('.set-tab').forEach((b) => { const on = b.dataset.tab === id; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
-    overlay.querySelectorAll<HTMLElement>('[data-pane]').forEach((s) => s.classList.toggle('hidden', s.dataset.pane !== id));
+    // every pane stays laid out (stacked in one grid cell, the others invisible): the window is as tall as the tallest tab and never moves on a tab change
+    overlay.querySelectorAll<HTMLElement>('[data-pane]').forEach((s) => { const off = s.dataset.pane !== id; s.classList.toggle('set-off', off); s.inert = off; s.setAttribute('aria-hidden', String(off)); });
+    overlay.querySelector<HTMLElement>('.set-panes')!.scrollTop = 0;
   };
   const master = q<HTMLInputElement>('#set-master'), music_ = q<HTMLInputElement>('#set-music'), sfx_ = q<HTMLInputElement>('#set-sfx'), mute = q<HTMLInputElement>('#set-mute'), fx = q<HTMLInputElement>('#set-fx'), quality = q<HTMLSelectElement>('#set-quality'), fps = q<HTMLInputElement>('#set-fps'), msg = q<HTMLInputElement>('#set-msg'), hintsBox = q<HTMLInputElement>('#set-hints'), fullBox = q<HTMLInputElement>('#set-full'), full = q<HTMLInputElement>('#set-fullscreen'), scale = q<HTMLSelectElement>('#set-scale');
   // the drop-downs wear the game's own look (ui/select.ts); `redraw` repaints their faces after the code sets a value
