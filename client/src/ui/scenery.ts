@@ -192,6 +192,15 @@ class Scenery {
   }
 }
 
+/** Every picture the menu's scenery draws (the loading screen waits for them, so the menu comes up whole). */
+export function sceneryFiles(): string[] {
+  const paths = ['Terrain/Tileset/Tilemap_color1.png'];
+  for (const i of [1, 2, 3, 4]) paths.push(`Terrain/Resources/Wood/Trees/Tree${i}.png`, `Terrain/Decorations/Bushes/Bushe${i}.png`, `Terrain/Decorations/Rocks/Rock${i}.png`);
+  for (const c of ['Blue', 'Red', 'Yellow', 'Purple']) paths.push(`Buildings/${c} Buildings/Castle.png`);
+  paths.push('Units/Blue Units/Warrior/Warrior_Idle.png', 'Units/Red Units/Archer/Archer_Idle.png', 'Units/Yellow Units/Pawn/Pawn_Idle.png', 'Units/Purple Units/Monk/Idle.png');
+  return paths.map((p) => assetUrl(p));
+}
+
 let scenery: Scenery | null = null;
 
 /** Puts the scenery behind the page (once). */

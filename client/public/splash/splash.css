@@ -1,0 +1,38 @@
+/* The loading screen (splash.js). On top of everything until the game's menu is up; then it fades out. Sizes follow the shorter side of the window. */
+/* Pixelify Sans (OFL, licenses/OFL-PixelifySans.txt), the logo's letters: Latin and Latin Extended (ş, ğ, ł, ő ...) */
+@font-face { font-family: 'KF Splash Pixel'; font-display: block; src: url(pixelify-sans-latin-400.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'KF Splash Pixel'; font-display: block; src: url(pixelify-sans-latin-ext-400.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+.kfs { position: fixed; inset: 0; z-index: 10000; display: grid; grid-template-rows: 1fr auto; place-items: center; overflow: hidden;
+  background: #3f6b2c; color: #fff4dc; font: 400 clamp(15px, 2.1vmin, 22px) / 1.35 'KF Splash Pixel', system-ui, sans-serif; transition: opacity .4s ease; user-select: none; }
+.kfs[data-script="sc"], .kfs[data-script="tc"], .kfs[data-script="ja"], .kfs[data-script="ko"], .kfs[data-script="cyrillic"] { font-family: system-ui, sans-serif; }
+.kfs.kfs-out { opacity: 0; pointer-events: none; }
+.kfs-bg { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+/* calm: the meadow is dimmed and softly darker at the edges, so the logo and the words read */
+.kfs-shade { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 42%, rgba(18, 14, 8, .18) 0%, rgba(18, 14, 8, .42) 60%, rgba(18, 14, 8, .7) 100%); }
+.kfs-mid { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2.2vmin; width: min(86vw, 70vmin); text-align: center; }
+.kfs-logo { display: flex; flex-direction: column; align-items: center; }
+.kfs-castle { width: 26vmin; height: auto; image-rendering: pixelated; margin-bottom: -2.4vmin; filter: drop-shadow(0 .8vmin 0 rgba(30, 16, 6, .5)); }
+.kfs-word { display: flex; font: 400 12vmin / 1 'KF Splash Pixel', system-ui, sans-serif; letter-spacing: .05em;
+  filter: drop-shadow(.6vmin 0 0 #3a2410) drop-shadow(-.6vmin 0 0 #3a2410) drop-shadow(0 -.6vmin 0 #3a2410) drop-shadow(0 .6vmin 0 #3a2410)
+    drop-shadow(0 1.3vmin 0 #3a2410) drop-shadow(0 2.2vmin 1.4vmin rgba(0, 0, 0, .35)); }
+.kfs-word span { background-clip: text; -webkit-background-clip: text; color: transparent; }
+.kfs-word .keep { background-image: linear-gradient(#f5d77a, #e0b040 55%, #9a7220); }
+.kfs-word .fall { background-image: linear-gradient(#ff9a86, #c0392b 55%, #7d2018); }
+.kfs-bar { position: relative; width: 100%; height: max(14px, 2.4vmin); margin-top: 2vmin; background: linear-gradient(#14110d, #28221a); border: max(3px, .5vmin) solid #8a6a3a;
+  border-radius: 1vmin; box-shadow: 0 0 0 max(2px, .3vmin) #3a2410, inset 0 2px 0 rgba(0, 0, 0, .5); overflow: hidden; }
+.kfs-fill { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(#f5d77a, #e0b040 55%, #9a7220); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .35); transition: width .25s ease-out; }
+.kfs-status { margin: 0; min-height: 1.4em; text-shadow: 0 2px 0 #1b1209; }
+.kfs-error { display: flex; flex-direction: column; align-items: center; gap: 1.4vmin; }
+.kfs-error[hidden], .kfs-status[hidden] { display: none; }
+.kfs-error p { margin: 0; padding: .5em 1em; background: rgba(125, 32, 24, .85); border: 2px solid #3a1008; border-radius: 6px; }
+.kfs-retry { font: inherit; color: #fff; padding: .5em 1.4em; background: linear-gradient(#5d9be0, #3f6fb5 55%, #2a4f88); border: 2px solid #1f3a66; border-bottom-width: 5px;
+  border-radius: 7px; cursor: pointer; text-shadow: 0 1px 0 rgba(0, 0, 0, .4); }
+.kfs-retry:hover { filter: brightness(1.08); }
+.kfs-retry:focus-visible { outline: 3px solid #f2c14e; outline-offset: 2px; }
+.kfs-tip { position: relative; margin: 0 0 4vmin; max-width: min(92vw, 900px); padding: .6em 1.2em; text-align: center; background: rgba(27, 18, 9, .62); border: 2px solid rgba(138, 106, 58, .8);
+  border-radius: 8px; text-shadow: 0 1px 0 #000; transition: opacity .35s; }
+.kfs-tip b { color: #f5d77a; font-weight: 400; }
+.kfs-tip.swap { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .kfs, .kfs-tip { transition: none; } }

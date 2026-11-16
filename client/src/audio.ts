@@ -431,6 +431,15 @@ class Sfx {
 
 export const sfx = new Sfx();
 
+/** The files the sounds come from (the loading screen fetches them into the browser's cache; they are decoded after the first click):
+ *  every effect recording, and with `withMusic` the menu's music too. */
+export function soundUrls(withMusic: boolean): string[] {
+  const names = [...new Set([...Object.values(SAMPLES).flatMap((b) => b?.files ?? []), ...AMBIENT_FILES])];
+  const urls = names.map((n) => asset(`/audio/sfx/${n}.${EXT}`));
+  if (withMusic) urls.push(asset(`/audio/music/${MUSIC_FILE.lobby}.${EXT}`));
+  return urls;
+}
+
 export type Track = 'lobby' | 'prep' | 'war' | 'start';
 /** The files (a new name when a recording is replaced: a browser keeps the old file under the old name; the preparation loop was `prep.mp3` first). */
 const MUSIC_FILE: Record<Track, string> = { lobby: 'lobby', prep: 'prep-bg', war: 'war-epic', start: 'start' }; // (war-epic: Pixabay, Kulakovka; looped seamlessly at the file level, see docs/ses-lisanslari.md)

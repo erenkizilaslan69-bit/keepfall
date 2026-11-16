@@ -24,6 +24,10 @@ const quietLog = process.env.KEEPFALL_SHELL_LOG;              // test hook: a fi
 const log = (line) => { if (quietLog) { try { fs.appendFileSync(quietLog, new Date().toISOString().slice(11, 23) + ' ' + line + '\n'); } catch { /* ignore */ } } };
 
 let server = null, port = 0, guestPort = 0, joinPort = 0, quitting = false, mainWindow = null, mp = null;
+let serverReady = false, lastServerLines = [];
+/** How long the server may take to start before the loading screen says it did not (and offers "Try again"). */
+const SERVER_START_MS = Number(process.env.KEEPFALL_SERVER_START_MS) || 20000;
+const t0 = Date.now();
 /** The build's name: host and guest of a friend-hosted game must have the same one (tools/pack-steam.mjs writes build.json). */
 const build = (() => {
   if (process.env.KEEPFALL_BUILD) return String(process.env.KEEPFALL_BUILD).slice(0, 40);
@@ -97,8 +101,11 @@ function startServer(p) {
   const keep = (b) => { for (const l of String(b).split(/\r?\n/)) { if (l.trim()) { tail.push(l); if (tail.length > 40) tail.shift(); } } };
   server.stdout.on('data', keep);
   server.stderr.on('data', keep);
+  const me = server;
   server.on('exit', (code) => {
     log('server-exit ' + code);
+    if (me !== server) return; // an old server stopped for a retry
+    if (!serverReady) { lastServerLines = tail.slice(-8); return; } // still starting: the loading screen says it and offers to try again
     if (!quitting) {
       dialog.showErrorBox('Keepfall', 'The game server stopped (code ' + code + ').\n\n' + tail.slice(-8).join('\n'));
       app.quit();
@@ -108,6 +115,9 @@ function startServer(p) {
 
 function stopServer() {
   quitting = true;
+  killServer();
+}
+function killServer() {
   if (!server || server.exitCode !== null) return;
   try {
     if (process.platform === 'win32') execFileSync('taskkill', ['/PID', String(server.pid), '/T', '/F'], { stdio: 'ignore' });
@@ -153,6 +163,17 @@ ipcMain.handle('steam:cloud-write', (_e, name, text) => !!steam && name === 'pro
 ipcMain.handle('steam:presence', (_e, key, value) => !!steam && typeof key === 'string' && key.length < 40
   && safe(() => { steam.client.localplayer.setRichPresence(key, value == null ? undefined : String(value).slice(0, 200)); return true; }, false));
 ipcMain.handle('shell:blocked', () => blocked.slice());
+// The loading screen: the player's language is remembered for the next launch's loading screen (the page's own storage is not reachable before the server is up),
+// and "Try again" starts the server once more after it did not come up.
+const LANGS = ['en', 'tr', 'zh-CN', 'zh-TW', 'ru', 'es-ES', 'es-419', 'pt-BR', 'de', 'fr', 'ja', 'ko', 'pl', 'it', 'uk'];
+const langFile = () => path.join(app.getPath('userData'), 'lang.txt');
+ipcMain.handle('shell:lang', (_e, code) => { if (LANGS.includes(String(code))) { try { fs.writeFileSync(langFile(), String(code)); } catch { /* a nicety */ } } return true; });
+ipcMain.handle('shell:retry', () => { if (!serverReady) void bringUpServer(); return true; });
+function savedLang() {
+  try { const c = fs.readFileSync(langFile(), 'utf8').trim(); if (LANGS.includes(c)) return c; } catch { /* first launch */ }
+  const loc = String(app.getLocale() || 'en');
+  return LANGS.find((l) => l.toLowerCase() === loc.toLowerCase()) || LANGS.find((l) => l.split('-')[0] === loc.split('-')[0].toLowerCase()) || 'en';
+}
 
 // ---------- friend-hosted multiplayer (mp.js does the work; every argument is checked there) ----------
 let protocolCache = 0;
@@ -202,7 +223,7 @@ function createWindow() {
   });
   win.removeMenu();
   mainWindow = win;
-  win.once('ready-to-show', () => win.show());
+  win.once('ready-to-show', () => { win.show(); log('window-shown ' + (Date.now() - t0) + 'ms'); });
   win.on('closed', () => { mainWindow = null; });
   let farewell = false;
   win.on('close', (e) => {
@@ -219,14 +240,42 @@ function createWindow() {
     const now = Date.now();
     if (now - lastGone < 60000) { dialog.showErrorBox('Keepfall', 'The game window stopped working (' + (details && details.reason) + ').'); app.quit(); return; }
     lastGone = now;
-    if (!win.isDestroyed()) win.loadURL('http://' + HOST + '/');
+    if (!win.isDestroyed()) { if (serverReady) win.loadURL('http://' + HOST + '/'); else showSplash(win); }
   });
   win.webContents.on('will-navigate', (e, url) => { if (new URL(url).host !== HOST) e.preventDefault(); });
   win.webContents.on('before-input-event', (e, input) => {
     if (input.type === 'keyDown' && input.key === 'F11') { win.setFullScreen(!win.isFullScreen()); e.preventDefault(); }
   });
-  win.loadURL('http://' + HOST + '/');
+  showSplash(win); // the loading screen at once (a local file); the game's page follows when its server answers
   return win;
+}
+
+/** The loading screen of the client's own build (client/dist/splash.html: the same logo, meadow and tips the page shows while it loads), in the remembered language. */
+function showSplash(win) {
+  const file = path.join(serverDir, 'client', 'dist', 'splash.html');
+  if (!fs.existsSync(file)) { log('no splash page'); return; }
+  void win.loadFile(file, { query: { lang: savedLang(), stage: 'server' } }).catch((e) => log('splash failed: ' + (e && e.message)));
+}
+
+/** Starts (or starts again) the game server; when it answers the window goes to the game, when it does not the loading screen says so with "Try again". */
+async function bringUpServer() {
+  serverReady = false; lastServerLines = [];
+  killServer();
+  let why = '';
+  try { startServer(port); } catch (e) { why = String((e && e.message) || e); }
+  const ok = !why && await waitForServer(port, SERVER_START_MS);
+  if (!ok) {
+    killServer();
+    why ||= server && server.exitCode !== null ? 'exit ' + server.exitCode + (lastServerLines.length ? ': ' + lastServerLines.slice(-2).join(' / ') : '') : 'timeout ' + SERVER_START_MS / 1000 + 's';
+    log('server-failed ' + why);
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.executeJavaScript('window.kfSplash && window.kfSplash.fail(' + JSON.stringify(why.slice(0, 300)) + ', true)').catch(() => {});
+    return;
+  }
+  serverReady = true;
+  if (!mp) mp = createMp({ log, guestPort, joinPort, build, protocol: ownProtocol, steam: () => steam, argv: process.argv,
+    notify: (event) => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('mp:event', event); } });
+  log('ready port=' + port + ' guest=' + guestPort + ' join=' + joinPort + ' build=' + build + ' after ' + (Date.now() - t0) + 'ms');
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.loadURL('http://' + HOST + '/');
 }
 
 async function boot() {
@@ -249,13 +298,9 @@ async function boot() {
     if (!ok) { blocked.push(details.url.slice(0, 200)); log('blocked ' + details.url.slice(0, 200)); }
     cb({ cancel: !ok });
   });
+  createWindow(); // the window (and its loading screen) first: the server starts behind it
   startSteam();
-  try { startServer(port); } catch (e) { dialog.showErrorBox('Keepfall', String(e.message || e)); app.quit(); return; }
-  if (!(await waitForServer(port, 40000))) { stopServer(); dialog.showErrorBox('Keepfall', 'The game server did not start.'); app.quit(); return; }
-  mp = createMp({ log, guestPort, joinPort, build, protocol: ownProtocol, steam: () => steam, argv: process.argv,
-    notify: (event) => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('mp:event', event); } });
-  log('ready port=' + port + ' guest=' + guestPort + ' join=' + joinPort + ' build=' + build);
-  createWindow();
+  await bringUpServer();
 }
 
 app.on('window-all-closed', () => app.quit());

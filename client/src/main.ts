@@ -32,16 +32,17 @@ import './ui/director.css';
 import { Minimap } from './minimap';
 import { EndScreen, HomeScreen, LobbyScreen } from './screens';
 import { setBotSeats } from './format';
-import { t, tr } from './i18n';
+import { lang, t, tr } from './i18n';
 import { installTouch } from './ui/touch';
 import { startDiagnostics, watchGlContext } from './diagnostics';
 import { PROTOCOL } from './net';
-import { music, sfx } from './audio';
+import { music, sfx, soundUrls } from './audio';
 import { mountGuideButton, showFirstTimeGuide } from './ui/guide';
 import { CloudCurtain } from './ui/clouds';
 import { fadeFrom } from './ui/transitions';
 import { warmUp } from './preload';
-import { mountScenery } from './ui/scenery';
+import { mountScenery, sceneryFiles } from './ui/scenery';
+import { connectWithSplash, loadCounted, loadImage, prefetch, splashDone, splashStep } from './splash';
 import { confirmLeave, enableNameSetting, mountLangButton, mountSettingsButton, setLeaveAction } from './ui/settings';
 import { startFpsMeter } from './ui/fps-meter';
 import { armTutorial, disarmTutorial, tutorialDone } from './ui/tutorial';
@@ -876,14 +877,23 @@ async function main(): Promise<void> {
   }
   watchUiScale();
   watchMinText();
+  // The loading screen's real work, all at once: the interface art and the menu's pictures, the sounds into the cache, the server (below).
   // The UI art is cut once; without it the UI falls back to plain boxes. Never wait long for it: it
   // can stall in a background tab, and it switches itself on whenever it is ready.
-  await Promise.race([loadUiArt(), new Promise((resolve) => setTimeout(resolve, 2500))]);
+  const desktop = !!(window as unknown as { keepfallSteam?: unknown }).keepfallSteam;
+  (window as unknown as { keepfallSteam?: { rememberLang?: (code: string) => unknown } }).keepfallSteam?.rememberLang?.(lang); // the shell's own loading page speaks it next time
+  const uiArt = Promise.race([loadUiArt(), new Promise((resolve) => setTimeout(resolve, 2500))]);
+  loading = Promise.all([
+    loadCounted('images', [() => uiArt, () => document.fonts.ready, ...sceneryFiles().map(loadImage)]),
+    loadCounted('sound', soundUrls(desktop).map(prefetch), 4),
+  ]).then(() => undefined);
+  await uiArt;
   if (CRAZY) {
+    splashDone(); // (the CrazyGames build keeps its own plain "Connecting..." and retry screen)
     await connectOnSite();
   } else {
     try {
-      await net.start();
+      await connectWithSplash(() => net.start(), () => net.abort());
     } catch (e) {
       console.error(e);
       app.innerHTML = `<div class="screen"><p class="banner danger">${t('Sunucuya bağlanılamadı.')} <code>dotnet run --project src/Keepfall.Server</code> ${t('çalışıyor mu?')}</p></div>`;
@@ -983,4 +993,14 @@ async function joinInvite(code: string): Promise<void> {
   if (!r.ok) showHome({ code, error: tr(r.error ?? t('Odaya katılınamadı.')) });
 }
 
-void main();
+/** The loading screen's work that runs beside the start (pictures, sounds). */
+let loading: Promise<void> = Promise.resolve();
+/** On the web the menu never waits more than this for the sounds (they keep loading behind it); the desktop reads them from disk at once. */
+const SOUND_WAIT_MS = 6000;
+
+void main().catch((e) => console.error(e)).finally(async () => {
+  // the menu (or the room it came back to) is up: the loading screen fades out once the pictures are in, not waiting long for the sounds
+  await Promise.race([loading, new Promise((resolve) => setTimeout(resolve, SOUND_WAIT_MS))]);
+  splashStep('server', 1, 1);
+  splashDone();
+});

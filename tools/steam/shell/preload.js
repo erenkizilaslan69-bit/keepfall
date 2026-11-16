@@ -9,6 +9,9 @@ contextBridge.exposeInMainWorld('keepfallSteam', {
   cloudWrite: (name, text) => ipcRenderer.invoke('steam:cloud-write', name, text),
   presence: (key, value) => ipcRenderer.invoke('steam:presence', key, value),
   blockedRequests: () => ipcRenderer.invoke('shell:blocked'),
+  // the loading screen: the language for the next launch's loading screen; "Try again" when the game server did not start
+  rememberLang: (code) => ipcRenderer.invoke('shell:lang', code),
+  retryServer: () => ipcRenderer.invoke('shell:retry'),
   // Friend-hosted multiplayer (mp.js): the room's maker is the server, friends come over LAN / direct IP or Steam.
   mp: {
     info: () => ipcRenderer.invoke('mp:info'),

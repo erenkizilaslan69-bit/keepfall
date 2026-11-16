@@ -5,8 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>Keepfall</title>
     <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/splash/splash.css" />
   </head>
   <body>
+    <!-- the loading screen (public/splash): drawn at once, before the game's code; the game fades it out when its menu is up -->
+    <div id="kf-splash"></div>
+    <script src="/splash/splash-text.js"></script>
+    <script src="/splash/splash.js"></script>
     <div id="app"><div class="screen"><p class="muted">…</p></div></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
